@@ -5,8 +5,10 @@ import {
   characterParam,
   initialBinding,
   partyPermissions,
+  playerTabHref,
 } from '../src/view/CharacterBinding.js';
 import { claimLock, isHeldByOther } from '../src/storage/GMLock.js';
+import { roleParam } from '../src/view/PlayerLock.js';
 import { createCharacter } from '../src/entities/Character.js';
 
 const party = [createCharacter('hero', 'Hero'), createCharacter('sage', 'Sage')];
@@ -15,6 +17,14 @@ test('characterParam reads ?character= and returns null when absent', () => {
   assert.equal(characterParam('?role=player&character=hero'), 'hero');
   assert.equal(characterParam('?role=player'), null);
   assert.equal(characterParam(''), null);
+});
+
+test('playerTabHref builds a bound or spectator player URL that the readers parse back', () => {
+  assert.equal(playerTabHref('hero'), '?role=player&character=hero');
+  assert.equal(playerTabHref(null), '?role=player');
+  const odd = playerTabHref('a b&c');
+  assert.equal(characterParam(odd), 'a b&c');
+  assert.equal(roleParam(odd), 'player');
 });
 
 test('initialBinding prefers the URL over the session value', () => {

@@ -18,8 +18,9 @@ import {
   BOUND_CHARACTER_SESSION_KEY,
   characterLockKey,
   initialBinding,
+  playerTabHref,
 } from './CharacterBinding.js';
-import { el } from '../ui/dom.js';
+import { el, setAttrs } from '../ui/dom.js';
 import { select, setOptions } from '../ui/formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -113,16 +114,57 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   );
 
   // The GM is the one who sets a player tab up, so the hint shows in the GM
-  // view, where the picker itself is hidden. It says how a tab binds and what
-  // the Player view is, because nothing else in the app does.
+  // view, where the picker itself is hidden. It links a player tab for each
+  // character and one for a spectator, and says what the Player view is,
+  // because nothing else in the app does.
+  const hintLinks = el('span', 'party-binding-hint__links');
   container.appendChild(
     el(
       'p',
       'party-binding-hint u-muted',
-      'Open a second tab with ?role=player&character=<id> on the URL to bind that tab to one character. ' +
-        'The Player view is a display setting over the same browser data, not a lock.',
+      hintLinks,
+      ' A player tab is a display setting over the same browser data, not a lock.',
     ),
   );
+
+  /**
+   * A link that opens a player tab in a new browser tab.
+   * @param {string} text
+   * @param {string | null} id
+   * @param {string} label
+   */
+  const tabLink = (text, id, label) => {
+    const link = el('a', 'party-binding-hint__link', text);
+    setAttrs(link, {
+      href: playerTabHref(id),
+      target: '_blank',
+      rel: 'noopener',
+      'aria-label': label,
+    });
+    return link;
+  };
+
+  // The sentence reads "Open a player tab for Hero, Sage, or a spectator."
+  // With no characters it is only the spectator link.
+  function paintHint() {
+    const characters = getCharacters();
+    if (characters.length === 0) {
+      hintLinks.replaceChildren(tabLink('Open a spectator tab', null, 'Open a spectator tab'), '.');
+      return;
+    }
+    const links = [
+      ...characters.map((c) => tabLink(c.name, c.id, `Open a player tab for ${c.name}`)),
+      tabLink('a spectator', null, 'Open a spectator tab'),
+    ];
+    /** @type {(Node | string)[]} */
+    const parts = ['Open a player tab for '];
+    links.forEach((link, i) => {
+      if (i === links.length - 1) parts.push(links.length > 2 ? ', or ' : ' or ');
+      else if (i > 0) parts.push(', ');
+      parts.push(link);
+    });
+    hintLinks.replaceChildren(...parts, '.');
+  }
 
   picker.addEventListener('change', () => {
     const took = setBinding(picker.value === '' ? null : picker.value);
@@ -152,6 +194,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     if (stamp === painted && picker.value === (boundId ?? '')) return;
     painted = stamp;
     setOptions(picker, options, boundId ?? '');
+    paintHint();
   }
   updatePicker();
 

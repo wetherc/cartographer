@@ -47,7 +47,7 @@ position, its open panel, and its map zoom and pan.
 | --- | --- |
 | `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. It shows the GM view again only after the parameter is removed from the URL |
 | The padlock beside the role switch | Same lock, set from inside the tab. To undo it, close the tab or drop the URL parameter |
-| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. The header shows this hint under the Viewer switch |
+| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. The Party panel of a GM tab links a player tab for each character and one spectator tab |
 | The "Playing as" dropdown in the Party panel | Same binding, set from inside the tab |
 
 A bound tab can spend spell slots and other resources, add and clear

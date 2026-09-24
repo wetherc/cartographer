@@ -39,6 +39,19 @@ export function characterParam(search) {
 }
 
 /**
+ * The query string that opens a player tab. With an id, the tab binds to that
+ * character. With null, it opens as a spectator. The GM follows it from the
+ * Party panel, so nobody types the parameters by hand. This function is pure.
+ * @param {string | null} characterId
+ * @returns {string}
+ */
+export function playerTabHref(characterId) {
+  const params = new URLSearchParams({ role: 'player' });
+  if (characterId !== null) params.set('character', characterId);
+  return `?${params}`;
+}
+
+/**
  * Resolve this tab's initial binding. The URL parameter wins over the
  * per-tab session value. An id that names no current party member (deleted,
  * misspelled, or from another campaign's save) resolves to unbound, instead

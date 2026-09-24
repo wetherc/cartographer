@@ -101,8 +101,8 @@ keeps the record instead of deleting it.
 ## 8. Set up a player display
 
 1. Click **Save** in the header.
-2. Open a second browser tab on the same address, and add `?role=player` to
-   the URL.
+2. In the **Party** panel, click **a spectator** at the end of the line "Open
+   a player tab for ...". A second browser tab opens in the Player view.
 3. Put that tab beside the first one.
 
 The second tab shows the same world with the player view: no secret notes,
