@@ -65,16 +65,17 @@ export function mountQuestPanel(container, callbacks) {
       // A player sees the status glyph and the title, with no control.
       if (!ctx.gm) {
         return [
-          el('span', 'quest-panel__status', icon(done ? 'check' : 'add')),
+          el('span', 'quest-panel__status', icon(done ? 'check' : 'circle')),
           el('div', 'quest-panel__body u-col u-g1', title),
         ];
       }
 
-      // A completed quest's toggle shows a check. An active quest's toggle
-      // shows a plus, to mark it done. The glyph tracks the quest's state.
+      // A completed quest's toggle shows a check, and an active quest's toggle
+      // shows an empty ring. The plus stays with New quest, so the two
+      // controls do not share a glyph.
       const toggle = ctx.action(
         {
-          icon: done ? 'check' : 'add',
+          icon: done ? 'check' : 'circle',
           label: done ? `Reopen ${quest.title}` : `Complete ${quest.title}`,
           pressed: done,
           onClick: () => callbacks.onToggle(quest),

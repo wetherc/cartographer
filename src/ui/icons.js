@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -69,6 +69,8 @@ const PATHS = {
     'M18 17l-6 5',
   ],
   chevron: ['M9 6l6 6-6 6'],
+  // An empty ring marks an open item, such as an active quest.
+  circle: ['M12 4a8 8 0 100 16 8 8 0 000-16z'],
   // This is a triangle with an exclamation mark. It marks something
   // authored that needs attention.
   warning: ['M12 4L2.5 20h19z', 'M12 10v4', 'M12 17h.01'],
