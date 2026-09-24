@@ -24,6 +24,8 @@ test('withRace assigns name, id, and a snapshot of the definition', () => {
   assert.equal(c.raceTraits?.speed, 25);
   assert.deepEqual(c.raceTraits?.abilityIncreases, { CON: 2, WIS: 1 });
   assert.deepEqual(c.raceTraits?.resistances, ['poison']);
+  assert.equal(c.raceTraits?.keepsSpeedInArmor, true);
+  assert.equal('keepsSpeedInArmor' in (withRace(c, 'elf').raceTraits ?? {}), false);
 });
 
 test('withRace snapshot shares nothing with the catalog definition', () => {

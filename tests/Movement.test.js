@@ -62,12 +62,24 @@ test('armorSpeedPenalty defaults a missing STR score to 10', () => {
   assert.equal(armorSpeedPenalty({ ...hero, stats: {} }), 10);
 });
 
-test('walkSpeed applies the penalty and never goes negative', () => {
+test('a Dwarf keeps its speed in armor too heavy for its Strength', () => {
   const dwarf = { ...wearing({ strength: 15 }, { STR: 8 }), raceId: 'dwarf' };
-  assert.equal(walkSpeed(dwarf), 15, '25 less 10');
-  assert.equal(walkSpeed({ ...dwarf, stats: { STR: 16 } }), 25);
+  assert.equal(armorSpeedPenalty(dwarf), 0);
+  assert.equal(walkSpeed(dwarf), 25);
+  const traits = /** @type {any} */ ({ speed: 25, keepsSpeedInArmor: true, abilityIncreases: {} });
+  assert.equal(
+    armorSpeedPenalty({ ...dwarf, raceId: '', raceTraits: traits }),
+    0,
+    'from a snapshot',
+  );
+});
+
+test('walkSpeed applies the penalty and never goes negative', () => {
+  const human = { ...wearing({ strength: 15 }, { STR: 8 }), raceId: 'human' };
+  assert.equal(walkSpeed(human), 20, '30 less 10');
+  assert.equal(walkSpeed({ ...human, stats: { STR: 16 } }), 30);
   const traits = /** @type {any} */ ({ name: 'Slug', speed: 5, abilityIncreases: {} });
-  assert.equal(walkSpeed({ ...dwarf, raceId: '', raceTraits: traits }), 0, 'floored at 0');
+  assert.equal(walkSpeed({ ...human, raceId: '', raceTraits: traits }), 0, 'floored at 0');
 });
 
 test('speedNote names the armor and the score it wanted', () => {

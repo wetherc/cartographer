@@ -30,6 +30,9 @@ export interface RaceDef {
   tools: string[];
   /** Languages known. */
   languages: string[];
+  /** True when armor too heavy for the character's Strength does not cost
+   * the character speed (the Dwarf). Absent means the usual 10 ft penalty. */
+  keepsSpeedInArmor?: boolean;
   /** Race trait names. These are display names only, not yet given a
    * mechanical effect (the same status as ClassDef.featuresByLevel). */
   traits: string[];

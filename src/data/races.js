@@ -16,6 +16,7 @@ export const DEFAULT_RACES = [
     abilityIncreases: { CON: 2, WIS: 1 },
     size: 'medium',
     speed: 25,
+    keepsSpeedInArmor: true,
     darkvision: 60,
     resistances: ['poison'],
     skills: [],

@@ -38,12 +38,13 @@ export function baseSpeed(character) {
  * The speed the worn body armor costs: 10 feet when the armor states a
  * Strength requirement the character does not meet, else 0. The score checked
  * includes equipped buffs, so a +2 ring can carry a character over the line.
+ * A race that keeps its speed in armor (the Dwarf) pays nothing.
  * @param {Character} character
  * @returns {number}
  */
 export function armorSpeedPenalty(character) {
   const required = armorTraits(equippedIndex(character).get('chest')).strength;
-  if (!required) return 0;
+  if (!required || resolveRace(character)?.keepsSpeedInArmor) return 0;
   return (effectiveStats(character).STR ?? 10) < required ? 10 : 0;
 }
 

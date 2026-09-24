@@ -63,6 +63,11 @@ test('a stack of zero or fewer is refused the way an empty name is', () => {
   assert.equal(assembleItem(draft({ quantity: '' })), null);
 });
 
+test('a fractional stack rounds down to whole items', () => {
+  assert.equal(assembleItem(draft({ quantity: '2.5' }))?.quantity, 2);
+  assert.equal(assembleItem(draft({ quantity: 0.5 })), null, 'less than one item is none');
+});
+
 test('the name is trimmed and an empty description is left out', () => {
   const withText = assembleItem(draft({ name: '  Rope  ', description: '  50 feet ' }));
   assert.equal(withText?.name, 'Rope');

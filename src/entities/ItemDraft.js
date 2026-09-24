@@ -75,7 +75,8 @@ export const EQUIPPABLE_TYPES = [
  * @returns {Omit<InventoryItem, 'id'> | null}
  */
 export function assembleItem(draft) {
-  const quantity = Number(draft.quantity);
+  // A stack holds whole items, so a typed 2.5 stores as 2.
+  const quantity = Math.floor(Number(draft.quantity));
   if (!(quantity > 0)) return null;
   const type = /** @type {ItemType} */ (draft.type);
   const description = draft.description.trim();

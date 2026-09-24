@@ -45,6 +45,7 @@ function snapshotRace(def) {
     tools: [...def.tools],
     languages: [...def.languages],
     traits: [...def.traits],
+    ...(def.keepsSpeedInArmor ? { keepsSpeedInArmor: true } : {}),
   };
 }
 
