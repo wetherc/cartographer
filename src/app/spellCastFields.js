@@ -113,9 +113,10 @@ function targetsLabel(kind, cap) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number }} [opts] `material`: true when the
+ * @param {{ material?: boolean, materialMissing?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
- *   checkbox for a table that treats components as flavor. `ritual`: true when this caster can
+ *   checkbox for a table that treats components as flavor. `materialMissing`: true when
+ *   the caster does not carry the component, which the box label then says. `ritual`: true when this caster can
  *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
  *   `armor`: true when the caster wears armor it is not trained for. This adds
  *   the opt-out checkbox that lets the GM waive the armor rule.
@@ -125,7 +126,14 @@ function targetsLabel(kind, cap) {
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
-  const { material = false, ritual = false, armor = false, actionLabel = '', maxCap = cap } = opts;
+  const {
+    material = false,
+    materialMissing = false,
+    ritual = false,
+    armor = false,
+    actionLabel = '',
+    maxCap = cap,
+  } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -216,7 +224,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   if (material) {
     fields.push({
       name: 'ignore-components',
-      label: 'Ignore components',
+      label: materialMissing ? 'Ignore components (not carried)' : 'Ignore components',
       type: 'checkbox',
       full: true,
     });

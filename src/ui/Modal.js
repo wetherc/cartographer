@@ -156,6 +156,8 @@ function asInput(element) {
  * marked `advanced` collect into one collapsed `<details>` captioned by
  * `advancedLabel`, placed where the first advanced field appears. This lets a
  * plain Enter submit their defaults without the form showing them.
+ * `submitRequires` names checkbox fields, and the submit button stays
+ * disabled until every one of them is ticked.
  * @param {string} title
  * @param {ModalField[]} fields
  * @param {{
@@ -163,6 +165,7 @@ function asInput(element) {
  *   wide?: boolean,
  *   advancedLabel?: string,
  *   onChange?: (name: string, form: ModalFormHandle) => void,
+ *   submitRequires?: string[],
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -407,6 +410,17 @@ export function promptModal(title, fields, options = {}) {
         variant: 'primary',
         type: 'submit',
       });
+      // The checkboxes named by submitRequires hold the submit button
+      // disabled until every one is ticked, so the dialog does not take input
+      // that the caller then refuses.
+      const gates = (options.submitRequires ?? [])
+        .map((name) => inputs[name])
+        .filter((input) => input instanceof HTMLInputElement);
+      const syncGates = () => {
+        submit.disabled = gates.some((input) => !(/** @type {HTMLInputElement} */ (input).checked));
+      };
+      for (const input of gates) input.addEventListener('change', syncGates);
+      syncGates();
 
       return {
         body,

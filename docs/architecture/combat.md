@@ -174,7 +174,11 @@ The attack dialog offers the way past as an "Ignore action cost" box on a
 turn with no swing left, and the cast dialog shows the same box for a blocked
 cast, worded for whichever of the two reasons applies. A cast that
 goes through on the opt-out spends nothing, because there is nothing left to
-take.
+take. Until the box is ticked, the submit button stays disabled through
+`promptModal`'s `submitRequires` option, so the dialog does not close on a
+swing or a cast that the resolver then refuses. The cast dialog gates its
+components and armor opt-outs the same way when the cast would be refused
+without them.
 
 The action bar draws the pips: one per cost, struck through once spent, plus
 the swing count when more than one swing is left. The pips report and never

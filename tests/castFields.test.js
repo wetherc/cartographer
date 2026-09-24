@@ -256,3 +256,12 @@ test('a summons offers the slot picker and no target field', () => {
     'a summons picks no creature, so it gets no picker, mode, or DC',
   );
 });
+
+test('the components opt-out says when the caster does not carry the component', () => {
+  const label = (/** @type {any} */ opts) =>
+    castFields(fireBolt, targets, [0], 13, 1, opts)?.find((f) => f.name === 'ignore-components')
+      ?.label;
+  assert.equal(label({ material: true }), 'Ignore components');
+  assert.equal(label({ material: true, materialMissing: true }), 'Ignore components (not carried)');
+  assert.equal(label({}), undefined);
+});

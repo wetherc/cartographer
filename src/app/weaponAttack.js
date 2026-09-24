@@ -500,6 +500,11 @@ export async function weaponAttack(
         ]
     : [];
   const swing = SWINGS[swingKind({ offhand, reaction })];
+  const cannotPay = !canSwing(
+    participant,
+    swingKind({ offhand, reaction }),
+    attacksPerAction(attacker),
+  );
   const sneakDice = sneakAttackDice(attacker);
   const values = await promptModal(
     `${swing.title} ${weapon.name}`,
@@ -567,9 +572,11 @@ export async function weaponAttack(
         : []),
       // This box appears only on a turn that cannot pay for the swing, because
       // that is the only time the answer matters. Ticking it swings anyway, for
-      // a rule the action economy here does not carry. Each of the three swings
-      // names the part of the turn it could not pay with.
-      ...(!canSwing(participant, swingKind({ offhand, reaction }), attacksPerAction(attacker))
+      // a rule the action economy here does not carry. Until it is ticked, Roll
+      // attack stays disabled, because rollWeaponAttack refuses the swing.
+      // Each of the three swings names the part of the turn it could not pay
+      // with.
+      ...(cannotPay
         ? [
             {
               name: 'free-action',
@@ -620,7 +627,12 @@ export async function weaponAttack(
       { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0, advanced: true },
       { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0, advanced: true },
     ],
-    { submitLabel: 'Roll attack', wide: true, advancedLabel: 'Situational modifiers' },
+    {
+      submitLabel: 'Roll attack',
+      wide: true,
+      advancedLabel: 'Situational modifiers',
+      ...(cannotPay ? { submitRequires: ['free-action'] } : {}),
+    },
   );
   if (!values) return;
   // A defender the dialog no longer offers, for example one defeated while

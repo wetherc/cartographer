@@ -217,6 +217,7 @@ export function castPlan(app, entity, spell, offered) {
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
     maxCap,
     material: material.required,
+    materialMissing: material.required && !material.satisfied,
     ritual: ritualOffered,
     armor: armor.length > 0,
     actionLabel: !actionBlocked
@@ -276,6 +277,13 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     submitLabel: 'Cast',
     wide: true,
     onChange: castChangeHandler(plan),
+    // Each opt-out box that the cast would be refused without holds Cast
+    // disabled until it is ticked.
+    submitRequires: [
+      ...(plan.material.required && !plan.material.satisfied ? ['ignore-components'] : []),
+      ...(plan.armor.length > 0 ? ['ignore-armor'] : []),
+      ...(plan.actionBlocked ? ['ignore-action'] : []),
+    ],
   });
   if (!values) return;
   resolveCast(app, plan, values, { writeBack, concentrates });
