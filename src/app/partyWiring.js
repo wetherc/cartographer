@@ -36,6 +36,7 @@ import { createCharacterClaim } from '../view/CharacterClaim.js';
 import { characterPosition, moveCharacter } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { describeTile } from '../map/TileCoords.js';
+import { revealAround } from '../map/FogOfWar.js';
 import { wireSplitParty } from './splitParty.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -165,6 +166,13 @@ export function wireParty(app) {
       app.actions.markDirty();
       if (location) {
         const node = app.grid.getNode(location.nodeId);
+        // A placed character sees around the tile, the same as a character
+        // that walks there.
+        if (node) {
+          app.grid.updateNode(revealAround(node, location.tileId, app.partyTracker.revealRadius));
+          app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
+          app.views.regionTree.update();
+        }
         app.actions.logEvent(
           'travel',
           `${character.name} moves to ${node?.name ?? location.nodeId} (${describeTile(location.tileId)}).`,
