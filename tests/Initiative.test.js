@@ -56,6 +56,21 @@ test('sortInitiative breaks a same-name, same-initiative tie by id', () => {
   );
 });
 
+test('sortInitiative breaks an initiative tie by the higher DEX modifier before the name', () => {
+  const list = [createParticipant('a', 14, 1), createParticipant('b', 14, 3)];
+  const names = nameOf({ a: 'Ana', b: 'Zed' });
+  assert.deepEqual(
+    sortInitiative(list, names).map((p) => p.id),
+    ['b', 'a'],
+  );
+  const legacy = /** @type {any} */ ({ id: 'c', initiative: 14 });
+  assert.deepEqual(
+    sortInitiative([legacy, list[0]], names).map((p) => p.id),
+    ['a', 'c'],
+    'a missing modifier reads as 0',
+  );
+});
+
 test('sortInitiative falls back to the id tie-break with no name resolver', () => {
   const list = [createParticipant('z', 10), createParticipant('a', 10)];
   assert.deepEqual(
@@ -281,7 +296,7 @@ test('addParticipant refuses a duplicate id and joins an empty order', () => {
 });
 
 test('dropParticipant refreshes the budget of the combatant that inherits the turn', () => {
-  const b = spend(spend(createParticipant('b', 15), 'reaction'), 'bonusAction');
+  const b = spend(spend(createParticipant('b', 15), 'reaction'), 'bonus');
   const state = {
     ...startCombat([createParticipant('a', 20), b, createParticipant('c', 10)]),
     index: 0,

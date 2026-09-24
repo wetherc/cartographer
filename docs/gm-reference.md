@@ -470,7 +470,8 @@ An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
 Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
 default initiative value is 10 plus the modifier. Roll initiative fills every
-row at once.
+row at once. On a tie, the combatant with the higher DEX modifier goes first,
+and then the name decides.
 
 Initiative is a Dexterity check, and it rolls as one. A condition chip that
 slants ability checks slants it, so a poisoned or frightened combatant rolls two

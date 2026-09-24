@@ -23,7 +23,9 @@ export function createParticipant(id, initiative = 10, modifier = 0) {
 
 /**
  * Sort participants into turn order: highest initiative first, ties broken by
- * name (case-insensitive), then by id, so the order is deterministic. A
+ * the higher DEX modifier, then by name (case-insensitive), then by id, so the
+ * order is deterministic. A participant from an old save with no modifier
+ * reads as 0. A
  * participant carries no name. `nameOf` resolves a name from whatever holds
  * the id. An unresolvable id sorts as the empty string, which still leaves
  * the id tiebreak. Pure function.
@@ -34,6 +36,8 @@ export function createParticipant(id, initiative = 10, modifier = 0) {
 export function sortInitiative(participants, nameOf = () => '') {
   return [...participants].sort((a, b) => {
     if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+    const dex = (b.modifier ?? 0) - (a.modifier ?? 0);
+    if (dex !== 0) return dex;
     const an = nameOf(a).toLowerCase();
     const bn = nameOf(b).toLowerCase();
     if (an !== bn) return an < bn ? -1 : 1;

@@ -518,6 +518,7 @@ export function wireEncounters(app) {
     // because a fight the party picked with one has no hostiles at all.
     const stagedHere = creaturesOnTile(state.creatures, app.partyTracker.getPosition());
     if (stagedHere.length > 0) return;
+    app.actions.logEvent('combat', "The fight ends. No creature is left on the party's tile.");
     setCombat(null);
     exitCombatMode();
     app.views.initiativePanel.update();
