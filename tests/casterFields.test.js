@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   casterClassOptions,
+  casterValue,
+  parseCasterValue,
   spellPickerOptions,
   maxSpellLevelForClass,
   spellbookIds,
@@ -51,6 +53,70 @@ test('casterClassOptions offers None plus caster classes only', () => {
   assert.ok(values.includes('paladin'), 'half-casters included');
   assert.ok(!values.includes('fighter'), 'non-casters excluded');
   assert.ok(!values.includes('barbarian'));
+  const knight = options.find((o) => o.value === 'fighter:eldritch-knight');
+  assert.equal(knight?.label, 'Fighter (Eldritch Knight)', 'a casting subclass is offered');
+  assert.ok(values.includes('rogue:arcane-trickster'));
+  assert.ok(!values.includes('fighter:champion'), 'a non-casting subclass is not');
+});
+
+test('casterValue and parseCasterValue round-trip a casting subclass', () => {
+  assert.equal(casterValue('fighter', 'Eldritch Knight'), 'fighter:eldritch-knight');
+  assert.equal(casterValue('fighter', 'eldritch-knight'), 'fighter:eldritch-knight');
+  assert.equal(casterValue('cleric', 'Life Domain'), 'cleric', 'a domain seeds the class');
+  assert.equal(casterValue('wizard'), 'wizard');
+  assert.equal(casterValue(undefined, 'Eldritch Knight'), '');
+  assert.deepEqual(parseCasterValue('fighter:eldritch-knight'), {
+    classId: 'fighter',
+    subclass: 'Eldritch Knight',
+  });
+  assert.deepEqual(parseCasterValue('fighter:bogus'), { classId: 'fighter' });
+  assert.deepEqual(parseCasterValue('wizard'), { classId: 'wizard' });
+  assert.deepEqual(parseCasterValue(undefined), { classId: '' });
+});
+
+test('the Eldritch Knight picker offers wizard spells up to its own cap', () => {
+  assert.equal(maxSpellLevelForClass('fighter', 7, 'Eldritch Knight'), 2);
+  assert.equal(maxSpellLevelForClass('fighter', 2, 'Eldritch Knight'), 0);
+  const options = spellPickerOptions('fighter:eldritch-knight', 7);
+  const ids = options.map((o) => o.value);
+  assert.ok(ids.includes('fire-bolt'));
+  assert.ok(ids.includes('scorching-ray'));
+  assert.ok(!ids.includes('fireball'), 'third-level spells wait for level 13');
+  assert.ok(!ids.includes('cure-wounds'), 'only the wizard list');
+  assert.ok(
+    spellPickerOptions('fighter:eldritch-knight', 1).some((o) => o.value === 'magic-missile'),
+    'a level below 3 reads as level 3',
+  );
+  assert.deepEqual(spellPickerOptions('fighter', 7), []);
+});
+
+test('readCasterOptions returns a casting subclass by name at its subclass level', () => {
+  const opts = readCasterOptions({
+    casterClass: 'rogue:arcane-trickster',
+    casterLevel: '1',
+    spells: 'fire-bolt',
+  });
+  assert.equal(opts.class, 'rogue');
+  assert.equal(opts.subclass, 'Arcane Trickster');
+  assert.equal(opts.casterLevel, 3);
+  assert.deepEqual(opts.spellbook?.cantrips, ['fire-bolt']);
+  const wizard = readCasterOptions({ casterClass: 'wizard', casterLevel: '2', spells: '' });
+  assert.equal('subclass' in wizard, false);
+  assert.equal(wizard.casterLevel, 2);
+});
+
+test('casterFields seeds the subclass option from a stored subclass', () => {
+  const [cls, , spells] = casterFields({
+    class: 'fighter',
+    subclass: 'eldritch-knight',
+    casterLevel: 3,
+  });
+  assert.equal(cls.value, 'fighter:eldritch-knight');
+  assert.ok(
+    /** @type {{ options: { value: string }[] }} */ (spells).options.some(
+      (o) => o.value === 'magic-missile',
+    ),
+  );
 });
 
 test('spellPickerOptions labels cantrips and orders by level', () => {
