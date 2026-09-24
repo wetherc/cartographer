@@ -49,7 +49,7 @@ export function featureEntry(entry) {
 }
 
 /**
- * Whether a class casts spells at all (full/half/third/pact, not none).
+ * Whether a class casts spells at all (full/half/pact, not none).
  * @param {string | undefined | null} classId
  * @returns {boolean}
  */
@@ -74,7 +74,7 @@ export function slotsForClass(classId, characterLevel) {
 
 /**
  * The full spell-slot pools for a class at a character level, all at full.
- * This is caster-type-aware (full, half, third), so a creature caster
+ * This is caster-type-aware (full or half), so a creature caster
  * gets exactly the slots its class grants, and a pact caster gets its pact
  * pool. Empty for a non-caster or an unknown class.
  * @param {string | undefined | null} classId
@@ -119,7 +119,7 @@ export function unarmoredDefenses(character) {
 
 /**
  * The character's caster classes: every class-list entry whose class casts
- * (full/half/third/pact). Empty for a martial or classless character.
+ * (full/half/pact). Empty for a martial or classless character.
  * @param {SpellCaster} character
  * @returns {ClassRef[]}
  */

@@ -39,16 +39,12 @@ test('slotsForLevel follows the full-caster table and clamps past 20', () => {
   assert.deepEqual(slotsForLevel(0), []);
 });
 
-test('slotsForCaster covers full, half, third, and non-slot caster types', () => {
+test('slotsForCaster covers full, half, and non-slot caster types', () => {
   assert.deepEqual(slotsForCaster('full', 5), [4, 3, 2]);
   // Half caster: none at 1, first slots at 2, 5th-level cap at 20.
   assert.deepEqual(slotsForCaster('half', 1), []);
   assert.deepEqual(slotsForCaster('half', 2), [2]);
   assert.deepEqual(slotsForCaster('half', 20), [4, 3, 3, 3, 2]);
-  // Third caster: none until 3, 4th-level cap at 20.
-  assert.deepEqual(slotsForCaster('third', 2), []);
-  assert.deepEqual(slotsForCaster('third', 3), [2]);
-  assert.deepEqual(slotsForCaster('third', 20), [4, 3, 3, 1]);
   // Pact, none, and anything unknown get no leveled slots here.
   assert.deepEqual(slotsForCaster('pact', 5), []);
   assert.deepEqual(slotsForCaster('none', 5), []);
@@ -67,7 +63,6 @@ test('slotsForCasterLevel reads the multiclass (full-caster) table by combined l
 test('casterLevelContribution weights each caster type for the combined level', () => {
   assert.equal(casterLevelContribution('full', 5), 5);
   assert.equal(casterLevelContribution('half', 5), 2); // floor(5/2)
-  assert.equal(casterLevelContribution('third', 5), 1); // floor(5/3)
   assert.equal(casterLevelContribution('pact', 5), 0);
   assert.equal(casterLevelContribution('none', 5), 0);
   assert.equal(casterLevelContribution('full', 0), 0);

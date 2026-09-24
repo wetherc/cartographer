@@ -102,8 +102,7 @@ test('slotsForClass: half caster is empty at 1 and tops out at 5th', () => {
   assert.deepEqual(slotsForClass('paladin', 20), [4, 3, 3, 3, 2]);
 });
 
-test('slotsForClass: third caster is empty until 3 and tops out at 4th', () => {
-  // No third-caster class ships, but the table is reachable via caster type.
+test('slotsForClass: a class with no slot table gets no slots', () => {
   assert.deepEqual(slotsForClass('ranger', 1), []); // ranger is half
   assert.deepEqual(slotsForClass('fighter', 5), []); // none -> no slots
   assert.deepEqual(slotsForClass('nonesuch', 5), []); // unknown -> no slots

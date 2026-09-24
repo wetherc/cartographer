@@ -84,41 +84,12 @@ const HALF_SLOT_TABLE = [
   [4, 3, 3, 3, 2],
 ];
 
-/**
- * Third-caster slot progression (Eldritch Knight, Arcane Trickster): no slots
- * until level 3, topping out at 4th-level slots.
- * @type {number[][]}
- */
-const THIRD_SLOT_TABLE = [
-  [],
-  [],
-  [2],
-  [3],
-  [3],
-  [3],
-  [4, 2],
-  [4, 2],
-  [4, 2],
-  [4, 3],
-  [4, 3],
-  [4, 3],
-  [4, 3, 2],
-  [4, 3, 2],
-  [4, 3, 2],
-  [4, 3, 3],
-  [4, 3, 3],
-  [4, 3, 3],
-  [4, 3, 3, 1],
-  [4, 3, 3, 1],
-];
-
 /** The slot table for each caster type. Pact and none carry no leveled-slot
  * table here, because pact magic is special-cased and none has no slots.
  * @type {Record<string, number[][] | undefined>} */
 const CASTER_TABLES = {
   full: SLOT_TABLE,
   half: HALF_SLOT_TABLE,
-  third: THIRD_SLOT_TABLE,
 };
 
 /**
@@ -147,7 +118,7 @@ export function slotsForCaster(casterType, characterLevel) {
 /**
  * Slot counts for a combined caster level, read from the full-caster table.
  * This table doubles as the 5e multiclass spellcaster table. The
- * single-class paths above use the dedicated half and third tables, because
+ * single-class paths above use the dedicated half-caster table, because
  * a lone paladin's slots differ from a multiclassed paladin's slots. This is
  * the lookup that the deferred multiclass path uses after it sums per-class
  * contributions.
@@ -161,7 +132,7 @@ export function slotsForCasterLevel(combinedLevel) {
 /**
  * One class's contribution to a character's combined caster level. A full
  * caster counts its whole level. A half caster counts half its level,
- * rounded down. A third caster counts a third of its level, rounded down.
+ * rounded down.
  * Pact and none contribute nothing to the shared slot pool, because warlock
  * pact slots stay a separate pool. The deferred multiclass work sums these
  * contributions across classes and feeds slotsForCasterLevel. Single-class
@@ -177,8 +148,6 @@ export function casterLevelContribution(casterType, classLevel) {
       return classLevel;
     case 'half':
       return Math.floor(classLevel / 2);
-    case 'third':
-      return Math.floor(classLevel / 3);
     default:
       return 0;
   }

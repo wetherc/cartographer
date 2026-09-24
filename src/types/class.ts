@@ -3,10 +3,9 @@ import type { FeatEffect } from './feat.js';
 
 /** A class's spellcasting progression. Full casters gain 9th-level slots
  * (Wizard, Cleric, Bard, Druid, Sorcerer). Half casters top out at 5th level
- * (Paladin, Ranger). Third casters top out at 4th level (Eldritch Knight,
- * Arcane Trickster). Pact is the Warlock's short-rest slots. 'none' marks a
+ * (Paladin, Ranger). Pact is the Warlock's short-rest slots. 'none' marks a
  * non-caster. */
-export type CasterType = 'full' | 'half' | 'third' | 'pact' | 'none';
+export type CasterType = 'full' | 'half' | 'pact' | 'none';
 
 /** How a class manages its leveled spells. A prepared caster swaps its list
  * on a rest (Cleric, Druid, Paladin, Wizard). A known caster fixes its list
