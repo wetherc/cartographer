@@ -144,10 +144,13 @@ The gesture layers live beside it, in their own files:
   drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` and
   `finishEdit` on the `MapEnv`, `undoStroke` as an action).
 - `mapTravel.js` handles Play mode: cell clicks, teleports, point-of-interest
-  discovery, NPC meets, and the hover tooltip. It syncs its own views and
-  does not call `resyncMapViews`. A bound character's move does not move the
+  discovery, and NPC meets. It syncs its own views and does not call
+  `resyncMapViews`. A click that would pull the party out of another node,
+  such as a GM click on an ancestor opened through the breadcrumb, asks
+  first, the way a teleport does. A bound character's move does not move the
   party that the location panels filter on, and a Play-mode zoom into a node
   leaves the tile selection and the palette alone.
+- `mapHover.js` builds the Play-mode hover tooltip.
 
 ### generateAction.js and nodeActions.js
 

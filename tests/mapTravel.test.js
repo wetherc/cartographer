@@ -544,6 +544,41 @@ test('walking into a region records the tile it was entered through', () => {
   assert.deepEqual(state.entryTiles, { party: { child: '2,4' } });
 });
 
+test('a click on an ancestor map asks before it pulls the party out', () => {
+  const w = world();
+  w.clickTile('2,4');
+  assert.equal(w.partyTracker.getPosition().nodeId, 'child');
+  // The GM opens the world through the breadcrumb. The party stays inside.
+  w.navigator.goTo('world');
+  assert.equal(w.travel.movesFromElsewhere(tileOf(w.navigator, '1,1')), true);
+  assert.equal(
+    w.travel.movesFromElsewhere(tileOf(w.navigator, '2,4')),
+    false,
+    'the link of the child the party stands in only brings the view in',
+  );
+  // A spectator tab moves nobody, so it has nothing to ask.
+  w.state.role = 'player';
+  assert.equal(w.travel.movesFromElsewhere(tileOf(w.navigator, '1,1')), false);
+  // A split-party character outside the node in view asks as well.
+  const hero = createCharacter('hero', 'Hero');
+  const split = world({ characters: [hero], splitParty: true, selected: 'hero' });
+  split.clickTile('2,4');
+  split.navigator.goTo('world');
+  assert.equal(split.travel.movesFromElsewhere(tileOf(split.navigator, '1,1')), true);
+});
+
+test('a click on the link of the child the party stands in rewrites nothing', () => {
+  const w = world();
+  w.clickTile('2,4');
+  const entries = w.state.entryTiles;
+  w.navigator.goTo('world');
+  w.log.length = 0;
+  w.clickTile('2,4');
+  assert.equal(w.navigator.getCurrentNode().id, 'child');
+  assert.equal(w.state.entryTiles, entries, 'the entry memory is the same object');
+  assert.deepEqual(w.log, [], 'nobody walked in, so nothing is logged');
+});
+
 test('a tab that moves nobody records no entry', () => {
   // A spectator tab only pans the camera. Its neighbours adopt whatever it
   // saves, so it must not write where the party came in.

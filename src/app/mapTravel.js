@@ -18,7 +18,7 @@ import { characterPosition, moveCharacter, recallAll } from '../party/CharacterT
 import { confirmModal } from '../ui/Modal.js';
 import { meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
-import { capitalize } from '../util/text.js';
+import { createCellHover } from './mapHover.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -26,8 +26,8 @@ import { capitalize } from '../util/text.js';
 /**
  * This module builds Play-mode movement and discovery for the map view. It
  * handles cell clicks such as party moves, region zoom-ins, and split-party
- * character moves, sidebar teleports, POI discovery, NPC introductions, and
- * the hover tooltip. The code stays separate from mapWiring, so the wiring
+ * character moves, sidebar teleports, POI discovery, and NPC introductions.
+ * The hover tooltip comes from mapHover.js. The code stays separate from mapWiring, so the wiring
  * module only mounts views and keeps them in sync. Handlers read the shared
  * MapEnv late, after wiring assigns the mounted views.
  * @param {AppContext} app
@@ -262,6 +262,42 @@ export function createMapTravel(app, env) {
     app.actions.maybeTriggerEncounter({ nodeId, tileId: tile.id }, character.name);
   }
 
+  /**
+   * Whether a click on this tile would pull whoever it moves out of another
+   * node. This happens when the GM views an ancestor through the breadcrumb
+   * while the party stands deeper in. A click on the link of the child
+   * where they stand only brings the view in, so it moves nobody.
+   * @param {import('../types/map.js').Tile} tile
+   */
+  function movesFromElsewhere(tile) {
+    const subject = clickSubject();
+    if (!subject && !isGM(state.role)) return false;
+    const at = subject
+      ? characterPosition(subject, partyTracker.getPosition())
+      : partyTracker.getPosition();
+    return at.nodeId !== navigator.getCurrentNode().id && at.nodeId !== tile.childNodeId;
+  }
+
+  /**
+   * Ask before a click moves someone out of the node they stand in, the way
+   * a teleport asks. The node in view or the tile can change while the
+   * dialog is open, so the move reads both again and gives up when the
+   * view has left the node.
+   * @param {import('../types/map.js').Tile} tile
+   */
+  async function confirmMoveHere(tile) {
+    const view = navigator.getCurrentNode();
+    const target = (tile.childNodeId && grid.getNode(tile.childNodeId)) || view;
+    const who = clickSubject()?.name ?? 'the party';
+    const ok = await confirmModal(`Move ${who} to "${target.name}"?`, {
+      title: 'Move',
+      confirmLabel: 'Move',
+    });
+    const now = navigator.getCurrentNode();
+    const fresh = now.id === view.id ? now.tiles.find((t) => t.id === tile.id) : undefined;
+    if (ok && fresh) travelTo(fresh);
+  }
+
   // This handler runs only outside authoring mode, for Play-mode navigation
   // and moves. Empty cells do nothing. Who moves depends on the tab and on
   // the split-party toggle. With splitting off, the GM's clicks move the
@@ -273,49 +309,55 @@ export function createMapTravel(app, env) {
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null) => void} */
   const onCellClick = (x, y, tile) => {
     if (!tile) return;
-    const gm = isGM(state.role);
     // A fogged tile is unknown to the players. A player click on it would
     // name the sub-map behind it, or put a token past walls into the fog
     // and reveal what lies there.
-    if (!gm && !tile.revealed) return;
+    if (!isGM(state.role) && !tile.revealed) return;
+    if (movesFromElsewhere(tile)) {
+      void confirmMoveHere(tile);
+      return;
+    }
+    travelTo(tile);
+  };
+
+  /**
+   * Carry out a click on a tile: zoom into its sub-map, step out through a
+   * door, or move whoever the click moves onto it.
+   * @param {import('../types/map.js').Tile} tile
+   */
+  function travelTo(tile) {
+    const gm = isGM(state.role);
     const subject = clickSubject();
     if (tile.childNodeId) {
       const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
-        if (gm || subject) {
+        // Whoever the click moves, unless they already stand in this child.
+        // A click on the link of a child where they stand only brings the
+        // view in. It neither logs an entry nor rewrites the entry memory,
+        // because nobody walked through the tile.
+        const at = subject
+          ? characterPosition(subject, partyTracker.getPosition())
+          : partyTracker.getPosition();
+        if ((gm || subject) && at.nodeId !== child.id) {
           // Check this before the move reveals entry fog. An all-fogged
           // child has never been visited, so stepping in now is its
           // discovery.
           const firstVisit = !child.tiles.some((t) => t.revealed);
-          // Zooming into a region moves whoever the click moves into it.
-          // Unless the character already stands in this child, drop the
-          // character at the edge it approached from and reveal fog around
-          // it. This makes sure that the child does not draw as a blank fog
-          // field with no marker on it.
+          // Drop whoever moves at the edge they approached from and reveal
+          // fog around them. This makes sure that the child does not draw as
+          // a blank fog field with no marker on it.
+          const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at, tile.id);
           if (subject) {
-            const at = characterPosition(subject, partyTracker.getPosition());
-            if (at.nodeId !== child.id) {
-              const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at, tile.id);
-              state.characters = moveCharacter(state.characters, subject.id, {
-                nodeId: child.id,
-                tileId: entry,
-              });
-              grid.updateNode(
-                revealAround(navigator.getCurrentNode(), entry, partyTracker.revealRadius),
-              );
-            }
-          } else if (partyTracker.getPosition().nodeId !== child.id) {
-            partyTracker.moveTo(
-              child.id,
-              computeRegionEntryTile(
-                parent,
-                child,
-                tile.childNodeId,
-                partyTracker.getPosition(),
-                tile.id,
-              ),
+            state.characters = moveCharacter(state.characters, subject.id, {
+              nodeId: child.id,
+              tileId: entry,
+            });
+            grid.updateNode(
+              revealAround(navigator.getCurrentNode(), entry, partyTracker.revealRadius),
             );
+          } else {
+            partyTracker.moveTo(child.id, entry);
             state.characters = recallAll(state.characters);
             state.entryTiles = forgetCharacterEntries(state.entryTiles);
           }
@@ -401,61 +443,7 @@ export function createMapTravel(app, env) {
       return;
     }
     // A spectator tab, or a player tab with no character of its own to move.
-  };
-
-  // Play-mode read side of the Build-mode tile inspector. Hovering over a
-  // revealed tile with metadata shows what the GM authored there. Build mode
-  // already shows the same data through the inspector, so hover stays quiet
-  // there.
-  /** @type {(tile: import('../types/map.js').Tile | null, clientX: number, clientY: number) => void} */
-  const onCellHover = (tile, clientX, clientY) => {
-    if (
-      state.mode !== 'play' ||
-      !tile ||
-      !tile.revealed ||
-      (tile.metadata.discoverable && !tile.metadata.discovered)
-    ) {
-      env.tileTooltip.hide();
-      return;
-    }
-    const nodeId = navigator.getCurrentNode().id;
-    // The POI outline and the NPC circle draw only within detection range of
-    // the party or a character token. The tooltip follows the same rule, so
-    // hovering a far tile, with the pointer or with the keyboard cursor, does
-    // not name what the map keeps unmarked.
-    const inRange = env.mapCanvas.markerVisible(tile.id);
-    // The tooltip names the non-hostile creatures standing here. A hostile
-    // one is the danger marker's business, and the alert names it.
-    const npcNames = inRange
-      ? state.creatures
-          .filter(
-            (c) =>
-              c.disposition !== 'hostile' &&
-              c.location &&
-              c.location.nodeId === nodeId &&
-              c.location.tileId === tile.id,
-          )
-          .map((c) => c.name)
-      : [];
-    const poiType = inRange ? tile.metadata.poiType : null;
-    // Notes are the GM's secret. Players see the POI type and who stands
-    // here.
-    const gm = isGM(state.role);
-    const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
-    if (!visible) {
-      env.tileTooltip.hide();
-      return;
-    }
-    env.tileTooltip.show(
-      {
-        title: poiType ? capitalize(poiType) : '',
-        npcs: npcNames.join(', '),
-        notes: gm ? tile.metadata.notes : '',
-      },
-      clientX,
-      clientY,
-    );
-  };
+  }
 
   return {
     teleportToNode,
@@ -467,6 +455,7 @@ export function createMapTravel(app, env) {
     exitToParent,
     moveOneCharacter,
     onCellClick,
-    onCellHover,
+    movesFromElsewhere,
+    onCellHover: createCellHover(app, env),
   };
 }
