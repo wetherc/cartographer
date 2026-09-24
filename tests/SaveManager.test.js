@@ -24,6 +24,7 @@ import {
   trySaveToLocalStorage,
   loadFromLocalStorage,
   onExternalSave,
+  SAVE_MARK_KEY,
   QUOTA_WARN_BYTES,
 } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
@@ -865,7 +866,7 @@ test('a small save still warns when the rest of the origin fills the quota', () 
   assert.equal(result.nearQuota, true);
 });
 
-test('onExternalSave fires only for another tab writing a new save, until unsubscribed', () => {
+test('onExternalSave fires at the save mark of another tab save, until unsubscribed', () => {
   const fire = installWindow();
   const dispatch = (event) => fire('storage', event);
 
@@ -873,15 +874,16 @@ test('onExternalSave fires only for another tab writing a new save, until unsubs
   const unsubscribe = onExternalSave(() => calls++);
 
   dispatch({ key: 'campaign-builder:save', oldValue: null, newValue: '{"a":1}' });
-  assert.equal(calls, 1, 'a new save from another tab fires the callback');
+  dispatch({ key: SAVE_MARK_KEY, oldValue: null, newValue: 'm1' });
+  assert.equal(calls, 1, 'a new save from another tab fires the callback at its mark');
 
   dispatch({ key: 'campaign-builder:history', oldValue: null, newValue: '[]' });
-  dispatch({ key: 'campaign-builder:save', oldValue: '{"a":1}', newValue: null });
-  dispatch({ key: 'campaign-builder:save', oldValue: '{"a":1}', newValue: '{"a":1}' });
-  assert.equal(calls, 1, 'history writes, clears, and no-ops are ignored');
+  dispatch({ key: SAVE_MARK_KEY, oldValue: 'm1', newValue: 'm2' });
+  assert.equal(calls, 1, 'a mark with no save before it is ignored');
 
   unsubscribe();
   dispatch({ key: 'campaign-builder:save', oldValue: null, newValue: '{"b":2}' });
+  dispatch({ key: SAVE_MARK_KEY, oldValue: 'm2', newValue: 'm3' });
   assert.equal(calls, 1, 'unsubscribed listener no longer fires');
 
   delete globalThis.window;

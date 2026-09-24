@@ -62,11 +62,16 @@
  * failure costs undo depth rather than the whole log, and this module
  * reports the failure. Undo silently becoming single-step is the defect that
  * this reporting contract exists to catch.
+ *
+ * The save mark (`SaveManager.SAVE_MARK_KEY`) is the last write of every
+ * save and every undo or redo step. Another tab adopts a save only on the
+ * mark's `storage` event, because at the campaign key's event its view of
+ * the index still names the previous step.
  */
 
 import { applyOps, diffState, invertOps } from './StateDiff.js';
 import { CURRENT_VERSION } from './Migrations.js';
-import { STORAGE_KEY, deserialize, trySaveToLocalStorage } from './SaveManager.js';
+import { STORAGE_KEY, deserialize, trySaveToLocalStorage, writeSaveMark } from './SaveManager.js';
 import { loadAssetTable } from './AssetStore.js';
 import { clamp } from '../util/num.js';
 import { removeStored, storedLength, writeStored } from './Footprint.js';
@@ -386,7 +391,9 @@ export function saveCampaign(state) {
   const save = trySaveToLocalStorage(state, STORAGE_KEY, { keepPrevious });
   if (!save.ok) return { ...save, history: { ok: true, evictedAll: false } };
   cached = { raw: save.json, state };
-  return { ...save, history: record ? recordStep(record) : { ok: true, evictedAll: false } };
+  const history = record ? recordStep(record) : { ok: true, evictedAll: false };
+  writeSaveMark();
+  return { ...save, history };
 }
 
 /** @typedef {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState }} StepResult */
@@ -550,12 +557,23 @@ export function planAdoption(held) {
 }
 
 /**
+ * Write the save mark after a step that stored a campaign, so a follower
+ * tab adopts it with the index this step wrote.
+ * @param {StepResult | null} result
+ * @returns {StepResult | null}
+ */
+function marked(result) {
+  if (result?.save.ok) writeSaveMark();
+  return result;
+}
+
+/**
  * Restore the state before the most recent recorded edit, and persist it.
  * This function returns null when there is nothing to undo.
  * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function undoCampaign() {
-  return step(-1);
+  return marked(step(-1));
 }
 
 /**
@@ -564,7 +582,7 @@ export function undoCampaign() {
  * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function redoCampaign() {
-  return step(1);
+  return marked(step(1));
 }
 
 /**

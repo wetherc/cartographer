@@ -274,8 +274,8 @@ The write order (payloads first) makes the failure recoverable. A campaign
 that references a payload missing from the sidecar renders the placeholder
 that the renderer already draws. The reverse order
 can instead persist structure that references nothing. The write order also
-settles the cross-tab case, because `isExternalSaveEvent` fires on the
-campaign key, and by then the payloads are already stored.
+settles the cross-tab case, because a follower acts only after the
+campaign key is written, and by then the payloads are already stored.
 
 Only the localStorage path splits the table out. `downloadState` still
 serializes the whole save, so an exported campaign is one self-contained
@@ -469,7 +469,13 @@ persisted save. When another tab saves, the follower calls
 `planAdoption(held)`. The answer is the head delta's ops when the save is
 exactly one delta ahead of the held position, `current` when nothing moved,
 and `full` in every other case, where the follower then takes the ordinary
-load path. The `log` field of the index is a random
+load path. The follower calls `planAdoption` on the `storage` event of the
+save mark (`campaign-builder:save-mark`), not of the campaign key. Every save,
+undo, and redo writes the mark last. The browser delivers one event per
+write in write order, and at the campaign key's event the follower still
+reads the old index, so a plan made there applies the previous delta and
+shows each change one save late. When a mark write fails, `SaveFollower.js`
+adopts on a one-second fallback timer. The `log` field of the index is a random
 id. A fresh log draws a new id when its first delta lands. Sequence numbers
 restart at zero after `clearHistoryLog`. A position token pairs the id with
 the number, so a token from a cleared log matches nothing in the new log.

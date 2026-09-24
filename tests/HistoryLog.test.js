@@ -12,7 +12,7 @@ import {
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
 import { applyOps } from '../src/storage/StateDiff.js';
-import { loadFromLocalStorage } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage } from './helpers/env.js';
 
@@ -492,4 +492,40 @@ test('planAdoption falls back when the head delta record itself is missing', () 
   const index = JSON.parse(/** @type {string} */ (localStorage.getItem(HISTORY_KEY)));
   localStorage.removeItem(`${HISTORY_KEY}:d${index.deltas[index.deltas.length - 1]}`);
   assert.deepEqual(planAdoption(held), { kind: 'full' });
+});
+
+/** Record the key of every write the next call makes, in order. */
+function recordWrites() {
+  /** @type {string[]} */
+  const keys = [];
+  const setItem = localStorage.setItem;
+  localStorage.setItem = (key, value) => {
+    keys.push(key);
+    setItem(key, value);
+  };
+  return keys;
+}
+
+test('a save, an undo, and a redo each end on a new save mark', () => {
+  saveCampaign(state());
+  const marks = new Set([localStorage.getItem(SAVE_MARK_KEY)]);
+  for (const run of [
+    () => saveCampaign(state([quest('q1', 'Find the barrow')])),
+    undoCampaign,
+    redoCampaign,
+  ]) {
+    const keys = recordWrites();
+    run();
+    assert.equal(keys.at(-1), SAVE_MARK_KEY, `the mark is the last write, after ${keys}`);
+    assert.ok(keys.includes(HISTORY_KEY), 'the index is written before the mark');
+    marks.add(localStorage.getItem(SAVE_MARK_KEY));
+  }
+  assert.equal(marks.size, 4, 'every mark differs from the one before it');
+});
+
+test('a step with nothing to undo writes no mark', () => {
+  saveCampaign(state());
+  const keys = recordWrites();
+  assert.equal(undoCampaign(), null);
+  assert.deepEqual(keys, []);
 });

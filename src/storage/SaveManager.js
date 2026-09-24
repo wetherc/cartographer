@@ -7,6 +7,7 @@ import { createEntityPacker } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
+import { createSaveFollower } from './SaveFollower.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
@@ -27,6 +28,32 @@ const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 
 /** The localStorage key the campaign save lives under. Cross-tab sync uses this key. */
 export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
+
+/**
+ * The localStorage key that ends every save bundle. `HistoryLog.js` writes a
+ * fresh value here after the campaign key and the undo history, so a
+ * follower tab that acts on this key reads a history that matches the
+ * campaign. See `SaveFollower.js`.
+ */
+export const SAVE_MARK_KEY = 'campaign-builder:save-mark';
+
+/** A per-tab counter, so two marks from one tab in one millisecond differ. */
+let markSeq = 0;
+
+/**
+ * Write a new save mark. A failure is ignored: a follower that sees no mark
+ * adopts on its fallback timer.
+ */
+export function writeSaveMark() {
+  try {
+    writeStored(
+      SAVE_MARK_KEY,
+      `${Date.now()}:${(markSeq += 1)}:${Math.random().toString(36).slice(2, 8)}`,
+    );
+  } catch {
+    // The follower's fallback timer covers a missing mark.
+  }
+}
 
 /**
  * Collect the whole campaign (tile hierarchy, party position, characters,
@@ -447,34 +474,30 @@ export function downloadState(state, filename = 'campaign.json') {
 }
 
 /**
- * True when a `storage` event represents another tab writing a new
- * campaign save, as opposed to a history-key write, a clear, or a no-op.
- * The browser fires `storage` only in tabs other than the one that made
- * the change, so a driving tab never sees its own saves. This is what a
- * follower tab watches for. The function is pure.
- * @param {StorageEvent} event
- * @param {string} [key]
- * @returns {boolean}
- */
-export function isExternalSaveEvent(event, key = DEFAULT_STORAGE_KEY) {
-  return event.key === key && event.newValue != null && event.newValue !== event.oldValue;
-}
-
-/**
  * Subscribe to campaign saves made in other tabs of the same origin. This
  * is the simplest multi-device setup this app supports: the GM tab drives,
  * and follower tabs react. There is no server and no dependency, only the
- * `storage` event. The function returns an unsubscribe function.
+ * `storage` event. The browser fires `storage` only in tabs other than the
+ * one that made the change, so a driving tab never sees its own saves. The
+ * callback runs once per save bundle, after its save mark arrives, as
+ * `SaveFollower.js` describes. The function returns an unsubscribe function.
  * @param {() => void} callback run when another tab writes a new save
  * @param {string} [key]
  * @returns {() => void}
  */
 export function onExternalSave(callback, key = DEFAULT_STORAGE_KEY) {
+  const follow = createSaveFollower({
+    saveKey: key,
+    markKey: SAVE_MARK_KEY,
+    onSave: callback,
+    setTimer: (fn, ms) => setTimeout(fn, ms),
+    clearTimer: (handle) => clearTimeout(/** @type {ReturnType<typeof setTimeout>} */ (handle)),
+  });
   const handler = (/** @type {StorageEvent} */ event) => {
     // Every write another tab makes passes through here, not only a save, so
     // the footprint ledger follows the other tab's history and sidecar keys.
     recordExternalWrite(event);
-    if (isExternalSaveEvent(event, key)) callback();
+    follow(event);
   };
   window.addEventListener('storage', handler);
   return () => window.removeEventListener('storage', handler);

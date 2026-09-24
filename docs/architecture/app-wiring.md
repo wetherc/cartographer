@@ -92,7 +92,7 @@ undo history once rather than on every write, and `footprintWarning` waits
 for the footprint to grow by ten percent before it warns again.
 
 This module also handles cross-tab save adoption. When another browser tab
-saves, a Play-mode tab with nothing unsaved adopts that campaign in place
+saves (`SaveManager.onExternalSave` reports it once the save mark lands), a Play-mode tab with nothing unsaved adopts that campaign in place
 through `rehydrate.js`, without a page reload. Build mode, Library mode, and
 any failure to adopt fall back to a reload.
 
