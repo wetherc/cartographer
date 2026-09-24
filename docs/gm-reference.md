@@ -686,7 +686,10 @@ assignment grows HP by the hit die of that class, adds a hit die, and
 advances spell slots. A newly unlocked spell level arrives full, and an
 already spent slot stays spent. An ASI level leaves a pending choice: +2
 across one or two abilities, capped at 20, or a feat by name. Both choices
-are undoable from the same block.
+are undoable from the same block. The feat list shows a built-in feat that the
+character does not qualify for, such as Grappler for a STR 8 Wizard, as
+disabled and names its prerequisite. The prerequisite of a feat that you
+wrote in the library is display text, and you enforce it.
 
 A class feature with choices, such as the Rogue's Expertise, prompts
 when its level is assigned. A choice with only one possible pick applies

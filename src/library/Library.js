@@ -39,6 +39,7 @@ import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
+import { normalizeFeatRequirement } from '../entities/FeatRequirement.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -476,11 +477,13 @@ export function normalizeFeat(raw, id) {
       },
     );
   const prerequisite = typeof raw.prerequisite === 'string' ? raw.prerequisite.trim() : '';
+  const requires = normalizeFeatRequirement(raw.requires);
   return {
     id,
     name: raw.name.trim(),
     description: typeof raw.description === 'string' ? raw.description : '',
     ...(prerequisite ? { prerequisite } : {}),
+    ...(requires ? { requires } : {}),
     ...(raw.repeatable ? { repeatable: true } : {}),
     effects,
   };

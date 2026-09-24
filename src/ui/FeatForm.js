@@ -77,7 +77,10 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   const prerequisiteInput = textField(feat?.prerequisite ?? '', {
     placeholder: 'Strength 13 or higher',
   });
-  setTip(prerequisiteInput, 'Display text only. The GM enforces it.');
+  setTip(
+    prerequisiteInput,
+    'Shown in the take-feat dialog. Only a built-in feat checks its requirement.',
+  );
   const repeatable = checkbox('Repeatable', feat?.repeatable ?? false);
   setTip(repeatable.label, 'A character may take this feat more than once');
   const descriptionInput = textareaField(feat?.description ?? '', {
@@ -188,6 +191,9 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       name: nameInput.value,
       description: descriptionInput.value,
       prerequisite: prerequisiteInput.value,
+      // The form has no controls for the checked requirement, so an edit
+      // keeps the one the feat came with.
+      requires: feat?.requires,
       repeatable: repeatable.input.checked,
       effects: [
         ...(asi.input.checked

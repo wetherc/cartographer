@@ -70,6 +70,16 @@ export interface FeatStamp {
   rider?: RollRider;
 }
 
+/** The checked part of a feat prerequisite. Every named part has to hold. */
+export interface FeatRequirement {
+  /** Minimum ability scores, keyed by ability. */
+  abilities?: Record<string, number>;
+  /** An armor proficiency the character has to hold. */
+  armor?: ArmorProficiency;
+  /** True when the character has to be able to cast a spell. */
+  spellcasting?: boolean;
+}
+
 /** A feat template in the library. The take-feat flow resolves its choices
  * and stamps the outcome onto the character, so a later edit to the library
  * entry does not reach a character that already took it. */
@@ -77,8 +87,11 @@ export interface Feat {
   id: string;
   name: string;
   description: string;
-  /** Display text only. The GM enforces it. */
+  /** The prerequisite as the dialog shows it. */
   prerequisite?: string;
+  /** The part of the prerequisite that the take-feat dialog checks. A feat
+   * without it is open to everyone, and the GM enforces its text. */
+  requires?: FeatRequirement;
   /** True for a feat a character may take more than once. */
   repeatable?: boolean;
   effects: FeatEffect[];

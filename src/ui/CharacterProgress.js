@@ -30,6 +30,7 @@ import {
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { availableFeats, buildStamp } from '../entities/FeatChoices.js';
+import { featOptions } from '../entities/FeatRequirement.js';
 import { gatherEffectPicks } from './EffectPicks.js';
 import { activeFeats } from '../library/Library.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
@@ -281,6 +282,7 @@ export function buildProgressSection(getCharacter, opts) {
 
   async function runFeat() {
     const catalog = availableFeats(getCharacter(), activeFeats());
+    const options = featOptions(getCharacter(), catalog);
     const values = await promptModal(
       'Take a feat',
       [
@@ -288,17 +290,11 @@ export function buildProgressSection(getCharacter, opts) {
           name: 'feat',
           label: 'Feat',
           type: 'select',
-          options: [
-            ...catalog.map((feat) => ({
-              value: feat.id,
-              label: feat.prerequisite ? `${feat.name} (${feat.prerequisite})` : feat.name,
-            })),
-            { value: '', label: 'Custom (name only)' },
-          ],
-          value: catalog[0]?.id ?? '',
+          options: [...options, { value: '', label: 'Custom (name only)' }],
+          value: options.find((o) => !o.disabled)?.value ?? '',
         },
       ],
-      { submitLabel: 'Next' },
+      { submitLabel: 'Take feat' },
     );
     if (!values) return;
     const feat = catalog.find((f) => f.id === values.feat);

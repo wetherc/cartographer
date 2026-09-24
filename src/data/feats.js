@@ -46,6 +46,7 @@ export const DEFAULT_FEATS = deepFreeze([
     id: 'grappler',
     name: 'Grappler',
     prerequisite: 'Strength 13 or higher',
+    requires: { abilities: { STR: 13 } },
     description:
       'You have advantage on attack rolls against a creature you are grappling, ' +
       'and you can try to pin a grappled creature: both of you are restrained ' +
@@ -56,6 +57,7 @@ export const DEFAULT_FEATS = deepFreeze([
     id: 'heavily-armored',
     name: 'Heavily Armored',
     prerequisite: 'Proficiency with medium armor',
+    requires: { armor: 'medium' },
     description: 'Your Strength rises by 1, and you gain proficiency with heavy armor.',
     effects: [
       { kind: 'asi', abilities: ['STR'] },
@@ -94,6 +96,7 @@ export const DEFAULT_FEATS = deepFreeze([
     id: 'moderately-armored',
     name: 'Moderately Armored',
     prerequisite: 'Proficiency with light armor',
+    requires: { armor: 'light' },
     description:
       'Your Strength or Dexterity rises by 1, and you gain proficiency with ' +
       'medium armor and shields.',
@@ -166,6 +169,7 @@ export const DEFAULT_FEATS = deepFreeze([
     id: 'war-caster',
     name: 'War Caster',
     prerequisite: 'The ability to cast at least one spell',
+    requires: { spellcasting: true },
     description:
       'You have advantage on Constitution saving throws to keep concentration ' +
       'on a spell when you take damage. You can cast with weapons or a shield ' +

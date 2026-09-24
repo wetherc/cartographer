@@ -275,6 +275,7 @@ return-a-value pattern.
     LevelAssign.js       commit a pending level to a class
     FeatureGrants.js     apply and undo the grants of a structured feature
     GrantLedger.js       the grant records of feats and features; rebuild on undo
+    FeatRequirement.js   check a feat's ability, armor, and spellcasting requirement
     Features.js          class features as numbers the combat paths use
           |
           v
@@ -368,7 +369,11 @@ with `granted` but no `requested` reads its `granted` list as its request.
 (a repeatable feat stays on offer), `abilityPool` and `choicePool` compute
 each pick's options minus what the character already has, and `buildStamp`
 folds the picks and the feat's fixed grants into the stamp `takeFeat`
-applies. The dialogs live in `ui/EffectPicks.js`, and the class-feature
+applies. `entities/FeatRequirement.js` checks the structured `requires` field
+of a feat (minimum scores, an armor proficiency, the ability to cast), and
+`featOptions` lists an unmet feat last and disabled, with its prerequisite
+text. A feat with only prerequisite text, such as one the GM wrote, is open
+to everyone. The dialogs live in `ui/EffectPicks.js`, and the class-feature
 grant flow runs its choices through the same engine, so a feat and a
 feature with the same effects prompt the same way. A pick whose pool has
 no more options than the count grants outright with no prompt, and the
