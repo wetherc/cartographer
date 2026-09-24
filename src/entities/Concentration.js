@@ -14,6 +14,7 @@ import { CONCENTRATING, addCondition, removeCondition } from './Conditions.js';
 import { spendRiders } from './Riders.js';
 import { savingThrow } from './Checks.js';
 import { durationInRounds } from './SpellTiming.js';
+import { canAct } from './ConditionEffects.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ConcentrationState} ConcentrationState */
@@ -85,6 +86,20 @@ export function drop(character) {
     concentration: null,
     conditions: removeCondition(character.conditions, CONCENTRATING),
   };
+}
+
+/**
+ * End concentration when the character's chips leave it unable to act. A
+ * Paralyzed, Stunned, or Unconscious caster cannot hold a spell, and the
+ * Unconscious chip that `killOutright` adds covers a death with no damage.
+ * The caller gets the ended spell back, so it can free what the spell held.
+ * @param {Character} character
+ * @returns {{ character: Character, ended: ConcentrationState | null }}
+ */
+export function dropIfHelpless(character) {
+  const held = character.concentration;
+  if (!held || canAct(character.conditions)) return { character, ended: null };
+  return { character: drop(character), ended: held };
 }
 
 /**

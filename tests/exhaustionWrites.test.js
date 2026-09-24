@@ -87,3 +87,16 @@ test('a level below the sixth leaves HP and the tracker alone', () => {
   assert.equal(app.state.characters[0].deathSaves ?? null, null);
   assert.equal(app.state.creatures[0].currentHP, 8);
 });
+
+test('a character who dies of exhaustion drops the spell it held', () => {
+  const held = { spellId: 'bless', spellName: 'Bless', slotLevel: 1, remaining: 10 };
+  const app = appWith([hero({ concentration: held, conditions: [{ name: 'Concentrating' }] })]);
+  setCombatantExhaustion(app, 'hero', 6);
+  const dead = app.state.characters[0];
+  assert.equal(dead.concentration, null);
+  assert.deepEqual(
+    dead.conditions.map((/** @type {any} */ c) => c.name),
+    ['Unconscious'],
+  );
+  assert.equal(app.log.at(-1), 'Hero loses concentration on Bless.');
+});

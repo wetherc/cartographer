@@ -5,6 +5,7 @@ import {
   checkOnDamage,
   concentrationDC,
   drop,
+  dropIfHelpless,
   isConcentrating,
   tick,
 } from '../src/entities/Concentration.js';
@@ -217,4 +218,19 @@ test('a concentration save uses up a Resistance chip', () => {
   const lost = checkOnDamage(resisted, 4, { rng: () => 0 });
   assert.equal(lost.dropped, true);
   assert.deepEqual(lost.character.conditions, []);
+});
+
+test('dropIfHelpless ends the spell only when a chip stops the caster acting', () => {
+  const holding = begin(caster(), spell('s1', 'Bless', 10), 1).character;
+  const poisoned = { ...holding, conditions: addCondition(holding.conditions, 'Poisoned', 3) };
+  const kept = dropIfHelpless(poisoned);
+  assert.equal(kept.character, poisoned, 'a chip that allows actions changes nothing');
+  assert.equal(kept.ended, null);
+  const stunned = { ...holding, conditions: addCondition(holding.conditions, 'Stunned', 1) };
+  const lost = dropIfHelpless(stunned);
+  assert.equal(lost.ended?.spellId, 's1');
+  assert.equal(lost.character.concentration, null);
+  assert.equal(chip(lost.character), undefined);
+  const idle = { ...caster(), conditions: addCondition([], 'Stunned', 1) };
+  assert.equal(dropIfHelpless(idle).ended, null, 'nothing held, nothing to end');
 });

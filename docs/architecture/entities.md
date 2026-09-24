@@ -986,6 +986,10 @@ character concentrating on nothing has this field set to null.
   displaced spell comes back in `dropped`, so the caller can state what was
   lost and clear its effects.
 - `drop(character)` ends concentration, however it ended.
+- `dropIfHelpless(character)` ends concentration when the character's chips
+  leave it unable to act, such as Paralyzed, Stunned, or the Unconscious chip
+  that a death adds. It returns the ended spell, so the caller can free what
+  the spell held.
 - `concentrationDC(damage)` is 10, or half the damage when that amount is
   more. `checkOnDamage(character, damage, opts)` rolls the CON save against
   it through `savingThrow`, and drops the spell on a failure. It reports the
@@ -1010,6 +1014,10 @@ covers weapon hits and spell damage alike, because both arrive through this
 function. A character knocked to 0 HP loses the spell outright without
 rolling. The round wrap in `app/encounterWiring.js` ticks the duration and
 logs a spell that ran out.
+`storeCharacterChips` in the same module stores a character whose chips
+changed through `dropIfHelpless`. A spell that paralyzes the caster and a
+death from exhaustion both go through it. The character sheet's conditions
+bar ends the spell the same way when the GM adds a chip that stops actions.
 
 Only characters concentrate. A creature has no field to write, so a foe's
 concentration is still a chip that the GM adds and removes by hand, which is
@@ -1132,7 +1140,8 @@ that walked free. It also despawns the creatures that the cast summoned, which
 the section below covers. It runs whenever a caster stops holding a spell: the sheet's
 Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
-drop to 0 HP in `applyToTarget`, a displacing cast in
+drop to 0 HP in `applyToTarget`, a chip that stops the caster acting, a
+displacing cast in
 `app/spellCastResolve.js`, and a duration that runs out at the round wrap.
 `retryImposedSaves(app, combatantId)` rolls the repeated saves.
 `app/turnAdvance.js` calls it from the turn advance (`advanceCombatTurn`)

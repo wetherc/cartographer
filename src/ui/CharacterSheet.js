@@ -7,6 +7,7 @@ import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { CONCENTRATING } from '../entities/Conditions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
+import { canAct } from '../entities/ConditionEffects.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { deathSaveBlock } from './DeathSaveBlock.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
@@ -467,12 +468,13 @@ export function mountCharacterSheet(
       getConditions: () => current?.conditions ?? [],
       // Removing the Concentrating chip by hand means the spell ended, so
       // the state behind it must end too. Without this, the chip and the held
-      // spell can disagree.
+      // spell can disagree. A chip such as Stunned that leaves the character
+      // unable to act ends the spell the same way.
       onChange: (next) => {
         const held = live();
         const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
         const withConditions = { ...held, conditions: next };
-        if (held.concentration && !kept) endConcentration(withConditions);
+        if (held.concentration && (!kept || !canAct(next))) endConcentration(withConditions);
         else commit(withConditions);
       },
       canEdit: () => getPermissions().play,

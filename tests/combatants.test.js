@@ -622,6 +622,31 @@ test('applyConditionToTarget chips a character, a foe, and an NPC', () => {
   assert.equal(app.dirty, 3, 'only the three that landed wrote');
 });
 
+test('a chip that stops a caster acting ends the spell it held', () => {
+  const { hero, goblin } = fixtures();
+  const held = { spellId: 'bless', spellName: 'Bless', slotLevel: 1, remaining: 10 };
+  const blessed = {
+    ...goblin,
+    conditions: addCondition([], 'Blessed', 10, {
+      source: heldBy({ spellId: 'bless', casterId: 'hero' }),
+    }),
+  };
+  const app = stubApp({
+    characters: [
+      { ...hero, concentration: held, conditions: addCondition([], 'Concentrating', 10) },
+    ],
+    creatures: [blessed],
+  });
+  applyConditionToTarget(app, 'hero', 'Paralyzed', 10, heldBy());
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.deepEqual(
+    app.state.characters[0].conditions.map((/** @type {any} */ c) => c.name),
+    ['Paralyzed'],
+  );
+  assert.deepEqual(app.state.creatures[0].conditions, [], 'the Bless chip comes off its target');
+  assert.equal(app.log[0], 'Hero loses concentration on Bless.');
+});
+
 test('endSpellEffects takes one cast off every target and names each one freed', () => {
   const source = heldBy();
   const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, { source }) };

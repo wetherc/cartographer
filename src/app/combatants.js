@@ -11,6 +11,7 @@ import { despawnSummons } from '../entities/Summons.js';
 import { saveBonus } from '../entities/Checks.js';
 import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
+import { dropIfHelpless } from '../entities/Concentration.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -390,9 +391,31 @@ export function applyConditionToTarget(
     source,
     ...(rider ? { rider } : {}),
   });
+  if (found.kind === 'character') {
+    storeCharacterChips(app, found, { ...found.entity, conditions });
+    return true;
+  }
   storeConditions(found, conditions);
   app.actions.markDirty();
   return true;
+}
+
+/**
+ * Store a party character whose chips just changed. A chip that leaves it
+ * unable to act, such as Paralyzed from Hold Person, also ends the spell it
+ * was concentrating on, and the targets of that spell go free.
+ * @param {AppContext} app
+ * @param {Extract<Combatant, { kind: 'character' }>} found the character's roster entry
+ * @param {Character} character the character with its new chips
+ */
+export function storeCharacterChips(app, found, character) {
+  const { character: next, ended } = dropIfHelpless(character);
+  found.store(next);
+  app.actions.markDirty();
+  if (!ended) return;
+  app.actions.logEvent('combat', `${next.name} loses concentration on ${ended.spellName}.`);
+  // The sweep rewrites `state.characters`, so it runs after the store.
+  endSpellEffects(app, next.id, ended.spellId);
 }
 
 /**
