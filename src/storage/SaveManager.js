@@ -7,7 +7,7 @@ import {
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
-import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
+import { detachAssets, loadAssetTable, persistAssets, storeAssets } from './AssetStore.js';
 import { createEntityPacker } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
@@ -431,12 +431,17 @@ export function localStorageFootprint() {
  * string, so recording a history step costs a string comparison, not a
  * re-read and re-parse of the save.
  *
- * `keepPrevious` keeps every payload that the save being replaced
- * references. `HistoryLog.js` sets it when it stores the replaced save
- * string as a snapshot record after this write. Without it, the payload
- * table drops the images of the replaced save before the snapshot key
- * exists to reference them, and an undo restores a campaign with missing
- * pictures.
+ * The payload write adds and never removes. The retention scan that removes
+ * unreferenced payloads runs only after the campaign write succeeds. When
+ * the campaign write fails, the stored campaign stays in place and every
+ * image it references still resolves.
+ *
+ * `keepPrevious` skips that scan, so every payload that the save being
+ * replaced references stays in the table. `HistoryLog.js` sets it when it
+ * stores the replaced save string as a snapshot record after this write.
+ * Without it, the payload table drops the images of the replaced save
+ * before the snapshot key exists to reference them, and an undo restores a
+ * campaign with missing pictures.
  * @param {CampaignState} state
  * @param {string} [key]
  * @param {{ keepPrevious?: boolean }} [options]
@@ -446,7 +451,7 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options 
   const { state: detached, assets } = detachAssets(packState(state));
   const json = JSON.stringify(detached);
   const bytes = saveByteSize(json);
-  const assetsOk = persistAssets(assets, json, options.keepPrevious ? [] : [key]);
+  let assetsOk = storeAssets(assets);
   try {
     writeStored(key, json);
   } catch {
@@ -459,6 +464,10 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options 
       json,
     };
   }
+  // The replaced save is gone from `key` now. When the caller still needs
+  // its images, the scan waits for the next save, which finds the snapshot
+  // record that references them.
+  if (!options.keepPrevious) assetsOk = persistAssets(assets, json) && assetsOk;
   const footprint = localStorageFootprint();
   return { ok: true, assetsOk, nearQuota: isNearQuota(footprint), bytes, footprint, json };
 }

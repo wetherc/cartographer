@@ -229,3 +229,31 @@ export function persistAssets(assets, json, superseded = [], key = ASSETS_KEY) {
     return false;
   }
 }
+
+/**
+ * Add a save's payloads to the stored table and remove nothing. A save
+ * writes its payloads with this function before the campaign string, and
+ * runs the retention scan of `persistAssets` only after the campaign write
+ * succeeds. A campaign write that fails on quota leaves the stored campaign
+ * in place, so a scan that ran first could drop images that campaign still
+ * references. The function writes only when a payload is new or differs
+ * from the stored one, and it reports failure instead of throwing an error.
+ * @param {Record<string, string>} assets
+ * @param {string} [key]
+ * @returns {boolean}
+ */
+export function storeAssets(assets, key = ASSETS_KEY) {
+  const entries = Object.entries(assets);
+  if (!entries.length) return true;
+  const stored = localStorage.getItem(key);
+  const table = stored && lastWrite?.raw === stored ? lastWrite.table : loadAssetTable(key);
+  if (entries.every(([name, payload]) => table[name] === payload)) return true;
+  try {
+    writeStored(key, JSON.stringify({ ...table, ...assets }));
+  } catch {
+    return false;
+  } finally {
+    lastWrite = null;
+  }
+  return true;
+}

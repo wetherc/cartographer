@@ -6,6 +6,7 @@ import {
   detachAssets,
   loadAssetTable,
   persistAssets,
+  storeAssets,
   pruneAssets,
 } from '../src/storage/AssetStore.js';
 import { hoistAssets, referencedAssetKeys } from '../src/storage/Assets.js';
@@ -266,4 +267,43 @@ test('a failed sidecar write is retried on the next save', () => {
   localStorage.setItem = setItem;
   assert.equal(trySaveToLocalStorage(state).assetsOk, true);
   assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
+});
+
+test('a campaign write that fails on quota keeps the images of the stored campaign', () => {
+  trySaveToLocalStorage(stateWithHandoutImage());
+  const setItem = localStorage.setItem;
+  localStorage.setItem = (key, value) => {
+    if (key === 'campaign-builder:save') throw new Error('QuotaExceededError');
+    setItem(key, value);
+  };
+  try {
+    const result = trySaveToLocalStorage(stateWithHandoutImage('data:image/png;base64,BBBB'));
+    assert.equal(result.ok, false);
+  } finally {
+    localStorage.setItem = setItem;
+  }
+  const loaded = loadFromLocalStorage();
+  assert.equal(loaded?.handouts[0].image, PAYLOAD, 'the stored campaign still resolves');
+  // The next save that lands removes the payload nothing references.
+  trySaveToLocalStorage(stateWithHandoutImage('data:image/png;base64,BBBB'));
+  assert.deepEqual(Object.values(loadAssetTable()), ['data:image/png;base64,BBBB']);
+});
+
+test('storeAssets adds payloads, skips a write when nothing is new, and reports failure', () => {
+  assert.equal(storeAssets({}), true);
+  assert.equal(localStorage.getItem(ASSETS_KEY), null);
+  assert.equal(storeAssets({ a: PAYLOAD }), true);
+  const stored = localStorage.getItem(ASSETS_KEY);
+  assert.equal(storeAssets({ a: PAYLOAD }), true);
+  assert.equal(localStorage.getItem(ASSETS_KEY), stored, 'no rewrite for a known payload');
+  const setItem = localStorage.setItem;
+  localStorage.setItem = () => {
+    throw new Error('QuotaExceededError');
+  };
+  try {
+    assert.equal(storeAssets({ b: PAYLOAD }), false);
+  } finally {
+    localStorage.setItem = setItem;
+  }
+  assert.deepEqual(loadAssetTable(), { a: PAYLOAD });
 });
