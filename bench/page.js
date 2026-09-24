@@ -110,6 +110,14 @@ export class Page {
    * This helper starts the click, ignores its dead reply, and waits for the
    * load event instead.
    */
+  /**
+   * A promise for the next load event of the page. A caller that cannot tell
+   * whether its click reloads starts this wait before the click.
+   */
+  nextLoad({ timeout = 30000 } = {}) {
+    return this.client.once('Page.loadEventFired', { timeout });
+  }
+
   async clickForReload(selector, text, { timeout = 30000 } = {}) {
     const loaded = this.client.once('Page.loadEventFired', { timeout });
     const expression = text

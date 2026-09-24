@@ -89,7 +89,9 @@ runs.
 A scenario reports `skipped` when the control it needs is absent. That is not a
 failure. The fight scenario, for example, needs an encounter on the party's
 tile, so it loads a save that puts the party there (`seed.js`) before it gives
-up.
+up. The exception is a scenario marked `prerequisite`, which is only
+`load-example`. The scenarios after it read the example campaign, so when it
+skips or fails, the runner stops and exits with status 1.
 
 ## Reading the numbers
 
@@ -117,4 +119,6 @@ record of what the scenario did, or `{ skipped: reason }`.
 
 Two rules keep a scenario honest. Drive the UI, never app internals. If the
 action reloads the document, use `page.clickForReload`, because the evaluation
-that ran the click dies with the old document and never answers.
+that ran the click dies with the old document and never answers. If the click
+reloads only sometimes, start `page.nextLoad()` before the click and await it
+after.

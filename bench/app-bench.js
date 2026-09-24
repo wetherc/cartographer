@@ -184,6 +184,13 @@ async function main() {
       }
       const skipped = outcome && outcome.skipped;
       process.stdout.write(skipped ? `skipped (${skipped})\n` : `${wallMs} ms\n`);
+      // The scenarios after a prerequisite read what it set up. Without it they
+      // measure an empty campaign and report numbers that look valid.
+      if (scenario.prerequisite && (skipped || outcome?.error)) {
+        process.stdout.write(`${scenario.name} is a prerequisite; stopping the run\n`);
+        process.exitCode = 1;
+        break;
+      }
     }
 
     await page.close();

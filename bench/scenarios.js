@@ -44,7 +44,7 @@ async function dragAcross(page, box, { steps = 24, row = 0.5 } = {}) {
   await page.mouse('mouseReleased', to, y);
 }
 
-/** @type {{ name: string, description: string, run: (page: any, ctx: any) => Promise<any> }[]} */
+/** @type {{ name: string, description: string, prerequisite?: boolean, run: (page: any, ctx: any) => Promise<any> }[]} */
 export const SCENARIOS = [
   {
     name: 'boot',
@@ -59,16 +59,18 @@ export const SCENARIOS = [
   {
     name: 'load-example',
     description: 'Build the example campaign, persist it, and reload onto it.',
+    // The scenarios after this one read the example campaign, so a skip or an
+    // error here stops the run instead of measuring an empty map.
+    prerequisite: true,
     async run(page, { url }) {
-      await page.clickSelector('#example-btn');
-      const present = await page.eval(`
-        return [...document.querySelectorAll(${JSON.stringify(CONFIRM_BUTTON)})]
-          .some((n) => n.textContent.trim() === 'Load example');
-      `);
-      if (!present) return { skipped: 'no Load example confirm button' };
-      // Accepting persists the campaign and reloads, so the click cannot
-      // answer. The wait is for the second document's load event.
-      await page.clickForReload(CONFIRM_BUTTON, 'Load example');
+      // A campaign with content asks before it is replaced. The blank campaign
+      // the harness boots into replaces at once, so the reload can start
+      // inside the first click. The wait for the load starts before either
+      // click, and a click that dies with the old document is not an error.
+      const loaded = page.nextLoad();
+      await page.clickSelector('#example-btn').catch(() => false);
+      await page.clickText(CONFIRM_BUTTON, 'Load example').catch(() => false);
+      await loaded;
       await waitForApp(page);
       return { url };
     },
