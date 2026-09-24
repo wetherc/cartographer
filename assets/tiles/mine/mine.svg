@@ -35,7 +35,7 @@
   </g>
   <!-- Rails on sleepers running out of the adit to a loaded ore cart. -->
   <g stroke="#8a6f4a" stroke-width="1.4" fill="none">
-    <path d="M24 51 L35 51 M23 55 L36 55 M22.2 59 L37.5 59"/>
+    <path d="M24 51 L35 51 M22.3 55 L36.87 55 M21.1 59 L38.73 59"/>
   </g>
   <g stroke="#6b655b" stroke-width="1.2" fill="none">
     <path d="M25 48 L22 60 M33 48 L38 60"/>

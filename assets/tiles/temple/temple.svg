@@ -8,7 +8,7 @@
   <rect x="15" y="48" width="34" height="3" fill="#ded9cc" stroke="#b3ac9c" stroke-width="0.6"/>
   <rect x="17" y="45" width="30" height="3" fill="#e8e3d6" stroke="#b3ac9c" stroke-width="0.6"/>
   <!-- cella behind the columns -->
-  <rect x="21" y="28" width="22" height="17" fill="#c9c2b2"/>
+  <rect x="21" y="27.6" width="22" height="17.4" fill="#c9c2b2"/>
   <path d="M28 32 L28 45 Q32 42.5 36 45 L36 32 Z" fill="#3a3630"/>
   <path d="M28 32 Q32 29.5 36 32 L36 33.6 Q32 31 28 33.6 Z" fill="#55514a"/>
   <!-- columns -->
@@ -37,7 +37,7 @@
   <rect x="16.5" y="24" width="31" height="3.6" fill="#e6e1d4" stroke="#b3ac9c" stroke-width="0.6"/>
   <path d="M16.5 26 H47.5" stroke="#c9a020" stroke-width="0.8"/>
   <polygon points="15,24 32,13 49,24" fill="#efeade" stroke="#b3ac9c" stroke-width="0.7"/>
-  <polygon points="18.6,22.8 32,14.6 45.4,22.8" fill="#ded7c5"/>
+  <polygon points="19.06,22.8 32,14.43 44.94,22.8" fill="#ded7c5"/>
   <!-- sunburst emblem in the pediment -->
   <circle cx="32" cy="19.8" r="2.2" fill="#c9a020"/>
   <path d="M32 16.4 V15 M32 23.2 V24 M28.8 17.2 L28 16.4 M35.2 17.2 L36 16.4 M27.6 19.8 H26.4 M36.4 19.8 H37.6" stroke="#c9a020" stroke-width="0.9" stroke-linecap="round"/>

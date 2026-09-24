@@ -17,7 +17,7 @@
     <path d="M35 17.5 L36 17.4 M35.1 19 L36.2 18.9 M35.3 20.8 L35 22.5" stroke="#5f6a72" stroke-width="0.55" fill="none"/>
     <path d="M24.5 15.5 L39.5 15 L39.5 12 L24.5 12.5 Z" fill="#8a9199"/>
     <path d="M24.5 12.5 L39.5 12 L39.5 13 L24.5 13.5 Z" fill="#a8aeb7"/>
-    <path d="M31 12.2 L31.4 15.2 M35.5 12.1 L35.2 15.1" stroke="#6f767e" stroke-width="0.5" fill="none"/>
+    <path d="M31 12.3 L31.4 15.25 M35.5 12.15 L35.2 15.12" stroke="#6f767e" stroke-width="0.5" fill="none"/>
     <ellipse cx="27" cy="27.4" rx="1.3" ry="0.7" fill="#6a9440"/>
     <ellipse cx="36.8" cy="27.5" rx="1.1" ry="0.6" fill="#6a9440"/>
   </g>
@@ -50,7 +50,7 @@
   </g>
   <g>
     <rect x="27" y="48" width="10" height="3.4" rx="1.4" fill="#9aa1ab" transform="rotate(-5 32 50)"/>
-    <path d="M27.5 48.6 L36 47.8" stroke="#b3b9c2" stroke-width="1" transform="rotate(-5 32 50)"/>
+    <path d="M27.8 48.9 L36.2 48.9" stroke="#b3b9c2" stroke-width="1" transform="rotate(-5 32 50)"/>
     <path d="M29.5 51.5 Q30.2 49.6 31 51.4 M34 51 Q34.8 49.2 35.6 51" stroke="#4c8a40" stroke-width="0.8" fill="none" stroke-linecap="round"/>
   </g>
   <!-- Low altar slab at the circle's heart with candle stubs and an
@@ -58,7 +58,7 @@
   <g>
     <ellipse cx="32" cy="39.5" rx="5" ry="1.6" fill="#42522f" opacity="0.5"/>
     <rect x="27.5" y="36.2" width="9" height="3" rx="0.8" fill="#8a9199"/>
-    <path d="M27.5 37 L36.5 37" stroke="#a8aeb7" stroke-width="0.7"/>
+    <path d="M27.6 37 L36.4 37" stroke="#a8aeb7" stroke-width="0.7"/>
     <rect x="29" y="34.2" width="1.2" height="2" fill="#e6e1d2"/>
     <path d="M29.6 33.4 Q29.2 34 29.6 34.4 Q30 34 29.6 33.4" fill="#e8a83c"/>
     <rect x="33.8" y="34.6" width="1" height="1.6" fill="#e6e1d2"/>

@@ -18,7 +18,7 @@
   <polygon points="21.5,26.5 32,19 42.5,26.5" fill="#4a5d74"/>
   <polygon points="32,19 42.5,26.5 32,26.5" fill="#37485c"/>
   <g>
-    <rect x="29.4" y="12.5" width="5.2" height="8" fill="#d9cdb4" stroke="#a89a7c" stroke-width="0.6"/>
+    <rect x="29.4" y="12.5" width="5.2" height="8.4" fill="#d9cdb4" stroke="#a89a7c" stroke-width="0.6"/>
     <polygon points="28.4,12.8 32,9 35.6,12.8" fill="#37485c"/>
     <path d="M30.6 14.2 h2.8 v2.8 h-2.8 Z" fill="#3a3630"/>
     <path d="M32 14.6 q-0.9 0 -0.9 1 l0 0.9 h1.8 l0 -0.9 q0 -1 -0.9 -1" fill="#c9a020"/>

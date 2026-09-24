@@ -13,7 +13,7 @@
     <path d="M13 44 Q13.8 41.5 14.6 44 M19 44 Q19.8 41.5 20.6 44 M25 44 Q25.8 41.5 26.6 44"/>
     <path d="M15 48 Q15.8 45.5 16.6 48 M21 48 Q21.8 45.5 22.6 48 M27 48 Q27.8 45.5 28.6 48"/>
   </g>
-  <path d="M13.8 42.5 L14.6 42 M20 42.5 L20.8 42 M15.8 46.5 L16.6 46" stroke="#63a651" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <path d="M13.8 42.5 L14.6 42 M19.8 42.5 L20.6 42 M15.8 46.5 L16.6 46" stroke="#63a651" stroke-width="0.8" fill="none" stroke-linecap="round"/>
   <g>
     <circle cx="14" cy="52" r="1.6" fill="#c9762e"/>
     <path d="M13.2 51.5 Q14 50.9 14.8 51.5" stroke="#a85e22" stroke-width="0.5" fill="none"/>
@@ -31,7 +31,7 @@
     <rect x="29" y="34" width="1.5" height="5"/>
   </g>
   <path d="M8 35.2 L30.5 35.2 M8 37.4 L30.5 37.4" stroke="#8a6f4a" stroke-width="1.1" fill="none"/>
-  <path d="M30.5 35 L35 32.5 M30.5 37.5 L35 35 M35 32.5 L35 35" stroke="#a3865c" stroke-width="1.1" fill="none"/>
+  <path d="M30.5 35.2 L35 32.7 M30.5 37.4 L35 34.9 M35 32.7 L35 34.9" stroke="#a3865c" stroke-width="1.1" fill="none"/>
   <!-- Red barn on its dirt yard: plank siding, gambrel-shingled roof,
        crossbuck doors, hayloft with hoist beam. -->
   <ellipse cx="46" cy="34" rx="15" ry="8" fill="#c2a36c"/>
@@ -49,7 +49,7 @@
     <path d="M47.2 35.6 L50.6 27.4" stroke="#c98a5a" stroke-width="0.5"/>
     <rect x="45.2" y="16.5" width="3.6" height="4.5" fill="#5a3a2a"/>
     <path d="M45.2 18.7 L48.8 18.7" stroke="#3f2a1e" stroke-width="0.5"/>
-    <path d="M47 13 L47 11.2 L50 11.2" stroke="#5f4529" stroke-width="0.9" fill="none"/>
+    <path d="M47 14 L47 11.2 L50 11.2" stroke="#5f4529" stroke-width="0.9" fill="none"/>
     <path d="M50 11.2 L50 13.5" stroke="#8a6f4a" stroke-width="0.6"/>
     <rect x="39.5" y="24" width="3" height="3" fill="#7a6a4a" stroke="#5f5138" stroke-width="0.5"/>
   </g>

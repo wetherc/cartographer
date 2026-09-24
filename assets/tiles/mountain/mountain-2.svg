@@ -50,14 +50,14 @@
   <polygon points="18,54 32,16 46,54" fill="#7d848c"/>
   <polygon points="32,16 32,54 46,54" fill="#5b6167"/>
   <g fill="none" stroke-linecap="round">
-    <path d="M10 42 L8 48 M27 34 L23 44 M25 44 L23 50 M42 38 L40 45" stroke="#8f969d" stroke-width="1"/>
+    <path d="M10 42 L8 48 M27 34 L23 44 M25 44 L23 50 M45 40 L44 46" stroke="#8f969d" stroke-width="1"/>
     <path d="M36 30 L39 40 M35 42 L37 50 M53 38 L55 46" stroke="#4a5055" stroke-width="1" opacity="0.6"/>
   </g>
-  <polygon points="16,26 19.5,33 17.6,31.6 16,34 14.4,31.6 12.5,33" fill="#e3e9ee"/>
-  <polygon points="16,26 19.5,33 17.6,31.6 16,34" fill="#bcc5ce"/>
-  <polygon points="32,16 36.5,25 34.2,23.2 32,26 29.8,23.2 27.5,25" fill="#eef2f5"/>
-  <polygon points="32,16 36.5,25 34.2,23.2 32,26" fill="#c3ccd5"/>
-  <polygon points="48,24 51.5,31 49.6,29.6 48,32 46.4,29.6 44.5,31" fill="#e3e9ee"/>
-  <polygon points="48,24 51.5,31 49.6,29.6 48,32" fill="#bcc5ce"/>
-  <path d="M32 16 L32 54" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
+  <polygon points="16,26 19,33 17.35,31 16,35 14.65,31 13,33" fill="#e3e9ee"/>
+  <polygon points="16,26 19,33 17.35,31 16,35" fill="#bcc5ce"/>
+  <polygon points="32,16 35.32,25 33.49,23 32,27 30.51,23 28.68,25" fill="#eef2f5"/>
+  <polygon points="32,16 35.32,25 33.49,23 32,27" fill="#c3ccd5"/>
+  <polygon points="48,24 50.8,31 49.26,29 48,33 46.74,29 45.2,31" fill="#e3e9ee"/>
+  <polygon points="48,24 50.8,31 49.26,29 48,33" fill="#bcc5ce"/>
+  <path d="M16 35 L16 54 M32 27 L32 54 M48 33 L48 54" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
 </svg>

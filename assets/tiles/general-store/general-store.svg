@@ -8,14 +8,14 @@
   <rect x="16" y="26" width="30" height="21" fill="#d9c49a" stroke="#a98f66" stroke-width="0.8"/>
   <polygon points="14,27 31,17 48,27" fill="#8a6f4a"/>
   <polygon points="31,17 48,27 31,27" fill="#6b5236"/>
-  <path d="M18 24.8 L44 24.8 M22 22.2 L40 22.2" stroke="#7a5f40" stroke-width="0.7" fill="none"/>
+  <path d="M18.6 24.8 L43.4 24.8 M23 22.2 L39 22.2" stroke="#7a5f40" stroke-width="0.7" fill="none"/>
   <!-- display window, partly under the awning -->
   <rect x="19.5" y="36" width="9" height="7" fill="#b9d4d8" stroke="#8a6f4a" stroke-width="0.8"/>
   <path d="M20.5 41.8 L23 38.6 M22 41.8 L24.4 38.8" stroke="#e6f0f2" stroke-width="0.7"/>
   <path d="M24 36 V43 M19.5 39.5 H28.5" stroke="#8a6f4a" stroke-width="0.6"/>
   <!-- striped awning: widens toward the viewer at the bottom -->
   <path d="M17 31 L45 31 L48 37 L14 37 Z" fill="#c94f3d"/>
-  <path d="M20 31 L17.6 37 M26.5 31 L25.5 37 M35.5 31 L36.5 37 M42 31 L44.4 37" stroke="#eee6d4" stroke-width="3" fill="none"/>
+  <path d="M18.38 31 L21.62 31 L19.22 37 L15.98 37 Z M24.98 31 L28.02 31 L27.02 37 L23.98 37 Z M33.98 31 L37.02 31 L38.02 37 L34.98 37 Z M40.38 31 L43.62 31 L46.02 37 L42.78 37 Z" fill="#eee6d4"/>
   <path d="M17 31 L45 31 L48 37 L14 37 Z" fill="none" stroke="#8f3a2c" stroke-width="0.8"/>
   <path d="M14 37 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0" fill="none" stroke="#8f3a2c" stroke-width="0.9"/>
   <rect x="33" y="39" width="7" height="8" fill="#5a4530"/>

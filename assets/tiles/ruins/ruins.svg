@@ -38,7 +38,7 @@
   <!-- Architrave slab resting on the two full columns, snapped at its
        right end. -->
   <path d="M15.5 14.4 L33.8 14 L34.6 15.4 L33.4 17.2 L15.5 17.2 Z" fill="#a6a18d"/>
-  <path d="M15.5 14.4 L33.8 14 L33.9 15 L15.5 15.4 Z" fill="#bab5a2"/>
+  <path d="M15.5 14.4 L33.8 14 L34.37 15 L15.5 15.4 Z" fill="#bab5a2"/>
   <path d="M33.4 17.2 L34.6 15.4 L33.8 14" stroke="#8e8975" stroke-width="0.5" fill="none"/>
   <!-- Snapped column: lower half standing, break line jagged. -->
   <g>
@@ -65,8 +65,8 @@
     <ellipse cx="34" cy="53.5" rx="4" ry="1.4" fill="#42522f" opacity="0.5"/>
     <rect x="30.5" y="49.8" width="7" height="3.3" rx="1.65" fill="#b5b09e"/>
     <path d="M31.5 50.8 L36.5 50.8" stroke="#c9c4b2" stroke-width="0.7"/>
-    <ellipse cx="37.5" cy="51.4" rx="1.2" ry="1.6" fill="#c9c4b2"/>
-    <circle cx="37.5" cy="51.4" r="0.5" fill="#a6a18d"/>
+    <ellipse cx="37.5" cy="51.45" rx="1.2" ry="1.65" fill="#c9c4b2"/>
+    <circle cx="37.5" cy="51.45" r="0.5" fill="#a6a18d"/>
     <ellipse cx="44" cy="53" rx="2.6" ry="1" fill="#42522f" opacity="0.5"/>
     <ellipse cx="44" cy="51" rx="2.2" ry="2" fill="#b5b09e"/>
     <ellipse cx="44" cy="51" rx="1.1" ry="1" fill="#c9c4b2"/>

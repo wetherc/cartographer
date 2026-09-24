@@ -22,7 +22,7 @@
   <g>
     <ellipse cx="17" cy="27" rx="3.5" ry="1.2" fill="#42522f" opacity="0.5"/>
     <path d="M14.5 27 L14.5 21 Q17 18.5 19.5 21 L19.5 27 Z" fill="#9aa1ab"/>
-    <path d="M14.5 27 L14.5 21 Q15.5 20 17 20 L17 27 Z" fill="#b3b9c2"/>
+    <path d="M14.5 27 L14.5 21 Q15.75 19.75 17 19.75 L17 27 Z" fill="#b3b9c2"/>
     <path d="M15.8 22.5 L18.2 22.5 M15.8 24 L18.2 24 M16.3 25.5 L17.7 25.5" stroke="#7f8791" stroke-width="0.5"/>
     <ellipse cx="15.5" cy="25.8" rx="0.9" ry="0.6" fill="#6a9440" opacity="0.9"/>
   </g>
@@ -49,7 +49,7 @@
   <g>
     <ellipse cx="36" cy="42" rx="3.5" ry="1.2" fill="#42522f" opacity="0.5"/>
     <path d="M33.5 42 L33.5 35.5 Q36 33 38.5 35.5 L38.5 42 Z" fill="#9aa1ab"/>
-    <path d="M33.5 42 L33.5 35.5 Q34.5 34.4 36 34.2 L36 42 Z" fill="#b3b9c2"/>
+    <path d="M33.5 42 L33.5 35.5 Q34.75 34.25 36 34.25 L36 42 Z" fill="#b3b9c2"/>
     <path d="M34.8 37 L37.2 37 M34.8 38.8 L37.2 38.8" stroke="#7f8791" stroke-width="0.6"/>
   </g>
   <g>
@@ -74,7 +74,7 @@
        near and left edges of the yard. -->
   <g stroke="#3a362f" stroke-width="1" fill="none">
     <path d="M12 44 L12 37 M16 45.2 L16 38.2 M20 46.4 L20 39.4"/>
-    <path d="M11 39.5 L21 41.7 M11 42.5 L21 44.7"/>
+    <path d="M11 39.5 L21 42.5 M11 42.5 L21 45.5"/>
   </g>
   <g fill="#3a362f">
     <path d="M11.4 37.4 L12 36 L12.6 37.4 Z"/>

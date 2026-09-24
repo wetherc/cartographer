@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- East half: the shaded side of every wall and tower. A clipped copy
+         of an outlined shape keeps its outline whole across the split. -->
+    <clipPath id="east"><rect x="32" width="32" height="64"/></clipPath>
+  </defs>
   <rect width="64" height="64" fill="#5a9b4a"/>
   <ellipse cx="12" cy="10" rx="8" ry="4.5" fill="#63a651"/>
   <ellipse cx="54" cy="58" rx="7" ry="3.5" fill="#529044"/>
@@ -9,8 +14,9 @@
     <path d="M32 4 L32 13" stroke="#5a4530" stroke-width="1"/>
     <path d="M32 4 L39 5.8 L32 7.6 Z" fill="#b03a2e"/>
     <rect x="24" y="16" width="16" height="18" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.9"/>
-    <rect x="32" y="16" width="8" height="18" fill="#9a948a"/>
-    <path d="M23 16 h3 v-3 h2.5 v3 h3 v-3 h2.5 v3 h3 v-3 h2.5 v3 h3.5 v3 h-18 Z" fill="#9a948a" stroke="#5c574e" stroke-width="0.7"/>
+    <rect x="24" y="16" width="16" height="18" fill="#9a948a" stroke="#5c574e" stroke-width="0.9" clip-path="url(#east)"/>
+    <path d="M23 16 h2.25 v-3 h2.5 v3 h3 v-3 h2.5 v3 h3 v-3 h2.5 v3 h2.25 v3 h-18 Z" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.7"/>
+    <path d="M23 16 h2.25 v-3 h2.5 v3 h3 v-3 h2.5 v3 h3 v-3 h2.5 v3 h2.25 v3 h-18 Z" fill="#9a948a" stroke="#5c574e" stroke-width="0.7" clip-path="url(#east)"/>
     <rect x="26.6" y="21" width="2.4" height="4.5" rx="1.2" fill="#3a3630"/>
     <rect x="35" y="21" width="2.4" height="4.5" rx="1.2" fill="#3a3630"/>
   </g>
@@ -22,16 +28,17 @@
     <path d="M18 32 V37 M22 37 V42.5 M18 42.5 V48 M42 32 V37 M46 37 V42.5 M42 42.5 V48"/>
   </g>
   <rect x="14" y="32" width="36" height="16" fill="none" stroke="#5c574e" stroke-width="0.9"/>
-  <g fill="#9a948a" stroke="#5c574e" stroke-width="0.8">
-    <path d="M20 32 v-2.5 h3 v2.5 M41 32 v-2.5 h3 v2.5"/>
+  <g stroke="#5c574e" stroke-width="0.8">
+    <path d="M20 32 v-2.5 h3 v2.5 Z" fill="#a39d91"/>
+    <path d="M41 32 v-2.5 h3 v2.5 Z" fill="#938d82"/>
   </g>
   <!-- corner towers with slate cone roofs -->
   <g stroke="#5c574e" stroke-width="0.9">
     <rect x="7" y="23" width="12" height="27" fill="#b0aa9e"/>
     <rect x="45" y="23" width="12" height="27" fill="#9a948a"/>
   </g>
-  <rect x="13" y="23.5" width="5.5" height="26" fill="#9a948a"/>
-  <rect x="51" y="23.5" width="5.5" height="26" fill="#8a8479"/>
+  <rect x="13" y="23.5" width="5.55" height="26.05" fill="#9a948a"/>
+  <rect x="51" y="23.5" width="5.55" height="26.05" fill="#8a8479"/>
   <g>
     <path d="M5.5 23.5 L13 10 L20.5 23.5 Z" fill="#4a5d74"/>
     <path d="M13 10 L20.5 23.5 L13 23.5 Z" fill="#37485c"/>
@@ -48,7 +55,7 @@
   <g>
     <path d="M26.5 48 L26.5 39.5 Q32 33.5 37.5 39.5 L37.5 48 Z" fill="#6f6a60"/>
     <path d="M27.8 48 L27.8 40.2 Q32 35.4 36.2 40.2 L36.2 48 Z" fill="#2c2820"/>
-    <path d="M30 38.4 V48 M32 37.6 V48 M34 38.4 V48 M28 41.5 H36 M28 44.5 H36" stroke="#55514a" stroke-width="0.7"/>
+    <path d="M30 38.56 V48 M32 37.82 V48 M34 38.56 V48 M28 41.5 H36 M28 44.5 H36" stroke="#55514a" stroke-width="0.7"/>
   </g>
   <path d="M29 52 Q32 51 35 52 M27 55 Q32 53.8 37 55" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
 </svg>

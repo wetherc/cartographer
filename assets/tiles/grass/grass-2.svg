@@ -18,7 +18,7 @@
   <use href="#t" transform="translate(50 40)"/>
   <use href="#t" transform="translate(38 58)"/>
   <g stroke="#4a8339" stroke-width="1" fill="none" stroke-linecap="round">
-    <path d="M30 44 L30 38 M44 16 L44 11 M14 22 L14 17"/>
+    <path d="M30 44 L30 36.5 M44 16 L44 10 M14 22 L14 16"/>
   </g>
   <g>
     <g fill="#f3efe2"><circle cx="28" cy="37" r="1.4"/><circle cx="31.6" cy="36.2" r="1.4"/><circle cx="29.8" cy="34" r="1.4"/></g>

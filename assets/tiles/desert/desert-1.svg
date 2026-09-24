@@ -15,7 +15,7 @@
   </g>
   <g>
     <ellipse cx="46" cy="34" rx="4" ry="2.8" fill="#b09a63"/>
-    <path d="M43.5 32.8 a4 2.8 0 0 1 5 -0.8" fill="none" stroke="#cbb27a" stroke-width="1"/>
+    <path d="M44 32.6 Q46 31.3 48 32.2" fill="none" stroke="#cbb27a" stroke-width="1"/>
     <ellipse cx="53" cy="37" rx="2.4" ry="1.7" fill="#b09a63"/>
     <ellipse cx="18" cy="12" rx="2.6" ry="1.8" fill="#b09a63"/>
   </g>

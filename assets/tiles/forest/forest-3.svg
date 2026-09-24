@@ -3,11 +3,11 @@
     <g id="tr">
       <ellipse cx="0" cy="10" rx="9" ry="3" fill="#2b5228" opacity="0.6"/>
       <path d="M-1.5 10 L-2.5 1 L2.5 1 L1.5 10 Z" fill="#5a4028"/>
-      <path d="M-1.5 10 L-4 12 M1.5 10 L4 12" stroke="#5a4028" stroke-width="1.2" fill="none"/>
+      <path d="M-0.75 9.4 L-4 12 M0.75 9.4 L4 12" stroke="#5a4028" stroke-width="1.2" fill="none"/>
       <circle cx="-5" cy="-2" r="7" fill="#2c5c29"/>
       <circle cx="5" cy="-1" r="7.5" fill="#2c5c29"/>
       <circle cx="0" cy="-7" r="7" fill="#2c5c29"/>
-      <circle cx="-4" cy="-6" r="5.5" fill="#397236"/>
+      <circle cx="-3" cy="-5" r="5" fill="#397236"/>
       <circle cx="2" cy="-3" r="6" fill="#397236"/>
       <circle cx="-2" cy="-8" r="4" fill="#478744"/>
     </g>
@@ -27,7 +27,7 @@
     <ellipse cx="33" cy="33" rx="2" ry="1"/>
     <path d="M31.6 33 L31.6 30.6 L34.4 30.6 L34.4 33 Z"/>
   </g>
-  <ellipse cx="33" cy="30.6" rx="1.6" ry="0.7" fill="#a86a40"/>
+  <ellipse cx="33" cy="30.6" rx="1.4" ry="0.7" fill="#a86a40"/>
   <!-- Edge canopy: byte-identical across forest variants, stamped in wrapped
        pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at all
        four) so any variant abuts any variant seamlessly. Stamps mix full

@@ -7,7 +7,7 @@
   <path d="M24 64 V40 H0 V24 H40 V64 Z" fill="#6f6a60"/>
   <path d="M32 64 V32 H0" stroke="#55514a" stroke-width="1" fill="none"/>
   <path d="M32 48 H40 M24 56 H32 M16 24 V32 M8 32 V40" stroke="#55514a" stroke-width="1" fill="none"/>
-  <path d="M25 64 V25 H0" stroke="#8a857a" stroke-width="1" fill="none"/>
+  <path d="M0 25 H39.25 M25 40.75 V64" stroke="#8a857a" stroke-width="1" fill="none"/>
   <path d="M40 64 V24 H0" stroke="#4c4841" stroke-width="1.5" fill="none"/>
   <path d="M24 64 V40 H0" stroke="#4c4841" stroke-width="1.5" fill="none"/>
 </svg>

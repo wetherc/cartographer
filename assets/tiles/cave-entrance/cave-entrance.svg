@@ -18,9 +18,9 @@
   <path d="M24 52 L24 41 Q32 31 40 41 L40 52 Z" fill="#2e2a26"/>
   <path d="M27 52 L27 43 Q32 36.5 37 43 L37 52 Z" fill="#15120f"/>
   <g fill="#57524a">
-    <path d="M28 37.5 L29 41 L30 37.2 Z"/>
+    <path d="M28 37.25 L29 41 L30 36.31 Z"/>
     <path d="M31.5 36 L32.3 40.5 L33.3 36 Z"/>
-    <path d="M35 37.5 L35.8 40.6 L36.6 37.8 Z"/>
+    <path d="M35 36.7 L35.8 40.6 L36.6 37.65 Z"/>
   </g>
   <!-- Two eyes glinting from the dark. -->
   <circle cx="30.5" cy="47" r="0.7" fill="#d8c34a" opacity="0.9"/>

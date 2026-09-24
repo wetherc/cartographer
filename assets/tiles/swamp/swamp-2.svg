@@ -40,7 +40,7 @@
   <ellipse cx="40" cy="42" rx="12" ry="7" fill="none" stroke="#32423c" stroke-width="1"/>
   <ellipse cx="37" cy="40" rx="7" ry="3.5" fill="#44584f"/>
   <ellipse cx="45" cy="44" rx="2.4" ry="1.4" fill="#5f7a3d"/>
-  <path d="M45 44 L47.6 43.3" stroke="#4c6531" stroke-width="0.8"/>
+  <path d="M45 44 L46.93 43.48" stroke="#4c6531" stroke-width="0.8"/>
   <!-- Standing elements, farthest first: reed, dead tree, pool reed, near reed. -->
   <use href="#rd" transform="translate(44 16) scale(0.75)"/>
   <g>

@@ -6,17 +6,17 @@
   </g>
   <rect x="14" y="9" width="36" height="46" fill="#948c7b"/>
   <g>
-    <rect x="15" y="49" width="34" height="5" fill="#98907e"/>
-    <rect x="15" y="44" width="34" height="5" fill="#a29a88"/>
-    <rect x="15" y="39" width="34" height="5" fill="#aca492"/>
-    <rect x="15" y="34" width="34" height="5" fill="#b5ad9b"/>
-    <rect x="15" y="29" width="34" height="5" fill="#bfb7a5"/>
-    <rect x="15" y="24" width="34" height="5" fill="#c9c1ae"/>
-    <rect x="15" y="19" width="34" height="5" fill="#d2cab7"/>
-    <rect x="15" y="14" width="34" height="4" fill="#dcd4c1"/>
+    <rect x="14" y="49" width="36" height="6" fill="#98907e"/>
+    <rect x="14" y="44" width="36" height="5" fill="#a29a88"/>
+    <rect x="14" y="39" width="36" height="5" fill="#aca492"/>
+    <rect x="14" y="34" width="36" height="5" fill="#b5ad9b"/>
+    <rect x="14" y="29" width="36" height="5" fill="#bfb7a5"/>
+    <rect x="14" y="24" width="36" height="5" fill="#c9c1ae"/>
+    <rect x="14" y="19" width="36" height="5" fill="#d2cab7"/>
+    <rect x="14" y="14" width="36" height="5" fill="#dcd4c1"/>
   </g>
   <g stroke="#6f6857" stroke-width="0.9" fill="none">
-    <path d="M15 49 H49 M15 44 H49 M15 39 H49 M15 34 H49 M15 29 H49 M15 24 H49 M15 19 H49 M15 14 H49"/>
+    <path d="M14 49 H50 M14 44 H50 M14 39 H50 M14 34 H50 M14 29 H50 M14 24 H50 M14 19 H50 M14 14 H50"/>
   </g>
   <rect x="14" y="9" width="36" height="46" fill="none" stroke="#4c4841" stroke-width="1.5"/>
   <path d="M32 33 L32 21 M28 25 L32 21 L36 25" stroke="#55514a" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.65"/>
