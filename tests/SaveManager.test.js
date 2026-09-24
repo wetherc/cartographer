@@ -708,8 +708,14 @@ test('deserialize defaults a missing combat to null', () => {
 test('serialize/deserialize round-trips the quest log', () => {
   const grid = sampleGrid();
   const quests = [
-    { id: 'q1', title: 'Find the sword', notes: 'It lies in the Keep.', status: 'active' },
-    { id: 'q2', title: 'Slay the dragon', notes: '', status: 'completed' },
+    {
+      id: 'q1',
+      title: 'Find the sword',
+      notes: 'It lies in the Keep.',
+      status: 'active',
+      revealed: true,
+    },
+    { id: 'q2', title: 'Slay the dragon', notes: '', status: 'completed', revealed: false },
   ];
   const state = buildState({ grid, quests });
   const restored = deserialize(serialize(state));

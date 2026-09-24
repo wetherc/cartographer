@@ -11,7 +11,7 @@ import {
 } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
-import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
+import { createQuest, toggleQuestRevealed, toggleQuestStatus } from '../quest/Quests.js';
 import { mountHandoutPanel } from '../ui/HandoutPanel.js';
 import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { replaceById, removeById } from '../entities/Roster.js';
@@ -165,6 +165,10 @@ export function wireStory(app) {
     getQuests: () => state.quests,
     onToggle: (quest) => {
       state.quests = replaceById(state.quests, toggleQuestStatus(quest));
+      app.actions.markDirty();
+    },
+    onToggleRevealed: (quest) => {
+      state.quests = replaceById(state.quests, toggleQuestRevealed(quest));
       app.actions.markDirty();
     },
     ...questList,

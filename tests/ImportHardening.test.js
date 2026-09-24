@@ -128,17 +128,31 @@ test('travelog entries coerce every field and drop an entry with no id', () => {
   ]);
 });
 
-test('quests coerce their text fields and status, and keep unknown fields', () => {
+test('quests coerce their text fields, status, and reveal flag, and keep unknown fields', () => {
   const state = loadFile({
     quests: [
       { id: 'q1', title: 7, notes: null, status: 'done', extra: true },
-      { id: 'q2', title: 'Find the key', notes: 'Under the mat.', status: 'completed' },
+      {
+        id: 'q2',
+        title: 'Find the key',
+        notes: 'Under the mat.',
+        status: 'completed',
+        revealed: true,
+      },
+      { id: 'q3', title: 'Rumor', revealed: 'yes' },
       { title: 'no id' },
     ],
   });
   assert.deepEqual(state.quests, [
-    { id: 'q1', title: '', notes: '', status: 'active', extra: true },
-    { id: 'q2', title: 'Find the key', notes: 'Under the mat.', status: 'completed' },
+    { id: 'q1', title: '', notes: '', status: 'active', revealed: false, extra: true },
+    {
+      id: 'q2',
+      title: 'Find the key',
+      notes: 'Under the mat.',
+      status: 'completed',
+      revealed: true,
+    },
+    { id: 'q3', title: 'Rumor', notes: '', status: 'active', revealed: false },
   ]);
 });
 

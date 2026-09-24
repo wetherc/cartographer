@@ -71,7 +71,7 @@ these things from the screen:
 
 - the exact HP of a foe (the view shows a health band instead)
 - the notes on a tile
-- handouts that you have not revealed
+- handouts and quests that you have not revealed, and the notes of every quest
 - the fogged part of the map
 - the Campaign, History, and Transfer buttons and the mode switch
 
@@ -710,7 +710,7 @@ unequips it.
 | --- | --- |
 | Time | The in-game day and watch, Advance, Short rest, Long rest |
 | NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
-| Quests | Active and completed quests |
+| Quests | Active and completed quests, with an eye toggle. The Player view lists only revealed quests, without their notes |
 | Handouts | Read-aloud text or lore attached to a node or the campaign, with an optional image and an eye toggle |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
 

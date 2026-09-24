@@ -180,8 +180,9 @@ export function logEntries(value) {
 
 /**
  * The quest log as quests the panel can render. A status other than
- * completed reads as active, and a title or notes of the wrong type read as
- * empty text.
+ * completed reads as active, a title or notes of the wrong type read as
+ * empty text, and a quest reads as hidden from players unless its
+ * `revealed` flag is exactly true.
  * @param {unknown} value
  * @returns {Quest[]}
  */
@@ -196,6 +197,7 @@ export function quests(value) {
         title: string(quest.title, ''),
         notes: string(quest.notes, ''),
         status: quest.status === 'completed' ? 'completed' : 'active',
+        revealed: quest.revealed === true,
       },
     ];
   });

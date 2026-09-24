@@ -444,6 +444,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Dorn's caravan is stuck at the crossroads until the roads are safe. Ask Bram at the Waystation inn in Briarwick what has the north country spooked.",
         status: 'active',
+        revealed: true,
       },
       {
         id: 'wolves-on-the-highway',
@@ -451,6 +452,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'A wolf pack has been running down travelers on the east highway below the Graypeak foothills. Drive it off so the caravans can move again.',
         status: 'active',
+        revealed: true,
       },
       {
         id: 'the-goblin-raids',
@@ -458,6 +460,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Goblins out of the Northmarch have burned two farms. Find their camp in the deep forest and deal with Chieftain Snagtooth — then search the camp. The raids are far too organized for goblins.',
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-pale-seal',
@@ -465,6 +468,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Snagtooth's orders bear a pale crown pressed into gray wax. Bring them to Reeve Maera in Briarwick; she keeps the shire records of the barrow and the king inside it.",
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-hermit-of-graypeak',
@@ -472,6 +476,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Odo the hermit keeps the warding key that seals the barrow's door. He hasn't come down for supplies since the wyvern Skalvyr nested above his hermitage.",
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-mire-hags-bargain',
@@ -479,6 +484,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Grelka the mire hag brews a grave-ward that turns a wight's chill. She trades fair, but never for coin — she names her price when asked, and it is always strange.",
         status: 'active',
+        revealed: false,
       },
       {
         id: 'dead-water',
@@ -486,6 +492,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Drowned sailors are walking the shallows of Saltmere's bay, and the fishing fleet won't put out. Harbormaster Petra pays by the head — and wants to know why the dead are coming up-current, from the river's mouth.",
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-lord-of-thornhold',
@@ -493,6 +500,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "House Vane swore the ward that sealed the barrow, and Lord Aldemar calls the raids peasant panic. Bring him Snagtooth's sealed orders as proof; the crypt ledger of Thornhold records how the sealing was done, and something in his own hall does not want it read.",
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-hollowvein-knocking',
@@ -500,6 +508,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'The Hollowvein — the mine whose silver crowned Ostrand — was abandoned mid-shift when something in the dark began knocking back. Sella needs Hollowvein silver if the warding key is ever to be reforged.',
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-wardstone-circle',
@@ -507,6 +516,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'One of the five wardstones in the northern forest lies toppled, and the ward on the barrow fails with it. Raising the fallen stone will not hold Ostrand — but it will thin his court, and his reach past the barrow door with it.',
         status: 'active',
+        revealed: false,
       },
       {
         id: 'the-barrow-king',
@@ -514,6 +524,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'King Ostrand has risen and his reach is spreading. Take the warding key into the barrow, put down his risen court, and end him at his tomb.',
         status: 'active',
+        revealed: false,
       },
     ],
     clock: createClock(),

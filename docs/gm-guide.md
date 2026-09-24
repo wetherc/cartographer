@@ -396,8 +396,12 @@ the character carries.
 
 ### Track a quest
 
-1. Open the **Quests** panel and add the quest.
-2. When the party finishes it, click the toggle. The plus becomes a
+1. Open the **Quests** panel and add the quest. A new quest is hidden from
+   players.
+2. When the party learns of the quest, click the eye toggle. The Player view
+   lists only revealed quests, with the title and status and without the
+   notes.
+3. When the party finishes it, click the complete toggle. The plus becomes a
    checkmark.
 
 ## Curate the library
