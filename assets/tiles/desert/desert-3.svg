@@ -11,7 +11,7 @@
     <path d="M44 59 q4 -2 8 0"/>
     <path d="M50 12 q4 -2 8 0"/>
   </g>
-  <g>
+  <g transform="translate(18 14) scale(0.65) translate(-18 -14)">
     <ellipse cx="17" cy="13" rx="4.6" ry="3.8" fill="#e9e2cd"/>
     <path d="M14 15.5 L14 18.5 Q17 20.5 20 18.5 L20 15.5 Z" fill="#e9e2cd"/>
     <circle cx="15.3" cy="12.5" r="1.2" fill="#8a7a52"/>

@@ -29,10 +29,14 @@ cleanly in the grid under these rules:
   if the motif is identical across all variants of the type and continuous in
   geometry at the borders.
 
-  A *periodic path* is one type of edge-crossing motif: water's wave rows,
-  desert's dune crests, and the mountain mid-ground ridge band. The path
+  A *periodic path* is one type of edge-crossing motif. Desert's dune crests
+  and the mountain mid-ground ridge band are periodic paths. The path
   passes through the same point with the same tangent at x=0 and x=64, for
   example as a `Q .. T ..` chain whose period divides 64.
+
+  Water has no edge-crossing motif. Its wave crests are inset stamps,
+  because a wave row that crosses every edge joins the rows of the
+  neighboring tiles and draws unbroken stripes across open water.
 
   A *wrapped stamp* is the other type: forest's edge-canopy clusters and
   mountain's edge outcrops. A wrapped stamp is a `<use>` element that

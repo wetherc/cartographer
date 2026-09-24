@@ -36,11 +36,23 @@
     <use href="#er" transform="translate(53 2) scale(-0.7 0.7)"/>
     <use href="#er" transform="translate(53 66) scale(-0.7 0.7)"/>
   </g>
+  <!-- Peaks: lit west face, shaded east face, snow caps split the same way,
+       and a soft ground shadow so each peak sits on the ridge band. -->
+  <g fill="#6e757c" opacity="0.5">
+    <ellipse cx="15" cy="56" rx="10" ry="1.8"/>
+    <ellipse cx="33" cy="56" rx="19" ry="2.4"/>
+  </g>
   <polygon points="4,56 14,42 24,56" fill="#7d848c"/>
   <polygon points="14,42 14,56 24,56" fill="#5b6167"/>
   <polygon points="14,56 32,12 50,56" fill="#7d848c"/>
   <polygon points="32,12 32,56 50,56" fill="#5b6167"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M26 30 L21 42 M28 38 L25 48 M20 46 L18 52" stroke="#8f969d" stroke-width="1"/>
+    <path d="M36 28 L40 38 M38 40 L41 50 M44 44 L46 51" stroke="#4a5055" stroke-width="1" opacity="0.6"/>
+  </g>
   <polygon points="32,12 39,26 35.5,23.4 32,27 28.5,23.4 25,26" fill="#eef2f5"/>
+  <polygon points="32,12 39,26 35.5,23.4 32,27" fill="#c3ccd5"/>
   <path d="M32 12 L32 56" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
-  <path d="M32 27 L30 34 M32 30 L34.5 38" stroke="#e3e9ee" stroke-width="1.2" fill="none" opacity="0.7"/>
+  <path d="M32 27 L30 34" stroke="#e3e9ee" stroke-width="1.2" fill="none" opacity="0.7"/>
+  <path d="M32 30 L34.5 38" stroke="#c3ccd5" stroke-width="1.2" fill="none" opacity="0.7"/>
 </svg>
