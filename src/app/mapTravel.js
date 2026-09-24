@@ -274,6 +274,10 @@ export function createMapTravel(app, env) {
   const onCellClick = (x, y, tile) => {
     if (!tile) return;
     const gm = isGM(state.role);
+    // A fogged tile is unknown to the players. A player click on it would
+    // name the sub-map behind it, or put a token past walls into the fog
+    // and reveal what lies there.
+    if (!gm && !tile.revealed) return;
     const subject = clickSubject();
     if (tile.childNodeId) {
       const parent = navigator.getCurrentNode();

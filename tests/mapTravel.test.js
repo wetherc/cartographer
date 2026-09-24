@@ -420,6 +420,31 @@ test('a spectator click on a region tile navigates the view without moving anyon
   assert.deepEqual(log, [], 'nobody entered, so nothing is logged');
 });
 
+test('a player click on a fogged tile does nothing', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const w = world({ role: 'player', characters: [hero], splitParty: true, selected: 'hero' });
+  assert.equal(tileOf(w.navigator, '1,1').revealed, false, 'the fixture keeps 1,1 in fog');
+  w.clickTile('1,1');
+  assert.equal(w.state.characters[0].location, null, 'the token stays with the party');
+  assert.equal(tileOf(w.navigator, '1,1').revealed, false, 'no fog lifts');
+
+  // A fogged tile with a sub-map behind it does not open that sub-map.
+  const node = w.navigator.getCurrentNode();
+  w.grid.updateNode({
+    ...node,
+    tiles: node.tiles.map((t) => (t.id === '2,4' ? { ...t, revealed: false } : t)),
+  });
+  w.clickTile('2,4');
+  assert.equal(w.navigator.getCurrentNode().id, 'world');
+  assert.deepEqual(w.log, []);
+});
+
+test('a GM click on a fogged tile still moves the party', () => {
+  const { clickTile, partyTracker } = world();
+  clickTile('1,1');
+  assert.equal(partyTracker.getPosition().tileId, '1,1');
+});
+
 test('a split-party click into a region carries that character in and names the discovery', () => {
   const hero = createCharacter('hero', 'Hero');
   const first = world({ characters: [hero], splitParty: true, selected: 'hero' });

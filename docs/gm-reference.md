@@ -239,8 +239,9 @@ Hide panels collapses the sidebar and gives the map the full width.
 | Gold outline | A revealed point of interest |
 
 Movement reveals fog in a radius around the new position, and a revealed
-tile stays revealed. An encounter marker and an NPC marker appear at
-detection range, which is twice the fog reveal radius. The Nearby
+tile stays revealed. A player tab ignores clicks on a fogged tile, so a
+player cannot move a token into the fog or open the sub-map behind it. An encounter marker and an NPC
+marker appear at detection range, which is twice the fog reveal radius. The Nearby
 encounters tab lists encounters within four times the reveal radius.
 
 Hovering a tile in Play mode, with the pointer or with the keyboard cursor,
