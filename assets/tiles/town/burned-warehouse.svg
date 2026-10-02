@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Charred crate with its lid burned through, origin at its top-left
+         corner. -->
+    <g id="crate">
+      <rect width="6" height="5" fill="#5a4636" stroke="#2e2824" stroke-width="0.5"/>
+      <path d="M0 0 L6 5" stroke="#3d342c" stroke-width="0.5"/>
+      <path d="M1.2 0 L2 1.6 L3.6 1 L4.6 0 Z" fill="#1f1a16"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="55" cy="9" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="8" cy="30" rx="4" ry="2.5" fill="#529044"/>
+  <!-- Scorched yard: browned grass around a sooty dirt patch. -->
+  <ellipse cx="32" cy="47" rx="27" ry="12" fill="#7a8a45"/>
+  <ellipse cx="32" cy="48" rx="21" ry="8" fill="#8a7a5a"/>
+  <ellipse cx="32" cy="51" rx="23" ry="2.4" fill="#3d342c" opacity="0.45"/>
+  <!-- The plank gable end burned from the top down. Its peak is gone, and
+       the boards end at ragged heights. -->
+  <path d="M12 51 V26 L16 24 L20 27 L24 21 L28 23.4 L32 19 L36 22.6 L40 20.4 L44 25 L48 23.6 L52 27 V51 Z" fill="#7a6048"/>
+  <path d="M32 51 V19 L36 22.6 L40 20.4 L44 25 L48 23.6 L52 27 V51 Z" fill="#6a523c"/>
+  <path d="M12 30 Q22 27 32 29.6 Q42 32 52 29 V26 L48 23.6 L44 25 L40 20.4 L36 22.6 L32 19 L28 23.4 L24 21 L20 27 L16 24 L12 26 Z" fill="#2e2824" opacity="0.7"/>
+  <g stroke="#3d342c" stroke-width="0.5">
+    <path d="M16 51 V24 M20 51 V27 M24 51 V21 M28 51 V23.4 M36 51 V22.6 M40 51 V20.4 M44 51 V25 M48 51 V23.6"/>
+  </g>
+  <rect x="12" y="35" width="40" height="1.4" fill="#3d342c"/>
+  <path d="M12 51 V26 L16 24 L20 27 L24 21 L28 23.4 L32 19 L36 22.6 L40 20.4 L44 25 L48 23.6 L52 27 V51" fill="none" stroke="#2e2824" stroke-width="0.7" stroke-linejoin="round"/>
+  <!-- Bare roof timbers behind the gable, and one run of grey shingles
+       left on the east edge. -->
+  <g stroke="#2e2824" stroke-linecap="round" fill="none">
+    <path d="M9.4 26 L22 15.4" stroke-width="1.2"/>
+    <path d="M22 15.4 L31 15.4" stroke-width="1"/>
+  </g>
+  <path d="M44 20.2 L55.5 26.5 L53 27.5 L43.2 22 Z" fill="#5a5f64"/>
+  <path d="M44 20.2 L55.5 26.5" fill="none" stroke="#3d4145" stroke-width="0.8"/>
+  <!-- The hoist beam has fallen against the wall, rope and hook trailing. -->
+  <path d="M38 33 L46 22.4" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M45 23.8 Q48 28 47 34" stroke="#8a8272" stroke-width="0.5" fill="none"/>
+  <path d="M46 34 L47 34.6 L48 34" stroke="#3a352e" stroke-width="0.4" fill="none"/>
+  <!-- Loft door burned out to a dark hole. -->
+  <rect x="28" y="24" width="8" height="4" fill="#1f1a16"/>
+  <rect x="27.5" y="28" width="9" height="1.2" fill="#3d342c"/>
+  <!-- Smoke from the stock burning inside. -->
+  <g fill="#b8b3a8">
+    <circle cx="30" cy="16" r="2.2" opacity="0.5"/>
+    <circle cx="27" cy="12" r="2.8" opacity="0.35"/>
+    <circle cx="23.6" cy="8.4" r="3.3" opacity="0.2"/>
+  </g>
+  <!-- One double door lies flat in the yard, and the other hangs open. -->
+  <rect x="22" y="37.5" width="20" height="13.5" fill="#1f1a16"/>
+  <circle cx="27" cy="47.4" r="0.45" fill="#e8a040"/>
+  <circle cx="31.6" cy="48.8" r="0.4" fill="#e8a040"/>
+  <path d="M34.5 37.5 L42 37.5 V51 L34.5 51 Z" fill="#4a3a2c" stroke="#2e2824" stroke-width="0.6"/>
+  <path d="M35 38.2 H41.5 M35 50.3 H41.5 M35 50.3 L41.5 38.2" stroke="#2e2824" stroke-width="0.9"/>
+  <path d="M16 55.6 L25 52.6 L28.4 54.6 L19.4 57.8 Z" fill="#5a4636" stroke="#2e2824" stroke-width="0.6" stroke-linejoin="round"/>
+  <path d="M17.4 56 L26.6 53.2 M18.6 57.2 L25.4 53.4" stroke="#3d342c" stroke-width="0.7"/>
+  <rect x="21.2" y="36.8" width="21.6" height="1.2" fill="#2e2824"/>
+  <!-- The small windows are dark holes. -->
+  <rect x="14.5" y="40" width="4.5" height="4" fill="#1f1a16" stroke="#3d342c" stroke-width="0.5"/>
+  <rect x="45" y="40" width="4.5" height="4" fill="#1f1a16" stroke="#3d342c" stroke-width="0.5"/>
+  <!-- The stock outside: charred crates, a burst barrel with its staves
+       spread, and a spilled sack. -->
+  <use href="#crate" transform="translate(6 45.5)"/>
+  <use href="#crate" transform="translate(8 40.5)"/>
+  <g>
+    <rect x="45.6" y="45.5" width="4.8" height="6.2" rx="0.8" fill="#4a3a2c" stroke="#2e2824" stroke-width="0.5"/>
+    <path d="M45.6 47.3 H50.4 M45.6 49.9 H50.4" stroke="#2e2824" stroke-width="0.6"/>
+    <ellipse cx="48" cy="45.5" rx="2.4" ry="0.8" fill="#2e2824"/>
+    <g stroke="#4a3a2c" stroke-width="1" stroke-linecap="round">
+      <path d="M53 50.6 L57.4 49.2 M53.6 52.2 L58 51.8 M54.2 48.6 L57 46.8"/>
+    </g>
+    <path d="M55 47.4 Q58 47 59 48.8" stroke="#2e2824" stroke-width="0.6" fill="none"/>
+  </g>
+  <g>
+    <path d="M40.5 55 Q40 51 42.8 50.7 Q45 51 45.6 53.4 L47.4 55 Z" fill="#8a8272" stroke="#6a5d4a" stroke-width="0.5"/>
+    <ellipse cx="47.6" cy="55.2" rx="2.2" ry="0.7" fill="#c8bb9a"/>
+  </g>
+  <ellipse cx="12" cy="52.6" rx="3" ry="1.1" fill="#9a958c"/>
+  <path d="M30 57.4 L36.4 56.4" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

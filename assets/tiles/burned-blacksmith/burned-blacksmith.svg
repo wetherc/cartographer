@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="52" cy="12" rx="8" ry="4.5" fill="#63a651"/>
+  <ellipse cx="11" cy="55" rx="7" ry="4" fill="#529044"/>
+  <!-- Scorched yard: browned grass around a sooty dirt patch. -->
+  <ellipse cx="32" cy="44" rx="23" ry="12" fill="#7a8a45"/>
+  <ellipse cx="32" cy="44" rx="20" ry="10" fill="#8a7a5a"/>
+  <ellipse cx="32" cy="45" rx="14" ry="7" fill="#6a6050"/>
+  <!-- Thin smoke from the cold chimney. -->
+  <g fill="#b8b3a8">
+    <circle cx="22" cy="15" r="1.8" opacity="0.4"/>
+    <circle cx="19.8" cy="11.6" r="2.3" opacity="0.25"/>
+  </g>
+  <!-- Burned shed: the plank walls stand as charred stubs, and the roof is
+       gone apart from two rafters. -->
+  <path d="M16 47 V33 L18 31.5 L20.5 34 L23 32 V47 Z M35 47 V34 L37.5 31.8 L40 33.5 L42 32 V47 Z" fill="#5a4a36" stroke="#3d342c" stroke-width="0.8" stroke-linejoin="round"/>
+  <rect x="18" y="35" width="22" height="12" fill="#2e2824"/>
+  <path d="M23 38 V47 M35 37 V47" stroke="#3d342c" stroke-width="1.2"/>
+  <g stroke="#2e2824" stroke-linecap="round">
+    <path d="M15 31.6 L24.5 25.2" stroke-width="1.2"/>
+    <path d="M43 31.6 L36.6 27" stroke-width="1.1"/>
+    <path d="M24 32 L30 30.6" stroke-width="1"/>
+  </g>
+  <!-- Stone chimney still whole, soot at the top. -->
+  <rect x="20" y="19" width="4" height="13" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5"/>
+  <path d="M20 19 H24 V22 Q22 20.8 20 22.6 Z" fill="#3d342c"/>
+  <!-- Cold forge: a heap of ash with one ember. -->
+  <ellipse cx="29" cy="43.5" rx="5" ry="2.4" fill="#9a958c"/>
+  <ellipse cx="28.4" cy="43" rx="2.6" ry="1.1" fill="#b8b3a8"/>
+  <circle cx="30.6" cy="43.6" r="0.6" fill="#e8a040"/>
+  <!-- Anvil on a charred stump: the iron is whole. -->
+  <g>
+    <rect x="45" y="43.2" width="6.8" height="3.4" fill="#3d342c"/>
+    <rect x="45.4" y="40.8" width="6" height="2.4" rx="0.5" fill="#4a4d52"/>
+    <path d="M46.8 38.4 h3.6 l0.6 2.4 h-4.8 Z" fill="#3f4247"/>
+    <path d="M43.5 36 H52.5 Q56.4 36 57.8 37.2 Q56.2 38.4 53.5 38.4 H43.5 Z" fill="#4a4d52"/>
+    <path d="M43.5 36 H52.5 Q56.4 36 57.8 37.2 L57 37.6 Q55.8 36.8 52.5 36.8 H43.5 Z" fill="#5a5d62"/>
+  </g>
+  <!-- Horseshoe dropped in the ash. -->
+  <path d="M13.2 52.6 Q12.6 49.8 15 49.6 Q17.4 49.8 16.8 52.6" stroke="#4a4d52" stroke-width="1.2" fill="none" stroke-linecap="round" transform="rotate(-60 15 51)"/>
+  <!-- Hammer head on the ground, its handle burned away. -->
+  <path d="M10 46.5 L11.4 43.5" stroke="#3d342c" stroke-width="1.3" stroke-linecap="round"/>
+  <rect x="9.4" y="46" width="4.4" height="2.6" rx="0.6" fill="#4a4d52" transform="rotate(-8 11.6 47.3)"/>
+  <!-- Ash and a fallen roof board in front of the shed. -->
+  <g>
+    <ellipse cx="38" cy="51.4" rx="3.6" ry="1.4" fill="#9a958c"/>
+    <ellipse cx="37.4" cy="51" rx="1.8" ry="0.7" fill="#b8b3a8"/>
+    <path d="M20 51.6 L28 50.2" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+</svg>

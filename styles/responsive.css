@@ -1,0 +1,49 @@
+/* ==========================================================================
+   Responsive: below tablet width the fixed-width rails would crush the map,
+   so every column goes full-width and stacks: map first, then panels.
+   Last in the file so it wins the cascade over the base column widths.
+   ========================================================================== */
+@media (max-width: 68rem) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  /* The center column sits between the two rails in the markup, so the Build
+     rail would stack above the map. The order puts the map first in every
+     mode; the rails follow in their markup order. */
+  .app-center {
+    width: 100%;
+    order: -1;
+  }
+
+  .app-sidebar,
+  .app-buildrail,
+  .app-buildrail--stack {
+    width: 100%;
+  }
+
+  #map-canvas,
+  body.mode-build #map-canvas {
+    height: min(55vh, 32rem);
+  }
+
+  /* Stacked below the map, the tree rail scrolls with the page and keeps a
+     box of its own. */
+  .app-buildrail--tree {
+    position: relative;
+    max-height: min(60vh, 32rem);
+  }
+}
+
+/* At phone width the map controls span the top of the map, so the mini-map
+   shrinks and moves below them instead of covering the zoom buttons. */
+@media (max-width: 40rem) {
+  .minimap {
+    top: 3.5rem;
+  }
+
+  .minimap__canvas,
+  .minimap__caption {
+    max-width: 6.5rem;
+  }
+}

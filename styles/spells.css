@@ -1,0 +1,331 @@
+/* ==========================================================================
+   Spells: the Library-rail authoring form. The spellbook section and cast
+   modal styles arrive with later spellcasting phases; this sheet starts with
+   the form so the spell library reads cleanly.
+   ========================================================================== */
+
+/* The spell form reuses the item form's row/field primitives; these rules only
+   cover the controls the item form doesn't have. */
+
+.spell-form__description {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+
+/* Inline checkbox groups (components, flags): wrap onto multiple rows at narrow
+   widths, each option a compact tappable label. The options themselves are
+   .field-check labels (base.css). */
+.spell-form__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+/* The class list is long (12 options); lay it out as a multi-column grid so it
+   reads as a block rather than one cramped line. */
+.spell-form__checks--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--space-1) var(--space-2);
+}
+
+/* The caster spell picker on the encounter/NPC/bestiary forms: a scrollable
+   checkbox column so a long library stays a fixed-height block rather than a
+   page-long list. The dialogs and the inline rail forms mount the same
+   multiselect, so one rule covers both. */
+.modal__multiselect {
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.modal__multiselect-option {
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+
+.modal__multiselect-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+/* Options locked out by a pick cap read as unavailable, not just unclickable. */
+.modal__multiselect-option:has(input:disabled) {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* The cast dialog's projectile allocation: a row per reachable creature with a
+   small number input, and a live count of what is still unassigned. */
+.modal__allocation-rows {
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.modal__allocation-row {
+  font-size: var(--text-label);
+}
+
+.modal__allocation-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal__allocation-input {
+  width: 4rem;
+  flex: none;
+  text-align: center;
+}
+
+.modal__allocation-remaining {
+  margin: 0;
+}
+
+/* Anything short of a full allocation blocks the cast, so it reads as a
+   warning rather than as quiet help text. */
+.modal__allocation-remaining--short {
+  color: var(--danger);
+}
+
+/* A pinned-height variant for pickers whose options refilter as another field
+   changes (the creation form's class skills), so the dialog doesn't reflow
+   with every class pick. */
+.modal__multiselect--fixed {
+  height: 12rem;
+  max-height: none;
+}
+
+/* A short, fixed option list, such as the damage types, laid out in columns
+   so every pick stays in view without a scroll. */
+.modal__multiselect--columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--space-1) var(--space-2);
+  max-height: none;
+}
+
+/* ==========================================================================
+   Character-sheet spells: a read-only view of the castable set, one group per
+   spell level, spanning the full card width beneath the sheet's two section
+   columns because a full caster's list is long. Each chip opens the spell's
+   detail, where casting happens; learning and preparing live in the Spellbook
+   tab.
+   ========================================================================== */
+
+/* The sheet body's row gap already separates it from the columns above. */
+.character-sheet__spells {
+  margin-top: 0;
+}
+
+/* The level groups run across the section and wrap, so a caster with six levels
+   prepared reads as a few short lists rather than one tall one. `auto-fit` rather
+   than `auto-fill` so three groups share the whole row instead of leaving a
+   phantom fourth column empty, and the minimum holds a long spell name like
+   "Protection from Evil and Good" without wrapping it. */
+/* Subclass spell-rule warnings under the heading. The text takes the body
+   colour, because --warning is too light for label-sized text, and the icon
+   takes --warning. */
+.character-sheet__spell-warnings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-label);
+}
+
+.character-sheet__spell-warnings li {
+  align-items: flex-start;
+}
+
+.character-sheet__spell-warnings .icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+.character-sheet__spell-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.character-sheet__spell-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+}
+
+.character-sheet__spell-chip .icon {
+  color: var(--mana);
+}
+
+/* A once-per-rest invocation spent until a long rest. */
+.character-sheet__spell-chip--spent {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.character-sheet__spell-chip--spent .icon {
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Spellbook tab: a browsable, per-level list of the class's spells with
+   known/prepared badges. Rows open the detail modal to learn/prepare/forget.
+   ========================================================================== */
+
+.spellbook__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+}
+
+.spellbook__class {
+  font-weight: 600;
+}
+
+.spellbook__list {
+  gap: 0.15rem;
+}
+
+/* Each spell is a full-width .btn-bare button: name left, badges right. Known
+   spells sit slightly brighter so the class list reads as "have / could
+   learn". */
+.spellbook__row {
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.spellbook__row:hover,
+.spellbook__row:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.spellbook__row--known {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.spellbook__row-name {
+  flex: 1;
+}
+
+.spellbook__row-badges {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.spellbook__badge {
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.spellbook__badge--known {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.spellbook__badge--prepared {
+  background: var(--mana);
+  color: var(--mana-contrast);
+}
+
+/* ==========================================================================
+   Spell detail modal: a read-only card (school/level, casting meta, effect,
+   description) with the caller's action buttons, opened from a sheet chip or a
+   Spellbook row.
+   ========================================================================== */
+
+.spell-detail__subtitle {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+}
+
+.spell-detail__tag {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.spell-detail__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.spell-detail__effect {
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+  color: var(--mana);
+}
+
+.spell-detail__description {
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* The spell cards: a grid of cards under each level heading, with the free
+   slots of the level beside the heading. */
+.spellbook {
+  container-type: inline-size;
+}
+
+.spellbook__level-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.spellbook__slots {
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+.spellbook .spellbook__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-2);
+}
+
+.spellbook .spellbook__row {
+  align-items: flex-start;
+  min-height: 3.25rem;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.spellbook__row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.spellbook__row-line {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}

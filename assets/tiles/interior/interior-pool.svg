@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A still pool of water seen from above, with a wet rim and rocks along
+       its shore, over a transparent ground. The pool lies in the floor, so it
+       has no contact shadow. -->
+  <defs>
+    <radialGradient id="deep" cx="0.52" cy="0.55" r="0.55">
+      <stop offset="0" stop-color="#173d56"/>
+      <stop offset="0.65" stop-color="#255e80"/>
+      <stop offset="1" stop-color="#3f86a8"/>
+    </radialGradient>
+    <!-- One shore rock: a dark base under a lit top. -->
+    <g id="rk">
+      <ellipse rx="3" ry="2.2" fill="#463c33"/>
+      <ellipse cx="-0.5" cy="-0.6" rx="2.3" ry="1.5" fill="#85765f"/>
+    </g>
+  </defs>
+  <!-- Wet ground around the water. -->
+  <path d="M14 30 Q12 18 24 14 Q34 10 44 15 Q54 20 52 32 Q54 44 44 49 Q32 54 22 50 Q11 44 14 30 Z" fill="#4a3f35" stroke="#4a3f35" stroke-width="6" stroke-linejoin="round" opacity="0.6"/>
+  <!-- Water, shallow and light at the edge and deep in the middle. -->
+  <path d="M14 30 Q12 18 24 14 Q34 10 44 15 Q54 20 52 32 Q54 44 44 49 Q32 54 22 50 Q11 44 14 30 Z" fill="url(#deep)" stroke="#2a231d" stroke-width="0.9"/>
+  <!-- Ripples from a drip, and glints near the lit north-west shore. -->
+  <g fill="none" stroke="#8ac2e6" stroke-width="0.7">
+    <ellipse cx="36" cy="34" rx="3.5" ry="1.5" opacity="0.7"/>
+    <ellipse cx="36" cy="34" rx="7.5" ry="3.2" opacity="0.4"/>
+  </g>
+  <g fill="none" stroke="#cfe8f5" stroke-width="0.8" stroke-linecap="round" opacity="0.8">
+    <path d="M19 26 Q21 21 26 18.5"/>
+    <path d="M22 30 Q23 27.5 25 26"/>
+  </g>
+  <!-- Rocks along the shore, off any regular spacing. -->
+  <use href="#rk" transform="translate(13.5 24) scale(0.9)"/>
+  <use href="#rk" transform="translate(47 14.5) scale(0.8)"/>
+  <use href="#rk" transform="translate(53 38) scale(1.1 0.9)"/>
+  <use href="#rk" transform="translate(29 51.5) scale(1 0.8)"/>
+  <use href="#rk" transform="translate(16.5 44) scale(0.6)"/>
+  <use href="#rk" transform="translate(33.5 12) scale(0.55)"/>
+</svg>

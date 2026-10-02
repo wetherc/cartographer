@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <g id="post">
+      <rect x="-0.75" y="0" width="1.5" height="5" fill="#3d342c"/>
+      <path d="M-0.75 0 L0 -0.9 L0.75 0 Z" fill="#2e2824"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="53" cy="10" rx="7" ry="4" fill="#63a651"/>
+  <ellipse cx="10" cy="24" rx="6" ry="3.5" fill="#529044"/>
+  <!-- Scorched ground: a ring of browned grass around a burned yard. -->
+  <ellipse cx="34" cy="36" rx="25" ry="15" fill="#7a8a45"/>
+  <ellipse cx="34" cy="36" rx="21" ry="12" fill="#6a6443"/>
+  <ellipse cx="35" cy="37" rx="15" ry="8" fill="#5a5340"/>
+  <!-- Roofless house frame. The back and side walls stand to the eaves,
+       blackened on top, and the front wall is burned down to jagged
+       stubs around the door gap. -->
+  <g>
+    <rect x="21" y="25" width="25" height="13" fill="#6f685e"/>
+    <path d="M23 28 Q28 30 26 34 M33 27.5 Q37 30 41 28.5 M30 33 Q35 35 39 33" stroke="#5d564d" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <rect x="21" y="23" width="25" height="3" fill="#3d342c"/>
+    <path d="M21 23 H46" stroke="#2e2824" stroke-width="0.8"/>
+    <path d="M24 23 L25 22.2 L26.4 23 M35 23 L36.2 22 L37.6 23" stroke="#2e2824" stroke-width="0.6" fill="#2e2824"/>
+    <rect x="21" y="23" width="2.4" height="15" fill="#3d342c"/>
+    <rect x="43.6" y="23" width="2.4" height="15" fill="#3d342c"/>
+    <path d="M22.2 23 V38 M44.8 23 V38" stroke="#2e2824" stroke-width="0.4"/>
+  </g>
+  <!-- Ash heaps and embers on the floor inside the walls. -->
+  <g>
+    <ellipse cx="29" cy="31" rx="4" ry="2" fill="#9a958c"/>
+    <ellipse cx="28.4" cy="30.5" rx="2.2" ry="1" fill="#b8b3a8"/>
+    <ellipse cx="39" cy="33" rx="3.4" ry="1.7" fill="#9a958c"/>
+    <ellipse cx="38.5" cy="32.6" rx="1.8" ry="0.8" fill="#b8b3a8"/>
+    <circle cx="30.6" cy="31.6" r="0.5" fill="#e8a040"/>
+    <circle cx="27.2" cy="31.8" r="0.4" fill="#d8653a"/>
+    <circle cx="40.2" cy="33.5" r="0.45" fill="#d8653a"/>
+  </g>
+  <!-- Charred roof timbers: one king post still upright on the ridge line,
+       one rafter leaning on the back wall, one beam fallen across the floor. -->
+  <g stroke-linecap="round">
+    <ellipse cx="34" cy="29.6" rx="1.6" ry="0.6" fill="#2e2824" opacity="0.6"/>
+    <path d="M34 29.4 V17.5" stroke="#2e2824" stroke-width="1.6"/>
+    <path d="M33.6 29 V18" stroke="#4a3a2c" stroke-width="0.5"/>
+    <path d="M34 18 L29.5 22.4" stroke="#2e2824" stroke-width="1.2"/>
+    <path d="M41.5 34.5 L37 23.2" stroke="#2e2824" stroke-width="1.4"/>
+    <path d="M41.1 34.2 L36.9 23.8" stroke="#4a3a2c" stroke-width="0.4"/>
+    <path d="M24 35.5 L37.5 30" stroke="#2e2824" stroke-width="1.5"/>
+    <path d="M24.3 35 L37.2 29.6" stroke="#4a3a2c" stroke-width="0.45"/>
+    <circle cx="36.4" cy="30.5" r="0.45" fill="#e8a040" stroke="none"/>
+  </g>
+  <!-- Front wall stubs, broken at uneven heights, with the door gap open. -->
+  <g>
+    <path d="M21 38 V34.5 L22.6 33.2 L24 34.8 L25.4 32.6 L27 34 L28.6 33.4 L30 35.2 V41 H21 Z" fill="#4a433c"/>
+    <path d="M36 41 V34.8 L37.4 33.6 L38.8 35 L40.6 32.8 L42 34.4 L43.6 33 L46 34.6 V41 Z" fill="#4a433c"/>
+    <path d="M21 34.5 L22.6 33.2 L24 34.8 L25.4 32.6 L27 34 L28.6 33.4 L30 35.2 M36 34.8 L37.4 33.6 L38.8 35 L40.6 32.8 L42 34.4 L43.6 33 L46 34.6" stroke="#2e2824" stroke-width="0.9" fill="none" stroke-linejoin="round"/>
+    <path d="M24 37 V41 M27 36.5 V41 M39 37 V41 M42.5 36.5 V41" stroke="#3d342c" stroke-width="0.4"/>
+    <rect x="21" y="40" width="9" height="1.2" fill="#2e2824"/>
+    <rect x="36" y="40" width="10" height="1.2" fill="#2e2824"/>
+    <path d="M30 41 H36" stroke="#6b645a" stroke-width="1.2"/>
+  </g>
+  <!-- Fieldstone chimney, the tallest thing left standing, soot-stained
+       at the top, with a thin trail of smoke. -->
+  <g>
+    <ellipse cx="18.8" cy="38.6" rx="3.4" ry="1.1" fill="#2e2824" opacity="0.55"/>
+    <rect x="16.5" y="18" width="4.6" height="20.4" fill="#9a948a" stroke="#6f6a60" stroke-width="0.5"/>
+    <rect x="16.5" y="18" width="1.6" height="20.4" fill="#aaa498"/>
+    <path d="M16.5 22 H21.1 M16.5 26 H21.1 M16.5 30 H21.1 M16.5 34 H21.1 M18.8 18 V22 M17.8 22 V26 M19.9 26 V30 M18.3 30 V34 M19.6 34 V38.4" stroke="#6f6a60" stroke-width="0.4" fill="none"/>
+    <path d="M16.5 18 H21.1 V22.5 Q18.8 21 16.5 23.5 Z" fill="#3d342c"/>
+    <path d="M16.3 18 H21.3" stroke="#2e2824" stroke-width="0.8"/>
+  </g>
+  <g fill="#b8b3a8">
+    <circle cx="19.5" cy="15.5" r="1.3" opacity="0.55"/>
+    <circle cx="21.4" cy="12.8" r="1.5" opacity="0.4"/>
+    <circle cx="23.8" cy="10.5" r="1.3" opacity="0.25"/>
+  </g>
+  <!-- Burned field: ash where the crop rows stood, with a few charred
+       stalks, and a line of fence posts burned to their stumps. -->
+  <g>
+    <rect x="8" y="46" width="22" height="11" rx="2" fill="#6b5a3e"/>
+    <path d="M10 49.5 H28 M10 53 H28" stroke="#4a3f2e" stroke-width="1.2"/>
+    <path d="M12 49.5 H17 M20 53 H26" stroke="#9a958c" stroke-width="1" stroke-linecap="round"/>
+    <path d="M13 49.5 L12.6 47.8 M22 53 L22.5 51.2 M25 49.5 L24.7 47.9 M16 53 L16.4 51.4" stroke="#2e2824" stroke-width="0.6" stroke-linecap="round"/>
+  </g>
+  <use href="#post" transform="translate(9 41)"/>
+  <use href="#post" transform="translate(16 41) scale(1 0.7) translate(0 2)"/>
+  <use href="#post" transform="translate(29 41) scale(1 0.5) translate(0 5)"/>
+  <path d="M9 42.2 L14 42.6" stroke="#3d342c" stroke-width="1" fill="none"/>
+  <path d="M20.5 44.6 L25.5 46" stroke="#3d342c" stroke-width="1" stroke-linecap="round"/>
+  <!-- Well to the east, its stone ring whole under a scorched frame, and a cart
+       wheel left in the yard. -->
+  <g>
+    <ellipse cx="53" cy="44" rx="4.5" ry="2" fill="#8e8975"/>
+    <ellipse cx="53" cy="43.4" rx="3" ry="1.2" fill="#2f3d4a"/>
+    <path d="M48.5 44 V45.8 Q53 48 57.5 45.8 V44" fill="#8e8975" stroke="#6f6a60" stroke-width="0.5"/>
+    <path d="M49.6 43.4 V37.5 M56.4 43.4 V38.8" stroke="#2e2824" stroke-width="1" stroke-linecap="round"/>
+    <path d="M49.6 37.8 L53.5 37.2" stroke="#2e2824" stroke-width="0.9" stroke-linecap="round"/>
+  </g>
+  <g>
+    <circle cx="44" cy="48" r="3" fill="none" stroke="#3d342c" stroke-width="0.9"/>
+    <path d="M44 45 V51 M41 48 H47 M41.9 45.9 L46.1 50.1" stroke="#3d342c" stroke-width="0.5"/>
+    <circle cx="44" cy="48" r="0.7" fill="#2e2824"/>
+  </g>
+  <path d="M34 58 Q35 55.5 36 58 M48 58 Q49 55.5 50 58 M56 20 Q57 17.5 58 20" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

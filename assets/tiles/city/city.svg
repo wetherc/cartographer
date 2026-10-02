@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Town house seen over the wall: plastered front under a gabled roof.
+         The origin is the top-left corner of the front, and the east half
+         is the shaded side. -->
+    <g id="house">
+      <rect width="10" height="9" fill="#e0c79a"/>
+      <rect x="5" width="5" height="9" fill="#cdb386"/>
+      <rect width="10" height="9" fill="none" stroke="#a98f66" stroke-width="0.6"/>
+      <rect x="1.8" y="2.5" width="2.2" height="2.6" fill="#6d5f42"/>
+      <rect x="6" y="2.5" width="2.2" height="2.6" fill="#5f5138"/>
+      <polygon points="-1,0.3 5,-7 11,0.3" fill="#b04b32"/>
+      <polygon points="5,-7 11,0.3 5,0.3" fill="#8f3a26"/>
+    </g>
+    <g id="house-back">
+      <rect width="10" height="9" fill="#d2b88a"/>
+      <polygon points="-1,0.3 5,-7 11,0.3" fill="#8a3d2b"/>
+      <polygon points="5,-7 11,0.3 5,0.3" fill="#6d2f20"/>
+    </g>
+    <!-- Corner tower silhouette: a body under a corbelled band with three
+         merlons. The clip keeps the east half of the west tower, and a
+         translated copy of the tower moves its clip with it. -->
+    <path id="tower" d="M4 54 V39.5 H3 V34.5 H5 V37 H7 V34.5 H10 V37 H12 V34.5 H14 V39.5 H13 V54 Z"/>
+    <clipPath id="tower-east"><rect x="8.5" width="6" height="64"/></clipPath>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="8" rx="7" ry="4" fill="#63a651"/>
+  <ellipse cx="55" cy="60" rx="6" ry="3" fill="#529044"/>
+  <ellipse cx="32" cy="56" rx="13" ry="4.5" fill="#c2a36c"/>
+  <ellipse cx="32" cy="56.5" rx="8.5" ry="2.8" fill="#cdb078"/>
+  <!-- Back tier of rooftops on either side of the church. -->
+  <use href="#house-back" transform="translate(13 26)"/>
+  <use href="#house-back" transform="translate(41 26)"/>
+  <!-- Church with a tall slate spire. -->
+  <g>
+    <rect x="27" y="15" width="10" height="20" fill="#c9c2b2" stroke="#7a7468" stroke-width="0.6"/>
+    <rect x="32" y="15.3" width="4.7" height="19.4" fill="#b0aa9e"/>
+    <polygon points="26.3,15.3 32,2.5 37.7,15.3" fill="#4a5d74"/>
+    <polygon points="32,2.5 37.7,15.3 32,15.3" fill="#37485c"/>
+    <circle cx="32" cy="19.5" r="2" fill="#7ec8e8" stroke="#7a7468" stroke-width="0.5"/>
+  </g>
+  <!-- Front tier of rooftops above the wall walk. -->
+  <use href="#house" transform="translate(10 34)"/>
+  <use href="#house" transform="translate(21.5 35)"/>
+  <use href="#house" transform="translate(32.5 35)"/>
+  <use href="#house" transform="translate(44 34)"/>
+  <!-- Low sandstone curtain wall with merlons and an arched gate. -->
+  <rect x="9" y="43" width="46" height="11" fill="#cdbf9f"/>
+  <rect x="32" y="43" width="23" height="11" fill="#b8aa8a"/>
+  <path d="M9 48.5 H28 M36 48.5 H55 M15 43 V48.5 M21 48.5 V54 M43 43 V48.5 M49 48.5 V54" stroke="#9c8f72" stroke-width="0.6" fill="none"/>
+  <g stroke="#6f6550" stroke-width="0.6">
+    <path d="M16 43 v-2 h3 v2 Z M22.5 43 v-2 h3 v2 Z" fill="#cdbf9f"/>
+    <path d="M38.5 43 v-2 h3 v2 Z M45 43 v-2 h3 v2 Z" fill="#b8aa8a"/>
+  </g>
+  <rect x="9" y="43" width="46" height="11" fill="none" stroke="#6f6550" stroke-width="0.8"/>
+  <path d="M28 54 V48 Q32 43.5 36 48 V54 Z" fill="#2c2820"/>
+  <path d="M28 48 Q32 43.5 36 48" stroke="#9c8f72" stroke-width="0.9" fill="none"/>
+  <!-- Corner towers with flat crenellated tops. -->
+  <use href="#tower" fill="#cdbf9f"/>
+  <use href="#tower" fill="#b8aa8a" clip-path="url(#tower-east)"/>
+  <use href="#tower" transform="translate(47 0)" fill="#b8aa8a"/>
+  <use href="#tower" transform="translate(47 0)" fill="#a3967a" clip-path="url(#tower-east)"/>
+  <g fill="none" stroke="#6f6550" stroke-width="0.8">
+    <use href="#tower"/>
+    <use href="#tower" transform="translate(47 0)"/>
+  </g>
+  <g fill="#3a3630">
+    <rect x="7.5" y="43" width="2" height="4" rx="1"/>
+    <rect x="54.5" y="43" width="2" height="4" rx="1"/>
+  </g>
+  <path d="M28.5 60 Q32 59 35.5 60" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

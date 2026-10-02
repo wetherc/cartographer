@@ -1,0 +1,97 @@
+/* ==========================================================================
+   Quest details: the objectives and links under a quest row
+   ========================================================================== */
+
+/* The details line up with the quest title, past the status toggle, so the
+   toggle column stays clear down the whole row. */
+.quest-detail {
+  margin: var(--space-1) 0 0 calc(1.75rem + var(--space-2));
+}
+
+.quest-detail__notes {
+  margin: 0;
+}
+
+.quest-detail__objectives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The controls sit at the top of a long objective, beside its first line.
+   The text and the player's status icon take a top padding that centers
+   the first line in the 1.5rem band of the row's buttons. */
+.quest-objective {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* The row controls are smaller than the quest's own, so one objective line
+   keeps room for its text on a narrow rail. */
+.quest-objective .btn--icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.2rem;
+}
+
+/* The done toggle draws its own box, so the button frame around it would read
+   as a second box. The frame stays off until hover, and focus keeps its ring. */
+.quest-objective > .btn--icon[aria-pressed] {
+  border-color: transparent;
+  background: none;
+}
+
+.quest-objective > .btn--icon[aria-pressed]:hover {
+  background: var(--surface-sunken);
+}
+
+.quest-objective > .btn--icon[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.quest-objective__text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: calc((1.5rem - var(--text-label) * var(--line-body)) / 2);
+  gap: var(--space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.quest-objective--done .quest-objective__text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* A player's objective has a checked or an empty box in place of the toggle. */
+.quest-objective__status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding-top: calc((1.5rem - 14px) / 2);
+  color: var(--text-muted);
+}
+
+.quest-detail__links {
+  flex-wrap: wrap;
+}
+
+.quest-detail__link {
+  font-size: var(--text-label);
+}
+
+.quest-detail__link .btn-bare:hover {
+  text-decoration: underline;
+}
+
+.quest-detail__adds {
+  flex-wrap: wrap;
+}
+
+.quest-detail__add {
+  font-size: var(--text-label);
+}

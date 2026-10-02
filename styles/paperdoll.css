@@ -1,0 +1,215 @@
+/* ==========================================================================
+   The paperdoll of the Equipment tab, and the item picker it opens.
+
+   src/ui/InventoryEquipment.js builds both. Each slot is a framed card with
+   the item's name and one short stat line. The full details live in the
+   picker, where long text wraps onto its own lines.
+   ========================================================================== */
+
+/* The query measures the tab, so the paperdoll gets two columns in a narrow
+   full sheet and the three-column doll in a wide one. */
+.paperdoll {
+  container: paperdoll / inline-size;
+  padding-bottom: var(--space-2);
+}
+
+/* The grid below would otherwise defeat the hidden attribute that the
+   Equipment and Inventory tabs toggle. */
+.paperdoll[hidden] {
+  display: none;
+}
+
+.paperdoll__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.paperdoll__plate {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.paperdoll__name {
+  font-family: var(--font-title);
+  font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.paperdoll__ac {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.paperdoll__slot {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: 4.25rem;
+  padding: var(--space-2);
+  text-align: left;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.paperdoll__slot:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.paperdoll__slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.paperdoll__slot:disabled {
+  cursor: default;
+}
+
+.paperdoll__slot--empty {
+  border-style: dashed;
+  border-color: var(--border);
+  background: transparent;
+}
+
+.paperdoll__slot-label {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.paperdoll__slot-item {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.paperdoll__slot--empty .paperdoll__slot-item {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.paperdoll__slot-stat {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The doll: armor down the left, weapons and rings down the right, and the
+   plate in the middle. */
+@container paperdoll (min-width: 34rem) {
+  .paperdoll__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'helmet plate mainHand'
+      'chest plate offHand'
+      'gloves plate ranged'
+      'greaves plate accessory'
+      '. plate accessory2';
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+
+  .paperdoll__plate {
+    grid-area: plate;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .paperdoll__name {
+    font-size: 1.5rem;
+  }
+
+  .paperdoll__ac {
+    font-size: 1.25rem;
+  }
+
+  .paperdoll__slot[data-slot='helmet'] {
+    grid-area: helmet;
+  }
+  .paperdoll__slot[data-slot='chest'] {
+    grid-area: chest;
+  }
+  .paperdoll__slot[data-slot='gloves'] {
+    grid-area: gloves;
+  }
+  .paperdoll__slot[data-slot='greaves'] {
+    grid-area: greaves;
+  }
+  .paperdoll__slot[data-slot='mainHand'] {
+    grid-area: mainHand;
+  }
+  .paperdoll__slot[data-slot='offHand'] {
+    grid-area: offHand;
+  }
+  .paperdoll__slot[data-slot='ranged'] {
+    grid-area: ranged;
+  }
+  .paperdoll__slot[data-slot='accessory'] {
+    grid-area: accessory;
+  }
+  .paperdoll__slot[data-slot='accessory2'] {
+    grid-area: accessory2;
+  }
+}
+
+/* The item picker. */
+.equip-picker {
+  width: min(32rem, calc(100vw - 2 * var(--space-4)));
+}
+
+.equip-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: min(60vh, 28rem);
+  overflow-y: auto;
+}
+
+.equip-picker__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.equip-picker__option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--surface-raised);
+}
+
+.equip-picker__option input {
+  margin-top: 0.2rem;
+  flex: none;
+}
+
+.equip-picker__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.equip-picker__name {
+  font-weight: 600;
+}
+
+.equip-picker__detail {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}

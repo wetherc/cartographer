@@ -1,0 +1,378 @@
+/* ==========================================================================
+   Encounters
+   ========================================================================== */
+
+/* The Active encounter / Nearby encounters tab strip. */
+.encounter-panel__tabs {
+  margin-bottom: var(--space-2);
+}
+
+/* The one-line difficulty hint above the Active rows. */
+.encounter-panel__difficulty {
+  font-size: var(--text-label);
+  padding-bottom: var(--space-1);
+}
+
+.encounter-panel__row {
+  padding: var(--space-1) 0;
+}
+
+.encounter-panel__row--defeated {
+  color: var(--text-muted);
+}
+
+.encounter-panel__row--defeated .encounter-panel__label {
+  text-decoration: line-through;
+}
+
+/* The name line and, below it, the muted HP and place line. The column can
+   shrink below its text width, so the amount field keeps its room. */
+.encounter-panel__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-label);
+}
+
+.encounter-panel__name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.encounter-panel__detail {
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+/* The damage or heal amount with its caption above it. */
+.encounter-panel__amount-field {
+  align-items: center;
+  font-size: var(--text-label);
+}
+
+.encounter-panel__amount-caption {
+  color: var(--text-muted);
+}
+
+.encounter-panel__amount {
+  width: 3rem;
+  text-align: center;
+}
+
+.encounter-panel__add {
+  font-size: var(--text-label);
+}
+
+/* The compact Nearby list: one line per group of foes. For the GM, each
+   line is a disclosure button that opens the full rows of its members. */
+.encounter-panel__nearby {
+  gap: var(--space-1);
+}
+
+.encounter-panel__line {
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  text-align: left;
+}
+
+.encounter-panel__line--toggle {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.encounter-panel__line--toggle:hover {
+  background: var(--surface-sunken);
+}
+
+.encounter-panel__line--toggle .icon {
+  transition: transform 120ms ease;
+}
+
+.encounter-panel__line--toggle[aria-expanded='true'] {
+  border-color: var(--border);
+}
+
+.encounter-panel__line--toggle[aria-expanded='true'] .icon {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .encounter-panel__line--toggle .icon {
+    transition: none;
+  }
+}
+
+.encounter-panel__line-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.encounter-panel__distance {
+  white-space: nowrap;
+}
+
+/* The open group's member rows, set in under its line. */
+.encounter-panel__members {
+  padding: 0 0 var(--space-2) var(--space-2);
+}
+
+/* ==========================================================================
+   In-game time
+   ========================================================================== */
+
+.time-panel__readout {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 1.2rem;
+  margin-bottom: var(--space-2);
+}
+
+.time-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.time-panel__btn {
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   NPCs
+   ========================================================================== */
+
+/* The row stacks: the head first, then the condition chips and the exhaustion
+   pips that the GM view adds below it. Each bar gets the full width of the
+   rail, so the pips stay on screen and the notes keep their column. */
+.npc-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.npc-panel__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.npc-panel__body {
+  flex: 1;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.npc-panel__name {
+  font-weight: 600;
+}
+
+.npc-panel__badge {
+  text-transform: capitalize;
+}
+
+/* Disposition colour comes from the shared .badge--success / --neutral /
+   --danger modifiers (base.css). */
+
+.npc-panel__role {
+  font-size: var(--text-label);
+  opacity: 0.8;
+}
+
+.npc-panel__notes {
+  font-size: var(--text-label);
+  opacity: 0.7;
+}
+
+/* Long notes show two lines until the GM presses More. */
+.npc-panel__notes--folded {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* The "Travels with party" toggle reads as on while it is pressed. */
+.npc-panel__companion {
+  align-self: flex-start;
+  font-size: var(--text-label);
+}
+
+.npc-panel__companion[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.npc-panel__location {
+  font-size: var(--text-label);
+}
+
+.npc-scope {
+  align-self: flex-start;
+  margin-bottom: var(--space-2);
+}
+
+body.role-player .npc-scope {
+  display: none;
+}
+
+.npc-panel__controls {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.npc-panel__add {
+  margin-top: var(--space-2);
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Initiative
+   ========================================================================== */
+
+/* While a fight runs, the sidebar card is a pointer to the combat screen: the
+   round and whose turn it is, plus the button in. The row classes below serve
+   the combat setup dialog's roster. */
+.initiative-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.initiative-panel__status {
+  font-weight: 600;
+}
+
+.initiative-panel__row {
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+/* A foe row marks its side with the sword of the combat cards, in the danger
+   color, and keeps its name in the text color, so the name does not read as
+   a link. */
+.combat-setup__foe-mark {
+  display: inline-flex;
+  vertical-align: -0.125em;
+  margin-right: var(--space-1);
+  color: var(--danger);
+}
+
+.initiative-panel__name {
+  flex: 1;
+}
+
+.initiative-panel__init {
+  width: 3rem;
+  text-align: center;
+}
+
+/* Each combatant's DEX modifier, shown between name and initiative value. */
+.initiative-panel__modifier {
+  font-family: var(--font-mono);
+}
+
+/* The optional Stealth contest above the setup rows. */
+.combat-setup__stealth {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.combat-setup__stealth [hidden],
+.combat-setup__stealth-total[hidden],
+.combat-setup__sneak[hidden],
+.combat-setup__passive[hidden],
+.combat-setup__stealth-outcome:empty {
+  display: none;
+}
+
+/* The setup rows wrap, so the Stealth cells drop below the name and the
+   initiative box on a narrow screen instead of running off the dialog. */
+.combat-setup__row {
+  flex-wrap: wrap;
+}
+
+.combat-setup__sneak {
+  margin-left: auto;
+}
+
+/* The foes that the GM can add from farther out, under a rule of their own. */
+.combat-setup__nearby-title {
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-label);
+}
+
+/* The distance sits on its own line under the name, and the Join and
+   Surprised cells share one width, so every initiative field lines up. */
+.combat-setup__distance {
+  display: block;
+  font-size: var(--text-label);
+}
+
+/* The "Add the whole group" box sits above the foes of one tile. */
+.combat-setup__group-row {
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+/* The label names every creature in the group, so it wraps. A label kept on
+   one line widens the dialog past a 390 px screen and scrolls it sideways. */
+.combat-setup__group {
+  min-width: 0;
+  white-space: normal;
+}
+
+/* The dialog opens at its top, and the button row stays in view at the
+   bottom, so the focused Start combat button shows on a long roster. */
+.combat-setup .modal__actions {
+  position: sticky;
+  bottom: calc(-1 * var(--space-5));
+  margin-bottom: calc(-1 * var(--space-5));
+  padding-block: var(--space-3) var(--space-5);
+  background: var(--surface);
+}
+
+.combat-setup__row .initiative-panel__surprised {
+  min-width: 6.5rem;
+}
+
+.combat-setup__stealth-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.combat-setup__stealth-outcome p {
+  margin: 0;
+}
+
+.combat-setup__stealth-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  width: 8rem;
+}
+
+.combat-setup__stealth-field {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.combat-setup__passive {
+  min-width: 8rem;
+  font-family: var(--font-mono);
+  text-align: center;
+}

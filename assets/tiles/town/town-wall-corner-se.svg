@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A corner of the town wall, open to the south and east. It caps the north-west
+       corner of a ring. The arms are clipped copies of town-wall-h and
+       town-wall-v, so each one joins its straight piece at the tile edge.
+       A corner tower stands over the junction. -->
+  <defs>
+    <g id="rear-merlon">
+      <rect x="0" y="15" width="5" height="5.5" fill="#a39d91" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="15.25" width="4.5" height="0.7" fill="#bdb7ab"/>
+    </g>
+    <g id="merlon">
+      <rect x="0" y="22" width="5" height="5" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="22.25" width="4.5" height="0.9" fill="#c8c2b6"/>
+    </g>
+    <!-- A merlon seen from above: its cap, and the south face below it. -->
+    <g id="v-merlon">
+      <rect x="0" y="0" width="3.5" height="4.5" fill="#c8c2b6"/>
+      <rect x="0" y="4.5" width="3.5" height="1" fill="#8a8478"/>
+    </g>
+    <clipPath id="h-arm"><rect x="32" width="32" height="64"/></clipPath>
+    <!-- The south arm is nearer than the tower, so its wall walk
+         starts over the lower part of the tower face. -->
+    <clipPath id="v-arm"><rect y="29.5" width="64" height="34.5"/></clipPath>
+  </defs>
+  <!-- East arm, the same as town-wall-h. -->
+  <g clip-path="url(#h-arm)">
+    <rect y="40" width="64" height="3.2" fill="#000000" opacity="0.18"/>
+    <rect y="18" width="64" height="2.5" fill="#a39d91"/>
+    <path d="M0 18.4 H64" stroke="#5c574e" stroke-width="0.8"/>
+    <use href="#rear-merlon" transform="translate(1 0)"/>
+    <use href="#rear-merlon" transform="translate(9 0)"/>
+    <use href="#rear-merlon" transform="translate(17 0)"/>
+    <use href="#rear-merlon" transform="translate(25 0)"/>
+    <use href="#rear-merlon" transform="translate(33 0)"/>
+    <use href="#rear-merlon" transform="translate(41 0)"/>
+    <use href="#rear-merlon" transform="translate(49 0)"/>
+    <use href="#rear-merlon" transform="translate(57 0)"/>
+    <rect y="20.5" width="64" height="6.5" fill="#c8c2b6"/>
+    <path d="M0 20.5 H64" stroke="#7a7468" stroke-width="0.5"/>
+    <path d="M4 20.8 V22 M12 20.8 V22 M20 20.8 V22 M28 20.8 V22 M36 20.8 V22 M44 20.8 V22 M52 20.8 V22 M60 20.8 V22" stroke="#a39d91" stroke-width="0.5"/>
+    <rect y="27" width="64" height="13" fill="#b0aa9e"/>
+    <g stroke="#7a7468" stroke-width="0.5">
+      <path d="M0 27 H64 M0 31.3 H64 M0 35.6 H64"/>
+      <path d="M3.5 27 V31.3 M11.5 27 V31.3 M19.5 27 V31.3 M27.5 27 V31.3 M35.5 27 V31.3 M43.5 27 V31.3 M51.5 27 V31.3 M59.5 27 V31.3"/>
+      <path d="M7.5 31.3 V35.6 M15.5 31.3 V35.6 M23.5 31.3 V35.6 M31.5 31.3 V35.6 M39.5 31.3 V35.6 M47.5 31.3 V35.6 M55.5 31.3 V35.6 M63.5 31.3 V35.6"/>
+      <path d="M3.5 35.6 V40 M11.5 35.6 V40 M19.5 35.6 V40 M27.5 35.6 V40 M35.5 35.6 V40 M43.5 35.6 V40 M51.5 35.6 V40 M59.5 35.6 V40"/>
+    </g>
+    <path d="M0 40 H64" stroke="#5c574e" stroke-width="0.8"/>
+    <use href="#merlon" transform="translate(1 0)"/>
+    <use href="#merlon" transform="translate(9 0)"/>
+    <use href="#merlon" transform="translate(17 0)"/>
+    <use href="#merlon" transform="translate(25 0)"/>
+    <use href="#merlon" transform="translate(33 0)"/>
+    <use href="#merlon" transform="translate(41 0)"/>
+    <use href="#merlon" transform="translate(49 0)"/>
+    <use href="#merlon" transform="translate(57 0)"/>
+    <g fill="#3a3630">
+        <rect x="3.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+        <rect x="19.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+        <rect x="35.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+        <rect x="51.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    </g>
+  </g>
+  <!-- Corner tower over the junction. Its roof follows the wall: short
+       merlons on the far parapet, a flagstone floor between two side
+       parapets, and taller merlons on the near parapet. -->
+  <rect x="20" y="42.5" width="24" height="3.2" fill="#000000" opacity="0.18"/>
+  <g fill="#a39d91" stroke="#5c574e" stroke-width="0.5">
+    <rect x="20" y="3.5" width="2.6" height="2.5"/><rect x="25.35" y="3.5" width="2.6" height="2.5"/>
+    <rect x="30.7" y="3.5" width="2.6" height="2.5"/><rect x="36.05" y="3.5" width="2.6" height="2.5"/>
+    <rect x="41.4" y="3.5" width="2.6" height="2.5"/>
+  </g>
+  <rect x="20" y="5" width="24" height="1.5" fill="#a39d91"/>
+  <rect x="22" y="6.5" width="20" height="12" fill="#bdb7ab"/>
+  <path d="M22 10.5 H42 M22 14.5 H42 M27 6.5 V10.5 M37 6.5 V10.5 M32 10.5 V14.5 M27 14.5 V18.5 M37 14.5 V18.5" stroke="#a39d91" stroke-width="0.5"/>
+  <rect x="29.5" y="8" width="5" height="3.2" fill="#6b4a2a" stroke="#3f2f20" stroke-width="0.4"/>
+  <rect x="20" y="5" width="2" height="13.5" fill="#b0aa9e"/>
+  <rect x="42" y="5" width="2" height="13.5" fill="#9a948a"/>
+  <g fill="#c8c2b6">
+    <rect x="20" y="8" width="2" height="2.6"/><rect x="20" y="12" width="2" height="2.6"/>
+  </g>
+  <g fill="#b3ad9f">
+    <rect x="42" y="8" width="2" height="2.6"/><rect x="42" y="12" width="2" height="2.6"/>
+  </g>
+  <g fill="#8a8478">
+    <rect x="20" y="10.6" width="2" height="0.7"/><rect x="20" y="14.6" width="2" height="0.7"/>
+    <rect x="42" y="10.6" width="2" height="0.7"/><rect x="42" y="14.6" width="2" height="0.7"/>
+  </g>
+  <path d="M20 18.5 V5 H44 V18.5" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+  <path d="M22 6.5 V18.5 M42 6.5 V18.5" stroke="#7a7468" stroke-width="0.5"/>
+  <rect x="20" y="18.5" width="24" height="24" fill="#b0aa9e"/>
+  <rect x="32" y="18.5" width="12" height="24" fill="#000000" opacity="0.1"/>
+  <g stroke="#7a7468" stroke-width="0.5">
+    <path d="M20 22.8 H44 M20 27.1 H44 M20 31.4 H44 M20 35.7 H44 M20 40 H44"/>
+    <path d="M26 18.5 V22.8 M32 18.5 V22.8 M38 18.5 V22.8 M23 22.8 V27.1 M29 22.8 V27.1 M35 22.8 V27.1 M41 22.8 V27.1"/>
+    <path d="M26 27.1 V31.4 M32 27.1 V31.4 M38 27.1 V31.4 M23 31.4 V35.7 M29 31.4 V35.7 M35 31.4 V35.7 M41 31.4 V35.7"/>
+    <path d="M26 35.7 V40 M32 35.7 V40 M38 35.7 V40 M23 40 V42.5 M29 40 V42.5 M35 40 V42.5 M41 40 V42.5"/>
+  </g>
+  <rect x="20" y="18.5" width="24" height="24" fill="none" stroke="#5c574e" stroke-width="0.8"/>
+  <g fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5">
+    <rect x="20" y="15" width="2.6" height="3.5"/><rect x="25.35" y="15" width="2.6" height="3.5"/>
+    <rect x="30.7" y="15" width="2.6" height="3.5"/><rect x="36.05" y="15" width="2.6" height="3.5"/>
+    <rect x="41.4" y="15" width="2.6" height="3.5"/>
+  </g>
+  <g fill="#3a3630">
+    <rect x="25.5" y="23" width="1" height="3.6" rx="0.5"/><rect x="37.5" y="23" width="1" height="3.6" rx="0.5"/>
+  </g>
+  <!-- South arm, the same as town-wall-v, ending against the tower. -->
+  <rect x="41" y="42.5" width="3.2" height="21.5" fill="#000000" opacity="0.18"/>
+  <g clip-path="url(#v-arm)">
+    <rect x="23" width="18" height="64" fill="#b0aa9e"/>
+    <rect x="37.5" width="3.5" height="64" fill="#9a948a"/>
+    <rect x="26.5" width="11" height="64" fill="#c8c2b6"/>
+    <path d="M26.5 4 H37.5 M26.5 12 H37.5 M26.5 20 H37.5 M26.5 28 H37.5 M26.5 36 H37.5 M26.5 44 H37.5 M26.5 52 H37.5 M26.5 60 H37.5" stroke="#a39d91" stroke-width="0.5"/>
+    <path d="M26.5 0 V64 M37.5 0 V64" stroke="#7a7468" stroke-width="0.5"/>
+    <path d="M23.4 0 V64 M40.6 0 V64" stroke="#5c574e" stroke-width="0.8"/>
+    <g>
+        <use href="#v-merlon" transform="translate(23 1)"/>
+        <use href="#v-merlon" transform="translate(23 9)"/>
+        <use href="#v-merlon" transform="translate(23 17)"/>
+        <use href="#v-merlon" transform="translate(23 25)"/>
+        <use href="#v-merlon" transform="translate(23 33)"/>
+        <use href="#v-merlon" transform="translate(23 41)"/>
+        <use href="#v-merlon" transform="translate(23 49)"/>
+        <use href="#v-merlon" transform="translate(23 57)"/>
+    </g>
+    <g opacity="0.88">
+        <use href="#v-merlon" transform="translate(37.5 1)"/>
+        <use href="#v-merlon" transform="translate(37.5 9)"/>
+        <use href="#v-merlon" transform="translate(37.5 17)"/>
+        <use href="#v-merlon" transform="translate(37.5 25)"/>
+        <use href="#v-merlon" transform="translate(37.5 33)"/>
+        <use href="#v-merlon" transform="translate(37.5 41)"/>
+        <use href="#v-merlon" transform="translate(37.5 49)"/>
+        <use href="#v-merlon" transform="translate(37.5 57)"/>
+    </g>
+  </g>
+  <path d="M23 29.9 H41" stroke="#5c574e" stroke-width="0.8"/>
+</svg>

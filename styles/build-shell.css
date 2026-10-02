@@ -1,0 +1,124 @@
+/* ==========================================================================
+   Build shell: on a window wider than the stacking point of responsive.css,
+   Build mode is a fixed screen of 100dvh with no page scroll. The world tree
+   sits on the left, the map fills the center, and the Build tools sit on the
+   right. Each rail scrolls on its own, and only when its content is taller
+   than the window. The Build tools rail grows with the window, so the tile
+   palette shows more columns on a wide screen before it has to scroll.
+   ========================================================================== */
+
+@media (min-width: 68.0625rem) {
+  /* The page never scrolls here, so the gutter that base.css reserves for the
+     page scrollbar would only leave an empty strip at the right edge. */
+  html:has(body.mode-build) {
+    scrollbar-gutter: auto;
+  }
+
+  body.mode-build {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  body.mode-build .app-header {
+    flex: none;
+  }
+
+  body.mode-build .app-main {
+    flex: 1;
+    min-height: 0;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  /* The tree rail takes the full column height, and the tree scrolls inside
+     it. Its card frame ends a space above the bottom edge of the window. */
+  body.mode-build .app-buildrail--tree {
+    margin-bottom: var(--space-4);
+  }
+
+  body.mode-build .app-center {
+    min-height: 0;
+  }
+
+  body.mode-build .app-map {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: var(--space-4);
+  }
+
+  body.mode-build .map-viewport {
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.mode-build #map-canvas {
+    height: 100%;
+  }
+
+  /* About 5 swatch columns at 1440 px and 7 at 1920 px. The map keeps the
+     rest of the width. */
+  body.mode-build #build-tools {
+    width: clamp(19rem, 22vw, 30rem);
+    min-height: 0;
+    gap: var(--space-2);
+  }
+
+  #build-tools > .tabs,
+  #build-tools > .build-warning {
+    flex: none;
+  }
+
+  /* A tab panel that is taller than the window (a long foe list) scrolls on
+     its own, and the tab strip stays in place. The side padding gives the
+     card shadows room inside the scroll box. */
+  #build-tools > .tabs__panel {
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--space-1) var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* On the Paint tab the palette card takes the height that Generate and
+     Tools leave, and the swatch sections scroll inside it. The sections keep
+     a minimum height, so on a short window the panel scrolls instead and the
+     swatches never shrink to a sliver. */
+  #build-panel-paint > #palette-container {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #palette-container > .palette {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #palette-container .palette__sections {
+    flex: 1 1 0;
+    min-height: 7rem;
+  }
+}
+
+/* Undo stroke and Export PNG sit side by side when the rail is wide enough,
+   which leaves more height to the palette. */
+.map-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-2);
+}
+
+/* Thin, quiet scrollbars on the Build boxes that scroll. The colours come
+   from the theme tokens, so they follow the light and dark themes. */
+body.mode-build .world-tree,
+body.mode-build #build-tools > .tabs__panel,
+body.mode-build .palette__sections {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}

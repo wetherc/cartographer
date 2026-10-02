@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A water gate in an east-west run of the town wall, where a north-south
+       river goes under the wall. The wall matches town-wall-h at both edges,
+       and the river matches river-v at both edges, so the piece joins the
+       river tiles above and below it. -->
+  <defs>
+    <g id="rear-merlon">
+      <rect x="0" y="15" width="5" height="5.5" fill="#a39d91" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="15.25" width="4.5" height="0.7" fill="#bdb7ab"/>
+    </g>
+    <g id="merlon">
+      <rect x="0" y="22" width="5" height="5" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="22.25" width="4.5" height="0.9" fill="#c8c2b6"/>
+    </g>
+  </defs>
+  <!-- The river, straight through the tile, with the banks and water of
+       river-v. -->
+  <path d="M32 0 V64" stroke="#6b5a3e" stroke-width="22" fill="none"/>
+  <path d="M32 0 V64" stroke="#33719f" stroke-width="18" fill="none"/>
+  <g stroke="#7fb2d9" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M28 3 C27 7 27 11 28 15"/>
+    <path d="M36 47 C37 51 37 56 36 60"/>
+  </g>
+  <g fill="#8ac2e6"><circle cx="35" cy="8" r="0.9"/><circle cx="29" cy="53" r="1"/></g>
+  <!-- Wall, the same as town-wall-h. -->
+  <rect y="40" width="64" height="3.2" fill="#000000" opacity="0.18"/>
+  <rect y="18" width="64" height="2.5" fill="#a39d91"/>
+  <path d="M0 18.4 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <use href="#rear-merlon" transform="translate(1 0)"/>
+  <use href="#rear-merlon" transform="translate(9 0)"/>
+  <use href="#rear-merlon" transform="translate(17 0)"/>
+  <use href="#rear-merlon" transform="translate(25 0)"/>
+  <use href="#rear-merlon" transform="translate(33 0)"/>
+  <use href="#rear-merlon" transform="translate(41 0)"/>
+  <use href="#rear-merlon" transform="translate(49 0)"/>
+  <use href="#rear-merlon" transform="translate(57 0)"/>
+  <rect y="20.5" width="64" height="6.5" fill="#c8c2b6"/>
+  <path d="M0 20.5 H64" stroke="#7a7468" stroke-width="0.5"/>
+  <path d="M4 20.8 V22 M12 20.8 V22 M20 20.8 V22 M28 20.8 V22 M36 20.8 V22 M44 20.8 V22 M52 20.8 V22 M60 20.8 V22" stroke="#a39d91" stroke-width="0.5"/>
+  <rect y="27" width="64" height="13" fill="#b0aa9e"/>
+  <g stroke="#7a7468" stroke-width="0.5">
+    <path d="M0 27 H64 M0 31.3 H64 M0 35.6 H64"/>
+    <path d="M3.5 27 V31.3 M11.5 27 V31.3 M19.5 27 V31.3 M27.5 27 V31.3 M35.5 27 V31.3 M43.5 27 V31.3 M51.5 27 V31.3 M59.5 27 V31.3"/>
+    <path d="M7.5 31.3 V35.6 M15.5 31.3 V35.6 M47.5 31.3 V35.6 M55.5 31.3 V35.6 M63.5 31.3 V35.6"/>
+    <path d="M3.5 35.6 V40 M11.5 35.6 V40 M51.5 35.6 V40 M59.5 35.6 V40"/>
+  </g>
+  <path d="M0 40 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <use href="#merlon" transform="translate(1 0)"/>
+  <use href="#merlon" transform="translate(9 0)"/>
+  <use href="#merlon" transform="translate(17 0)"/>
+  <use href="#merlon" transform="translate(25 0)"/>
+  <use href="#merlon" transform="translate(33 0)"/>
+  <use href="#merlon" transform="translate(41 0)"/>
+  <use href="#merlon" transform="translate(49 0)"/>
+  <use href="#merlon" transform="translate(57 0)"/>
+  <g fill="#3a3630">
+    <rect x="3.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="19.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="35.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="51.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+  </g>
+  <!-- Arch over the full width of the river and its banks: a dark culvert
+       with the water line at its foot, a ring of voussoirs with a keystone,
+       and the lowered iron grate. -->
+  <path d="M20 40 V33 Q32 20 44 33 V40 Z" fill="#161e23"/>
+  <rect x="20" y="36.8" width="24" height="3.2" fill="#22516f"/>
+  <path d="M21.5 38 H42.5" stroke="#4f86ae" stroke-width="0.7"/>
+  <g stroke="#26221e" stroke-width="1.5" stroke-linecap="square">
+    <path d="M23.5 30.4 V39.4 M27.5 28 V39.4 M32 27.1 V39.4 M36.5 28 V39.4 M40.5 30.4 V39.4"/>
+  </g>
+  <g stroke="#26221e" stroke-width="1.1">
+    <path d="M21.4 32 H42.6 M20.8 35.6 H43.2"/>
+  </g>
+  <path d="M20 40 V33 Q32 20 44 33 V40" fill="none" stroke="#8a8478" stroke-width="3"/>
+  <g stroke="#5c574e" stroke-width="0.6">
+    <path d="M20 33.4 L17.6 32.8 M21.9 29.3 L19.8 27.9 M25.6 26.3 L24.1 24.3 M38.4 26.3 L39.9 24.3 M42.1 29.3 L44.2 27.9 M44 33.4 L46.4 32.8"/>
+  </g>
+  <path d="M20 40 V33 Q32 20 44 33 V40" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+  <path d="M18.5 40 V33 Q32 17.6 45.5 33 V40" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+  <path d="M30.2 24.6 H33.8 L33.2 28 H30.8 Z" fill="#c8c2b6" stroke="#5c574e" stroke-width="0.6"/>
+  <!-- Ripples where the water leaves the arch. -->
+  <g stroke="#7fb2d9" stroke-width="1" fill="none" stroke-linecap="round">
+    <path d="M25 45.5 Q32 43.5 39 45.5"/>
+    <path d="M27 48.5 Q32 47 37 48.5"/>
+  </g>
+</svg>

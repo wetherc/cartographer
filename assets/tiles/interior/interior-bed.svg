@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A single bed seen from the front and above, head to the north, over a
+       transparent ground. A soft contact shadow lies around the whole
+       footprint of the bed on the floor. -->
+  <!-- Contact shadow around the whole footprint of the bed. -->
+  <g fill="#3d3a34">
+    <rect x="17" y="6.5" width="30" height="49.3" rx="2.5" opacity="0.22"/>
+    <rect x="17.8" y="6.5" width="28.4" height="48" rx="1.5" opacity="0.3"/>
+  </g>
+  <!-- Frame rails and the headboard panel. -->
+  <rect x="19" y="10" width="26" height="39" rx="0.8" fill="#7a5230" stroke="#3f2a15" stroke-width="0.9"/>
+  <rect x="18.5" y="5.5" width="27" height="6" rx="1" fill="#6a4524" stroke="#3f2a15" stroke-width="0.8"/>
+  <path d="M19.5 6.6 H44.5" stroke="#8f643a" stroke-width="0.7"/>
+  <path d="M25 6.5 V11 M32 6.5 V11 M39 6.5 V11" stroke="#4e3219" stroke-width="0.6"/>
+  <!-- Sheet and pillow. -->
+  <rect x="21" y="12" width="22" height="36" fill="#e8e2d4"/>
+  <rect x="23.5" y="13.2" width="17" height="8" rx="3.5" fill="#f7f3ea" stroke="#c9c1ae" stroke-width="0.7"/>
+  <path d="M26 17.2 Q32 15.7 38 17.2" stroke="#dcd4c2" stroke-width="0.7" fill="none"/>
+  <!-- Quilt over the lower part, with the turned-down fold at the top and
+       the edge that hangs over the foot. -->
+  <rect x="20.2" y="26" width="23.6" height="23" fill="#3f5f8f" stroke="#2a4066" stroke-width="0.7"/>
+  <rect x="20.2" y="24" width="23.6" height="4" fill="#5b7cae" stroke="#2a4066" stroke-width="0.7"/>
+  <g stroke="#34507a" stroke-width="0.6" fill="none">
+    <path d="M20.5 35 H43.5 M20.5 42 H43.5 M28 28 V49 M36 28 V49"/>
+  </g>
+  <path d="M21 29 V48" stroke="#5b7cae" stroke-width="0.8"/>
+  <!-- Footboard front face, with the two legs at its ends. -->
+  <rect x="18.5" y="48.5" width="27" height="4" fill="#5e3d20" stroke="#3f2a15" stroke-width="0.8"/>
+  <rect x="18.5" y="48.5" width="2.4" height="4.8" fill="#4a2f17"/>
+  <rect x="43.1" y="48.5" width="2.4" height="4.8" fill="#4a2f17"/>
+</svg>

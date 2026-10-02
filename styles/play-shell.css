@@ -1,0 +1,267 @@
+/* ==========================================================================
+   Play shell: on a window wider than the stacking point of responsive.css,
+   Play mode is a fixed screen of 100dvh with no page scroll. The map fills
+   the center, the play dock (party roster and dice tray) sits on its left,
+   and the sidebar tabs sit on its right. Each column scrolls on its own, so
+   the map, the party, the dice, and the open sheet stay in view together.
+   Combat, Build, and Library mode keep the scrolling page.
+   ========================================================================== */
+
+@media (min-width: 68.0625rem) {
+  body.mode-play {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  body.mode-play .app-header {
+    flex: none;
+  }
+
+  body.mode-play .app-main {
+    flex: 1;
+    min-height: 0;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  /* The dock comes after the map in the markup, so a narrow window stacks it
+     below the map. The grid draws it on the left here. */
+  body.mode-play .app-center {
+    display: grid;
+    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-areas: 'dock map';
+    gap: var(--space-4);
+    min-height: 0;
+  }
+
+  body.mode-play .app-map {
+    grid-area: map;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: var(--space-4);
+  }
+
+  body.mode-play .map-viewport {
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.mode-play #map-canvas {
+    height: 100%;
+  }
+
+  /* The dock splits its height between two regions. The dice tray takes the
+     height it needs at the bottom, and the party card takes the rest. When the
+     tray opens, the party card gives up height and its roster scrolls inside
+     the card, so the tray never covers a party row. The scroll box is the
+     roster, not the card, because a scroll box clips the card title that
+     straddles the frame. */
+  body.mode-play .app-dock {
+    grid-area: dock;
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    min-height: 0;
+    padding: 0 var(--space-1) var(--space-4) 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.mode-play #party-container {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 9rem;
+  }
+
+  body.mode-play #party-container > .character-roster {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.mode-play #dice-tray-container {
+    flex: none;
+    margin-top: auto;
+  }
+
+  /* In the narrow dock, a roster row puts the name on its own line above the
+     HP meter, so a long name does not break inside a word. */
+  body.mode-play .app-dock .character-roster__select {
+    flex-wrap: wrap;
+  }
+
+  body.mode-play .app-dock .character-roster__label {
+    flex-basis: 100%;
+    overflow-wrap: normal;
+  }
+
+  body.mode-play .app-sidebar {
+    min-height: 0;
+  }
+
+  body.mode-play .sidebar-panels {
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.mode-play .sidebar-panels > .tabs__panel {
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--space-1) var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* The tab panel scrolls, so the travelogue list and the quest log inside
+     it do not keep a scroll box of their own. Two nested scroll boxes catch
+     the wheel at the inner edge and hide where the list ends. */
+  body.mode-play .travelog__list,
+  body.mode-play .quest-panel {
+    max-height: none;
+    overflow-y: visible;
+    scrollbar-gutter: auto;
+  }
+}
+
+/* ==========================================================================
+   Phone views: at phone width, Play mode shows one area at a time. A bar
+   fixed to the bottom of the screen picks the area through
+   body[data-phone-view] (src/app/phoneViews.js). The Map view shows the map
+   with the Session tab under it. The Party view shows the roster and the
+   dice tray. The Sheet, Story, and Log views show that sidebar tab alone.
+   The bar replaces the sidebar tab strip and the Hide panels button there.
+   ========================================================================== */
+
+.phone-views {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  body.mode-play .phone-views {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 25;
+    display: block;
+    padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface-raised);
+    border-top: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-2);
+  }
+
+  .phone-views__switch {
+    display: flex;
+    width: 100%;
+  }
+
+  .phone-views__switch .seg-switch__btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding-inline: var(--space-1);
+  }
+
+  /* Room under the last card for the fixed bar. */
+  body.mode-play {
+    padding-bottom: 5rem;
+  }
+
+  /* The bar is 2.75rem of buttons plus its padding. In the views that hide
+     the breadcrumb row, the toast stack takes its CSS place in the
+     bottom-right corner, and there the bar would cover it. */
+  body.mode-play .toast-stack {
+    bottom: calc(2.75rem + 2 * var(--space-2) + var(--space-3) + env(safe-area-inset-bottom));
+  }
+
+  body.mode-play #sidebar-tabs,
+  body.mode-play #sidebar-toggle {
+    display: none;
+  }
+
+  body.mode-play.sidebar-collapsed .sidebar-panels {
+    display: flex;
+  }
+
+  body.mode-play[data-phone-view='map'] .app-dock,
+  body.mode-play[data-phone-view='party'] .app-map,
+  body.mode-play[data-phone-view='party'] .app-sidebar,
+  body.mode-play[data-phone-view='sheet'] .app-center,
+  body.mode-play[data-phone-view='story'] .app-center,
+  body.mode-play[data-phone-view='log'] .app-center {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Scrollbars in the dock and the sidebar: thin bars in the border colors, so
+   a scroll box reads as part of the card instead of a grey slab beside it.
+   The colors come from tokens that switch with the theme. Chrome and Firefox
+   read scrollbar-width and scrollbar-color. Safari reads only the
+   ::-webkit-scrollbar rules.
+   ========================================================================== */
+
+.app-dock,
+.app-dock *,
+.app-sidebar,
+.app-sidebar * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.app-dock ::-webkit-scrollbar,
+.app-sidebar ::-webkit-scrollbar,
+.app-dock::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-dock ::-webkit-scrollbar-track,
+.app-sidebar ::-webkit-scrollbar-track,
+.app-dock::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-dock ::-webkit-scrollbar-thumb,
+.app-sidebar ::-webkit-scrollbar-thumb,
+.app-dock::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--border-strong) padding-box;
+}
+
+/* A tab strip that is wider than its column scrolls sideways with no bar.
+   Each tab keeps its word whole. */
+.app-sidebar .tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.app-sidebar .tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.app-sidebar .tabs__tab {
+  flex: 1 0 auto;
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+/* Flex and grid children default to min-width: auto, so one long word or a
+   wide control pushes the whole column past the sidebar edge and the panel
+   gains a sideways scrollbar. Letting each card shrink, and long words
+   break, keeps the content inside the panel. */
+.app-sidebar .tabs__panel,
+.app-sidebar .tabs__panel > *,
+.app-dock > * {
+  min-width: 0;
+}
+
+.app-sidebar .card,
+.app-dock .card {
+  overflow-wrap: break-word;
+}

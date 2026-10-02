@@ -1,0 +1,574 @@
+import { deepFreeze } from '../util/deepFreeze.js';
+import { FIGHTING_STYLES } from './fightingStyles.js';
+
+/** @typedef {import('../types/class.js').ClassDef} ClassDef */
+
+/**
+ * Expand a sparse {level: count} breakpoint map into a 20-entry per-level
+ * curve (index 0 = level 1), each entry carrying forward until the next
+ * breakpoint. Lookups past level 20 read the last entry.
+ * @param {Record<number, number>} breakpoints
+ * @returns {number[]}
+ */
+function curve(breakpoints) {
+  const out = [];
+  let value = 0;
+  for (let level = 1; level <= 20; level++) {
+    if (breakpoints[level] !== undefined) value = breakpoints[level];
+    out.push(value);
+  }
+  return out;
+}
+
+/** The standard ability-score-improvement levels most classes share. */
+const ASI = [4, 8, 12, 16, 19];
+
+/** The Expertise feature the Bard and the Rogue grant twice each: double
+ * proficiency on two skills the character is already proficient in. The
+ * empty `from` means any proficient skill; the grant flow narrows the pool. */
+const EXPERTISE = {
+  name: 'Expertise',
+  effects: [{ kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } }],
+};
+
+/** The Fighting Style feature of one class: a pick of one style from the
+ * styles that class offers (see data/fightingStyles.js).
+ * @param {string} classId */
+const fightingStyleFeature = (classId) => ({
+  name: 'Fighting Style',
+  effects: [
+    {
+      kind: /** @type {const} */ ('fightingStyle'),
+      from: FIGHTING_STYLES.filter((style) => style.classes.includes(classId)).map((s) => s.id),
+    },
+  ],
+});
+
+/** @param {Partial<import('../types/class.js').MulticlassGrant>} [grant]
+ * @returns {import('../types/class.js').MulticlassGrant} */
+function multiclassGrant(grant = {}) {
+  return { armor: [], weaponCategories: [], weaponNamed: [], tools: [], ...grant };
+}
+
+/** The Fighter subclass that casts from the wizard list with INT, on the
+ * third-caster slot table. */
+const ELDRITCH_KNIGHT = {
+  id: 'eldritch-knight',
+  name: 'Eldritch Knight',
+  casting: {
+    casterType: /** @type {const} */ ('third'),
+    spellAbility: /** @type {const} */ ('INT'),
+    spellListId: 'wizard',
+    knownRule: /** @type {const} */ ('known'),
+    cantripsKnown: curve({ 3: 2, 10: 3 }),
+  },
+};
+
+/** The Rogue subclass that casts from the wizard list with INT, on the
+ * third-caster slot table. It knows one more cantrip than the Eldritch
+ * Knight, because Mage Hand is always one of them. */
+const ARCANE_TRICKSTER = {
+  id: 'arcane-trickster',
+  name: 'Arcane Trickster',
+  casting: {
+    casterType: /** @type {const} */ ('third'),
+    spellAbility: /** @type {const} */ ('INT'),
+    spellListId: 'wizard',
+    knownRule: /** @type {const} */ ('known'),
+    cantripsKnown: curve({ 3: 3, 10: 4 }),
+  },
+};
+
+const RANGER_SKILLS = [
+  'animal-handling',
+  'athletics',
+  'insight',
+  'investigation',
+  'nature',
+  'perception',
+  'stealth',
+  'survival',
+];
+
+const ROGUE_SKILLS = [
+  'acrobatics',
+  'athletics',
+  'deception',
+  'insight',
+  'intimidation',
+  'investigation',
+  'perception',
+  'performance',
+  'persuasion',
+  'sleight-of-hand',
+  'stealth',
+];
+
+/**
+ * The playable classes. Each entry keeps the spellcasting fields that the
+ * spell system reads: caster type, spell ability, and cantrip curve.
+ * Non-casters have casterType 'none'. A subclass in `subclasses` with a
+ * `casting` entry replaces those fields from the subclass level on, which
+ * is how the Eldritch Knight and the Arcane Trickster cast. Cantrip curves
+ * follow the SRD breakpoints. `ritual` marks the four classes with
+ * ritual casting. Each entry also carries the character-foundation fields:
+ * saving-throw and armor or weapon proficiencies, skill choices by id from
+ * data/skills.js, hit die, subclass unlock level, ASI levels, and a
+ * features-by-level name scaffold. An empty skill-choice `from` list means
+ * "choose from any skill". The list is frozen to its leaves. The shared
+ * `asiLevels` arrays and the Expertise entry are one object each, so a write
+ * through one class would reach every class that shares it.
+ */
+export const DEFAULT_CLASSES = deepFreeze(
+  /** @type {ClassDef[]} */ ([
+    {
+      id: 'barbarian',
+      name: 'Barbarian',
+      hitDie: 12,
+      casterType: 'none',
+      knownRule: 'none',
+      cantripsKnown: [],
+      savingThrows: ['STR', 'CON'],
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+      weaponNamed: [],
+      skillChoice: {
+        choose: 2,
+        from: ['animal-handling', 'athletics', 'intimidation', 'nature', 'perception', 'survival'],
+      },
+      subclassLevel: 3,
+      subclassLabel: 'Primal Path',
+      subclasses: [{ id: 'berserker', name: 'Path of the Berserker' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ STR: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['shield'],
+        weaponCategories: ['simple', 'martial'],
+      }),
+      unarmoredDefense: { ability: 'CON', shield: true },
+      featuresByLevel: {
+        1: ['Rage', 'Unarmored Defense'],
+        2: ['Reckless Attack', 'Danger Sense'],
+        3: ['Primal Path'],
+        5: ['Extra Attack', 'Fast Movement'],
+        7: ['Feral Instinct'],
+        9: ['Brutal Critical'],
+        11: ['Relentless Rage'],
+        15: ['Persistent Rage'],
+        20: ['Primal Champion'],
+      },
+    },
+    {
+      id: 'bard',
+      name: 'Bard',
+      hitDie: 8,
+      casterType: 'full',
+      spellAbility: 'CHA',
+      spellListId: 'bard',
+      knownRule: 'known',
+      ritual: true,
+      cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
+      savingThrows: ['DEX', 'CHA'],
+      armor: ['light'],
+      weaponCategories: ['simple'],
+      weaponNamed: ['hand crossbow', 'longsword', 'rapier', 'shortsword'],
+      skillChoice: { choose: 3, from: [] },
+      subclassLevel: 3,
+      subclassLabel: 'Bard College',
+      subclasses: [{ id: 'lore', name: 'College of Lore' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ CHA: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light'],
+        skillChoice: { choose: 1, from: [] },
+      }),
+      featuresByLevel: {
+        1: ['Bardic Inspiration'],
+        2: ['Jack of All Trades', 'Song of Rest'],
+        3: [EXPERTISE, 'Bard College'],
+        5: ['Font of Inspiration'],
+        6: ['Countercharm'],
+        10: [EXPERTISE, 'Magical Secrets'],
+        20: ['Superior Inspiration'],
+      },
+    },
+    {
+      id: 'cleric',
+      name: 'Cleric',
+      hitDie: 8,
+      casterType: 'full',
+      spellAbility: 'WIS',
+      spellListId: 'cleric',
+      knownRule: 'prepared',
+      ritual: true,
+      cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
+      savingThrows: ['WIS', 'CHA'],
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple'],
+      weaponNamed: [],
+      skillChoice: {
+        choose: 2,
+        from: ['history', 'insight', 'medicine', 'persuasion', 'religion'],
+      },
+      subclassLevel: 1,
+      subclassLabel: 'Divine Domain',
+      subclasses: [
+        {
+          id: 'life',
+          name: 'Life Domain',
+          features: { 1: ['Disciple of Life'], 2: ['Channel Divinity: Preserve Life'] },
+        },
+      ],
+      asiLevels: ASI,
+      multiclassPrereq: [{ WIS: 13 }],
+      multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
+      featuresByLevel: {
+        1: ['Divine Domain'],
+        2: ['Channel Divinity'],
+        5: ['Destroy Undead'],
+        10: ['Divine Intervention'],
+      },
+    },
+    {
+      id: 'druid',
+      name: 'Druid',
+      hitDie: 8,
+      casterType: 'full',
+      spellAbility: 'WIS',
+      spellListId: 'druid',
+      knownRule: 'prepared',
+      ritual: true,
+      cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
+      savingThrows: ['INT', 'WIS'],
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: [],
+      weaponNamed: [
+        'club',
+        'dagger',
+        'dart',
+        'javelin',
+        'mace',
+        'quarterstaff',
+        'scimitar',
+        'sickle',
+        'sling',
+        'spear',
+      ],
+      skillChoice: {
+        choose: 2,
+        from: [
+          'arcana',
+          'animal-handling',
+          'insight',
+          'medicine',
+          'nature',
+          'perception',
+          'religion',
+          'survival',
+        ],
+      },
+      subclassLevel: 2,
+      subclassLabel: 'Druid Circle',
+      subclasses: [{ id: 'land', name: 'Circle of the Land' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ WIS: 13 }],
+      multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
+      featuresByLevel: {
+        1: ['Druidic'],
+        2: ['Wild Shape', 'Druid Circle'],
+        18: ['Timeless Body', 'Beast Spells'],
+        20: ['Archdruid'],
+      },
+    },
+    {
+      id: 'fighter',
+      name: 'Fighter',
+      hitDie: 10,
+      casterType: 'none',
+      knownRule: 'none',
+      cantripsKnown: [],
+      savingThrows: ['STR', 'CON'],
+      armor: ['light', 'medium', 'heavy', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+      weaponNamed: [],
+      skillChoice: {
+        choose: 2,
+        from: [
+          'acrobatics',
+          'animal-handling',
+          'athletics',
+          'history',
+          'insight',
+          'intimidation',
+          'perception',
+          'survival',
+        ],
+      },
+      subclassLevel: 3,
+      subclassLabel: 'Martial Archetype',
+      subclasses: [{ id: 'champion', name: 'Champion' }, ELDRITCH_KNIGHT],
+      asiLevels: [4, 6, 8, 12, 14, 16, 19],
+      multiclassPrereq: [{ STR: 13 }, { DEX: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light', 'medium', 'shield'],
+        weaponCategories: ['simple', 'martial'],
+      }),
+      featuresByLevel: {
+        1: [fightingStyleFeature('fighter'), 'Second Wind'],
+        2: ['Action Surge'],
+        3: ['Martial Archetype'],
+        5: ['Extra Attack'],
+        9: ['Indomitable'],
+        11: ['Extra Attack (2)'],
+        20: ['Extra Attack (3)'],
+      },
+    },
+    {
+      id: 'monk',
+      name: 'Monk',
+      hitDie: 8,
+      casterType: 'none',
+      knownRule: 'none',
+      cantripsKnown: [],
+      savingThrows: ['STR', 'DEX'],
+      armor: [],
+      weaponCategories: ['simple'],
+      weaponNamed: ['shortsword'],
+      skillChoice: {
+        choose: 2,
+        from: ['acrobatics', 'athletics', 'history', 'insight', 'religion', 'stealth'],
+      },
+      subclassLevel: 3,
+      subclassLabel: 'Monastic Tradition',
+      subclasses: [{ id: 'open-hand', name: 'Way of the Open Hand' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ DEX: 13, WIS: 13 }],
+      multiclassGrant: multiclassGrant({
+        weaponCategories: ['simple'],
+        weaponNamed: ['shortsword'],
+      }),
+      unarmoredDefense: { ability: 'WIS', shield: false },
+      featuresByLevel: {
+        1: ['Unarmored Defense', 'Martial Arts'],
+        2: ['Ki', 'Unarmored Movement'],
+        3: ['Monastic Tradition', 'Deflect Missiles'],
+        4: ['Slow Fall'],
+        5: ['Extra Attack', 'Stunning Strike'],
+        7: ['Evasion', 'Stillness of Mind'],
+        14: ['Diamond Soul'],
+        20: ['Perfect Self'],
+      },
+    },
+    {
+      id: 'paladin',
+      name: 'Paladin',
+      hitDie: 10,
+      casterType: 'half',
+      spellAbility: 'CHA',
+      spellListId: 'paladin',
+      knownRule: 'prepared',
+      cantripsKnown: [],
+      savingThrows: ['WIS', 'CHA'],
+      armor: ['light', 'medium', 'heavy', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+      weaponNamed: [],
+      skillChoice: {
+        choose: 2,
+        from: ['athletics', 'insight', 'intimidation', 'medicine', 'persuasion', 'religion'],
+      },
+      subclassLevel: 3,
+      subclassLabel: 'Sacred Oath',
+      subclasses: [{ id: 'devotion', name: 'Oath of Devotion' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ STR: 13, CHA: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light', 'medium', 'shield'],
+        weaponCategories: ['simple', 'martial'],
+      }),
+      featuresByLevel: {
+        1: ['Divine Sense', 'Lay on Hands'],
+        2: [fightingStyleFeature('paladin'), 'Divine Smite'],
+        3: ['Divine Health', 'Sacred Oath'],
+        5: ['Extra Attack'],
+        6: ['Aura of Protection'],
+        10: ['Aura of Courage'],
+        14: ['Cleansing Touch'],
+      },
+    },
+    {
+      id: 'ranger',
+      name: 'Ranger',
+      hitDie: 10,
+      casterType: 'half',
+      spellAbility: 'WIS',
+      spellListId: 'ranger',
+      knownRule: 'known',
+      cantripsKnown: [],
+      savingThrows: ['STR', 'DEX'],
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+      weaponNamed: [],
+      skillChoice: { choose: 3, from: RANGER_SKILLS },
+      subclassLevel: 3,
+      subclassLabel: 'Ranger Archetype',
+      subclasses: [{ id: 'hunter', name: 'Hunter' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ DEX: 13, WIS: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light', 'medium', 'shield'],
+        weaponCategories: ['simple', 'martial'],
+        skillChoice: { choose: 1, from: RANGER_SKILLS },
+      }),
+      featuresByLevel: {
+        1: ['Favored Enemy', 'Natural Explorer'],
+        2: [fightingStyleFeature('ranger')],
+        3: ['Ranger Archetype', 'Primeval Awareness'],
+        5: ['Extra Attack'],
+        8: ["Land's Stride"],
+        10: ['Hide in Plain Sight'],
+        14: ['Vanish'],
+        20: ['Foe Slayer'],
+      },
+    },
+    {
+      id: 'rogue',
+      name: 'Rogue',
+      hitDie: 8,
+      casterType: 'none',
+      knownRule: 'none',
+      cantripsKnown: [],
+      savingThrows: ['DEX', 'INT'],
+      armor: ['light'],
+      weaponCategories: ['simple'],
+      weaponNamed: ['hand crossbow', 'longsword', 'rapier', 'shortsword'],
+      skillChoice: { choose: 4, from: ROGUE_SKILLS },
+      subclassLevel: 3,
+      subclassLabel: 'Roguish Archetype',
+      subclasses: [{ id: 'thief', name: 'Thief' }, ARCANE_TRICKSTER],
+      asiLevels: [4, 8, 10, 12, 16, 19],
+      multiclassPrereq: [{ DEX: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light'],
+        tools: ["thieves' tools"],
+        skillChoice: { choose: 1, from: ROGUE_SKILLS },
+      }),
+      featuresByLevel: {
+        1: [EXPERTISE, 'Sneak Attack', "Thieves' Cant"],
+        2: ['Cunning Action'],
+        3: ['Roguish Archetype'],
+        5: ['Uncanny Dodge'],
+        6: [EXPERTISE],
+        7: ['Evasion'],
+        11: ['Reliable Talent'],
+        14: ['Blindsense'],
+        15: ['Slippery Mind'],
+        18: ['Elusive'],
+        20: ['Stroke of Luck'],
+      },
+    },
+    {
+      id: 'sorcerer',
+      name: 'Sorcerer',
+      hitDie: 6,
+      casterType: 'full',
+      spellAbility: 'CHA',
+      spellListId: 'sorcerer',
+      knownRule: 'known',
+      cantripsKnown: curve({ 1: 4, 4: 5, 10: 6 }),
+      savingThrows: ['CON', 'CHA'],
+      armor: [],
+      weaponCategories: [],
+      weaponNamed: ['dagger', 'dart', 'sling', 'quarterstaff', 'light crossbow'],
+      skillChoice: {
+        choose: 2,
+        from: ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
+      },
+      subclassLevel: 1,
+      subclassLabel: 'Sorcerous Origin',
+      subclasses: [{ id: 'draconic', name: 'Draconic Bloodline' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ CHA: 13 }],
+      multiclassGrant: multiclassGrant(),
+      featuresByLevel: {
+        1: ['Sorcerous Origin'],
+        2: ['Font of Magic'],
+        3: ['Metamagic'],
+        20: ['Sorcerous Restoration'],
+      },
+    },
+    {
+      id: 'warlock',
+      name: 'Warlock',
+      hitDie: 8,
+      casterType: 'pact',
+      spellAbility: 'CHA',
+      spellListId: 'warlock',
+      knownRule: 'known',
+      cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
+      savingThrows: ['WIS', 'CHA'],
+      armor: ['light'],
+      weaponCategories: ['simple'],
+      weaponNamed: [],
+      skillChoice: {
+        choose: 2,
+        from: [
+          'arcana',
+          'deception',
+          'history',
+          'intimidation',
+          'investigation',
+          'nature',
+          'religion',
+        ],
+      },
+      subclassLevel: 1,
+      subclassLabel: 'Otherworldly Patron',
+      subclasses: [{ id: 'fiend', name: 'The Fiend' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ CHA: 13 }],
+      multiclassGrant: multiclassGrant({
+        armor: ['light'],
+        weaponCategories: ['simple'],
+      }),
+      featuresByLevel: {
+        1: ['Otherworldly Patron', 'Pact Magic'],
+        2: ['Eldritch Invocations'],
+        3: ['Pact Boon'],
+        11: ['Mystic Arcanum'],
+        20: ['Eldritch Master'],
+      },
+    },
+    {
+      id: 'wizard',
+      name: 'Wizard',
+      hitDie: 6,
+      casterType: 'full',
+      spellAbility: 'INT',
+      spellListId: 'wizard',
+      knownRule: 'prepared',
+      ritual: true,
+      ritualFromBook: true,
+      cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
+      savingThrows: ['INT', 'WIS'],
+      armor: [],
+      weaponCategories: [],
+      weaponNamed: ['dagger', 'dart', 'sling', 'quarterstaff', 'light crossbow'],
+      skillChoice: {
+        choose: 2,
+        from: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion'],
+      },
+      subclassLevel: 2,
+      subclassLabel: 'Arcane Tradition',
+      subclasses: [{ id: 'evocation', name: 'School of Evocation' }],
+      asiLevels: ASI,
+      multiclassPrereq: [{ INT: 13 }],
+      multiclassGrant: multiclassGrant(),
+      featuresByLevel: {
+        1: ['Arcane Recovery'],
+        2: ['Arcane Tradition'],
+        18: ['Spell Mastery'],
+        20: ['Signature Spells'],
+      },
+    },
+  ]),
+);

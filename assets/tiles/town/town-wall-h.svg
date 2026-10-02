@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A straight run of the town wall, drawn east-west through the middle of
+       the tile over a transparent ground. Every detail repeats on an 8-unit
+       period, so wall pieces in a row join without a visible break. -->
+  <defs>
+    <g id="rear-merlon">
+      <rect x="0" y="15" width="5" height="5.5" fill="#a39d91" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="15.25" width="4.5" height="0.7" fill="#bdb7ab"/>
+    </g>
+    <g id="merlon">
+      <rect x="0" y="22" width="5" height="5" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="22.25" width="4.5" height="0.9" fill="#c8c2b6"/>
+    </g>
+  </defs>
+  <!-- Ground shadow along the foot of the wall. -->
+  <rect y="40" width="64" height="3.2" fill="#000000" opacity="0.18"/>
+  <!-- Rear parapet with its merlons, in line with the front ones and set in
+       light shade because they stand further back. They rise 3 units above
+       the parapet where the front merlons rise 5, because the far side of the
+       wall is foreshortened at this viewing angle. -->
+  <rect y="18" width="64" height="2.5" fill="#a39d91"/>
+  <path d="M0 18.4 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <use href="#rear-merlon" transform="translate(1 0)"/>
+  <use href="#rear-merlon" transform="translate(9 0)"/>
+  <use href="#rear-merlon" transform="translate(17 0)"/>
+  <use href="#rear-merlon" transform="translate(25 0)"/>
+  <use href="#rear-merlon" transform="translate(33 0)"/>
+  <use href="#rear-merlon" transform="translate(41 0)"/>
+  <use href="#rear-merlon" transform="translate(49 0)"/>
+  <use href="#rear-merlon" transform="translate(57 0)"/>
+  <!-- Wall walk between the parapets, with its flagstone joints. -->
+  <rect y="20.5" width="64" height="6.5" fill="#c8c2b6"/>
+  <path d="M0 20.5 H64" stroke="#7a7468" stroke-width="0.5"/>
+  <path d="M4 20.8 V22 M12 20.8 V22 M20 20.8 V22 M28 20.8 V22 M36 20.8 V22 M44 20.8 V22 M52 20.8 V22 M60 20.8 V22" stroke="#a39d91" stroke-width="0.5"/>
+  <!-- Front face: three courses with staggered joints. -->
+  <rect y="27" width="64" height="13" fill="#b0aa9e"/>
+  <g stroke="#7a7468" stroke-width="0.5">
+    <path d="M0 27 H64 M0 31.3 H64 M0 35.6 H64"/>
+    <path d="M3.5 27 V31.3 M11.5 27 V31.3 M19.5 27 V31.3 M27.5 27 V31.3 M35.5 27 V31.3 M43.5 27 V31.3 M51.5 27 V31.3 M59.5 27 V31.3"/>
+    <path d="M7.5 31.3 V35.6 M15.5 31.3 V35.6 M23.5 31.3 V35.6 M31.5 31.3 V35.6 M39.5 31.3 V35.6 M47.5 31.3 V35.6 M55.5 31.3 V35.6 M63.5 31.3 V35.6"/>
+    <path d="M3.5 35.6 V40 M11.5 35.6 V40 M19.5 35.6 V40 M27.5 35.6 V40 M35.5 35.6 V40 M43.5 35.6 V40 M51.5 35.6 V40 M59.5 35.6 V40"/>
+  </g>
+  <path d="M0 40 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <!-- Parapet merlons along the front edge, an arrow slit in every other one. -->
+  <use href="#merlon" transform="translate(1 0)"/>
+  <use href="#merlon" transform="translate(9 0)"/>
+  <use href="#merlon" transform="translate(17 0)"/>
+  <use href="#merlon" transform="translate(25 0)"/>
+  <use href="#merlon" transform="translate(33 0)"/>
+  <use href="#merlon" transform="translate(41 0)"/>
+  <use href="#merlon" transform="translate(49 0)"/>
+  <use href="#merlon" transform="translate(57 0)"/>
+  <g fill="#3a3630">
+    <rect x="3.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="19.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="35.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="51.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+  </g>
+</svg>

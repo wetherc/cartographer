@@ -1,0 +1,198 @@
+/**
+ * Pure initiative and turn-order logic for running a combat round. A
+ * CombatState is a sorted order of participants, plus a round counter and a
+ * pointer to whose turn it is. Every function here returns a new value
+ * instead of mutating, so the UI layer owns the single mutable copy, as
+ * elsewhere in this codebase.
+ */
+
+import { endSurprise, freshBudget, refresh, resetSneak, surprisedBudget } from './ActionBudget.js';
+
+/** @typedef {import('../types/combat.js').Participant} Participant */
+/** @typedef {import('../types/combat.js').CombatState} CombatState */
+
+/**
+ * @param {string} id
+ * @param {number} [initiative]
+ * @param {number} [modifier] DEX-derived bonus added to this combatant's initiative roll
+ * @returns {Participant}
+ */
+export function createParticipant(id, initiative = 10, modifier = 0) {
+  return { id, initiative, modifier, used: freshBudget() };
+}
+
+/**
+ * Sort participants into turn order: highest initiative first, ties broken by
+ * the higher DEX modifier, then by name (case-insensitive), then by id, so the
+ * order is deterministic. A participant from an old save with no modifier
+ * reads as 0. A
+ * participant carries no name. `nameOf` resolves a name from whatever holds
+ * the id. An unresolvable id sorts as the empty string, which still leaves
+ * the id tiebreak. Pure function.
+ * @param {Participant[]} participants
+ * @param {(participant: Participant) => string} [nameOf]
+ * @returns {Participant[]}
+ */
+export function sortInitiative(participants, nameOf = () => '') {
+  return [...participants].sort((a, b) => {
+    if (b.initiative !== a.initiative) return b.initiative - a.initiative;
+    const dex = (b.modifier ?? 0) - (a.modifier ?? 0);
+    if (dex !== 0) return dex;
+    const an = nameOf(a).toLowerCase();
+    const bn = nameOf(b).toLowerCase();
+    if (an !== bn) return an < bn ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+}
+
+/**
+ * Begin a combat: sort the participants and start at round 1, first turn.
+ * A surprised participant starts with its reaction spent, and the first in
+ * the order also has its action and bonus action spent.
+ * `startedAt` is injected instead of read from the clock, so this function
+ * stays pure. The caller passes the moment its setup opened, which is where
+ * the fight's slice of the travelogue begins.
+ * @param {Participant[]} participants
+ * @param {(participant: Participant) => string} [nameOf] for the tiebreak
+ * @param {number} [startedAt] epoch ms the fight's log starts at
+ * @returns {CombatState}
+ */
+export function startCombat(participants, nameOf, startedAt = 0) {
+  const order = sortInitiative(participants, nameOf).map((p, at) =>
+    p.surprised ? { ...p, used: surprisedBudget(at === 0) } : p,
+  );
+  return { round: 1, index: 0, order, startedAt };
+}
+
+/**
+ * Remove a combatant from a running order. Deleting an encounter or a
+ * character mid-fight must do this, because a participant whose entity is
+ * gone can neither act nor be targeted. The turn pointer follows the
+ * combatant it was on: removing someone earlier in the order shifts the
+ * pointer back. Removing the last participant during their own turn wraps the
+ * pointer to the top and starts the next round, as `advanceTurn` does, so the
+ * caller runs the same round-wrap ticks when the round changes. When the dropped
+ * combatant held the turn, the combatant the pointer lands on gets a fresh
+ * budget, the same way `advanceTurn` gives one: their turn is what begins
+ * now. The function returns the state unchanged (identity preserved) when
+ * the id is not in the order. Pure function.
+ * @param {CombatState} state
+ * @param {string} id
+ * @returns {CombatState}
+ */
+export function dropParticipant(state, id) {
+  const removed = state.order.filter((p) => p.id !== id);
+  if (removed.length === state.order.length) return state;
+  const before = state.order.slice(0, state.index).filter((p) => p.id === id).length;
+  const shifted = state.index - before;
+  const wrapped = removed.length > 0 && shifted >= removed.length;
+  const index = wrapped || removed.length === 0 ? 0 : shifted;
+  const heldTurn = state.order[state.index]?.id === id;
+  const order = heldTurn && removed.length > 0 ? refreshTurn(removed, index) : removed;
+  return { ...state, index, round: wrapped ? state.round + 1 : state.round, order };
+}
+
+/**
+ * Add a combatant to a running order. A creature that a spell summons mid-fight
+ * joins this way. The newcomer takes its place by initiative, and the turn
+ * pointer stays on whoever holds the turn, whether the newcomer sorts above or
+ * below them. A newcomer that sorts above the current combatant therefore acts
+ * for the first time on the next round, which is what waiting for its place in
+ * the order means. The function returns the state unchanged (identity
+ * preserved) when the id is already in the order. Pure function.
+ * @param {CombatState} state
+ * @param {Participant} participant
+ * @param {(participant: Participant) => string} [nameOf] for the tiebreak
+ * @returns {CombatState}
+ */
+export function addParticipant(state, participant, nameOf) {
+  if (state.order.some((p) => p.id === participant.id)) return state;
+  const holder = state.order[state.index]?.id;
+  const order = sortInitiative([...state.order, participant], nameOf);
+  const index = Math.max(
+    0,
+    order.findIndex((p) => p.id === holder),
+  );
+  return { ...state, index, order };
+}
+
+/**
+ * @param {CombatState} state
+ * @returns {Participant | null} whose turn it currently is
+ */
+export function currentParticipant(state) {
+  return state.order[state.index] ?? null;
+}
+
+/**
+ * Advance to the next turn, wrap to the top of the order, and increment the
+ * round. The function returns the new state and whether the round rolled
+ * over, so the caller can update per-round effects like conditions. An empty
+ * order is a no-op.
+ *
+ * `isDefeated` skips turns nobody can take. The pointer keeps stepping past
+ * defeated participants (their chips stay in the ribbon, struck through) and
+ * lands on the next one standing. If every participant is defeated, the
+ * pointer advances one full cycle and stops where it started, so the round
+ * still turns over and timed effects keep ticking while the GM decides what
+ * to do with the wipe.
+ *
+ * The participant the pointer lands on gets a whole action budget back,
+ * because their turn is what begins. A participant the pointer steps past
+ * keeps a spent budget: they cannot act, and their own next turn start clears
+ * it if something revives them. A surprised participant whose turn ends, or
+ * whose turn the pointer steps past, is no longer surprised and gets its
+ * reaction back.
+ * @param {CombatState} state
+ * @param {(participant: Participant) => boolean} [isDefeated]
+ * @returns {{ state: CombatState, wrapped: boolean }}
+ */
+export function advanceTurn(state, isDefeated = () => false) {
+  if (state.order.length === 0) return { state, wrapped: false };
+  let index = state.index;
+  let round = state.round;
+  let wrapped = false;
+  const passed = new Set([index]);
+  for (let steps = 0; steps < state.order.length; steps += 1) {
+    if (steps > 0) passed.add(index);
+    index += 1;
+    if (index >= state.order.length) {
+      index = 0;
+      round += 1;
+      wrapped = true;
+    }
+    if (!isDefeated(state.order[index])) break;
+  }
+  // The turn that ends, and each turn the pointer steps past, ends the
+  // surprise of its combatant.
+  const unsurprised = state.order.map((p, at) => (passed.has(at) ? endSurprise(p) : p));
+  const order = unsurprised.some((p, at) => p !== state.order[at]) ? unsurprised : state.order;
+  return { state: { ...state, index, round, order: refreshTurn(order, index) }, wrapped };
+}
+
+/**
+ * The order with the participant at `index` given a fresh budget (or the
+ * spent one of a surprised turn), and the
+ * Sneak Attack flag reset on everyone else. Sneak Attack is once per turn, and
+ * a turn is anyone's turn, so a new turn re-arms it for the whole order: a
+ * rogue that spent it can spend it again on an opportunity attack. The array
+ * identity survives when nothing changes, which keeps the save diff and the
+ * combatant index caches warm on a turn nobody spent.
+ * @param {Participant[]} order
+ * @param {number} index
+ * @returns {Participant[]}
+ */
+function refreshTurn(order, index) {
+  let changed = false;
+  const next = order.map((participant, at) => {
+    const reset =
+      at !== index
+        ? resetSneak(participant)
+        : participant.surprised
+          ? { ...participant, used: surprisedBudget(true) }
+          : refresh(participant);
+    if (reset !== participant) changed = true;
+    return reset;
+  });
+  return changed ? next : order;
+}

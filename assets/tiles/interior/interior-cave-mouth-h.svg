@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- The boulder stamp of interior-cave-wall.svg. -->
+    <g id="cr">
+      <path d="M-6 -4 L-1 -6.5 L5 -5 L7.5 0 L5 5.5 L-2 6.5 L-7 2 Z" fill="#463c33"/>
+      <path d="M-6 -4 L-1 -6.5 L5 -5 L7.5 0 L2 -1.5 L-6.5 0 Z" fill="#51463b"/>
+      <path d="M7.5 0 L5 5.5 L-2 6.5 L-0.5 3.5 L4.5 2.5 Z" fill="#342c25"/>
+    </g>
+  </defs>
+  <!-- A cave mouth on the north or south border: a passage runs north-south
+       between two rock jaws that join the cave wall pieces on each side. -->
+  <rect width="64" height="64" fill="#6b5d4f"/>
+  <!-- Worn ground down the middle of the passage, then a cast shadow along
+       the foot of each jaw. -->
+  <path d="M25 0 Q27 16 25 32 Q23 48 26 64 L39 64 Q41 48 39 32 Q37 16 39 0 Z" fill="#736452"/>
+  <path d="M13 0 L18 8 L14 17 L19 27 L15 37 L20 46 L15 55 L18 64 H22 L19 55 L24 46 L19 37 L23 27 L18 17 L22 8 L17 0 Z" fill="#5c4f42"/>
+  <g fill="#57493c">
+    <ellipse cx="30" cy="11" rx="1.6" ry="1.1"/><ellipse cx="36" cy="37" rx="1.4" ry="1"/>
+    <ellipse cx="28" cy="53" rx="1.5" ry="1.1"/>
+  </g>
+  <g fill="#85765f">
+    <ellipse cx="29.7" cy="10.6" rx="1.2" ry="0.7"/><ellipse cx="35.7" cy="36.6" rx="1" ry="0.6"/>
+    <ellipse cx="27.7" cy="52.6" rx="1.1" ry="0.7"/>
+  </g>
+  <g fill="#7b6c58">
+    <circle cx="34" cy="20" r="0.7"/><circle cx="27" cy="29" r="0.6"/><circle cx="40" cy="45" r="0.6"/>
+    <circle cx="33" cy="60" r="0.7"/><circle cx="24" cy="41" r="0.5"/>
+  </g>
+  <!-- West jaw, then east jaw: the cave wall base fill, the cave wall edge
+       boulders at x=0 and x=64, and one inset boulder each. -->
+  <path d="M0 0 H14 L18 8 L13 17 L18 27 L14 37 L19 46 L14 55 L17 64 H0 Z" fill="#3f362e"/>
+  <path d="M64 0 H49 L45 9 L49 18 L44 28 L48 38 L44 47 L49 56 L46 64 H64 Z" fill="#3f362e"/>
+  <use href="#cr" transform="translate(1 33)"/>
+  <use href="#cr" transform="translate(65 33)"/>
+  <use href="#cr" transform="translate(-1 54) scale(0.8)"/>
+  <use href="#cr" transform="translate(63 54) scale(0.8)"/>
+  <use href="#cr" transform="translate(6 12) scale(0.9 1.1)"/>
+  <use href="#cr" transform="translate(56 14) scale(0.9 1.2)"/>
+  <g stroke="#2a231d" stroke-width="0.9" fill="none" stroke-linecap="round">
+    <path d="M7 44 l2 3"/><path d="M53 36 l2.5 2"/><path d="M9 24 l2.5 1.5"/>
+  </g>
+  <!-- Moss where daylight reaches the foot of each jaw, at both ends. -->
+  <g fill="#5d7a3c">
+    <ellipse cx="18" cy="3" rx="2.4" ry="1.4"/><ellipse cx="46" cy="61" rx="2.4" ry="1.4"/>
+    <ellipse cx="46.5" cy="4" rx="1.8" ry="1.1"/><ellipse cx="18" cy="60" rx="1.8" ry="1.1"/>
+  </g>
+  <g fill="#6f8f48">
+    <circle cx="17.3" cy="2.5" r="0.8"/><circle cx="46.6" cy="60.4" r="0.8"/>
+  </g>
+</svg>

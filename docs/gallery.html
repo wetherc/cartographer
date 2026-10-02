@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Component gallery</title>
+    <!-- The same inline icon index.html uses. Without one the browser asks
+         for /favicon.ico and logs a 404 on every load. -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d2f21' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="gallery/gallery.css" />
+    <script>
+      // Re-apply the saved theme before the first paint, the same as
+      // index.html does, so a dark-theme reload does not flash light.
+      try {
+        const saved = localStorage.getItem('campaign-builder:theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      } catch {
+        // A blocked localStorage leaves the OS preference in charge.
+      }
+    </script>
+  </head>
+  <body class="gx-body">
+    <header class="gx-header">
+      <div class="gx-header__text">
+        <h1 class="gx-header__title">Component gallery</h1>
+        <p class="gx-header__blurb">
+          This page renders every shared builder in <code>src/ui/</code> from the real modules.
+          Each entry shows the widget, the call that built it, and the classes that call produces.
+        </p>
+      </div>
+      <div id="gx-theme" class="gx-header__theme"></div>
+    </header>
+
+    <div class="gx-layout">
+      <nav id="gx-nav" class="gx-nav" aria-label="Sections"></nav>
+      <main id="gx-main" class="gx-main"></main>
+    </div>
+
+    <script type="module" src="gallery/main.js"></script>
+  </body>
+</html>

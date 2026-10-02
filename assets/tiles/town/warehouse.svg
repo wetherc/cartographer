@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Crate, origin at its top-left corner. -->
+    <g id="crate">
+      <rect width="6" height="5" fill="#b58d5c" stroke="#7a5a3a" stroke-width="0.5"/>
+      <path d="M0 0 L6 5 M0 5 L6 0" stroke="#8a6a42" stroke-width="0.5"/>
+    </g>
+    <!-- Barrel, origin at the center of its lid. -->
+    <g id="barrel">
+      <rect x="-2.4" y="0" width="4.8" height="6.2" rx="0.8" fill="#8a6a42" stroke="#5f4529" stroke-width="0.5"/>
+      <path d="M-2.4 1.8 H2.4 M-2.4 4.4 H2.4" stroke="#4c3a26" stroke-width="0.6"/>
+      <ellipse cx="0" cy="0" rx="2.4" ry="0.8" fill="#6f5433"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="55" cy="9" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="8" cy="30" rx="4" ry="2.5" fill="#529044"/>
+  <ellipse cx="32" cy="47" rx="27" ry="12" fill="#c2a36c"/>
+  <ellipse cx="32" cy="48" rx="21" ry="8" fill="#cdb078"/>
+  <ellipse cx="32" cy="51" rx="23" ry="2.4" fill="#8a7447" opacity="0.45"/>
+  <!-- Plank gable end facing the street, the east half in shade. -->
+  <path d="M12 51 V24 L32 9 L52 24 V51 Z" fill="#9a7650"/>
+  <path d="M32 9 L52 24 V51 H32 Z" fill="#86663f"/>
+  <g stroke="#6f5433" stroke-width="0.5">
+    <path d="M16 51 V21 M20 51 V18 M24 51 V15 M28 51 V12 M36 51 V12 M40 51 V15 M44 51 V18 M48 51 V21"/>
+  </g>
+  <rect x="12" y="35" width="40" height="1.4" fill="#6f5433"/>
+  <path d="M12 51 V24 L32 9 L52 24 V51 Z" fill="none" stroke="#5a4028" stroke-width="0.7"/>
+  <!-- Grey shingle roof edges along the gable. -->
+  <path d="M8.5 26.5 L32 7 L55.5 26.5 L53 27.5 L32 10 L11 27.5 Z" fill="#7d8288"/>
+  <path d="M32 7 L55.5 26.5 L53 27.5 L32 10 Z" fill="#6a6f75"/>
+  <path d="M8.5 26.5 L32 7 L55.5 26.5" fill="none" stroke="#4f5358" stroke-width="0.8"/>
+  <!-- Hoist beam at the apex with a rope, hook, and a hanging crate. -->
+  <rect x="30.5" y="10.5" width="3" height="3" fill="#5a4028"/>
+  <path d="M32 12 H43" stroke="#5a4028" stroke-width="1.4" stroke-linecap="round"/>
+  <circle cx="42" cy="13" r="0.9" fill="#3a352e"/>
+  <path d="M42 13.8 V22.4" stroke="#d6c69a" stroke-width="0.5"/>
+  <path d="M40 23 L42 22.2 L44 23" stroke="#3a352e" stroke-width="0.4" fill="none"/>
+  <use href="#crate" transform="translate(39 23)"/>
+  <!-- Loft door, open, with a dark interior. -->
+  <rect x="28" y="17" width="8" height="9.5" fill="#3a2a19"/>
+  <rect x="28" y="17" width="8" height="9.5" fill="none" stroke="#5a4028" stroke-width="0.6"/>
+  <path d="M28 17 L24.8 18 V25.8 L28 26.5 Z" fill="#a07c50" stroke="#5a4028" stroke-width="0.5"/>
+  <rect x="27.5" y="26.5" width="9" height="1.2" fill="#6f5433"/>
+  <!-- Wide double doors braced with a Z frame, the east leaf ajar. -->
+  <rect x="22" y="37.5" width="20" height="13.5" fill="#3a2a19"/>
+  <rect x="22" y="37.5" width="9.5" height="13.5" fill="#a07c50" stroke="#5a4028" stroke-width="0.6"/>
+  <path d="M22.5 38.2 H31 M22.5 50.3 H31 M22.5 50.3 L31 38.2" stroke="#6f5433" stroke-width="0.9"/>
+  <path d="M34.5 37.5 L42 37.5 V51 L34.5 51 Z" fill="#8a6a42" stroke="#5a4028" stroke-width="0.6"/>
+  <path d="M35 38.2 H41.5 M35 50.3 H41.5 M35 50.3 L41.5 38.2" stroke="#5f4529" stroke-width="0.9"/>
+  <rect x="21.2" y="36.8" width="21.6" height="1.2" fill="#5a4028"/>
+  <!-- Small shuttered windows on either side. -->
+  <rect x="14.5" y="40" width="4.5" height="4" fill="#3a2a19" stroke="#5a4028" stroke-width="0.5"/>
+  <rect x="45" y="40" width="4.5" height="4" fill="#3a2a19" stroke="#5a4028" stroke-width="0.5"/>
+  <path d="M14.5 42 H19 M45 42 H49.5" stroke="#6f5433" stroke-width="0.5"/>
+  <!-- Stock waiting outside: crates, barrels, and sacks. -->
+  <use href="#crate" transform="translate(6 45.5)"/>
+  <use href="#crate" transform="translate(8 40.5)"/>
+  <use href="#crate" transform="translate(12.5 47)"/>
+  <use href="#barrel" transform="translate(48 45.5)"/>
+  <use href="#barrel" transform="translate(53.2 46.5)"/>
+  <use href="#barrel" transform="translate(57 44)"/>
+  <g>
+    <path d="M42.5 55 Q42 51 44.8 50.7 Q47.6 51 47 55 Z" fill="#d6c69a" stroke="#a3926a" stroke-width="0.5"/>
+    <path d="M43.8 50.9 L44.8 49.8 L45.8 50.9" stroke="#a3926a" stroke-width="0.5" fill="none"/>
+  </g>
+  <path d="M27 56 Q32 55 37 56" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

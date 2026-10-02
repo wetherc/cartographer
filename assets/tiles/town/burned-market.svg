@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Burned stall: two charred posts, a split counter, and rags of the
+         awning. The origin is the top-left corner of the awning. The rags
+         take the fill of the <use>. -->
+    <g id="stall">
+      <ellipse cx="9" cy="15.5" rx="10" ry="1.6" fill="#3d342c" opacity="0.45"/>
+      <rect x="1" y="3" width="1.2" height="12.5" fill="#2e2824"/>
+      <rect x="15.8" y="6" width="1.2" height="9.5" fill="#2e2824"/>
+      <path d="M0.5 10 H8 L9 12.2 L8.2 15 H0.5 Z" fill="#5a4636" stroke="#2e2824" stroke-width="0.5"/>
+      <path d="M10.2 11.4 L17.5 10.6 V15 H10.8 Z" fill="#4a3a2c" stroke="#2e2824" stroke-width="0.5"/>
+      <path d="M0 0 H6 L5 2.4 L3.6 1.6 L2.6 3.8 L1.2 2.4 L-0.8 3.6 Z"/>
+      <path d="M0 0 H6" stroke="#2e2824" stroke-width="0.6"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="9" cy="9" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="56" cy="58" rx="6" ry="3" fill="#529044"/>
+  <!-- Scorched square: browned grass around a sooty dirt patch. -->
+  <ellipse cx="32" cy="36" rx="27" ry="21" fill="#7a8a45"/>
+  <ellipse cx="32" cy="37" rx="21" ry="15" fill="#8a7a5a"/>
+  <!-- Back row: the produce stall and the cloth stall burned to their
+       posts, with scraps of red and blue awning. -->
+  <use href="#stall" transform="translate(9 14)" fill="#7a2a22"/>
+  <use href="#stall" transform="translate(37 14)" fill="#22486a"/>
+  <!-- Bolts of cloth pulled off the counter and trampled. -->
+  <g>
+    <path d="M38 31 L46 29.4 L46.6 31.2 L38.6 32.8 Z" fill="#6a3a72"/>
+    <path d="M47 32.8 Q50 31.4 53.4 33 Q50.4 34.4 47 32.8 Z" fill="#a8903a"/>
+  </g>
+  <!-- The front stall knocked onto its back: the awning flat on the ground
+       and the counter upended beside it. -->
+  <g>
+    <ellipse cx="32" cy="44.6" rx="11" ry="1.6" fill="#3d342c" opacity="0.45"/>
+    <path d="M22 40 H40 L41.4 44 H20.6 Z" fill="#b8ad96"/>
+    <path d="M22 40 H25 L24.4 44 H20.6 Z M28 40 H31 L31 44 H27.6 Z M34 40 H37 L37.6 44 H34 Z" fill="#2c5a2a"/>
+    <path d="M22 40 H40 L41.4 44 H20.6 Z" fill="none" stroke="#4a4236" stroke-width="0.5"/>
+    <path d="M24 40 L25.2 42.4 L27 40.6 Z M35 41 L37.4 43.6 L38.6 41.2 Z" fill="#2e2824"/>
+    <rect x="23" y="35" width="17" height="3.6" fill="#6a5238" stroke="#3d342c" stroke-width="0.5" transform="rotate(-6 31 37)"/>
+    <path d="M24.4 35.4 V38.6 M38.4 33.8 V37" stroke="#3d342c" stroke-width="1" transform="rotate(-6 31 37)"/>
+  </g>
+  <!-- Bread and cheese kicked across the square. -->
+  <g>
+    <ellipse cx="19.6" cy="47.6" rx="1.8" ry="1" fill="#8a5a2a"/>
+    <path d="M44 46.4 L47.4 46.4 L47.4 44.8 Z" fill="#c8a84a" stroke="#98783a" stroke-width="0.4"/>
+    <circle cx="36.8" cy="49" r="1.1" fill="#c8a84a" stroke="#98783a" stroke-width="0.4"/>
+  </g>
+  <!-- Smashed crates, spilled apples, and a sack slit open. -->
+  <g fill="#8a6a42" stroke="#5a4028" stroke-width="0.4">
+    <path d="M12 36 H16.6 L17 37.4 L12.4 38 Z"/>
+    <path d="M12.6 39 L16 38.4 L16.4 40 Z"/>
+    <path d="M47 38 L51.4 37.6 L50.6 39.2 L47.2 39.6 Z"/>
+  </g>
+  <g fill="#9a3a30">
+    <circle cx="18.2" cy="38.6" r="0.8"/>
+    <circle cx="20" cy="39.6" r="0.8"/>
+    <circle cx="16.6" cy="41.2" r="0.8"/>
+  </g>
+  <g>
+    <path d="M9.5 46 Q9 41.5 11.8 41.2 Q14.2 41.5 14.4 44 L15.8 46 Z" fill="#8a8272" stroke="#6a5d4a" stroke-width="0.5"/>
+    <ellipse cx="16" cy="46.2" rx="2.4" ry="0.7" fill="#c8bb9a"/>
+  </g>
+  <!-- One barrel stove in, the other rolled on its side. -->
+  <g>
+    <rect x="47.5" y="27.5" width="4.6" height="6" rx="0.8" fill="#5a4636" stroke="#2e2824" stroke-width="0.5"/>
+    <path d="M47.5 29.3 H52.1 M47.5 31.7 H52.1" stroke="#2e2824" stroke-width="0.6"/>
+    <path d="M47.9 27.5 L49 29.2 L50.4 28.2 L51.8 27.5 Z" fill="#1f1a16"/>
+    <rect x="52.6" y="31" width="6" height="4.6" rx="0.8" fill="#7a5c38" stroke="#5f4529" stroke-width="0.5"/>
+    <path d="M54.4 31 V35.6 M56.8 31 V35.6" stroke="#4c3a26" stroke-width="0.6"/>
+    <ellipse cx="58.6" cy="33.3" rx="0.8" ry="2.3" fill="#6f5433"/>
+  </g>
+  <!-- The handcart tipped over, one wheel off and lying beside it. -->
+  <g>
+    <ellipse cx="49" cy="53.3" rx="7" ry="1.3" fill="#3d342c" opacity="0.45"/>
+    <path d="M43 52.6 L44.2 47.6 L54.6 49.4 L53.6 54 Z" fill="#6a5238" stroke="#3d342c" stroke-width="0.5"/>
+    <path d="M54.6 49.4 L58.4 52.8" stroke="#3d342c" stroke-width="0.9" stroke-linecap="round"/>
+    <circle cx="45.4" cy="50.6" r="2.2" fill="none" stroke="#3d342c" stroke-width="0.9"/>
+    <circle cx="45.4" cy="50.6" r="0.5" fill="#3d342c"/>
+    <ellipse cx="57" cy="56.4" rx="2.4" ry="0.9" fill="none" stroke="#3d342c" stroke-width="0.9"/>
+    <g fill="#5a7a3a">
+      <circle cx="41" cy="54.4" r="1.1"/>
+      <circle cx="39" cy="55.6" r="1"/>
+    </g>
+  </g>
+  <!-- A smouldering heap where the looters burned what they could not
+       carry. -->
+  <g>
+    <ellipse cx="28" cy="27" rx="4.4" ry="1.6" fill="#9a958c"/>
+    <path d="M25 27 L29.6 25.2 M26.6 25.6 L31 27.4" stroke="#2e2824" stroke-width="0.9" stroke-linecap="round"/>
+    <circle cx="28.2" cy="26.4" r="0.5" fill="#e8a040"/>
+    <g fill="#b8b3a8">
+      <circle cx="29" cy="23" r="1.8" opacity="0.5"/>
+      <circle cx="30.6" cy="19.6" r="2.3" opacity="0.35"/>
+      <circle cx="32.8" cy="16.4" r="2.7" opacity="0.2"/>
+    </g>
+  </g>
+  <path d="M28 55 L33.6 54.2" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

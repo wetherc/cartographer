@@ -1,0 +1,341 @@
+/**
+ * Shared building blocks for the inline Library-rail authoring forms. The
+ * item, spell, and creature-template editors all render inline in
+ * the rail, not in a modal, and want the same captioned controls, row
+ * grouping, and action-button pair. These are the primitives they build
+ * from, so the DOM shape and class vocabulary stay identical across every
+ * form. buildInlineForm assembles those primitives into the wrapper, name
+ * field, and action row that all four forms share, leaving each form
+ * only its own fields to describe.
+ *
+ * The controls themselves are not rail-only. `Modal.js` builds a dialog's
+ * plain fields from the same functions, so the same field behaves alike in a
+ * dialog and in the rail.
+ */
+
+import { clamp } from '../util/num.js';
+import { textButton } from './buttons.js';
+import { classNames, el, uniqueId } from './dom.js';
+
+/**
+ * The options every builder here accepts on top of its own. `className`
+ * is appended to the builder's base class, not a replacement for it, so a
+ * caller that wants one sizing or layout modifier still gets the shared
+ * `field` presentation. `ariaLabel` covers the controls that stand alone
+ * in a toolbar with no visible caption to name them.
+ * @typedef {{ className?: string, ariaLabel?: string }} FieldOpts
+ */
+
+/**
+ * Apply the shared options to a freshly built control.
+ * @template {HTMLElement} T
+ * @param {T} control
+ * @param {FieldOpts} opts
+ * @returns {T}
+ */
+function withOpts(control, { className, ariaLabel }) {
+  if (className) control.className = classNames([control.className, className]);
+  if (ariaLabel) control.setAttribute('aria-label', ariaLabel);
+  return control;
+}
+
+/**
+ * The tags a `<label>` can name. A `<label>` names exactly one of these: its
+ * first labelable descendant. Wrapping anything else in a label gives the
+ * wrong name to the wrong control, or no name at all.
+ */
+const LABELABLE = new Set(['BUTTON', 'INPUT', 'METER', 'OUTPUT', 'PROGRESS', 'SELECT', 'TEXTAREA']);
+
+/**
+ * Which wrapper a captioned control needs. A single labelable control takes a
+ * `<label>`, so a click on the caption focuses it and the caption is its
+ * name. Anything else (a checkbox grid, a dice editor, a pill grid) takes a
+ * `<div role="group">` named by the caption through `aria-labelledby`. A
+ * `<label>` around such a group would name only the first box inside it, and
+ * would name it with the whole group's text.
+ * @param {string} tagName the control's `tagName`, in any case
+ * @returns {'label' | 'group'}
+ */
+export function captionWrapperKind(tagName) {
+  return LABELABLE.has(tagName.toUpperCase()) ? 'label' : 'group';
+}
+
+/**
+ * A caption stacked over a control, in the wrapper `captionWrapperKind`
+ * picks. `caption` is an element so a caller can keep a handle on its text
+ * node and restate it later. `Modal.js` and `labeled` both build on this.
+ * @param {HTMLElement} caption
+ * @param {HTMLElement} control
+ * @param {string} className
+ * @returns {HTMLElement}
+ */
+export function captioned(caption, control, className) {
+  if (captionWrapperKind(control.tagName) === 'label') {
+    // A wrapping label names a select by all of its text, and Chromium counts
+    // the text of every option in it, so a map picker read out a hundred map
+    // names as its name. aria-labelledby names it by the caption alone.
+    if (control.tagName === 'SELECT' && !control.hasAttribute('aria-label')) {
+      caption.id = uniqueId('caption');
+      control.setAttribute('aria-labelledby', caption.id);
+    }
+    return el('label', className, caption, control);
+  }
+  caption.id = uniqueId('caption');
+  const group = el('div', className, caption, control);
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-labelledby', caption.id);
+  return group;
+}
+
+/**
+ * A captioned wrapper so each control names itself.
+ * @param {string} caption
+ * @param {HTMLElement} control
+ * @param {FieldOpts} [opts]
+ * @returns {HTMLElement}
+ */
+export function labeled(caption, control, opts = {}) {
+  const wrapper = captioned(el('span', '', caption), control, 'form__label u-col u-g1 u-muted');
+  return withOpts(wrapper, opts);
+}
+
+/**
+ * A horizontal grouping of related fields. Type-specific fields toggle in
+ * and out per row, so an appearing control extends its own line instead
+ * of reflowing the whole form. A caller that needs a modifier class on
+ * the row builds it with `el` instead. The variadic children are worth
+ * more here than an options bag.
+ * @param {...import('./dom.js').Child} children
+ * @returns {HTMLDivElement}
+ */
+export function fieldRow(...children) {
+  return el('div', 'form__row', ...children);
+}
+
+/**
+ * A bare on/off box, with no caption of its own. A modal field already has a
+ * caption from its own wrapper, so it mounts this box rather than the labeled
+ * form below.
+ * @param {boolean} checked
+ * @returns {HTMLInputElement}
+ */
+export function checkboxInput(checked) {
+  const input = el('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  return input;
+}
+
+/**
+ * A labeled checkbox returning its wrapper and the input. The box sits before
+ * its caption on one line, so a checkbox in a row of captioned fields reads as
+ * the same weight of control.
+ * @param {string} caption
+ * @param {boolean} checked
+ * @param {FieldOpts} [opts]
+ * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
+ */
+export function checkbox(caption, checked, opts = {}) {
+  const input = checkboxInput(checked);
+  const label = el('label', 'field-check u-muted', input, el('span', '', caption));
+  return { label: withOpts(label, opts), input };
+}
+
+/**
+ * A text input, pre-filled and classed as a form field. `type` covers the
+ * search variant, which uses the browser's clear affordance. The placeholder
+ * is an option here, the same as on the number and textarea fields.
+ * @param {string} value
+ * @param {FieldOpts & { placeholder?: string, type?: 'text' | 'search' }} [opts]
+ * @returns {HTMLInputElement}
+ */
+export function textField(value, opts = {}) {
+  const input = el('input', 'field');
+  input.type = opts.type ?? 'text';
+  input.value = value;
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  return withOpts(input, opts);
+}
+
+/**
+ * A number input, pre-filled and classed as a form field. An empty-string
+ * value leaves the input blank, for an optional number whose placeholder
+ * stands in for "unset".
+ *
+ * `min` and `max` constrain the spinner, and the field also corrects a typed
+ * out-of-range number to the nearer bound. The correction waits for the edit
+ * to commit, on blur or Enter, rather than firing per keystroke, so a "1" on
+ * the way to "12" stays as typed. The bounds are read from the element, so a
+ * caller that restates them later, for example a dialog whose spell level
+ * follows the caster's class, still gets the new range enforced.
+ * @param {number | string} value
+ * @param {FieldOpts & { min?: number, max?: number, placeholder?: string }} [opts]
+ * @returns {HTMLInputElement}
+ */
+export function numberField(value, opts = {}) {
+  const input = el('input', 'field');
+  input.type = 'number';
+  input.value = String(value);
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  if (opts.min !== undefined) input.min = String(opts.min);
+  if (opts.max !== undefined) input.max = String(opts.max);
+  input.addEventListener('change', () => {
+    const typed = Number(input.value);
+    if (input.value === '' || Number.isNaN(typed)) return;
+    // Not clampInt: a number field can hold a decimal. This enforces the
+    // field's own bounds and nothing else.
+    const min = input.min === '' ? -Infinity : Number(input.min);
+    const max = input.max === '' ? Infinity : Number(input.max);
+    const clamped = clamp(typed, min, max);
+    if (clamped === typed) return;
+    input.value = String(clamped);
+    // The correction is an edit, so anything watching the field for edits
+    // sees the value it landed on.
+    input.dispatchEvent(new Event('input'));
+  });
+  return withOpts(input, opts);
+}
+
+/**
+ * A multi-line text input, pre-filled and classed as a form field.
+ * @param {string} value
+ * @param {FieldOpts & { placeholder?: string, rows?: number }} [opts]
+ * @returns {HTMLTextAreaElement}
+ */
+export function textareaField(value, opts = {}) {
+  const area = el('textarea', 'field');
+  area.rows = opts.rows ?? 3;
+  if (opts.placeholder) area.placeholder = opts.placeholder;
+  area.value = value;
+  return withOpts(area, opts);
+}
+
+/**
+ * A <select> over the given options, pre-selected. An option is either a
+ * bare string, where value equals label, or a `{ value, label }` pair, so
+ * the same helper serves plain enum pickers and labeled choices, for
+ * example weapons or dispositions. An option can carry `disabled` for a
+ * choice that shows but is not available, for example a spell level the
+ * character cannot yet cast.
+ * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
+ * @param {string} value
+ * @param {FieldOpts} [opts]
+ * @returns {HTMLSelectElement}
+ */
+export function select(options, value, opts = {}) {
+  const picker = el('select', 'field');
+  setOptions(picker, options, value);
+  return withOpts(picker, opts);
+}
+
+/**
+ * Replace a `<select>`'s options and selection. A picker whose choices
+ * depend on another field, for example the item form's preset list
+ * following the item type, refills itself through this function, so
+ * options build in one place.
+ *
+ * An option with a `group` goes into an `<optgroup>` of that label. A run of
+ * options with the same group shares one optgroup.
+ * @param {HTMLSelectElement} picker
+ * @param {(string | { value: string, label: string, disabled?: boolean, group?: string })[]} options
+ * @param {string} value
+ */
+export function setOptions(picker, options, value) {
+  /** @type {HTMLElement[]} */
+  const children = [];
+  /** @type {HTMLOptGroupElement | null} */
+  let group = null;
+  for (const opt of options) {
+    const spec = typeof opt === 'string' ? { value: opt, label: opt } : opt;
+    const option = el('option', '', spec.label);
+    option.value = spec.value;
+    if ('disabled' in spec && spec.disabled) option.disabled = true;
+    const groupLabel = 'group' in spec ? spec.group : undefined;
+    if (!groupLabel) {
+      group = null;
+      children.push(option);
+      continue;
+    }
+    if (group?.label !== groupLabel) {
+      group = /** @type {HTMLOptGroupElement} */ (el('optgroup', ''));
+      group.label = groupLabel;
+      children.push(group);
+    }
+    group.appendChild(option);
+  }
+  picker.replaceChildren(...children);
+  picker.value = value;
+}
+
+/**
+ * The envelope every inline authoring form shares. `nameInput` goes first
+ * and takes the shared `form__wide` sizing. `rows` follow in order, and the
+ * action row closes the form. Submitting reads the form through
+ * `assemble`, which returns the finished value, or null to refuse the
+ * submit. `afterSubmit` runs on an accepted submit, for a form that
+ * clears itself to accept another entry. With `nameLabel`, the name input
+ * gets a visible caption, for a long form where a filled placeholder no
+ * longer says what the field is.
+ * @template T
+ * @param {{
+ *   nameInput: HTMLInputElement,
+ *   nameLabel?: string,
+ *   rows: HTMLElement[],
+ *   assemble: () => T | null,
+ *   submitLabel: string,
+ *   onSubmit: (fields: T) => void,
+ *   onCancel?: (() => void) | null,
+ *   afterSubmit?: (() => void) | null,
+ *   className?: string,
+ * }} opts
+ * @returns {HTMLDivElement}
+ */
+export function buildInlineForm({
+  nameInput,
+  nameLabel = '',
+  rows,
+  assemble,
+  submitLabel,
+  onSubmit,
+  onCancel = null,
+  afterSubmit = null,
+  className = '',
+}) {
+  const form = el('div', classNames(['form u-col u-g2', className]));
+  nameInput.classList.add('form__wide');
+
+  const actions = formActions({
+    submitLabel,
+    onSubmit: () => {
+      // A nameless entry is unusable in every rail list, so no form
+      // submits one. A form refuses anything else it needs to by
+      // assembling to null.
+      if (!nameInput.value.trim()) return;
+      const fields = assemble();
+      if (fields === null) return;
+      onSubmit(fields);
+      afterSubmit?.();
+    },
+    onCancel,
+  });
+
+  form.append(nameLabel ? labeled(nameLabel, nameInput) : nameInput, ...rows, actions);
+  return form;
+}
+
+/**
+ * A form's action row: a primary submit button plus an optional cancel,
+ * both text-labeled and the same size. No icon set has a non-destructive
+ * "cancel" glyph. `buildInlineForm` owns the only call, so every form's
+ * buttons are ordered and styled alike.
+ * @param {{ submitLabel: string, onSubmit: () => void, onCancel?: (() => void) | null }} opts
+ * @returns {HTMLDivElement}
+ */
+function formActions({ submitLabel, onSubmit, onCancel = null }) {
+  // Dismiss sits on the left and primary on the right, the same ordering
+  // as every modal.
+  return fieldRow(
+    onCancel && textButton('Cancel', onCancel),
+    textButton(submitLabel, onSubmit, { variant: 'primary' }),
+  );
+}

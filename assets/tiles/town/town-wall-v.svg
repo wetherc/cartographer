@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A straight run of the town wall, drawn north-south through the middle
+       of the tile over a transparent ground. Seen from above, it shows the
+       wall walk between two parapets. Every detail repeats on an 8-unit
+       period, so wall pieces in a column join without a visible break. -->
+  <defs>
+    <!-- A merlon seen from above: its cap, and the south face below it. -->
+    <g id="merlon">
+      <rect x="0" y="0" width="3.5" height="4.5" fill="#c8c2b6"/>
+      <rect x="0" y="4.5" width="3.5" height="1" fill="#8a8478"/>
+    </g>
+  </defs>
+  <!-- Ground shadow on the east side, away from the light. -->
+  <rect x="41" width="3.2" height="64" fill="#000000" opacity="0.18"/>
+  <!-- Parapets and the wall walk between them. -->
+  <rect x="23" width="18" height="64" fill="#b0aa9e"/>
+  <rect x="37.5" width="3.5" height="64" fill="#9a948a"/>
+  <rect x="26.5" width="11" height="64" fill="#c8c2b6"/>
+  <path d="M26.5 4 H37.5 M26.5 12 H37.5 M26.5 20 H37.5 M26.5 28 H37.5 M26.5 36 H37.5 M26.5 44 H37.5 M26.5 52 H37.5 M26.5 60 H37.5" stroke="#a39d91" stroke-width="0.5"/>
+  <path d="M26.5 0 V64 M37.5 0 V64" stroke="#7a7468" stroke-width="0.5"/>
+  <path d="M23.4 0 V64 M40.6 0 V64" stroke="#5c574e" stroke-width="0.8"/>
+  <!-- Merlons on both parapets. The east row sits in shade. -->
+  <g>
+    <use href="#merlon" transform="translate(23 1)"/>
+    <use href="#merlon" transform="translate(23 9)"/>
+    <use href="#merlon" transform="translate(23 17)"/>
+    <use href="#merlon" transform="translate(23 25)"/>
+    <use href="#merlon" transform="translate(23 33)"/>
+    <use href="#merlon" transform="translate(23 41)"/>
+    <use href="#merlon" transform="translate(23 49)"/>
+    <use href="#merlon" transform="translate(23 57)"/>
+  </g>
+  <g opacity="0.88">
+    <use href="#merlon" transform="translate(37.5 1)"/>
+    <use href="#merlon" transform="translate(37.5 9)"/>
+    <use href="#merlon" transform="translate(37.5 17)"/>
+    <use href="#merlon" transform="translate(37.5 25)"/>
+    <use href="#merlon" transform="translate(37.5 33)"/>
+    <use href="#merlon" transform="translate(37.5 41)"/>
+    <use href="#merlon" transform="translate(37.5 49)"/>
+    <use href="#merlon" transform="translate(37.5 57)"/>
+  </g>
+</svg>

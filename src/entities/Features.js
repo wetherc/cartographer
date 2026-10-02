@@ -1,0 +1,110 @@
+/**
+ * Readers over the class features that a character has unlocked.
+ * `LevelUp.unlockedFeatures` lists those features as names, and the sheet
+ * prints the list. This module is what turns two of those names into numbers
+ * that the combat paths can use.
+ *
+ * A feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
+ * name with structured effects. One-time grants (proficiencies, expertise,
+ * roll riders) go through the structured path in `FeatureGrants.js`. The
+ * readers here cover the other kind: values that scale with the class level
+ * and so are derived on read, not granted once. Matching on the name is how
+ * they read one. Each function states the names it looks for. A homebrew or
+ * imported class that uses the same names gets the same mechanics.
+ *
+ * Every function is pure and takes the character as its only input.
+ */
+
+import { classLevelOf } from './Multiclass.js';
+import { unlockedFeatures } from './LevelUp.js';
+import { pactAttacks } from './PactWeapon.js';
+
+/**
+ * What these readers need of a combatant: its class list. A party character
+ * carries one, and so does a creature built as a leveled foe, so both kinds
+ * read their features here.
+ * @typedef {{
+ *   classes?: import('../types/class.js').ClassRef[],
+ *   class?: string,
+ *   level?: number,
+ * }} Featured
+ */
+
+/** @param {Featured} combatant @returns {import('../types/entities.js').Character} */
+function asCharacter(combatant) {
+  return /** @type {import('../types/entities.js').Character} */ (
+    /** @type {unknown} */ (combatant)
+  );
+}
+
+/** The name of the base Extra Attack feature. Fighter also has the numbered
+ * follow-ups, 'Extra Attack (2)' and 'Extra Attack (3)'. */
+const EXTRA_ATTACK = 'Extra Attack';
+
+/** The name of the Rogue feature that adds dice to one attack per turn. */
+const SNEAK_ATTACK = 'Sneak Attack';
+
+/**
+ * Whether the character has unlocked a class feature by name. The match is
+ * exact, so 'Extra Attack' does not match 'Extra Attack (2)'.
+ * @param {Featured} character
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function hasFeature(character, name) {
+  return unlockedFeatures(asCharacter(character)).some((feature) => feature.name === name);
+}
+
+/**
+ * The class that granted a feature, or null when the character does not have
+ * it. A feature that two classes grant reports the first in class-list order.
+ * @param {Featured} character
+ * @param {string} name
+ * @returns {string | null}
+ */
+export function featureSource(character, name) {
+  return (
+    unlockedFeatures(asCharacter(character)).find((feature) => feature.name === name)?.classId ??
+    null
+  );
+}
+
+/**
+ * How many weapon swings one Attack action buys. Extra Attack grants a second
+ * swing, and the Fighter's numbered follow-ups grant a third and a fourth.
+ * Extra Attack does not stack across classes in 5e, so a multiclass character
+ * takes the best count rather than the sum, which reading the highest
+ * numbered feature does on its own. The warlock's Thirsting Blade counts
+ * as one more such feature, but only for a swing with the pact weapon. A
+ * `weapon` names the weapon of the swing, and without one the count is the
+ * best case over all weapons.
+ * @param {Featured} character
+ * @param {object} [weapon] the weapon of the swing
+ * @returns {number} at least 1
+ */
+export function attacksPerAction(character, weapon) {
+  let extra = 0;
+  for (const feature of unlockedFeatures(asCharacter(character))) {
+    if (feature.name === EXTRA_ATTACK) extra = Math.max(extra, 1);
+    else {
+      const match = /^Extra Attack \((\d+)\)$/.exec(feature.name);
+      if (match) extra = Math.max(extra, Number(match[1]));
+    }
+  }
+  // Thirsting Blade is an Extra Attack of its own, so the two do not add up.
+  return Math.max(1 + extra, pactAttacks(asCharacter(character), weapon));
+}
+
+/**
+ * How many d6 the character's Sneak Attack adds, from the level in the class
+ * that granted it: one die at 1st level and one more at every odd level after
+ * that. A character without the feature gets 0.
+ * @param {Featured} character
+ * @returns {number}
+ */
+export function sneakAttackDice(character) {
+  const classId = featureSource(character, SNEAK_ATTACK);
+  if (!classId) return 0;
+  const level = Math.max(1, Math.floor(classLevelOf(asCharacter(character), classId)) || 1);
+  return Math.ceil(level / 2);
+}

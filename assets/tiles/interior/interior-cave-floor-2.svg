@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#6b5d4f"/>
+  <!-- Damp hollows and packed earth, inset from every edge. -->
+  <ellipse cx="40" cy="22" rx="12" ry="6" fill="#645749"/>
+  <ellipse cx="16" cy="48" rx="8" ry="4.5" fill="#72634f"/>
+  <g stroke="#56493d" stroke-width="0.9" fill="none" stroke-linecap="round">
+    <path d="M44 48 l-4 3 l1 4"/>
+    <path d="M9 21 l4.5 1.5"/>
+  </g>
+  <!-- A short stalagmite stub, lit from the north-west. -->
+  <g>
+    <ellipse cx="25" cy="34" rx="4.2" ry="3.2" fill="#4f4236"/>
+    <ellipse cx="24.4" cy="33.2" rx="3.2" ry="2.4" fill="#7e6e59"/>
+    <ellipse cx="23.9" cy="32.6" rx="1.4" ry="1" fill="#978670"/>
+  </g>
+  <!-- Pebbles: a lit top and a dark underside. -->
+  <g>
+    <ellipse cx="50" cy="38" rx="2" ry="1.5" fill="#57493c"/>
+    <ellipse cx="49.6" cy="37.5" rx="1.6" ry="1.1" fill="#85765f"/>
+    <ellipse cx="34" cy="55" rx="1.6" ry="1.2" fill="#57493c"/>
+    <ellipse cx="33.7" cy="54.6" rx="1.3" ry="0.9" fill="#85765f"/>
+  </g>
+  <g fill="#7b6c58">
+    <circle cx="30" cy="37" r="0.7"/><circle cx="20" cy="38" r="0.6"/>
+    <circle cx="11" cy="9" r="0.8"/><circle cx="55" cy="11" r="0.6"/>
+    <circle cx="54" cy="52" r="0.7"/><circle cx="40" cy="42" r="0.5"/>
+  </g>
+</svg>

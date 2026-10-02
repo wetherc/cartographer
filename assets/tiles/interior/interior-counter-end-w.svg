@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The west end of a shop counter seen from the front and above, over a
+       transparent ground. The top and the front panel run in from the east
+       edge, so the piece joins a counter section on its east side, and the
+       west end is rounded and closed. A soft contact shadow lies around
+       the footprint. The group mirrors the east end piece, and the
+       comments inside it name the sides of the unmirrored art. -->
+  <g transform="translate(64 0) scale(-1 1)">
+  <!-- Contact shadow around the footprint of the counter. -->
+  <g fill="#3d3a34">
+    <path d="M0 22 H48 Q56 22 56 30 V45 Q56 53 48 53 H0 Z" opacity="0.22"/>
+    <path d="M0 23 H47.5 Q55 23 55 30.5 V44.5 Q55 52 47.5 52 H0 Z" opacity="0.3"/>
+  </g>
+  <!-- Counter top: two planks and a lit front edge, rounded at the east
+       end. -->
+  <path d="M0 24 H45 Q52 24 52 30.5 Q52 37 45 37 H0 Z" fill="#9a6a3c"/>
+  <path d="M0 24 H45 Q52 24 52 30.5 Q52 37 45 37" fill="none" stroke="#4a3018" stroke-width="0.9"/>
+  <path d="M0 30.4 H51.6" stroke="#76502b" stroke-width="0.6"/>
+  <path d="M0 25 H45 Q50.6 25 51.2 29.6" fill="none" stroke="#b58552" stroke-width="0.8"/>
+  <!-- Front panel: an edge face, one framed panel, and a closed end with
+       a rounded corner post. -->
+  <path d="M0 37 H45 Q49.4 37 51 34.6 V39.5 H0 Z" fill="#6e4a28"/>
+  <path d="M0 37 H45 Q49.4 37 51 34.6 M0 39.5 H51" fill="none" stroke="#4a3018" stroke-width="0.7"/>
+  <rect x="0" y="39.5" width="51" height="11" fill="#7a5230"/>
+  <rect x="4" y="41.5" width="24" height="7" fill="#6a4524" stroke="#3f2a15" stroke-width="0.6"/>
+  <rect x="32" y="41.5" width="12" height="7" fill="#6a4524" stroke="#3f2a15" stroke-width="0.6"/>
+  <path d="M4.6 42.1 H27.4 M32.6 42.1 H43.4" stroke="#9a6d42" stroke-width="0.5"/>
+  <rect x="47" y="34.6" width="4" height="15.9" fill="#6e4a28"/>
+  <path d="M47 39.5 V50.5 M51 34.6 V50.5" stroke="#3f2a15" stroke-width="0.6"/>
+  <path d="M48 40 V50" stroke="#9a6d42" stroke-width="0.5"/>
+  <rect x="0" y="50.5" width="51" height="2" fill="#5a3a1c"/>
+  <path d="M0 50.5 H51 M0 52.5 H51 V50.5" fill="none" stroke="#3f2a15" stroke-width="0.6"/>
+  </g>
+</svg>

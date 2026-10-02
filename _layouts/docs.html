@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {%- if page.url == '/docs/' %}
+    <title>{{ site.title }} documentation</title>
+    {%- else %}
+    <title>{{ page.title | strip_html }} · {{ site.title }} docs</title>
+    {%- endif %}
+    <meta name="description" content="{{ site.description }}" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d2f21' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
+    <script>
+      // Apply the saved theme before the first paint. The app on the same
+      // origin writes the same key, so both follow one choice.
+      try {
+        const saved = localStorage.getItem('campaign-builder:theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      } catch {
+        // A blocked localStorage leaves the OS preference in charge.
+      }
+    </script>
+    <link rel="stylesheet" href="{{ '/docs/assets/docs.css' | relative_url }}" />
+    <script defer src="{{ '/docs/assets/docs.js' | relative_url }}"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to the content</a>
+    <header class="site-header">
+      <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false">
+        Menu
+      </button>
+      <a class="wordmark" href="{{ '/docs/' | relative_url }}">
+        Campaign Builder <span class="wordmark__sub">docs</span>
+      </a>
+      <nav class="header-links" aria-label="Site">
+        <a href="{{ '/' | relative_url }}">Open the app</a>
+        <a href="https://github.com/{{ site.repository }}">Source</a>
+        <button class="theme-toggle" type="button" aria-label="Switch theme">Theme</button>
+      </nav>
+    </header>
+
+    {%- assign flat = '' | split: '' %}
+    {%- for group in site.data.docs_nav %}
+      {%- assign flat = flat | concat: group.pages %}
+    {%- endfor %}
+    {%- for item in flat %}
+      {%- if item.url == page.url %}
+        {%- assign here = forloop.index0 %}
+      {%- endif %}
+    {%- endfor %}
+
+    <div class="layout">
+      <nav id="site-nav" class="sidebar" aria-label="Documents">
+        {%- for group in site.data.docs_nav %}
+        <p class="sidebar__section">{{ group.section }}</p>
+        <ul>
+          {%- for item in group.pages %}
+          <li>
+            <a href="{{ item.url | relative_url }}"{% if item.url == page.url %} aria-current="page"{% endif %}>{{ item.title }}</a>
+          </li>
+          {%- endfor %}
+        </ul>
+        {%- endfor %}
+        <p class="sidebar__section sidebar__extra">Elsewhere</p>
+        <ul class="sidebar__extra">
+          <li><a href="{{ '/' | relative_url }}">Open the app</a></li>
+          <li><a href="https://github.com/{{ site.repository }}">Source</a></li>
+        </ul>
+      </nav>
+
+      <main id="content" class="content">
+        <article class="prose">
+          {{ content }}
+        </article>
+
+        {%- if here %}
+        {%- assign prev_index = here | minus: 1 %}
+        {%- assign next_index = here | plus: 1 %}
+        {%- assign prev = flat[prev_index] %}
+        {%- assign next = flat[next_index] %}
+        {%- endif %}
+        {%- if here == 0 %}{% assign prev = nil %}{% assign next = flat[1] %}{% endif %}
+        {%- if prev or next %}
+        <nav class="pager" aria-label="Previous and next">
+          {%- if prev %}
+          <a class="pager__link" href="{{ prev.url | relative_url }}" rel="prev">
+            <span class="pager__label">Previous</span>{{ prev.title }}
+          </a>
+          {%- endif %}
+          {%- if next %}
+          <a class="pager__link pager__link--next" href="{{ next.url | relative_url }}" rel="next">
+            <span class="pager__label">Next</span>{{ next.title }}
+          </a>
+          {%- endif %}
+        </nav>
+        {%- endif %}
+
+        <footer class="site-footer">
+          <p>
+            Campaign Builder. Each page is built from a Markdown file in
+            <a href="https://github.com/{{ site.repository }}">the repository</a>.
+          </p>
+        </footer>
+      </main>
+
+      <aside class="toc" aria-label="On this page" hidden>
+        <p class="toc__title">On this page</p>
+        <ol class="toc__list"></ol>
+      </aside>
+    </div>
+  </body>
+</html>

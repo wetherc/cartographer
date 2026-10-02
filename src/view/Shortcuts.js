@@ -1,0 +1,72 @@
+/**
+ * Which app-wide action a keypress means. `app/shortcuts.js` keeps the
+ * listener, the test for whether the user is typing in a field (which needs
+ * the real DOM), and the calls. This file holds the table of what each key
+ * does, and the two places where it depends on mode and role.
+ */
+
+/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'build' | 'play' | 'help' | 'sheet'} ShortcutAction */
+
+/**
+ * The shortcut list that the '?' dialog shows. This list stays beside the
+ * table it describes, so a new shortcut and its documentation are one edit,
+ * not two. Escape and the edge exit are handled by the dialog code and the
+ * map canvas, not by `shortcutFor`, but a reader of this list expects to
+ * find every key here. `docs/gm-reference.md` has the same table.
+ */
+export const SHORTCUT_HELP = [
+  '?: show this list',
+  'Ctrl/Cmd+S: save the campaign',
+  'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
+  'Ctrl/Cmd+Shift+Z: redo the last undone save',
+  'B / P: switch to Build / Play mode',
+  'C: open or close the full character sheet (Play)',
+  'Escape: close a dialog or the full sheet, or put down the fog brush',
+  'On the map (click it first):',
+  'Arrows: move the cursor. Enter / Space: act on the cursor cell',
+  '+ / -: zoom',
+  'Arrow off an edge twice: leave through that side (the first press lights the exit)',
+  'Shift+F10 or Menu key: open the tile menu (Build)',
+  'In the World tree:',
+  'Up / Down: move between rows. Home / End: first / last row',
+  'Right / Left: open / close a row, or move to its child / parent',
+  'Enter / Space: open the map. Shift+F10 or Menu key: open the row menu',
+];
+
+/**
+ * The action that a keypress asks for, or null for a keypress that asks for
+ * nothing.
+ *
+ * Ctrl/Cmd+Z means two different undos. In Build mode it is the
+ * stroke-level undo, because that is what a GM reaches for while painting.
+ * Everywhere else it is the save-level undo that the header button drives.
+ * Shift turns it into a redo, always the save-level redo, because strokes
+ * have no redo.
+ *
+ * Save, Undo, and Redo are GM-only. A player tab hides their header
+ * buttons, and a Ctrl+Z on the table display rolls the campaign back for
+ * every tab. Mode switching is GM-only too, and uses a bare letter. The
+ * function checks it after the modifier combinations, and skips it
+ * entirely when any modifier is held. Help is open to everyone, because a
+ * player who cannot switch modes can still want to know what the map keys
+ * do.
+ * @param {{ key: string, ctrlKey?: boolean, metaKey?: boolean, altKey?: boolean, shiftKey?: boolean }} event
+ * @param {{ mode: string, gm: boolean }} context
+ * @returns {ShortcutAction | null}
+ */
+export function shortcutFor(event, context) {
+  const command = Boolean(event.ctrlKey || event.metaKey);
+  const key = event.key.toLowerCase();
+  if (command && !context.gm) return null;
+  if (command && key === 's') return 'save';
+  if (command && key === 'z') {
+    if (event.shiftKey) return 'redo';
+    return context.mode === 'build' ? 'undo-stroke' : 'undo';
+  }
+  if (command || event.altKey) return null;
+  if (event.key === 'b' && context.gm) return 'build';
+  if (event.key === 'p' && context.gm) return 'play';
+  if (event.key === '?') return 'help';
+  if (event.key === 'c' && context.mode === 'play') return 'sheet';
+  return null;
+}

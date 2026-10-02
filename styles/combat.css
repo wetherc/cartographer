@@ -1,0 +1,680 @@
+/* ==========================================================================
+   Combat mode: the full-width fight screen.
+
+   The screen shows only in combat mode, which the app enters when a fight
+   starts and leaves when it ends (there is no header button for it). Like
+   Library mode it replaces the map columns entirely: the map, the Play
+   sidebar, and both authoring rails all hide, and the screen takes the full
+   width of the main area.
+   ========================================================================== */
+
+#combat-screen {
+  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+body.mode-combat #combat-screen {
+  display: flex;
+}
+
+body.mode-combat .app-center,
+body.mode-combat .app-sidebar,
+body.mode-combat .app-buildrail {
+  display: none;
+}
+
+/* The screen: the turn ribbon across the top, the three columns under it. The
+   round and the whole order read first, before the column being worked in.
+
+   The layout is capped and centered rather than filling the display. Three
+   columns spread across an ultrawide monitor put the active combatant and the
+   log a screen apart, and every line of text in them ends up on a line of its
+   own; the cap keeps the fight in one field of view. */
+.combat-screen__layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 88rem;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.combat-screen__columns {
+  display: flex;
+  flex: 1;
+  gap: var(--space-4);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* The banner once one side is down. The fight stays up until the GM ends it,
+   so the banner says why nothing attacks any more. The border takes the
+   outcome's color, and the wording gives it for anyone who cannot see the
+   difference. The banner floats at the bottom center of the window and takes
+   no layout space, so the ribbon and the three columns stay where they are
+   when the last foe drops. */
+.combat-screen__notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  z-index: 15; /* under the toast stack, which can share the bottom edge */
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  box-shadow: var(--shadow-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.combat-screen__notice--victory {
+  border-color: var(--success);
+}
+
+.combat-screen__notice--defeat {
+  border-color: var(--danger);
+}
+
+/* The left rail: the card of the active combatant. */
+.combat-screen__left {
+  flex: 0 0 17rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* The active-combatant card: whoever the ribbon inspected, or whoever's
+   turn it is. */
+.combat-screen__active {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-screen__active:empty {
+  display: none;
+}
+
+.combat-screen__active-name {
+  margin: 0;
+  font-size: var(--text-heading);
+}
+
+.combat-screen__facts {
+  display: flex;
+  gap: var(--space-4);
+}
+
+/* The facts are .fact-line. A number the GM reads mid-fight is set in mono so
+   the digits stay the same width as they change. */
+.combat-screen__facts .fact-line__value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* The target, the amount, and the Damage and Heal buttons stack in one column
+   of the left rail. Each button names the target, and a long name such as
+   "Heal Brannoc Hollowell" needs the full rail width to stay on one line. */
+.combat-screen__hp-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.combat-screen__hp-target,
+.combat-screen__hp-amount {
+  width: 100%;
+}
+
+.combat-screen__hp-controls .btn {
+  justify-content: center;
+  min-width: 0;
+}
+
+/* The board: the fight's participants as cards, party and foes side by side,
+   stacking on a narrow viewport. */
+.combat-board {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-content: flex-start;
+  min-width: 0;
+}
+
+.combat-board__group {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.combat-board__heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.combat-board__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.combat-board__empty {
+  margin: 0;
+}
+
+/* One combatant plus the controls that cannot live inside its card, because the
+   card is itself a button. The slot keeps them together as one board item. */
+.combatant-slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* One combatant. The side reads from the group heading and the foe mark; the
+   left edge only reinforces it. */
+.combatant-card {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.combatant-card--foe {
+  border-left-color: var(--danger);
+}
+
+/* On the board the card is a .btn-bare button: the target picker. The accent
+   ring marks the held selection, kept distinct from the ribbon's focus-ring on
+   the current turn. Hover and selection leave the left edge alone, so a foe
+   keeps its danger edge. */
+.combatant-card--selectable {
+  width: 100%;
+}
+
+.combatant-card--selectable:hover,
+.combatant-card--selected {
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.combatant-card--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The card whose turn it is gets a raised fill, a mana bar along its top, and
+   a "Current turn" tag in the mana tint, so it reads apart from the accent
+   ring of the selected target. The bar is an inset shadow, which adds no
+   height and leaves the left edge to the side of the combatant. The tag spells
+   the state out in text. */
+.combatant-card--current {
+  background: var(--surface-raised);
+  box-shadow: inset 0 3px 0 var(--mana);
+}
+
+.combatant-card__turn {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--mana);
+  color: var(--mana-contrast);
+  font-size: var(--text-label);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.combatant-card--defeated .combatant-card__name {
+  text-decoration: line-through;
+}
+
+/* A defeated combatant keeps text at 4.5:1. Opacity would blend the text
+   into the card and drop it to about 2.5:1. */
+.combatant-card--defeated {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+/* A combatant that cannot act is still in the fight, so it dims less than a
+   defeated one and keeps its name unstruck. The dashed edge separates the
+   two states without relying on the shade alone. */
+.combatant-card--incapacitated {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.combatant-card__header {
+  align-items: baseline;
+}
+
+.combatant-card__name {
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+.combatant-card__foe-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-self: center;
+  color: var(--danger);
+}
+
+.combatant-card__init {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.combatant-card__hp {
+  align-items: center;
+}
+
+.combatant-card__hp-band,
+.combatant-card__meta {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The death-save status chip sits in the condition row. Its border carries the
+   position, so the row does not depend on reading the word alone. Dying and
+   dead are warnings. Stable is the resolved one, so it takes the calm color. */
+.combatant-card__death-chip--dying,
+.combatant-card__death-chip--dead {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.combatant-card__death-chip--stable {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* The reaction controls sit under the card, indented and inside a dashed edge,
+   so they read as an aside to the card rather than as part of the turn's own
+   action bar. */
+.combatant-card__reaction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-left: 1px dashed var(--border-strong);
+}
+
+.combatant-card__reaction-label {
+  color: var(--text-muted);
+}
+
+/* A combatant's armor, weapons, spells, and slots: labelled lines on a board
+   card, and the same lines in a roomier form in the active column, where the
+   slot pools become chips. The label column is fixed so the values line up down
+   the block. */
+.loadout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The lines are .fact-line--row. The label column is fixed here so the values
+   line up down the block, and the label stays at the text weight because a
+   whole column of bold would outweigh the values it names. */
+.loadout .fact-line__label {
+  flex: 0 0 4.5rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.loadout .fact-line__value {
+  flex: 1;
+  color: var(--text);
+}
+
+.loadout--detailed {
+  font-size: var(--text-body);
+}
+
+.loadout--detailed .fact-line__label {
+  flex-basis: 5.5rem;
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+
+.loadout__chips {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The right column: the fight's log, wide enough that a rolled attack's line
+   (attacker, weapon, modifiers, total, outcome) wraps once rather than four
+   times. The dice tray sits under the log. The column sticks to the top of
+   the screen and never grows past its height, so the tray stays in view
+   while the GM scrolls the board or a long active column, and the log list
+   scrolls inside the space that is left. */
+.combat-screen__log {
+  flex: 0 0 27rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: sticky;
+  top: var(--space-3);
+  max-height: calc(100dvh - 2 * var(--space-3));
+}
+
+/* The dice tray keeps its own .card styling; the column only sizes it. A
+   tall open tray scrolls inside the dock, so the log keeps some room. The
+   column has only a max-height, so a percentage cap here resolves against
+   an indefinite height and caps nothing. The cap is 60% of the column's
+   max-height instead. */
+.combat-screen__dice-dock {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(0.6 * (100dvh - 2 * var(--space-3)));
+  overflow-y: auto;
+}
+
+.combat-screen__dice-dock > .card {
+  min-width: 0;
+}
+
+.combat-log {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 10rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-log__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The active combatant's weapons and spells, one button each, under the
+   column's facts. The runs are indented under their labels so the Actions
+   heading reads as covering all of them. Cast buttons tint their icon with the
+   mana accent so spells read apart from weapon strikes. */
+.combat-action-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* What the turn has left, as a status row. A free pip shows a filled dot,
+   and a spent pip shows an empty ring with its label muted and struck
+   through, so the row reads without relying on color. */
+.combat-action-bar__budget {
+  padding-left: var(--space-2);
+  font-size: var(--text-label);
+}
+
+.combat-action-bar__pip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.combat-action-bar__pip::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.6em;
+  height: 0.6em;
+  border: 2px solid var(--success);
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.combat-action-bar__pip--spent {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.combat-action-bar__pip--spent::before {
+  border-color: var(--text-muted);
+  background: transparent;
+}
+
+/* A button whose cost the turn already spent. It stays live, because its
+   dialog lets the GM waive the cost, and its tooltip names the reason. A
+   muted label and a dashed edge mark it. A live control needs 4.5:1 label
+   contrast, and --text-muted keeps that on every surface in both themes. */
+.combat-action-bar__button--spent {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.combat-action-bar__button--spent:hover,
+.combat-action-bar__button--spent:focus-visible {
+  border-style: solid;
+  color: var(--text);
+}
+
+/* A pip the GM can press keeps a border, so it reads as a control. A spent
+   toggle has a dashed border. */
+.combat-action-bar__pip--toggle {
+  border-color: var(--border);
+  cursor: pointer;
+}
+
+.combat-action-bar__pip--toggle.combat-action-bar__pip--spent {
+  border-color: var(--border);
+  border-style: dashed;
+}
+
+.combat-action-bar__pip--toggle:hover {
+  background: var(--surface-sunken);
+}
+
+.combat-action-bar__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-2);
+}
+
+.combat-action-bar__group-label {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.combat-action-bar .btn {
+  font-size: var(--text-label);
+}
+
+.combat-action-bar__cast .icon {
+  color: var(--mana);
+}
+
+/* Which board card the next attack or cast opens on. */
+.combat-screen__targeting {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The turn ribbon: the round, the whole order as chips, and the turn controls,
+   across the top of the screen. */
+.combat-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-ribbon[hidden] {
+  display: none;
+}
+
+/* The round counter is the screen heading, an h2 that takes focus after a
+   rebuild when nothing better is left. It keeps the size of the ribbon text. */
+.combat-ribbon__round {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.combat-ribbon__chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.combat-ribbon__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.combat-ribbon__chip--current {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.combat-ribbon__chip--defeated .combat-ribbon__name {
+  text-decoration: line-through;
+}
+
+.combat-ribbon__chip--defeated {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+/* The ribbon's match for the card's dashed edge. */
+.combat-ribbon__chip--incapacitated {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.combat-ribbon__foe-mark {
+  display: inline-flex;
+  color: var(--danger);
+}
+
+/* A long base name ends in an ellipsis, and the number
+   after it stays whole, so "Gray Wolf 3" never reads as "Gray Wolf". */
+.combat-ribbon__name {
+  display: inline-flex;
+  gap: 0.25em;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.combat-ribbon__base {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combat-ribbon__number {
+  flex: 0 0 auto;
+}
+
+.combat-ribbon__init {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.combat-ribbon__controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+}
+
+/* Stack the columns on a narrow viewport; the board's groups already wrap. */
+@media (max-width: 1100px) {
+  .combat-screen__columns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .combat-screen__left,
+  .combat-screen__log {
+    flex: 0 0 auto;
+  }
+
+  /* The stacked log column scrolls with the page, so its list gets a fixed
+     cap instead of the screen height. */
+  .combat-screen__log {
+    position: static;
+    max-height: none;
+  }
+
+  .combat-screen__dice-dock {
+    max-height: none;
+  }
+
+  .combat-log__list {
+    max-height: 20rem;
+  }
+}
+
+/* The Log and Map tabs at the top of the right column, and the read-only
+   map of the fight area under them. The canvas keeps a square buffer and
+   scales to the column width. */
+.combat-map {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-map__canvas {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+}
+
+/* A card class sets display on the log and the map, so the hidden tab panel
+   needs this rule to leave the column. */
+.combat-screen__log > [role='tabpanel'][hidden] {
+  display: none;
+}

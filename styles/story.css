@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Travelogue
+   ========================================================================== */
+
+.travelog__list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  max-height: 56rem;
+  overflow-y: auto;
+}
+
+.travelog__item {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--border-strong);
+  font-size: var(--text-label);
+}
+
+.travelog__item--combat {
+  border-left-color: var(--danger);
+}
+
+.travelog__item--travel {
+  border-left-color: var(--accent);
+}
+
+.travelog__item--roll {
+  border-left-color: var(--mana);
+}
+
+.travelog__time {
+  /* A fixed column, so every message starts at one edge. A long stamp,
+     such as "Day 12, Afternoon, round 3", wraps inside it. */
+  flex: 0 0 6.5em;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.travelog__message {
+  color: var(--text);
+}
+
+.travelog__clear {
+  font-size: var(--text-label);
+}
+
+/* .btn sets display, which beats the hidden attribute, and an empty log has
+   nothing to clear. */
+.travelog__clear[hidden] {
+  display: none;
+}
+
+/* ==========================================================================
+   Quest log
+   ========================================================================== */
+
+/* Below the Play shell width the page scrolls as a whole, so the log
+   scrolls itself once it outgrows most of the window. A campaign with many
+   quests then does not push the NPCs and Handouts cards far down the page,
+   and an open quest still fits without an inner scroll. The stable gutter
+   keeps room for the scrollbar at all times, because a scrollbar that shows
+   only on hover moves every row button to the left under the pointer.
+   styles/play-shell.css lifts the limit inside the Play shell. */
+.quest-panel {
+  max-height: max(24rem, 70vh);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.quest-panel__group {
+  margin-bottom: var(--space-2);
+}
+
+/* The chevron points right while the notes are hidden and turns down while
+   they show, so the row states which way the toggle goes. */
+.quest-panel__notes-toggle svg {
+  transition: transform var(--transition-fast) ease;
+}
+
+.quest-panel__notes-toggle[aria-pressed='true'] svg {
+  transform: rotate(90deg);
+}
+
+/* Typography comes from .section-label (base.css); only the margin is local. */
+.quest-panel__group-title {
+  margin: 0 0 var(--space-1);
+}
+
+.quest-panel__row {
+  padding: var(--space-1) 0;
+}
+
+.quest-panel__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.quest-panel__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* The title line is 24px tall and the status toggle 1.75rem (28px), so
+     this centers the first line of a long title on the toggle. */
+  padding-top: calc((1.75rem - 24px) / 2);
+}
+
+.quest-panel__title {
+  font-weight: 600;
+}
+
+.quest-panel__row--completed .quest-panel__title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.quest-panel__add {
+  margin-top: var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* Player-view stand-in for the toggle button: same footprint, no affordance. */
+.quest-panel__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.handout-panel__row {
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.handout-panel__row:last-of-type {
+  border-bottom: none;
+}
+
+.handout-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* A hidden handout's title is dimmed; revealing it brings the title to full
+   strength and shows the read-aloud body, so the GM sees at a glance what the
+   party can currently see. */
+.handout-panel__row:not(.handout-panel__row--revealed) .handout-panel__title {
+  color: var(--text-muted);
+}
+
+/* The GM's note under a row: the tile the handout waits on, and who it is for. */
+.handout-panel__note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-label);
+}
+
+.handout-panel__body {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.handout-panel__add {
+  margin-top: var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* A long handout text on a GM row shows three lines until More. The bottom
+   padding moves into a transparent border, because the overflow clip ends at
+   the padding edge and would show part of a fourth line in the padding. */
+.handout-panel__body--folded {
+  padding-bottom: 0;
+  border-bottom: var(--space-2) solid transparent;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+/* A folded quest is one line: the title, then the objective count at the
+   right. The title opens the quest on a click, like the chevron button. */
+.quest-panel__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.quest-panel__line .quest-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.quest-panel__progress {
+  flex: none;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* A group heading that folds its group. The count sits after the name. */
+.quest-panel__group-title .disclosure {
+  padding: 0;
+}
+
+.quest-panel__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Story tab: the jump row and the folding cards
+   ========================================================================== */
+
+.story-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.story-jump .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  font-size: var(--text-label);
+}
+
+.story-jump__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* The fold button sits in the top-right corner of the card, on the frame
+   line opposite the title. */
+.card-fold.disclosure {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  top: -0.875rem;
+  right: var(--space-3);
+  z-index: 1;
+  background: var(--surface);
+}
+
+.card-fold .disclosure__chevron {
+  margin: 0;
+}
+
+.card--folded > :not(.card__title, .card-fold) {
+  display: none;
+}
+
+.card--folded {
+  padding-block: var(--space-3) var(--space-1);
+}
+
+/* A jump scrolls the card to the top of the panel. The margin keeps the title
+   that straddles the frame in view. */
+#panel-story > .card {
+  scroll-margin-top: var(--space-4);
+}

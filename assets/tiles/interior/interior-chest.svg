@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A brass-bound treasure chest seen from the front and above, over a
+       transparent ground. A soft contact shadow sits on the line where the
+       chest meets the floor. -->
+  <defs>
+    <linearGradient id="lid" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#7a4b22"/>
+      <stop offset="0.35" stop-color="#9c6630"/>
+      <stop offset="1" stop-color="#6a3f1b"/>
+    </linearGradient>
+    <linearGradient id="brass" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#e8c46a"/>
+      <stop offset="1" stop-color="#a87c26"/>
+    </linearGradient>
+  </defs>
+  <!-- Contact shadow on the base line y=48. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="48" rx="19" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="48" rx="17" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Front of the body: vertical planks under the lid. -->
+  <rect x="15" y="35" width="34" height="13" fill="#6a3f1b" stroke="#2e1a08" stroke-width="0.9"/>
+  <path d="M21.5 36 V47.5 M28 36 V47.5 M36 36 V47.5 M42.5 36 V47.5" stroke="#4e2d11" stroke-width="0.7"/>
+  <path d="M15.5 36.2 H48.5" stroke="#2e1a08" stroke-width="1.2" opacity="0.6"/>
+  <!-- Lid top, curved: lit along its crown, darker toward the front edge. -->
+  <path d="M15 21 Q15 18 18 18 H46 Q49 18 49 21 V32 H15 Z" fill="url(#lid)" stroke="#2e1a08" stroke-width="0.9"/>
+  <path d="M15.5 24.5 H48.5 M15.5 28.3 H48.5" stroke="#5a3417" stroke-width="0.6"/>
+  <path d="M17 21.6 H47" stroke="#b77e44" stroke-width="0.7"/>
+  <!-- Front lip of the lid. -->
+  <rect x="14.5" y="32" width="35" height="3.5" rx="0.6" fill="#7e4c20" stroke="#2e1a08" stroke-width="0.9"/>
+  <!-- Brass straps over lid, lip, and body. -->
+  <g fill="url(#brass)" stroke="#5e4210" stroke-width="0.5">
+    <rect x="20" y="18.2" width="3.4" height="29.6"/>
+    <rect x="40.6" y="18.2" width="3.4" height="29.6"/>
+  </g>
+  <g fill="#5e4210">
+    <circle cx="21.7" cy="20.5" r="0.5"/><circle cx="21.7" cy="29.5" r="0.5"/><circle cx="21.7" cy="41.5" r="0.5"/><circle cx="21.7" cy="46" r="0.5"/>
+    <circle cx="42.3" cy="20.5" r="0.5"/><circle cx="42.3" cy="29.5" r="0.5"/><circle cx="42.3" cy="41.5" r="0.5"/><circle cx="42.3" cy="46" r="0.5"/>
+  </g>
+  <!-- Brass corner caps at the bottom of the body. -->
+  <g fill="url(#brass)" stroke="#5e4210" stroke-width="0.5">
+    <path d="M15 43.5 V48 H19.5 V46.8 H16.2 V43.5 Z"/>
+    <path d="M49 43.5 V48 H44.5 V46.8 H47.8 V43.5 Z"/>
+  </g>
+  <!-- Hasp from the lid down to a lock plate with a keyhole. -->
+  <rect x="30.2" y="30" width="3.6" height="7" rx="0.6" fill="url(#brass)" stroke="#5e4210" stroke-width="0.5"/>
+  <path d="M28.5 37 H35.5 V41.5 Q32 44.5 28.5 41.5 Z" fill="url(#brass)" stroke="#5e4210" stroke-width="0.6"/>
+  <circle cx="32" cy="39.2" r="0.9" fill="#1f1405"/>
+  <path d="M32 39.2 V41.4" stroke="#1f1405" stroke-width="0.8"/>
+</svg>

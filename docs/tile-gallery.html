@@ -1,0 +1,397 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tile preview</title>
+<style>
+  body { background: #222; font-family: sans-serif; color: #eee; }
+  h2 { margin: 24px 0 8px; }
+  .grid { display: grid; gap: 0; width: max-content; }
+  /* Terrain swatch blocks (6 tiles of 64px each) fill as many columns as the
+     window width allows. */
+  #terrains { display: grid; grid-template-columns: repeat(auto-fill, 384px); column-gap: 48px; }
+  img { width: 64px; height: 64px; display: block; }
+  .zoom img { width: 128px; height: 128px; }
+  /* Roads are transparent overlays, so preview them stacked over a grass base. */
+  .cell { position: relative; width: 64px; height: 64px; }
+  .cell img { position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+<p>Each terrain renders as a 6x3 block mixing all variants, so both horizontal
+and vertical seams between any variant pair are visible. A clean result shows
+no banding, hard lines, or pattern breaks at tile boundaries.</p>
+<div id="terrains"></div>
+
+<h2>POI markers (zoomed)</h2>
+<div class="grid zoom" style="grid-template-columns: repeat(5, 128px); gap: 4px;" id="markers"></div>
+
+<h2>Town buildings (span 2, zoomed)</h2>
+<div class="grid zoom" style="grid-template-columns: repeat(5, 128px); gap: 4px;" id="town"></div>
+
+<h2>Town streets (span-2 buildings over grass, beside the roads)</h2>
+<div id="town-scene" style="position: relative; width: max-content;"></div>
+
+<h2>Town walls (overlays: a gate where each street crosses the wall, a water gate where the river crosses it)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(7, 64px);" id="wall-h"></div>
+  <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="wall-v"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-ring"></div>
+</div>
+
+<h2>Lighthouse (an overlay over every coast piece, on grass and on snow)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="shore"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="shore-snow"></div>
+  <div class="grid" style="grid-template-columns: repeat(2, 64px);" id="shore-inner"></div>
+</div>
+
+<h2>Interior floor (mixed variants)</h2>
+<div class="grid" style="grid-template-columns: repeat(6, 64px);" id="interior-floors"></div>
+
+<h2>Interior room (walls, doors, stairs)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="interior-room"></div>
+
+<h2>Interior furnishings (overlays on a floor tile, zoomed)</h2>
+<div class="grid zoom" style="grid-template-columns: repeat(6, 128px); gap: 4px;" id="furnishings"></div>
+
+<h2>Furnished hall (a throne between pillars, a feast table, a shrine, and a bedchamber)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-hall"></div>
+
+<h2>House (a hearth and bookshelves, and a storeroom with barrels over a trapdoor)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-house"></div>
+
+<h2>Shop (a stocked storeroom, a counter across the sales floor, and shelves of goods)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-shop"></div>
+
+<h2>Cave level (rock walls, floor variants, pools, rubble, a mouth on the north and west borders)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-cave"></div>
+
+<h2>Road network (path winding through grass)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-network"></div>
+
+<h2>Road pieces (all)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-all"></div>
+
+<h2>River network (with a road bridge)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-network"></div>
+
+<h2>River fords (a road wading across each channel)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="river-fords"></div>
+
+<h2>River pieces (all)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-all"></div>
+
+<h2>Coast strips (overlays: same pieces over grass, desert, snow, mountain)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(2, 64px);" id="coast-ns"></div>
+  <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="coast-ew"></div>
+</div>
+
+<h2>Island (outer corners) and lake (inner corners)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="coast-island"></div>
+  <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="coast-lake"></div>
+</div>
+
+<h2>Docks (a quay over each straight coast piece, and a pier out to its head)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-n"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-e"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-w"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-s"></div>
+</div>
+
+<script>
+  const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
+  // Overlay pieces such as a road stack in order over a base tile, and a
+  // plain cell is the base tile alone.
+  const cell = (base, ...over) => `<div class="cell">${[base, ...over].filter(Boolean).map(img).join('')}</div>`;
+
+  // 6x3 mixed-variant block per terrain: every ordered variant pair occurs
+  // somewhere as a horizontal neighbor, and each column mixes variants vertically.
+  const layout = [
+    [1, 2, 3, 1, 3, 2],
+    [3, 1, 2, 3, 2, 1],
+    [2, 3, 1, 2, 1, 3],
+  ];
+  // A type with more than 3 variants gets a fixed pseudo-random block that
+  // draws on all of them, so no variant is left out of the preview.
+  const VARIANTS = { mountain: 5, badlands: 5, taiga: 4, 'snow-mountain': 5, plaza: 5 };
+  const mixed = (n) => {
+    if (n === 3) return layout.flat();
+    let seed = 11;
+    return Array.from({ length: 18 }, () => ((seed = (seed * 16807) % 2147483647) % n) + 1);
+  };
+  document.getElementById('terrains').innerHTML = ['grass', 'forest', 'mountain', 'water', 'desert', 'swamp', 'snow', 'hills', 'farmland',
+    'jungle', 'taiga', 'savanna', 'badlands', 'volcanic', 'glacier', 'deep-water', 'snow-mountain', 'snow-hills', 'plaza']
+    .map((t) => `<div><h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
+      ${mixed(VARIANTS[t] ?? 3).map((v) => img(`${t}/${t}-${v}`)).join('')}</div></div>`)
+    .join('');
+
+  document.getElementById('markers').innerHTML = [
+    'settlement', 'dungeon', 'castle', 'tavern', 'inn',
+    'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine',
+    'wizard-tower', 'academy', 'barracks', 'ruins', 'cave-entrance',
+    'mine', 'port', 'farm', 'burned-farm', 'graveyard', 'camp',
+    'standing-stones', 'village', 'city', 'oasis',
+    'watchtower', 'burned-inn', 'ruined-castle', 'burned-watchtower',
+    'burned-tavern', 'burned-blacksmith', 'burned-general-store',
+    'ruined-wizard-tower',
+  ].map((m) => img(`${m}/${m}`)).join('');
+
+  const TOWN = ['house', 'cottage', 'market', 'well', 'fountain',
+    'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables',
+    'windmill', 'watermill', 'burned-house', 'burned-windmill',
+    'burned-town-hall', 'burned-guildhall', 'burned-cottage', 'burned-market',
+    'burned-bakery', 'burned-warehouse', 'burned-stables', 'burned-watermill'];
+  document.getElementById('town').innerHTML = TOWN.map((b) => img(`town/${b}`)).join('');
+
+  // A 14x8 block of grass split by two crossing streets. Each building is a
+  // 128px image laid over the 2x2 block of cells that it covers, the same
+  // way the map draws a span-2 tile.
+  const street = (x, y) => (x === 4 && y === 3 ? 'road-cross' : y === 3 ? 'road-h' : x === 4 ? 'road-v' : null);
+  const scene = document.getElementById('town-scene');
+  scene.innerHTML = `<div class="grid" style="grid-template-columns: repeat(14, 64px);">${Array.from({ length: 112 }, (_, i) => {
+    const r = street(i % 14, Math.floor(i / 14));
+    return r ? cell('grass/grass-1', `road/${r}`) : cell(`grass/grass-${(i % 3) + 1}`);
+  }).join('')}</div>` + [
+    ['town-hall', 0, 1], ['house', 2, 1], ['house', 5, 1], ['well', 7, 1], ['guildhall', 9, 1], ['bakery', 11, 1],
+    ['cottage', 0, 5], ['market', 2, 4], ['fountain', 5, 4], ['cottage', 8, 5], ['warehouse', 10, 4], ['stables', 12, 4],
+  ].map(([b, x, y]) => `<img src="../assets/tiles/town/${b}.svg" style="position: absolute; left: ${x * 64}px; top: ${y * 64}px; width: 128px; height: 128px;">`).join('');
+
+  // Wall and gate pieces stack over the ground, and each gate also stacks over
+  // the road that goes through it. A water gate draws its own river, so it
+  // stacks over the ground alone and joins the river pieces on both sides.
+  // The east-west run crosses grass and desert.
+  document.getElementById('wall-h').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2'], ['grass/grass-3', 'road/road-v'], ['desert/desert-1'], ['desert/desert-2'],
+    ['desert/desert-3', 'river/river-v'], ['desert/desert-1'],
+    ['grass/grass-2', 'town/town-wall-h'], ['grass/grass-3', 'town/town-wall-h'], ['grass/grass-1', 'road/road-v', 'town/town-gate-h'],
+    ['desert/desert-3', 'town/town-wall-h'], ['desert/desert-1', 'town/town-wall-h'],
+    ['desert/desert-2', 'town/town-water-gate-h'], ['desert/desert-3', 'town/town-wall-h'],
+    ['grass/grass-3'], ['grass/grass-1'], ['grass/grass-2', 'road/road-v'], ['desert/desert-2'], ['desert/desert-3'],
+    ['desert/desert-1', 'river/river-v'], ['desert/desert-2'],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
+
+  document.getElementById('wall-v').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2', 'town/town-wall-v'], ['grass/grass-3'],
+    ['grass/grass-3'], ['grass/grass-1', 'town/town-wall-v'], ['grass/grass-2'],
+    ['grass/grass-2', 'road/road-h'], ['grass/grass-3', 'road/road-h', 'town/town-gate-v'], ['grass/grass-1', 'road/road-h'],
+    ['snow/snow-1'], ['snow/snow-2', 'town/town-wall-v'], ['snow/snow-3'],
+    ['snow/snow-2'], ['snow/snow-3', 'town/town-wall-v'], ['snow/snow-1'],
+    ['snow/snow-1', 'river/river-h'], ['snow/snow-2', 'town/town-water-gate-v'], ['snow/snow-3', 'river/river-h'],
+    ['snow/snow-3'], ['snow/snow-1', 'town/town-wall-v'], ['snow/snow-2'],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
+
+  // A closed ring: the corner pieces are named for their open edges, so
+  // corner-se caps the north-west corner. A street enters through the gate.
+  const W = (p) => `town/town-wall-${p}`;
+  document.getElementById('wall-ring').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2'], ['grass/grass-3', 'road/road-v'], ['grass/grass-1'], ['grass/grass-2'],
+    ['grass/grass-2', W('corner-se')], ['grass/grass-3', W('h')], ['grass/grass-1', 'road/road-v', 'town/town-gate-h'], ['grass/grass-2', W('h')], ['grass/grass-3', W('corner-sw')],
+    ['grass/grass-3', W('v')], ['grass/grass-1'], ['grass/grass-2', 'road/road-v'], ['grass/grass-3'], ['grass/grass-1', W('v')],
+    ['grass/grass-1', W('v')], ['grass/grass-2'], ['grass/grass-3', 'road/road-end-n'], ['grass/grass-1'], ['grass/grass-2', W('v')],
+    ['grass/grass-2', W('corner-ne')], ['grass/grass-3', W('h')], ['grass/grass-1', W('h')], ['grass/grass-2', W('h')], ['grass/grass-3', W('corner-nw')],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
+
+  // An island ringed by coast pieces, with a lighthouse over each one, and
+  // the four inner corners around a small bay.
+  const island = (land) => {
+    const W = ['water/water-1'];
+    const L = (k) => [`${land}-1`, `coast/coast-${k}`, 'lighthouse/lighthouse'];
+    return [
+      W, W, W, W, W,
+      W, L('corner-nw'), L('n'), L('corner-ne'), W,
+      W, L('w'), [`${land}-2`], L('e'), W,
+      W, L('corner-sw'), L('s'), L('corner-se'), W,
+      W, W, W, W, W,
+    ].map(([base, ...over]) => cell(base, ...over)).join('');
+  };
+  document.getElementById('shore').innerHTML = island('grass/grass');
+  document.getElementById('shore-snow').innerHTML = island('snow/snow');
+  document.getElementById('shore-inner').innerHTML = ['inner-se', 'inner-sw', 'inner-ne', 'inner-nw']
+    .map((k) => cell('grass/grass-1', `coast/coast-${k}`, 'lighthouse/lighthouse')).join('');
+
+  document.getElementById('interior-floors').innerHTML =
+    layout.flat().map((v) => img(`interior/interior-floor-${v}`)).join('');
+
+  // A closed room: corners open toward the interior (corner-se = opens south
+  // and east, so it caps the room's north-west corner), a door in the north
+  // and west walls, stairs inside.
+  document.getElementById('interior-room').innerHTML = [
+    'wall-corner-se', 'door-h', 'wall-h', 'wall-corner-sw',
+    'wall-v', 'floor-1', 'stairs-down', 'wall-v',
+    'door-v', 'floor-3', 'stairs-up', 'wall-v',
+    'wall-corner-ne', 'wall-h', 'wall-h', 'wall-corner-nw',
+  ].map((k) => img(`interior/interior-${k}`)).join('');
+
+  // Furnishings are overlays, so each one stacks over a floor tile. The pool
+  // and the rubble also appear over a cave floor.
+  const FURNISHINGS = ['altar', 'chest', 'pillar', 'throne', 'bed', 'table',
+    'hearth', 'bookshelf', 'shelf', 'counter-end-w', 'counter', 'counter-till',
+    'counter-end-e', 'barrel', 'rubble', 'pool', 'trapdoor'];
+  const CAVE_FURNISHINGS = ['rubble', 'pool'];
+  document.getElementById('furnishings').innerHTML = [
+    ...FURNISHINGS.map((f, i) => [`interior-floor-${(i % 3) + 1}`, f]),
+    ...CAVE_FURNISHINGS.map((f, i) => [`interior-cave-floor-${i + 1}`, f]),
+  ].map(([floor, f]) => `<div class="cell" style="width: 128px; height: 128px;">${img(`interior/${floor}`)}${img(`interior/interior-${f}`)}</div>`)
+    .join('');
+
+  // A walled hall with furnishings over the floor. A cell names a wall piece,
+  // or a floor variant and an optional furnishing.
+  const I = (k) => `interior/interior-${k}`;
+  document.getElementById('interior-hall').innerHTML = [
+    ['wall-corner-se'], ['wall-h'], ['wall-h'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-corner-sw'],
+    ['wall-v'], ['floor-1', 'pillar'], ['floor-2'], ['floor-3', 'throne'], ['floor-1'], ['floor-2', 'pillar'], ['wall-v'],
+    ['wall-v'], ['floor-3', 'pillar'], ['floor-1'], ['floor-2'], ['floor-3'], ['floor-1', 'pillar'], ['wall-v'],
+    ['door-v'], ['floor-2'], ['floor-3', 'table'], ['floor-1', 'table'], ['floor-2'], ['floor-3', 'altar'], ['wall-v'],
+    ['wall-v'], ['floor-1', 'bed'], ['floor-2', 'chest'], ['floor-3'], ['floor-1'], ['floor-2'], ['wall-v'],
+    ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-corner-nw'],
+  ].map((ks) => cell(...ks.map(I))).join('');
+
+  // A house: a hearth in the main room, a library corner, and a storeroom
+  // with barrels over a trapdoor to the cellar.
+  document.getElementById('interior-house').innerHTML = [
+    ['wall-corner-se'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-tee-s'], ['wall-h'], ['wall-corner-sw'],
+    ['wall-v'], ['floor-1', 'bookshelf'], ['floor-2', 'hearth'], ['floor-3', 'bookshelf'], ['wall-v'], ['floor-1', 'barrel'], ['wall-v'],
+    ['wall-v'], ['floor-2'], ['floor-3', 'table'], ['floor-1'], ['door-v'], ['floor-2', 'trapdoor'], ['wall-v'],
+    ['door-v'], ['floor-3'], ['floor-1'], ['floor-2', 'bed'], ['wall-v'], ['floor-3', 'barrel'], ['wall-v'],
+    ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-tee-n'], ['wall-h'], ['wall-corner-nw'],
+  ].map((ks) => cell(...ks.map(I))).join('');
+
+  // A shop: a storeroom across the back, a counter with a till across the
+  // sales floor, closed by an end piece before the gap at its east end, and
+  // shelves of goods on the side walls.
+  document.getElementById('interior-shop').innerHTML = [
+    ['wall-corner-se'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-corner-sw'],
+    ['wall-v'], ['floor-1', 'barrel'], ['floor-2', 'barrel'], ['floor-3'], ['floor-1', 'barrel'], ['floor-2', 'chest'], ['wall-v'],
+    ['wall-tee-e'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-tee-w'],
+    ['wall-v'], ['floor-3'], ['floor-1'], ['floor-2'], ['floor-3'], ['floor-1'], ['wall-v'],
+    ['wall-v'], ['floor-2', 'counter'], ['floor-3', 'counter-till'], ['floor-1', 'counter-end-e'], ['floor-2'], ['floor-3'], ['wall-v'],
+    ['wall-v'], ['floor-1', 'shelf'], ['floor-2'], ['floor-3'], ['floor-1'], ['floor-2', 'shelf'], ['wall-v'],
+    ['wall-v'], ['floor-3', 'shelf'], ['floor-1'], ['floor-2', 'table'], ['floor-3'], ['floor-1', 'shelf'], ['wall-v'],
+    ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-corner-nw'],
+  ].map((ks) => cell(...ks.map(I))).join('');
+
+  // A cave level: rough rock surrounds the floor, and one mouth sits on the
+  // north border and one on the west border. A floor cell may carry a pool or
+  // rubble as an overlay.
+  document.getElementById('interior-cave').innerHTML = [
+    'W', 'W', 'W', 'mouth-h', 'W', 'W', 'W',
+    'W', 'W', '1', '2', '1', 'W', 'W',
+    'mouth-v', '2', '1', '2 rubble', 'W', '1 pool', 'W',
+    'W', '1', 'W', '1', '2', '2', 'W',
+    'W', 'W', 'W', '2 pool', '1', 'W', 'W',
+    'W', 'W', 'W', 'W', 'W', 'W', 'W',
+  ].map((s) => {
+    const [k, over] = s.split(' ');
+    const base = `interior/interior-cave-${k === 'W' ? 'wall' : k.length === 1 ? `floor-${k}` : k}`;
+    return cell(base, over && I(over));
+  }).join('');
+
+  document.getElementById('road-network').innerHTML = [
+    'road/road-end-e', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',
+    'grass/grass-2', 'grass/grass-3', 'road/road-corner-ne', 'road/road-corner-sw',
+    'grass/grass-1', 'grass/grass-2', 'road/road-end-e', 'road/road-corner-nw',
+  ].map((s) => (s.startsWith('road/') ? cell('grass/grass-1', s) : cell(s))).join('');
+
+  // Every piece, ordered on the 4-wide grid so no two neighboring tiles have
+  // road ends that meet: no left tile opens east onto a right tile that opens
+  // west, and no upper tile opens south onto a lower tile that opens north. So
+  // the roads read as isolated fragments, not one connected network.
+  document.getElementById('road-all').innerHTML = [
+    'road-h', 'road-end-n', 'road-tee-n', 'road-end-e',
+    'road-end-w', 'road-corner-nw', 'road-corner-ne', 'road-v',
+    'road-tee-w', 'road-cross', 'road-tee-e', 'road-end-s',
+    'road-corner-sw', 'road-tee-s', 'road-corner-se',
+  ].map((r) => cell('grass/grass-1', `road/${r}`)).join('');
+
+  // A river flowing in from the west, turning south, and passing under an
+  // east-west road on the bridge piece. Rivers are overlays like roads.
+  document.getElementById('river-network').innerHTML = [
+    'river/river-end-w', 'river/river-h', 'river/river-corner-sw', 'grass/grass-1',
+    'road/road-end-e', 'road/road-h', 'river/river-bridge-h', 'road/road-end-w',
+    'grass/grass-2', 'grass/grass-1', 'river/river-end-n', 'grass/grass-3',
+  ].map((s) => (s.startsWith('grass/') ? cell(s) : cell('grass/grass-1', s))).join('');
+
+  // Each ford joins straight river pieces along its channel and straight road
+  // pieces along its road, in both orientations.
+  document.getElementById('river-fords').innerHTML = [
+    'grass/grass-1', 'river/river-v', 'grass/grass-2', 'grass/grass-3', 'grass/grass-1', 'road/road-v', 'grass/grass-3',
+    'road/road-h', 'river/river-ford-h', 'road/road-h', 'grass/grass-2', 'river/river-h', 'river/river-ford-v', 'river/river-h',
+    'grass/grass-2', 'river/river-v', 'grass/grass-1', 'grass/grass-3', 'grass/grass-2', 'road/road-v', 'grass/grass-1',
+  ].map((s) => (s.startsWith('grass/') ? cell(s) : cell('grass/grass-1', s))).join('');
+
+  // Same non-meeting ordering as the road grid, with the two bridges appended.
+  document.getElementById('river-all').innerHTML = [
+    'river-h', 'river-end-n', 'river-tee-n', 'river-end-e',
+    'river-end-w', 'river-corner-nw', 'river-corner-ne', 'river-v',
+    'river-tee-w', 'river-cross', 'river-tee-e', 'river-end-s',
+    'river-corner-sw', 'river-tee-s', 'river-corner-se', 'river-bridge-h',
+    'river-bridge-v',
+  ].map((r) => cell('grass/grass-1', `river/${r}`)).join('');
+
+  // Coast straights are overlays: each strip stacks over a land terrain and
+  // sits against real water tiles, doubled up so the coast-to-coast seam along
+  // the shoreline shows. Different base biomes prove the pieces are reusable.
+  document.getElementById('coast-ns').innerHTML = [
+    ['water/water-1'], ['water/water-2'],
+    ['grass/grass-1', 'coast/coast-n'], ['grass/grass-2', 'coast/coast-n'],
+    ['grass/grass-1'], ['grass/grass-2'],
+    ['desert/desert-1'], ['desert/desert-2'],
+    ['desert/desert-2', 'coast/coast-s'], ['desert/desert-3', 'coast/coast-s'],
+    ['water/water-3'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  // A 3x2 island ringed by water: the four outer corner pieces wrap the land
+  // tips and join the straight pieces at the shared edge cusps. Two base
+  // biomes prove the corners are overlays too.
+  document.getElementById('coast-island').innerHTML = [
+    ['water/water-1'], ['water/water-2'], ['water/water-3'], ['water/water-1'], ['water/water-2'],
+    ['water/water-2'], ['grass/grass-1', 'coast/coast-corner-nw'], ['grass/grass-2', 'coast/coast-n'], ['grass/grass-3', 'coast/coast-corner-ne'], ['water/water-3'],
+    ['water/water-3'], ['desert/desert-1', 'coast/coast-corner-sw'], ['desert/desert-2', 'coast/coast-s'], ['desert/desert-3', 'coast/coast-corner-se'], ['water/water-1'],
+    ['water/water-1'], ['water/water-3'], ['water/water-2'], ['water/water-2'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  // A 2x2 lake ringed by land: straight pieces along the shores, inner corner
+  // pieces where the shoreline turns through a single tile quadrant.
+  document.getElementById('coast-lake').innerHTML = [
+    ['grass/grass-1', 'coast/coast-inner-se'], ['grass/grass-2', 'coast/coast-s'], ['grass/grass-3', 'coast/coast-s'], ['desert/desert-1', 'coast/coast-inner-sw'],
+    ['grass/grass-2', 'coast/coast-e'], ['water/water-1'], ['water/water-2'], ['desert/desert-2', 'coast/coast-w'],
+    ['snow/snow-1', 'coast/coast-e'], ['water/water-3'], ['water/water-1'], ['desert/desert-3', 'coast/coast-w'],
+    ['snow/snow-2', 'coast/coast-inner-ne'], ['snow/snow-3', 'coast/coast-n'], ['snow/snow-1', 'coast/coast-n'], ['desert/desert-1', 'coast/coast-inner-nw'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  document.getElementById('coast-ew').innerHTML = [
+    ['water/water-1'], ['snow/snow-1', 'coast/coast-w'], ['snow/snow-1'],
+    ['water/water-2'], ['snow/snow-2', 'coast/coast-w'], ['snow/snow-3'],
+    ['mountain/mountain-1'], ['mountain/mountain-1', 'coast/coast-e'], ['water/water-3'],
+    ['mountain/mountain-2'], ['mountain/mountain-3', 'coast/coast-e'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  // Four 5x5 shores, one per sea side. The quay goes over the straight coast
+  // piece, a street leaves it on the land side, and the pier runs two cells
+  // out to its head. The base terrain changes per shore, because the dock
+  // pieces are overlays.
+  const dock = (side, land) => {
+    const water = (i) => `water/water-${(i % 3) + 1}`;
+    const ground = (i) => `${land}/${land}-${(i % 3) + 1}`;
+    return Array.from({ length: 25 }, (_, i) => {
+      const [x, y] = [i % 5, Math.floor(i / 5)];
+      // Turn the cell so that the sea is always at the top: u across, d down.
+      const [u, d] = side === 'n' ? [x, y] : side === 's' ? [4 - x, 4 - y] : side === 'e' ? [y, 4 - x] : [4 - y, x];
+      const axis = side === 'n' || side === 's' ? 'v' : 'h';
+      if (d < 3) {
+        const pier = u === 2 && d === 1 ? `dock/dock-pier-head-${side}` : u === 2 && d === 2 ? `dock/dock-pier-${axis}` : null;
+        return cell(water(i), pier);
+      }
+      if (d === 3) return cell(ground(i), `coast/coast-${side}`, u === 2 && `dock/dock-quay-${side}`);
+      return cell(ground(i), u === 2 && `road/road-${axis}`);
+    }).join('');
+  };
+  document.getElementById('dock-n').innerHTML = dock('n', 'grass');
+  document.getElementById('dock-e').innerHTML = dock('e', 'desert');
+  document.getElementById('dock-w').innerHTML = dock('w', 'snow');
+  document.getElementById('dock-s').innerHTML = dock('s', 'grass');
+</script>
+</body>
+</html>

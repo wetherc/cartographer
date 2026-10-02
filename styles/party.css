@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Status conditions
+   ========================================================================== */
+
+.conditions-bar__add {
+  padding: 0.1rem;
+}
+
+/* Empty-bar variant: a labeled chip-sized button, since a bare "+" with no
+   chips beside it doesn't say what it adds. */
+.conditions-bar__add--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* Three fixed columns so an enemy's six ability scores read as two aligned
+   rows of equal-width chips; the add button rides in the next free cell. */
+.statblock-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Stat-block chips are clickable chips, to set the base value (Build) or apply
+   a timed adjustment (Play), so the shared .chip and .btn-bare rules carry the
+   look. AC rides in the seventh cell after the six abilities. */
+.statblock-bar__chip {
+  justify-content: center;
+  padding: 0.1rem var(--space-2);
+}
+
+.statblock-bar__chip:hover {
+  border-color: var(--accent);
+}
+
+/* A stat under an active timed modifier stands out from its neighbors. */
+.statblock-bar__chip--modified {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* The Generate dialog's seed row and live layout preview. */
+/* The form fills the dialog up to 34rem. The dialog is at most 90vw wide
+   with its padding inside, so a 90vw form would overflow it on a phone. */
+.modal--generate .modal__form {
+  min-width: min(34rem, calc(90vw - 2 * var(--space-5) - 2px));
+}
+
+/* The seed row wraps on a narrow screen, so Reroll stays in view. */
+.generate-dialog__seed {
+  flex-wrap: wrap;
+}
+
+.generate-dialog__seed .field {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+/* The actions stay pinned to the bottom of the dialog while the fields
+   scroll, so a short window still shows Generate. The negative offset
+   cancels the dialog padding below the row. */
+.modal--generate .modal__actions {
+  position: sticky;
+  bottom: calc(-1 * var(--space-5));
+  padding-block: var(--space-2) var(--space-5);
+  margin-bottom: calc(-1 * var(--space-5));
+  background: var(--surface);
+}
+
+/* The preview is square, so its width is capped by the viewport height. At
+   full width it is about 540 px tall, which pushes Generate below the fold
+   of a 900 px window. */
+.generate-dialog__preview {
+  display: block;
+  width: min(100%, 45vh);
+  margin-inline: auto;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  /* The map backdrop, so the light coordinate labels in the gutter read the
+     same as on the map canvas. */
+  background: var(--overlay-bg);
+}
+
+.character-sheet__conditions {
+  margin-top: var(--space-2);
+}
+
+/* ==========================================================================
+   Party roster
+   ========================================================================== */
+
+.character-roster__row {
+  padding: var(--space-1) 0;
+}
+
+/* The member rows are .row-select buttons (base.css). The select fills the
+   row and lays its name and HP meter out as one line. */
+.character-roster__select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A long name wraps onto a second line instead of losing its end, and the
+   level stays whole on whichever line it lands. */
+.character-roster__label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.character-roster__level {
+  white-space: nowrap;
+}
+
+/* The level-up mark on the row of a character with a level-up step left. */
+.character-roster__level-up {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.character-roster__add,
+.character-roster__award,
+.character-roster__spectator {
+  font-size: var(--text-label);
+}
+
+/* Shared row of panel-footer action buttons ("New X", "Award XP", ...). */
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Pinned variant: leads its list and sticks to the top of the viewport while
+   a long roster scrolls under it (the Build rail's "New encounter" / "New
+   NPC"). The opaque card background plus a hairline under-border keeps rows
+   from showing through while stuck. */
+.panel-actions--pinned {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: 0;
+  padding: var(--space-2) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}

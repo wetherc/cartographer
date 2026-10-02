@@ -1,0 +1,65 @@
+# The sidebar of the docs site, in reading order. The previous and next links
+# at the end of each page follow this order. Each url is the path of the
+# built page.
+- section: Start here
+  pages:
+    - title: Home
+      url: /docs/
+    - title: All documents
+      url: /docs/README.html
+- section: For GMs
+  pages:
+    - title: First session as GM
+      url: /docs/tutorial-gm-first-session.html
+    - title: GM guide
+      url: /docs/gm-guide.html
+    - title: GM reference
+      url: /docs/gm-reference.html
+- section: For contributors
+  pages:
+    - title: Your first code change
+      url: /docs/tutorial-first-code-change.html
+    - title: Contributing
+      url: /CONTRIBUTING.html
+    - title: Testing a change
+      url: /docs/testing.html
+    - title: Adding a tile
+      url: /docs/adding-a-tile.html
+- section: Architecture
+  pages:
+    - title: Overview
+      url: /docs/architecture.html
+    - title: The app wiring layer
+      url: /docs/architecture/app-wiring.html
+    - title: The map
+      url: /docs/architecture/map.html
+    - title: Entities
+      url: /docs/architecture/entities.html
+    - title: Combat
+      url: /docs/architecture/combat.html
+    - title: Persistence
+      url: /docs/architecture/persistence.html
+    - title: UI components
+      url: /docs/architecture/ui-components.html
+    - title: Conventions
+      url: /docs/architecture/conventions.html
+- section: Background
+  pages:
+    - title: Testing strategy
+      url: /docs/testing-strategy.html
+    - title: Tile assets
+      url: /docs/tile-assets.html
+    - title: Curated spells
+      url: /docs/spells-missing.html
+    - title: Benchmarks
+      url: /bench/README.html
+    - title: Bundled fonts
+      url: /fonts/README.html
+- section: Browser pages
+  pages:
+    - title: Developer guide
+      url: /docs/dev-guide.html
+    - title: UI gallery
+      url: /docs/gallery.html
+    - title: Tile gallery
+      url: /docs/tile-gallery.html

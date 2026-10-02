@@ -1,0 +1,156 @@
+/* ==========================================================================
+   The full character sheet.
+
+   It opens over Play mode and takes the full width of the main area, in the
+   way the combat screen does. The map, the dock, and the sidebar hide while
+   it is open. src/ui/FullSheet.js moves the sheet card into its body. The view
+   shows in Play mode only, so a switch to Build or to a fight shows that
+   mode, and a return to Play shows the full sheet again.
+   ========================================================================== */
+
+#full-sheet {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+body.sheet-full.mode-play #full-sheet {
+  display: flex;
+}
+
+body.sheet-full.mode-play .app-center,
+body.sheet-full.mode-play .app-sidebar,
+body.sheet-full.mode-play .app-buildrail {
+  display: none;
+}
+
+.full-sheet__layout {
+  width: 100%;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4) var(--space-5);
+}
+
+/* The bar keeps "Back to the map" and the party switcher in view while the
+   sheet scrolls under it. */
+.full-sheet__bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-wrap: wrap;
+  padding: var(--space-2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.full-sheet__switcher {
+  /* Below about 18rem beside the button, the switcher takes its own line. */
+  flex: 1 1 18rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* A party member in the switcher, styled like a tab of the sidebar strip. */
+.full-sheet__tab {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.full-sheet__tab:hover {
+  color: var(--text);
+}
+
+.full-sheet__tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The open button belongs to the sidebar card. In the full view it would
+   open what is already open. */
+body.sheet-full.mode-play #open-full-sheet {
+  display: none;
+}
+
+.sheet-card__open {
+  align-self: flex-start;
+  margin-bottom: var(--space-2);
+}
+
+/* The page frames the sheet in the full view, so the card drops its own
+   frame there. Without this the bar rule and the card border draw two lines
+   at the top. */
+body.sheet-full.mode-play #full-sheet .sheet-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+body.sheet-full.mode-play #full-sheet .sheet-card::before {
+  display: none;
+}
+
+/* The paperdoll uses the width of the page instead of the narrow measure of
+   the sidebar panel. */
+body.sheet-full.mode-play #panel-equipment {
+  max-width: none;
+}
+
+body.sheet-full.mode-play #panel-inventory,
+body.sheet-full.mode-play #panel-spellbook {
+  max-width: none;
+}
+
+/* On a wide screen the Character tab of the full sheet takes a third column
+   for the skill list, beside the two section columns. Without it the body
+   stops at the two-column measure and leaves a band of about 400 px empty
+   on the right at 1920 px. The left track keeps the HP bar and the saves at
+   their two-column width. The feature cards and the castable spells span all
+   three columns under them. */
+@container character-sheet (min-width: 90rem) {
+  #full-sheet .character-sheet__body {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr);
+    max-width: none;
+  }
+
+  #full-sheet .character-sheet__skills {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+/* Below 68rem the main area is a column that aligns its items to the start,
+   so without a width the view shrinks to the width of its bar. The sheet,
+   the paperdoll, and the item list measure their own width, so they add
+   nothing to it. */
+@media (max-width: 68rem) {
+  #full-sheet {
+    width: 100%;
+  }
+}
+
+/* The phone view bar picks an area of the map screen, and the full sheet
+   hides all of them, so the bar hides too. "Back to the map" leaves the
+   view. */
+body.sheet-full.mode-play .phone-views {
+  display: none;
+}
+
+/* styles/play-shell.css leaves 5rem under the last card for the bar. With
+   the bar hidden, that room shows as an empty band under the sheet, so the
+   page takes back its usual padding. */
+@media (max-width: 40rem) {
+  body.sheet-full.mode-play {
+    padding-bottom: var(--space-4);
+  }
+}
+
+/* partyWiring.js hides the open button while no character is selected. */
+.sheet-card__open[hidden] {
+  display: none;
+}

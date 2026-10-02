@@ -1,0 +1,424 @@
+/* ==========================================================================
+   Play-surface layout: main columns, map viewport + controls, onboarding,
+   toasts, tile tooltip, and the sidebar column
+   ========================================================================== */
+
+.app-main {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* The landmark takes focus only when a dialog closes and the control that
+   opened it is gone (see dialogFocus.js). It is a parking spot for the next
+   Tab press, not a control, so it draws no ring. */
+.app-main:focus-visible {
+  outline: none;
+}
+
+/* The map and the below-map card strip share one fluid center column. */
+.app-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-map {
+  min-width: 0;
+}
+
+/* The play dock: the party roster with the dice tray under it. Stacked below
+   the map, it caps its width at what a roster row and the tray's stepper rows
+   can fill. Build mode is authoring-only, so the dock hides there. */
+.app-dock {
+  width: 100%;
+  max-width: 30rem;
+  min-width: 0;
+}
+
+.app-dock > .card {
+  min-width: 0;
+}
+
+body.mode-build .app-dock {
+  display: none;
+}
+
+/* The character sheet card fills its sidebar tab. Its sub-tabs sit close
+   above their content. */
+.sheet-card .tabs__panel {
+  margin-top: var(--space-3);
+}
+
+#breadcrumb-container {
+  margin-bottom: var(--space-2);
+  /* The trail is empty until the map wiring knows where the party is, and it
+     sits directly above the map. Holding one crumb's worth of height from the
+     start keeps the map from sliding down when the first trail arrives. The
+     value is a crumb's line box plus the vertical padding widgets.css gives
+     it. */
+  min-height: calc(var(--text-label) * var(--line-body) + var(--space-1) * 2);
+}
+
+.map-viewport {
+  position: relative;
+}
+
+#map-canvas {
+  display: block;
+  width: 100%;
+  height: min(70vh, 48rem);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow-2);
+  touch-action: none;
+}
+
+/* A held fog brush takes over the left button, so the pointer has to say so:
+   without this the only sign is a pressed icon, and clicks that no longer move
+   the party read as a dead map. */
+#map-canvas.is-fog-brush {
+  cursor: crosshair;
+}
+
+#map-canvas:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.map-controls {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 65%, transparent);
+}
+
+.map-controls__btn {
+  color: var(--overlay-text);
+  border-color: transparent;
+  background: transparent;
+}
+
+/* The shared .btn hover fill is the light sunken surface, which hides the
+   light icon on the dark toolbar. */
+.map-controls__btn:hover {
+  background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
+}
+
+/* GM fog cluster: visually separated from zoom, hidden from players and in
+   Build mode (Build already reveals everything). */
+.map-controls__fog {
+  display: inline-flex;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+  padding-left: var(--space-2);
+  border-left: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
+}
+
+body.role-player .map-controls__fog,
+body.mode-build .map-controls__fog {
+  display: none;
+}
+
+.map-controls__btn--active {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
+}
+
+/* The mini-map of the parent map, opposite the controls. It takes pointer
+   events, so a click on it never reaches the tile underneath and moves the
+   party. */
+.minimap {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  margin: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 80%, transparent);
+  box-shadow: var(--shadow-2);
+}
+
+.minimap[hidden] {
+  display: none;
+}
+
+.minimap__canvas {
+  display: block;
+  max-width: 11rem;
+  height: auto;
+  border: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
+  border-radius: 2px;
+}
+
+.minimap__caption {
+  max-width: 11rem;
+  padding-top: var(--space-1);
+  overflow: hidden;
+  font-size: var(--text-label);
+  color: var(--overlay-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-controls__zoom {
+  min-width: 3ch;
+  padding: 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--overlay-text);
+}
+
+/* The map's ways out as real buttons: the keyboard and screen-reader path to the
+   return arrows the canvas draws. Hidden on the container rather than per button,
+   so the buttons stay in one flex row and tabbing in costs a single reflow.
+   A fallback-only list carries --pinned and stays open: the canvas draws nothing
+   for a fallback exit, so the pinned buttons are the only visible way out. */
+.map-exits {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.map-exits:focus-within,
+.map-exits--pinned {
+  width: auto;
+  max-width: calc(100% - var(--space-4));
+  height: auto;
+  padding: var(--space-1);
+  overflow: visible;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 85%, transparent);
+  clip: auto;
+}
+
+.handout-panel__image {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-2);
+}
+
+/* Unsaved-changes cue on the Save button. */
+.btn--attention {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* First-run onboarding overlay, centered over the map. */
+.onboarding {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--overlay-bg) 55%, transparent);
+  border-radius: var(--radius);
+  z-index: 5;
+}
+
+.onboarding__card {
+  max-width: 22rem;
+  padding: var(--space-5);
+}
+
+/* The onboarding card floats over the map scrim, not the page, so the
+   cartouche's page-colored patch would show as a mismatched block. Its title
+   sits back in the flow on the card surface instead. */
+.onboarding__card .card__title {
+  position: static;
+  padding: 0;
+  background: none;
+}
+
+/* The heading takes focus when the card mounts, so a keyboard user starts
+   inside it. It is not a control, so it draws no ring. */
+.onboarding__card .card__title:focus-visible {
+  outline: none;
+}
+
+/* Each way forward explains itself in small text under its button, rather
+   than in a tooltip that only a pointer that waits would see. */
+.onboarding__hint {
+  margin: 0;
+  font-size: var(--text-label);
+}
+
+.onboarding__blurb {
+  margin: 0 0 var(--space-2);
+}
+
+.onboarding__skip {
+  align-self: flex-end;
+  font-size: var(--text-label);
+}
+
+/* Transient action-feedback toasts, above everything. ui/Toast.js lines the
+   stack up with the right end of the breadcrumb row, where nothing else
+   sits, or just below the row when a long trail leaves no room (see
+   view/ToastPlace.js). The bottom-right corner of the window is the place
+   while that row is out of view, as on the combat screen and in Library
+   mode. A toast in the top-right corner there covers the theme and role
+   switches of the header, or the End combat button of the turn ribbon. The toasts often land over the map, so they use the pinned-dark overlay palette in
+   both themes rather than following the page surface. */
+.toast-stack {
+  position: fixed;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: 20;
+  max-width: calc(100vw - 2 * var(--space-4));
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--overlay-bg) 90%, transparent);
+  color: var(--overlay-text);
+  font-size: var(--text-label);
+  box-shadow: var(--shadow-2);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: toast-in var(--transition-base) ease-out;
+}
+
+/* An error toast reports a failure (a file that did not read, a full
+   storage, a lost lock). It sits in the alert region below the status
+   region, keeps the dark overlay ground, and marks itself with the danger
+   colour on its edge so it reads apart from a confirmation. The Dismiss
+   button gives a keyboard user a way to close it before it times out. */
+.toast--error {
+  border-left: 3px solid var(--danger);
+}
+
+/* An action toast offers one button, such as Reveal, beside its message. */
+.toast--error,
+.toast--action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: default;
+}
+
+.toast__dismiss {
+  color: var(--overlay-text);
+  text-decoration: underline;
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+
+.toast--leaving {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The app's one tooltip, anchored to whatever element carries `data-tip`. It
+   is a popover, so the browser draws it in the top layer, above a modal
+   dialog. The z-index covers the fallback path in a browser without popover
+   support. It matches .tile-tooltip below, which is the same box shown against
+   the map canvas. */
+.tooltip {
+  position: fixed;
+
+  /* A popover starts with `inset: 0` and centering margins from the browser's
+     own sheet. Both have to go, or the box is sized to the whole viewport
+     instead of to its text. */
+  inset: auto;
+  z-index: 40;
+  margin: 0;
+  max-width: 18rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 94%, transparent);
+  color: var(--overlay-text);
+  font-size: var(--text-label);
+  line-height: 1.4;
+  white-space: pre-line;
+  pointer-events: none;
+  box-shadow: var(--shadow-2);
+}
+
+.tile-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 18rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--overlay-bg);
+  color: var(--overlay-text);
+  font-size: var(--text-label);
+  pointer-events: none;
+  box-shadow: var(--shadow-2);
+}
+
+.tile-tooltip__title {
+  font-weight: 700;
+}
+
+.tile-tooltip__title + .tile-tooltip__notes {
+  margin-top: var(--space-1);
+}
+
+/* Who stands on the tile: tinted to match the blue NPC map marker. */
+.tile-tooltip__npcs {
+  color: var(--overlay-npc);
+}
+
+.tile-tooltip__title + .tile-tooltip__npcs {
+  margin-top: var(--space-1);
+}
+
+.app-sidebar {
+  width: 22rem;
+  flex-shrink: 0;
+}
+
+/* The tab strip over the panel stacks is a .tabs primitive (base.css). */
+
+.sidebar-toggle {
+  align-self: flex-end;
+  font-size: var(--text-label);
+}
+
+/* Collapsing hides the panels and lets the map reclaim the column width. */
+body.sidebar-collapsed .sidebar-panels {
+  display: none;
+}
+
+body.sidebar-collapsed .app-sidebar {
+  width: auto;
+}
+
+/* The mini-map toggle on a map with no parent view. It stays focusable, so
+   its tooltip can say why it does nothing. */
+.map-controls__btn[aria-disabled='true'],
+.map-controls__btn[aria-disabled='true']:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--overlay-text);
+}

@@ -1,0 +1,42 @@
+# Jekyll settings for the gh-pages branch. GitHub Pages builds that branch
+# with Jekyll, so the Markdown under docs/ becomes HTML on the server. The
+# app files have no front matter, and Jekyll copies them unchanged.
+title: Campaign Builder
+description: Build and run the world of a tabletop campaign in one browser tab.
+repository: wetherc/cartographer
+
+# The site serves from the root of its own domain (see CNAME). Without these,
+# jekyll-github-metadata guesses a project-page prefix for each link.
+url: https://cartographer.tbmh.org
+baseurl: ''
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  auto_ids: true
+highlighter: rouge
+
+# GitHub Pages turns on the first two plugins for every site, and listing them
+# makes a local preview build match the server build. jekyll-sitemap writes
+# sitemap.xml with every page, the app included, and robots.txt points at it.
+plugins:
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+  - jekyll-sitemap
+
+relative_links:
+  enabled: true
+  collections: false
+
+titles_from_headings:
+  enabled: true
+  strip_title: false
+
+# Each Markdown page gets the docs layout. The pages have no front matter of
+# their own, so they read the same on GitHub as on the site.
+defaults:
+  - scope:
+      path: ''
+    values:
+      layout: docs

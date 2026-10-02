@@ -1,0 +1,1467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign Builder: developer guide</title>
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}img{display:block;max-width:100%}</style>
+<style>
+  :root {
+    --ink: #131a18;
+    --paper: #e8ebe7;
+    --surface: #f3f5f1;
+    --surface-2: #dfe4de;
+    --text: #1b2422;
+    --text-muted: #5b6a65;
+    --rule: #c5ccc6;
+    --rule-strong: #a9b3ac;
+    --accent: #2c6f5c;
+    --accent-soft: #d5e4dd;
+    --ochre: #9a6a1f;
+    --ochre-soft: #eee1c9;
+    --danger: #9c3b30;
+
+    --f-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --f-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+    --step--1: 0.8125rem;
+    --step-0: 1.0rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.4375rem;
+    --step-3: 1.8125rem;
+    --step-4: 2.375rem;
+    --step-5: 3.25rem;
+
+    --sp-1: 0.375rem;
+    --sp-2: 0.75rem;
+    --sp-3: 1.25rem;
+    --sp-4: 2rem;
+    --sp-5: 3.25rem;
+    --sp-6: 5rem;
+
+    --col: 40rem;
+    --plate-radius: 2px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #0d1211;
+      --paper: #0f1514;
+      --surface: #161e1c;
+      --surface-2: #1e2826;
+      --text: #dde4e0;
+      --text-muted: #8d9c96;
+      --rule: #2a3532;
+      --rule-strong: #3d4b47;
+      --accent: #5cbfa0;
+      --accent-soft: #16302a;
+      --ochre: #cfa059;
+      --ochre-soft: #2e2618;
+      --danger: #d6796c;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #0d1211;
+    --paper: #0f1514;
+    --surface: #161e1c;
+    --surface-2: #1e2826;
+    --text: #dde4e0;
+    --text-muted: #8d9c96;
+    --rule: #2a3532;
+    --rule-strong: #3d4b47;
+    --accent: #5cbfa0;
+    --accent-soft: #16302a;
+    --ochre: #cfa059;
+    --ochre-soft: #2e2618;
+    --danger: #d6796c;
+  }
+
+  :root[data-theme="light"] {
+    --ink: #131a18;
+    --paper: #e8ebe7;
+    --surface: #f3f5f1;
+    --surface-2: #dfe4de;
+    --text: #1b2422;
+    --text-muted: #5b6a65;
+    --rule: #c5ccc6;
+    --rule-strong: #a9b3ac;
+    --accent: #2c6f5c;
+    --accent-soft: #d5e4dd;
+    --ochre: #9a6a1f;
+    --ochre-soft: #eee1c9;
+    --danger: #9c3b30;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: var(--step-0);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- shell ---------- */
+
+  .shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: var(--sp-5);
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 0 var(--sp-3) var(--sp-6);
+  }
+
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: var(--sp-4) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+
+  .rail-title {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .rail-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .rail-link {
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    align-items: baseline;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2) var(--sp-1) 0;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-left: 2px solid transparent;
+    padding-left: var(--sp-2);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .rail-link span:first-child {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--ochre);
+  }
+
+  .rail-link:hover { color: var(--text); }
+  .rail-link[aria-current="true"] {
+    color: var(--text);
+    border-left-color: var(--accent);
+  }
+
+  main { padding-top: var(--sp-4); min-width: 0; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    padding: var(--sp-5) 0 var(--sp-4);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+
+  .masthead::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 11rem;
+    background-image:
+      linear-gradient(to right, var(--rule) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
+    background-size: 2.25rem 2.25rem;
+    opacity: 0.4;
+    mask-image: linear-gradient(to bottom, black, transparent 78%);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 78%);
+    pointer-events: none;
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    position: relative;
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-size: var(--step-5);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    text-wrap: balance;
+    margin-top: var(--sp-2);
+    position: relative;
+  }
+
+  .lede {
+    max-width: var(--col);
+    margin-top: var(--sp-3);
+    font-size: var(--step-1);
+    color: var(--text-muted);
+    position: relative;
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    margin-top: var(--sp-4);
+    position: relative;
+  }
+
+  .fact-n {
+    font-family: var(--f-mono);
+    font-size: var(--step-3);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    display: block;
+  }
+
+  .fact-l {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ---------- sections ---------- */
+
+  section { padding-top: var(--sp-6); scroll-margin-top: var(--sp-3); }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+
+  .sec-num {
+    font-family: var(--f-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--ochre);
+  }
+
+  h2 {
+    font-family: var(--f-display);
+    font-size: var(--step-3);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: var(--sp-4);
+    margin-bottom: var(--sp-2);
+  }
+
+  p, ul, ol { max-width: var(--col); }
+  p + p { margin-top: var(--sp-2); }
+  .prose > * + * { margin-top: var(--sp-2); }
+
+  ul, ol { padding-left: 1.15rem; }
+  li + li { margin-top: var(--sp-1); }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.86em;
+    background: var(--surface-2);
+    padding: 0.1em 0.34em;
+    border-radius: var(--plate-radius);
+  }
+
+  strong { font-weight: 650; }
+
+  /* ---------- plates ---------- */
+
+  .plate {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--plate-radius);
+    padding: var(--sp-3);
+    margin-top: var(--sp-3);
+    position: relative;
+  }
+
+  .plate::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 9px;
+    height: 9px;
+    border-top: 1px solid var(--rule-strong);
+    border-right: 1px solid var(--rule-strong);
+    pointer-events: none;
+  }
+
+  .plate-label {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: var(--sp-2);
+  }
+
+  pre {
+    font-family: var(--f-mono);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    background: var(--ink);
+    color: #cfd8d4;
+    border-radius: var(--plate-radius);
+    padding: var(--sp-3);
+    overflow-x: auto;
+    margin-top: var(--sp-2);
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+  /* Token colors follow Zed's default One Dark palette. Weight and slant act
+     as second cues, so the classes stay apart for red-green color blindness. */
+  .cm { color: #747d8a; font-style: italic; }
+  .kw { color: #c187d6; font-weight: 600; }
+  .st { color: #a8cc7c; }
+  .num { color: #cf9469; }
+  .type { color: #ebc175; }
+  .fn { color: #73ade9; }
+  .prop { color: #d07277; }
+  .var { color: #dbe1e8; }
+
+  .caption {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-top: var(--sp-1);
+  }
+
+  /* ---------- generic controls ---------- */
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    font-family: var(--f-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--plate-radius);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--surface);
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+
+  /* ---------- 1. layer explorer ---------- */
+
+  .layers { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+  .layer-row {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--sp-2);
+    align-items: start;
+  }
+
+  .layer-kind {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-top: 0.45rem;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+
+  .chip {
+    font-family: var(--f-mono);
+    font-size: 0.78rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--plate-radius);
+    padding: 0.25rem 0.5rem;
+    background: var(--surface);
+    display: flex;
+    gap: 0.45rem;
+    align-items: baseline;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .chip small {
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--paper);
+  }
+  .chip[aria-pressed="true"] small { color: var(--paper); opacity: 0.75; }
+
+  .chip.allowed { border-color: var(--accent); background: var(--accent-soft); }
+  .chip.forbidden { opacity: 0.32; }
+
+  .verdict {
+    margin-top: var(--sp-3);
+    border-top: 1px dashed var(--rule-strong);
+    padding-top: var(--sp-2);
+    max-width: var(--col);
+  }
+
+  .verdict-title { font-family: var(--f-mono); font-size: 0.85rem; color: var(--accent); }
+
+  /* ---------- 2. mount stepper ---------- */
+
+  .step-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+
+  .step-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+
+  .step-btn {
+    width: 100%;
+    text-align: left;
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: var(--sp-2);
+    align-items: baseline;
+    font-family: var(--f-mono);
+    font-size: 0.82rem;
+    padding: 0.3rem var(--sp-2);
+    border-left: 2px solid transparent;
+    color: var(--text-muted);
+  }
+
+  .step-btn span:first-child { font-size: 0.7rem; color: var(--ochre); }
+  .step-btn:hover { color: var(--text); background: var(--surface-2); }
+  .step-btn[aria-current="true"] {
+    border-left-color: var(--accent);
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .step-btn.done { color: var(--text); }
+
+  .step-detail { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .step-why {
+    border-left: 2px solid var(--ochre);
+    padding-left: var(--sp-2);
+    font-size: 0.92rem;
+  }
+  .step-why em { color: var(--ochre); font-style: normal; font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; display: block; }
+
+  .registry { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .reg-line { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .reg-chip {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: var(--plate-radius);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+  }
+  .reg-chip.fresh { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+
+  /* ---------- 3. tile demo ---------- */
+
+  .tilewrap { overflow-x: auto; }
+
+  .tilegrid {
+    display: grid;
+    gap: 2px;
+    width: max-content;
+    margin: 0 auto;
+  }
+
+  .cell {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--rule);
+    border-radius: 1px;
+    background: var(--surface-2);
+    font-family: var(--f-mono);
+    font-size: 0.55rem;
+    color: transparent;
+    display: grid;
+    place-items: center;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .cell.revealed { background: var(--accent-soft); border-color: var(--accent); color: var(--text-muted); }
+  .cell.party { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .cell:hover { color: var(--text); border-color: var(--rule-strong); }
+
+  .readout {
+    font-family: var(--f-mono);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-2);
+  }
+  .readout b { color: var(--accent); font-weight: 600; }
+
+  /* ---------- 4. pipeline ---------- */
+
+  .bars { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr) 5.5rem;
+    gap: var(--sp-2);
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: 0.2rem 0;
+  }
+
+  .bar-name { font-family: var(--f-mono); font-size: 0.76rem; letter-spacing: 0.05em; }
+  .bar-track { height: 1.15rem; background: var(--surface-2); border-radius: 1px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .bar-row[aria-pressed="true"] .bar-fill { background: var(--ochre); }
+  .bar-row:hover .bar-track { outline: 1px solid var(--rule-strong); }
+  .bar-val { font-family: var(--f-mono); font-size: 0.76rem; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-muted); }
+
+  /* ---------- 5. router ---------- */
+
+  .router { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .q { font-family: var(--f-display); font-size: var(--step-2); text-wrap: balance; }
+  .opts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .opt {
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--plate-radius);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--surface);
+    text-align: left;
+    max-width: 20rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .opt b { display: block; }
+  .opt small { color: var(--text-muted); }
+
+  .answer { border-left: 3px solid var(--accent); padding-left: var(--sp-3); }
+  .answer dt { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-muted); margin-top: var(--sp-2); }
+  .answer dd { font-size: 0.95rem; }
+  .answer dd code { font-size: 0.85em; }
+
+  .breadcrumbs { font-family: var(--f-mono); font-size: 0.72rem; color: var(--text-muted); }
+
+  /* ---------- 6. commands ---------- */
+
+  .cmds { display: flex; flex-direction: column; gap: 1px; }
+  .cmd {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-2);
+    align-items: center;
+    padding: var(--sp-2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .cmd:last-child { border-bottom: none; }
+  .cmd-code { font-family: var(--f-mono); font-size: 0.8rem; overflow-x: auto; white-space: nowrap; }
+  .cmd-note { font-size: 0.82rem; color: var(--text-muted); }
+  .warn { color: var(--danger); }
+
+  /* ---------- 7. checklist ---------- */
+
+  .checks { display: flex; flex-direction: column; gap: 1px; max-width: var(--col); }
+  .check {
+    display: grid;
+    grid-template-columns: 1.4rem minmax(0, 1fr);
+    gap: var(--sp-2);
+    align-items: start;
+    padding: var(--sp-2) 0;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+    width: 100%;
+  }
+  .check-box {
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 1px;
+    margin-top: 0.28rem;
+    display: grid;
+    place-items: center;
+    font-size: 0.7rem;
+    color: transparent;
+  }
+  .check[aria-pressed="true"] .check-box { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .check[aria-pressed="true"] .check-text { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--rule-strong); }
+  .check-text { font-size: 0.93rem; }
+  .check-text small { display: block; color: var(--text-muted); font-size: 0.8rem; text-decoration: none; }
+
+  .progress { font-family: var(--f-mono); font-size: 0.8rem; color: var(--accent); margin-top: var(--sp-2); }
+
+  footer {
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--rule);
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 62rem) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .rail { position: static; max-height: none; border-bottom: 1px solid var(--rule); }
+    .rail-list { flex-direction: row; flex-wrap: wrap; }
+    .rail-link { border-left: none; border-bottom: 2px solid transparent; }
+    .rail-link[aria-current="true"] { border-left-color: transparent; border-bottom-color: var(--accent); }
+    .step-grid { grid-template-columns: minmax(0, 1fr); }
+    h1 { font-size: var(--step-4); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+
+  .snip { margin-top: var(--sp-3); }
+  .snippet-label {
+    font-family: var(--f-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .snip pre { margin-top: var(--sp-1); }
+  .snip .line { display: block; min-height: 1.55em; }
+  .snip .lno {
+    display: inline-block;
+    width: var(--lnw, 3ch);
+    margin-right: 1.5ch;
+    text-align: right;
+    color: #5a6a64;
+    user-select: none;
+  }
+  .step-call { font-family: var(--f-mono); font-size: 0.95rem; }
+  .reg-line { margin-bottom: var(--sp-1); }
+  .stamp { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.08em; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <div class="rail-title">Contents</div>
+    <ul class="rail-list" id="rail"></ul>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Campaign Builder / v1.25.2</div>
+      <h1>A developer guide to a codebase with no framework in it.</h1>
+      <p class="lede">
+        Campaign Builder is plain HTML, CSS, and ES modules, with no runtime dependencies and
+        no build step for development. The conventions below keep a codebase of this size
+        readable without a framework to enforce them. The counts, the mount order, and the code
+        samples are read from the source tree at build time, so they match the commit you have
+        checked out, and most of the panels respond to a click. LOC counts every line under
+        <code>src/</code>. SLOC counts only the lines that are not blank and not comment.
+      </p>
+      <div class="facts">
+        <div><span class="fact-n">95,920</span><span class="fact-l">lines of source (LOC)</span></div>
+        <div><span class="fact-n">52,184</span><span class="fact-l">lines of code (SLOC)</span></div>
+        <div><span class="fact-n">539</span><span class="fact-l">source files</span></div>
+        <div><span class="fact-n">408</span><span class="fact-l">test suites</span></div>
+        <div><span class="fact-n">0</span><span class="fact-l">runtime dependencies</span></div>
+      </div>
+    </header>
+
+    <section id="layers">
+      <div class="sec-head"><span class="sec-num">01</span><h2>Pure logic and DOM glue</h2></div>
+      <div class="prose">
+        <p>
+          Every module is either <strong>pure logic</strong>, which takes its inputs as
+          arguments, including the random number generator and the current time, returns new
+          values, and never touches the DOM, or <strong>DOM glue</strong>, which connects that
+          logic to elements and events.
+        </p>
+        <p>
+          Glue calls pure logic, and pure logic never calls glue. Because every import points
+          the same way, most of the tree runs under <code>node --test</code> without a browser
+          or a mock.
+        </p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-label">Import map: pick a directory to see what it imports</div>
+        <div class="layers" id="layerBoard"></div>
+        <div class="verdict" id="layerVerdict"></div>
+      </div>
+      <p class="caption">
+        Counts and edges are read from the working tree. An edge is a real
+        <code>import</code> statement, so a JSDoc type reference does not create one.
+      </p>
+    </section>
+
+    <section id="root">
+      <div class="sec-head"><span class="sec-num">02</span><h2>The composition root</h2></div>
+      <div class="prose">
+        <p>
+          <code>src/main.js</code> builds one <code>AppContext</code> and hands it to each
+          wiring module in turn. The context bundles the engine objects, the campaign state a
+          save serializes, and two registries that start empty: <code>views</code> for mounted
+          panels and <code>actions</code> for cross-module operations.
+        </p>
+        <p>
+          The wiring modules fill those registries with 39 entries between them.
+          A handler reads a registry when it runs rather than when it is wired, which lets an
+          early module call a late one: <code>partyWiring.js</code> triggers an encounter
+          without ever importing <code>encounterWiring.js</code>.
+        </p>
+      </div>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/types/app.ts:239-253  |  AppContext</figcaption>
+<pre style="--lnw:3ch"><code><span class="line"><span class="lno" aria-hidden="true">239</span><span class="kw">export</span> <span class="kw">interface</span> <span class="type">AppContext</span> {</span><span class="line"><span class="lno" aria-hidden="true">240</span>  <span class="prop">palette</span>: <span class="type">TilePalette</span>;</span><span class="line"><span class="lno" aria-hidden="true">241</span>  <span class="prop">grid</span>: <span class="type">TileGrid</span>;</span><span class="line"><span class="lno" aria-hidden="true">242</span>  <span class="prop">navigator</span>: <span class="type">MapNavigator</span>;</span><span class="line"><span class="lno" aria-hidden="true">243</span>  <span class="prop">partyTracker</span>: <span class="type">PartyTracker</span>;</span><span class="line"><span class="lno" aria-hidden="true">244</span>  <span class="prop">toasts</span>: {</span><span class="line"><span class="lno" aria-hidden="true">245</span>    <span class="fn">show</span>(</span><span class="line"><span class="lno" aria-hidden="true">246</span>      <span class="prop">message</span>: <span class="type">string</span>,</span><span class="line"><span class="lno" aria-hidden="true">247</span>      <span class="prop">options</span>?: { <span class="prop">level</span>?: <span class="st">'status'</span> | <span class="st">'error'</span>; <span class="prop">action</span>?: { <span class="prop">label</span>: <span class="type">string</span>; <span class="prop">onClick</span>: () =&gt; <span class="kw">void</span> } },</span><span class="line"><span class="lno" aria-hidden="true">248</span>    ): <span class="kw">void</span>;</span><span class="line"><span class="lno" aria-hidden="true">249</span>  };</span><span class="line"><span class="lno" aria-hidden="true">250</span>  <span class="prop">state</span>: <span class="type">AppState</span>;</span><span class="line"><span class="lno" aria-hidden="true">251</span>  <span class="prop">views</span>: <span class="type">AppViews</span>;</span><span class="line"><span class="lno" aria-hidden="true">252</span>  <span class="prop">actions</span>: <span class="type">AppActions</span>;</span><span class="line"><span class="lno" aria-hidden="true">253</span>}</span></code></pre>
+
+</figure>
+
+      <div class="plate">
+        <div class="plate-label">Mount order: step through the 11 calls in main.js</div>
+        <div class="step-grid">
+          <div>
+            <ul class="step-list" id="stepList"></ul>
+            <div class="toolbar" style="margin-top: var(--sp-2)">
+              <button class="btn" id="stepPrev">Back</button>
+              <button class="btn" id="stepNext">Next</button>
+              <button class="btn" id="stepReset">Restart</button>
+            </div>
+          </div>
+          <div class="step-detail" id="stepDetail"></div>
+        </div>
+      </div>
+      <p class="caption">
+        Order, roles, and reasons are read from the call site. Each registry entry is found by
+        scanning <code>src/app/</code> for what the module assigns.
+      </p>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/main.js:102-128</figcaption>
+<pre style="--lnw:3ch"><code><span class="line"><span class="lno" aria-hidden="true">102</span><span class="fn">wireCampaignActions</span>(app); <span class="cm">// dirty flag + header campaign controls; provides markDirty</span></span><span class="line"><span class="lno" aria-hidden="true">103</span><span class="cm">// The library loads before anything that offers its presets (the item form,</span></span><span class="line"><span class="lno" aria-hidden="true">104</span><span class="cm">// the enemy gear pickers), so the merged lists are live from the first open.</span></span><span class="line"><span class="lno" aria-hidden="true">105</span><span class="fn">wireLibrary</span>(app); <span class="cm">// Library mode: equipment/bestiary/NPC templates + custom-library file</span></span><span class="line"><span class="lno" aria-hidden="true">106</span><span class="cm">// The combat screen mounts before the encounters module, because that</span></span><span class="line"><span class="lno" aria-hidden="true">107</span><span class="cm">// module's refresh paths reach `views.combatScreen` while it is still</span></span><span class="line"><span class="lno" aria-hidden="true">108</span><span class="cm">// mounting.</span></span><span class="line"><span class="lno" aria-hidden="true">109</span><span class="fn">wireCombatScreen</span>(app); <span class="cm">// combat mode's full-width board</span></span><span class="line"><span class="lno" aria-hidden="true">110</span><span class="fn">wireEncounters</span>(app); <span class="cm">// encounter + initiative panels, bestiary</span></span><span class="line"><span class="lno" aria-hidden="true">111</span><span class="fn">wireStory</span>(app); <span class="cm">// travelogue (logEvent), NPCs, quests, handouts</span></span><span class="line"><span class="lno" aria-hidden="true">112</span><span class="cm">// An Undo or Redo reloads the page and keeps the selected character and the</span></span><span class="line"><span class="lno" aria-hidden="true">113</span><span class="cm">// open tabs for this start.</span></span><span class="line"><span class="lno" aria-hidden="true">114</span><span class="kw">const</span> <span class="var">reloadView</span> = <span class="fn">takeReloadView</span>(sessionStorage);</span><span class="line"><span class="lno" aria-hidden="true">115</span><span class="fn">wireParty</span>(app, reloadView); <span class="cm">// roster, sheet, inventory, time</span></span><span class="line"><span class="lno" aria-hidden="true">116</span><span class="cm">// This call draws the first map, which also marks the encounter and NPC</span></span><span class="line"><span class="lno" aria-hidden="true">117</span><span class="cm">// tiles and rebuilds the Build-rail lists those markers share a node scope</span></span><span class="line"><span class="lno" aria-hidden="true">118</span><span class="cm">// with. The two modules that own those lists are wired above.</span></span><span class="line"><span class="lno" aria-hidden="true">119</span><span class="kw">const</span> <span class="var">mapEnv</span> = <span class="fn">wireMapView</span>(app); <span class="cm">// canvas, trees, inspector, palette, fog, map tools</span></span><span class="line"><span class="lno" aria-hidden="true">120</span><span class="fn">wireGenerateAction</span>(app, mapEnv); <span class="cm">// shares the map's context rather than routing through actions</span></span><span class="line"><span class="lno" aria-hidden="true">121</span><span class="fn">wireDiceTray</span>(app); <span class="cm">// dice tray + the roll entries it writes to the travelogue</span></span><span class="line"><span class="lno" aria-hidden="true">122</span><span class="fn">wireHeaderMenu</span>();</span><span class="line"><span class="lno" aria-hidden="true">123</span><span class="cm">// This must run last: mounting the role switch applies the starting role</span></span><span class="line"><span class="lno" aria-hidden="true">124</span><span class="cm">// straight away. That refreshes four panels and re-points the character</span></span><span class="line"><span class="lno" aria-hidden="true">125</span><span class="cm">// sheet, so everything it touches must already be registered.</span></span><span class="line"><span class="lno" aria-hidden="true">126</span><span class="fn">wireSessionControls</span>(app); <span class="cm">// mode/role switches (applies the initial role), tabs, sidebar</span></span><span class="line"><span class="lno" aria-hidden="true">127</span><span class="fn">wirePhoneViews</span>(); <span class="cm">// phone bottom bar; follows the sidebar tabs wired just above</span></span><span class="line"><span class="lno" aria-hidden="true">128</span><span class="fn">wireShortcuts</span>(app);</span></code></pre>
+<p class="caption">The same lines, straight out of the composition root.</p>
+</figure>
+    </section>
+
+    <section id="panels">
+      <div class="sec-head"><span class="sec-num">03</span><h2>The panel contract</h2></div>
+      <div class="prose">
+        <p>
+          A panel is a function <code>mount&lt;Name&gt;(container, callbacks)</code> that
+          creates its own root, draws once, and returns <code>{ update }</code>. A wiring module
+          stores that handle on <code>app.views</code>, and from then on callers only ever call
+          <code>.update()</code>.
+        </p>
+        <p>
+          A panel keeps no campaign data of its own. Everything it draws comes from a
+          <code>get*</code> callback that runs at render time, so <code>update()</code> always
+          reads current state, and every change it wants to make goes back out through a
+          callback. A panel never writes state and never opens a dialog itself.
+        </p>
+      </div>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/ui/TimePanel.js:22-54  |  mountTimePanel</figcaption>
+<pre style="--lnw:2ch"><code><span class="line"><span class="lno" aria-hidden="true">22</span><span class="kw">export</span> <span class="kw">function</span> <span class="fn">mountTimePanel</span>(container, callbacks) {</span><span class="line"><span class="lno" aria-hidden="true">23</span>  <span class="kw">const</span> <span class="var">root</span> = <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel'</span>);</span><span class="line"><span class="lno" aria-hidden="true">24</span>  container.<span class="fn">appendChild</span>(root);</span><span class="line"><span class="lno" aria-hidden="true">25</span></span><span class="line"><span class="lno" aria-hidden="true">26</span>  <span class="cm">/** Every control here changes the clock, so each one rerenders the readout.</span></span><span class="line"><span class="lno" aria-hidden="true">27</span><span class="cm">   * @param {string} label @param {() =&gt; void} onClick @param {import('./icons.js').IconName} [glyph] */</span></span><span class="line"><span class="lno" aria-hidden="true">28</span>  <span class="kw">const</span> <span class="var">button</span> = (label, onClick, glyph) =&gt;</span><span class="line"><span class="lno" aria-hidden="true">29</span>    <span class="fn">textButton</span>(</span><span class="line"><span class="lno" aria-hidden="true">30</span>      label,</span><span class="line"><span class="lno" aria-hidden="true">31</span>      () =&gt; {</span><span class="line"><span class="lno" aria-hidden="true">32</span>        <span class="fn">onClick</span>();</span><span class="line"><span class="lno" aria-hidden="true">33</span>        <span class="fn">render</span>();</span><span class="line"><span class="lno" aria-hidden="true">34</span>      },</span><span class="line"><span class="lno" aria-hidden="true">35</span>      { <span class="prop">icon</span>: glyph, <span class="prop">className</span>: <span class="st">'time-panel__btn'</span> },</span><span class="line"><span class="lno" aria-hidden="true">36</span>    );</span><span class="line"><span class="lno" aria-hidden="true">37</span></span><span class="line"><span class="lno" aria-hidden="true">38</span>  <span class="kw">function</span> <span class="fn">render</span>() {</span><span class="line"><span class="lno" aria-hidden="true">39</span>    root.<span class="prop">innerHTML</span> = <span class="st">''</span>;</span><span class="line"><span class="lno" aria-hidden="true">40</span>    root.<span class="fn">append</span>(</span><span class="line"><span class="lno" aria-hidden="true">41</span>      <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel__readout u-row u-g2'</span>, <span class="fn">icon</span>(<span class="st">'clock'</span>), <span class="fn">formatClock</span>(callbacks.<span class="fn">getClock</span>())),</span><span class="line"><span class="lno" aria-hidden="true">42</span>      <span class="fn">el</span>(</span><span class="line"><span class="lno" aria-hidden="true">43</span>        <span class="st">'div'</span>,</span><span class="line"><span class="lno" aria-hidden="true">44</span>        <span class="st">'time-panel__actions'</span>,</span><span class="line"><span class="lno" aria-hidden="true">45</span>        <span class="fn">button</span>(<span class="st">'Advance'</span>, callbacks.<span class="prop">onAdvance</span>),</span><span class="line"><span class="lno" aria-hidden="true">46</span>        <span class="fn">button</span>(<span class="st">'Short rest'</span>, callbacks.<span class="prop">onShortRest</span>),</span><span class="line"><span class="lno" aria-hidden="true">47</span>        <span class="fn">button</span>(<span class="st">'Long rest'</span>, callbacks.<span class="prop">onLongRest</span>),</span><span class="line"><span class="lno" aria-hidden="true">48</span>      ),</span><span class="line"><span class="lno" aria-hidden="true">49</span>    );</span><span class="line"><span class="lno" aria-hidden="true">50</span>  }</span><span class="line"><span class="lno" aria-hidden="true">51</span></span><span class="line"><span class="lno" aria-hidden="true">52</span>  <span class="fn">render</span>();</span><span class="line"><span class="lno" aria-hidden="true">53</span>  <span class="kw">return</span> { <span class="prop">update</span>: render };</span><span class="line"><span class="lno" aria-hidden="true">54</span>}</span></code></pre>
+<p class="caption">Most list panels get this pattern from <code>mountListPanel</code> in <code>src/ui/listPanel.js</code> instead of hand-rolling it.</p>
+</figure>
+
+      <h3>Why identity comparison is enough</h3>
+      <div class="prose">
+        <p>
+          A repaint is skipped when the rows are the same objects in the same order. That check
+          is correct only because the entity layer never mutates in place: every writer returns
+          a new object, so a changed row is always a different object.
+        </p>
+      </div>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/ui/listPanel.js:378-383  |  repaintNeeded</figcaption>
+<pre style="--lnw:3ch"><code><span class="line"><span class="lno" aria-hidden="true">378</span><span class="kw">export</span> <span class="kw">function</span> <span class="fn">repaintNeeded</span>(last, next) {</span><span class="line"><span class="lno" aria-hidden="true">379</span>  <span class="kw">if</span> (!last) <span class="kw">return</span> <span class="kw">true</span>;</span><span class="line"><span class="lno" aria-hidden="true">380</span>  <span class="kw">if</span> (last.<span class="prop">gm</span> !== next.<span class="prop">gm</span>) <span class="kw">return</span> <span class="kw">true</span>;</span><span class="line"><span class="lno" aria-hidden="true">381</span>  <span class="kw">if</span> (!<span class="type">Object</span>.<span class="fn">is</span>(last.<span class="prop">dependsOn</span>, next.<span class="prop">dependsOn</span>)) <span class="kw">return</span> <span class="kw">true</span>;</span><span class="line"><span class="lno" aria-hidden="true">382</span>  <span class="kw">return</span> !<span class="fn">sameRows</span>(last.<span class="prop">rows</span>, next.<span class="prop">rows</span>);</span><span class="line"><span class="lno" aria-hidden="true">383</span>}</span></code></pre>
+
+</figure>
+      <figure class="snip">
+<figcaption class="snippet-label">src/ui/listPanel.js:392-396  |  sameRows</figcaption>
+<pre style="--lnw:3ch"><code><span class="line"><span class="lno" aria-hidden="true">392</span><span class="kw">function</span> <span class="fn">sameRows</span>(a, b) {</span><span class="line"><span class="lno" aria-hidden="true">393</span>  <span class="kw">if</span> (a.<span class="prop">length</span> !== b.<span class="prop">length</span>) <span class="kw">return</span> <span class="kw">false</span>;</span><span class="line"><span class="lno" aria-hidden="true">394</span>  <span class="kw">for</span> (<span class="kw">let</span> <span class="var">i</span> = <span class="num">0</span>; i &lt; a.<span class="prop">length</span>; i += <span class="num">1</span>) <span class="kw">if</span> (a[i] !== b[i]) <span class="kw">return</span> <span class="kw">false</span>;</span><span class="line"><span class="lno" aria-hidden="true">395</span>  <span class="kw">return</span> <span class="kw">true</span>;</span><span class="line"><span class="lno" aria-hidden="true">396</span>}</span></code></pre>
+
+</figure>
+
+      <h3>The same rule elsewhere</h3>
+      <div class="prose">
+        <ul>
+          <li><strong>Tile lookups.</strong> <code>src/map/TileIndex.js</code> gives O(1) <code>tileAt(node, id)</code>, which is safe because a tile write replaces the node.</li>
+          <li><strong>Derived map data.</strong> <code>findRegionGroups</code> and <code>spanBlocks</code> cache in a WeakMap keyed on the node. A mutated node would serve a stale answer forever.</li>
+          <li><strong>Frozen catalogs.</strong> The built-in tables run through <code>deepFreeze</code>, so any code that copies one into campaign state has to do so explicitly, as <code>CreatureTemplate.fromTemplate</code> does.</li>
+        </ul>
+      </div>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/util/memoize.js:15-26  |  memoizeByIdentity</figcaption>
+<pre style="--lnw:2ch"><code><span class="line"><span class="lno" aria-hidden="true">15</span><span class="kw">export</span> <span class="kw">function</span> <span class="fn">memoizeByIdentity</span>(compute) {</span><span class="line"><span class="lno" aria-hidden="true">16</span>  <span class="cm">/** @type {WeakMap&lt;T, { value: R }&gt;} */</span></span><span class="line"><span class="lno" aria-hidden="true">17</span>  <span class="kw">const</span> <span class="var">cache</span> = <span class="kw">new</span> <span class="type">WeakMap</span>();</span><span class="line"><span class="lno" aria-hidden="true">18</span>  <span class="kw">return</span> (input) =&gt; {</span><span class="line"><span class="lno" aria-hidden="true">19</span>    <span class="kw">let</span> <span class="var">entry</span> = cache.<span class="fn">get</span>(input);</span><span class="line"><span class="lno" aria-hidden="true">20</span>    <span class="kw">if</span> (!entry) {</span><span class="line"><span class="lno" aria-hidden="true">21</span>      entry = { <span class="prop">value</span>: <span class="fn">compute</span>(input) };</span><span class="line"><span class="lno" aria-hidden="true">22</span>      cache.<span class="fn">set</span>(input, entry);</span><span class="line"><span class="lno" aria-hidden="true">23</span>    }</span><span class="line"><span class="lno" aria-hidden="true">24</span>    <span class="kw">return</span> entry.<span class="prop">value</span>;</span><span class="line"><span class="lno" aria-hidden="true">25</span>  };</span><span class="line"><span class="lno" aria-hidden="true">26</span>}</span></code></pre>
+
+</figure>
+    </section>
+
+    <section id="map">
+      <div class="sec-head"><span class="sec-num">04</span><h2>The map is one node type</h2></div>
+      <div class="prose">
+        <p>
+          There is no world type, region type, or dungeon type, because every map is a
+          <code>MapNode</code>. A node points up through <code>parentId</code> and a tile
+          points down through <code>childNodeId</code>, and several tiles can share one
+          <code>childNodeId</code> when a landmark covers more than one cell.
+        </p>
+        <p>
+          The tile id <em>is</em> the position, so a tile has no x and y fields. Fog is one
+          boolean per tile, and only a party move clears it. The example
+          campaign has 149 nodes and 28,438 tiles.
+        </p>
+      </div>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/types/map.ts:15-33  |  Tile</figcaption>
+<pre style="--lnw:2ch"><code><span class="line"><span class="lno" aria-hidden="true">15</span><span class="kw">export</span> <span class="kw">interface</span> <span class="type">Tile</span> {</span><span class="line"><span class="lno" aria-hidden="true">16</span>  <span class="prop">id</span>: <span class="type">string</span>;</span><span class="line"><span class="lno" aria-hidden="true">17</span>  <span class="prop">imageRef</span>: <span class="type">string</span>;</span><span class="line"><span class="lno" aria-hidden="true">18</span>  <span class="cm">/** Image or images drawn on top of imageRef, for example a road or path.</span></span><span class="line"><span class="lno" aria-hidden="true">19</span><span class="cm">   * This lets path pieces layer over the terrain beneath instead of</span></span><span class="line"><span class="lno" aria-hidden="true">20</span><span class="cm">   * replacing it. Null means no overlay. An array draws in order, with the</span></span><span class="line"><span class="lno" aria-hidden="true">21</span><span class="cm">   * first entry at the bottom, so overlays can stack, for example a river</span></span><span class="line"><span class="lno" aria-hidden="true">22</span><span class="cm">   * channel over the shoreline where it drains into a lake. */</span></span><span class="line"><span class="lno" aria-hidden="true">23</span>  <span class="prop">overlayRef</span>: <span class="type">string</span> | <span class="type">string</span>[] | <span class="kw">null</span>;</span><span class="line"><span class="lno" aria-hidden="true">24</span>  <span class="prop">metadata</span>: <span class="type">TileMetadata</span>;</span><span class="line"><span class="lno" aria-hidden="true">25</span>  <span class="prop">revealed</span>: <span class="type">boolean</span>;</span><span class="line"><span class="lno" aria-hidden="true">26</span>  <span class="cm">/** Id of the MapNode this tile zooms into, if any. */</span></span><span class="line"><span class="lno" aria-hidden="true">27</span>  <span class="prop">childNodeId</span>: <span class="type">string</span> | <span class="kw">null</span>;</span><span class="line"><span class="lno" aria-hidden="true">28</span>  <span class="cm">/** Side length, in tiles, of the block that this tile's image draws</span></span><span class="line"><span class="lno" aria-hidden="true">29</span><span class="cm">   * scaled across, anchored here and extending right and down. This is</span></span><span class="line"><span class="lno" aria-hidden="true">30</span><span class="cm">   * purely visual, and implies no region link. Absent or 1 means a normal</span></span><span class="line"><span class="lno" aria-hidden="true">31</span><span class="cm">   * one-cell image. */</span></span><span class="line"><span class="lno" aria-hidden="true">32</span>  <span class="prop">span</span>?: <span class="type">number</span>;</span><span class="line"><span class="lno" aria-hidden="true">33</span>}</span></code></pre>
+
+</figure>
+
+      <div class="plate">
+        <div class="plate-label">Move the party: click a cell</div>
+        <div class="tilewrap"><div class="tilegrid" id="tileGrid" role="grid" aria-label="Demo map, 14 by 9 cells"></div></div>
+        <div class="readout" id="tileReadout"></div>
+        <div class="toolbar" style="margin-top: var(--sp-2)">
+          <button class="btn" id="fogRadius">Reveal radius</button>
+          <button class="btn" id="fogReset">Hide all</button>
+        </div>
+      </div>
+      <p class="caption">
+        The demo starts at the party tracker's own default radius of 2.
+      </p>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/map/FogOfWar.js:27-54  |  revealAround</figcaption>
+<pre style="--lnw:2ch"><code><span class="line"><span class="lno" aria-hidden="true">27</span><span class="kw">export</span> <span class="kw">function</span> <span class="fn">revealAround</span>(node, centerId, radius) {</span><span class="line"><span class="lno" aria-hidden="true">28</span>  <span class="kw">const</span> <span class="var">center</span> = <span class="fn">parseCoords</span>(centerId);</span><span class="line"><span class="lno" aria-hidden="true">29</span>  <span class="kw">if</span> (!center) <span class="kw">return</span> node;</span><span class="line"><span class="lno" aria-hidden="true">30</span></span><span class="line"><span class="lno" aria-hidden="true">31</span>  <span class="cm">// This code walks the bounding square of the disc by coordinate instead of</span></span><span class="line"><span class="lno" aria-hidden="true">32</span>  <span class="cm">// mapping the whole tile array. This method costs O(radius^2) per party</span></span><span class="line"><span class="lno" aria-hidden="true">33</span>  <span class="cm">// step instead of O(total tiles) and builds no id string per cell. A step</span></span><span class="line"><span class="lno" aria-hidden="true">34</span>  <span class="cm">// that reveals nothing new returns the same node. This keeps the WeakMap</span></span><span class="line"><span class="lno" aria-hidden="true">35</span>  <span class="cm">// caches for tile layout, region groups, and span blocks warm.</span></span><span class="line"><span class="lno" aria-hidden="true">36</span>  <span class="kw">const</span> <span class="var">r</span> = <span class="type">Math</span>.<span class="fn">ceil</span>(radius);</span><span class="line"><span class="lno" aria-hidden="true">37</span>  <span class="kw">const</span> <span class="var">radiusSq</span> = radius * radius;</span><span class="line"><span class="lno" aria-hidden="true">38</span>  <span class="cm">/** @type {Map&lt;number, import('../types/map.js').Tile&gt; | null} */</span></span><span class="line"><span class="lno" aria-hidden="true">39</span>  <span class="kw">let</span> <span class="var">changed</span> = <span class="kw">null</span>;</span><span class="line"><span class="lno" aria-hidden="true">40</span>  <span class="kw">for</span> (<span class="kw">let</span> <span class="var">y</span> = center.<span class="prop">y</span> - r; y &lt;= center.<span class="prop">y</span> + r; y++) {</span><span class="line"><span class="lno" aria-hidden="true">41</span>    <span class="kw">for</span> (<span class="kw">let</span> <span class="var">x</span> = center.<span class="prop">x</span> - r; x &lt;= center.<span class="prop">x</span> + r; x++) {</span><span class="line"><span class="lno" aria-hidden="true">42</span>      <span class="kw">const</span> <span class="var">dx</span> = x - center.<span class="prop">x</span>;</span><span class="line"><span class="lno" aria-hidden="true">43</span>      <span class="kw">const</span> <span class="var">dy</span> = y - center.<span class="prop">y</span>;</span><span class="line"><span class="lno" aria-hidden="true">44</span>      <span class="kw">if</span> (dx * dx + dy * dy &gt; radiusSq) <span class="kw">continue</span>;</span><span class="line"><span class="lno" aria-hidden="true">45</span>      <span class="kw">const</span> <span class="var">pos</span> = <span class="fn">cellPosition</span>(node, x, y);</span><span class="line"><span class="lno" aria-hidden="true">46</span>      <span class="kw">if</span> (pos === <span class="kw">undefined</span>) <span class="kw">continue</span>;</span><span class="line"><span class="lno" aria-hidden="true">47</span>      <span class="kw">const</span> <span class="var">tile</span> = node.<span class="prop">tiles</span>[pos];</span><span class="line"><span class="lno" aria-hidden="true">48</span>      <span class="kw">if</span> (tile.<span class="prop">revealed</span>) <span class="kw">continue</span>;</span><span class="line"><span class="lno" aria-hidden="true">49</span>      (changed ??= <span class="kw">new</span> <span class="type">Map</span>()).<span class="fn">set</span>(pos, { ...tile, <span class="prop">revealed</span>: <span class="kw">true</span> });</span><span class="line"><span class="lno" aria-hidden="true">50</span>    }</span><span class="line"><span class="lno" aria-hidden="true">51</span>  }</span><span class="line"><span class="lno" aria-hidden="true">52</span>  <span class="kw">if</span> (!changed) <span class="kw">return</span> node;</span><span class="line"><span class="lno" aria-hidden="true">53</span>  <span class="kw">return</span> <span class="fn">withTilesReplaced</span>(node, changed);</span><span class="line"><span class="lno" aria-hidden="true">54</span>}</span></code></pre>
+<p class="caption">Reveal is monotonic, and the function returns the same node when nothing new was revealed.</p>
+</figure>
+    </section>
+
+    <section id="save">
+      <div class="sec-head"><span class="sec-num">05</span><h2>A campaign is one string</h2></div>
+      <div class="prose">
+        <p>
+          Saving flattens live state into a <code>CampaignState</code>, runs it through five
+          packing layers, and only then calls <code>JSON.stringify</code>. Loading reverses the
+          chain, with migrations first. The layers exist because localStorage refuses writes
+          near 5 MB, and on the example campaign they remove 97% of the string.
+        </p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-label">Packing layers, measured on the example campaign</div>
+        <div class="bars" id="packBars"></div>
+        <div class="verdict" id="packDetail"></div>
+      </div>
+      <p class="caption">
+        Measured at build time by running the real packing functions over
+        <code>buildExampleCampaign</code>. Layers 1 and 2 are measured
+        with the generic <code>packEntity</code> against the same defaults the loader restores.
+        <code>serialize</code> uses the specialized tile packer and comes out at
+        191,322 characters. On the densest node
+        (The Marches, 48x48,
+        2,304 tiles) the codec alone saves 228,904 characters.
+      </p>
+
+      <figure class="snip">
+<figcaption class="snippet-label">src/storage/SaveManager.js:168-177  |  packTile</figcaption>
+<pre style="--lnw:3ch"><code><span class="line"><span class="lno" aria-hidden="true">168</span><span class="kw">function</span> <span class="fn">packTile</span>(tile) {</span><span class="line"><span class="lno" aria-hidden="true">169</span>  <span class="kw">return</span> <span class="fn">copyPacked</span>(tile, (key, value) =&gt; {</span><span class="line"><span class="lno" aria-hidden="true">170</span>    <span class="kw">if</span> (key === <span class="st">'overlayRef'</span> || key === <span class="st">'childNodeId'</span>) <span class="kw">return</span> value == <span class="kw">null</span> ? <span class="type">SKIP</span> : value;</span><span class="line"><span class="lno" aria-hidden="true">171</span>    <span class="kw">if</span> (key === <span class="st">'revealed'</span>) <span class="kw">return</span> value === <span class="kw">true</span> ? value : <span class="type">SKIP</span>;</span><span class="line"><span class="lno" aria-hidden="true">172</span>    <span class="cm">// An absent span and a span of 1 mean the same one-cell image, per `Tile`.</span></span><span class="line"><span class="lno" aria-hidden="true">173</span>    <span class="kw">if</span> (key === <span class="st">'span'</span>) <span class="kw">return</span> <span class="kw">typeof</span> value === <span class="st">'number'</span> &amp;&amp; value &gt; <span class="num">1</span> ? value : <span class="type">SKIP</span>;</span><span class="line"><span class="lno" aria-hidden="true">174</span>    <span class="kw">if</span> (key === <span class="st">'metadata'</span>) <span class="kw">return</span> <span class="fn">packMetadata</span>(value);</span><span class="line"><span class="lno" aria-hidden="true">175</span>    <span class="kw">return</span> value;</span><span class="line"><span class="lno" aria-hidden="true">176</span>  });</span><span class="line"><span class="lno" aria-hidden="true">177</span>}</span></code></pre>
+<p class="caption">Fields are deleted from a copy, so a field added after this function was written still survives the round trip.</p>
+</figure>
+
+      <h3>Undo without snapshots</h3>
+      <div class="prose">
+        <p>
+          History stores one invertible delta per step rather than a copy of the campaign.
+          <code>diffState</code> records the old and the new value of each change,
+          <code>invertOps</code> swaps them, and the deltas apply on top of the saved campaign,
+          so no snapshot is ever needed.
+        </p>
+        <p>
+          A history write always follows the campaign write, and deltas are never migrated, so
+          an index written by an older version is discarded whole.
+        </p>
+      </div>
+
+      <div class="plate">
+        <div class="plate-label">localStorage keys, with where each one is defined</div>
+        <div class="cmds" id="keyList"></div>
+      </div>
+      <p class="caption">All file input and output is confined to <code>src/storage/fileIO.js</code>.</p>
+    </section>
+
+    <section id="where">
+      <div class="sec-head"><span class="sec-num">06</span><h2>Where does my change go?</h2></div>
+      <div class="plate">
+        <div class="plate-label" id="routerCrumbs">Start</div>
+        <div class="router" id="router"></div>
+      </div>
+    </section>
+
+    <section id="work">
+      <div class="sec-head"><span class="sec-num">07</span><h2>Working on the codebase</h2></div>
+      <div class="prose">
+        <p>
+          Tests run against the source files, not the build. Run one test file while you
+          iterate and the whole suite before you commit. The pre-commit hook runs the formatter,
+          the linter, the suite, and the typecheck, and it blocks the commit on any failure.
+        </p>
+      </div>
+      <div class="plate">
+        <div class="plate-label">Commands</div>
+        <div class="cmds" id="cmdList"></div>
+      </div>
+      <p class="caption">Anything with a package script is read out of <code>package.json</code>.</p>
+
+      <h3>Checking the DOM and the canvas</h3>
+      <div class="prose">
+        <p>
+          Code that touches the DOM or the canvas is checked in a real browser rather than a
+          mock: serve the project, open the change, and read the console for 404s on asset
+          paths. Playwright can drive and screenshot that check when you want it automated.
+          The preview pages in <code>tests/</code> do not end in <code>.test.js</code>, so the
+          automated run skips them:
+          <code>map-canvas-preview.html</code>, <code>save-manager-preview.html</code>, <code>tile-preview.html</code>, <code>ui-panels-preview.html</code>.
+          Each one mounts the real modules the way <code>main.js</code> does.
+        </p>
+        <p>
+          Coverage counts every module, because <code>tests/moduleLoad.test.js</code> imports all
+          of <code>src/</code> except <code>main.js</code>. A low row under <code>src/ui/</code>
+          or <code>src/app/</code> is expected, since those directories are glue, but a low row
+          anywhere else means the module needs tests.
+        </p>
+      </div>
+    </section>
+
+    <section id="review">
+      <div class="sec-head"><span class="sec-num">08</span><h2>Pre-flight</h2></div>
+      <div class="prose">
+        <p>Read this list before you commit or open a pull request.</p>
+      </div>
+      <div class="plate">
+        <div class="plate-label">Conventions checklist</div>
+        <div class="checks" id="checkList"></div>
+        <div class="progress" id="checkProgress"></div>
+      </div>
+      <p class="caption"><code>docs/architecture/conventions.md</code> explains each rule. <code>docs/architecture.md</code> is authoritative for design questions.</p>
+    </section>
+
+    <footer>
+      <div class="stamp">Generated from the source tree by scripts/build-dev-guide.mjs, source fingerprint 9078a5f8b899. Run <code>pnpm run guide</code> to rebuild.</div>
+    </footer>
+  </main>
+</div>
+
+<script>window.__GUIDE_DATA__ = {"sections":[{"id":"layers","short":"Module logic"},{"id":"root","short":"Composition root"},{"id":"panels","short":"Panel contract"},{"id":"map","short":"Map model"},{"id":"save","short":"Persistence"},{"id":"where","short":"Where code goes"},{"id":"work","short":"Working on it"},{"id":"review","short":"Pre-flight"}],"kindGroups":[["root","composition"],["wiring","wiring"],["glue","DOM glue"],["mixed","pure + glue"],["pure","pure logic"],["data","catalogs"],["types","declarations"],["unclassified","unclassified"]],"dirs":[{"id":"app","name":"app/","files":86,"lines":17013,"code":10050,"kind":"wiring","role":"One wireX(app) module per feature area. Mounts panels, registers views and actions, and keeps the per-feature UI state that is not saved.","imports":["campaign","combat","data","dice","entities","handout","library","log","map","party","quest","storage","time","ui","util","view"]},{"id":"campaign","name":"campaign/","files":12,"lines":3077,"code":2261,"kind":"pure","role":"Blank and example campaign builders, and the initial load.","imports":["data","entities","map","party","storage","time","util"]},{"id":"combat","name":"combat/","files":29,"lines":3490,"code":1382,"kind":"pure","role":"Initiative order, attack resolution, the action budget, reactions, and loadout reads.","imports":["data","dice","entities","map","view"]},{"id":"data","name":"data/","files":18,"lines":4514,"code":4148,"kind":"data","role":"Frozen catalogs: abilities, classes, races, backgrounds, skills, spells, feats, creatures, and challenge ratings.","imports":["util"]},{"id":"dice","name":"dice/","files":3,"lines":278,"code":140,"kind":"pure","role":"roll(selection, rng). The generator is an argument, so a test can pass a stub.","imports":[]},{"id":"entities","name":"entities/","files":97,"lines":15871,"code":7049,"kind":"pure","role":"Characters, encounters, resources, equipment, and casting. Every writer returns a new object.","imports":["combat","data","dice","map","util"]},{"id":"handout","name":"handout/","files":2,"lines":382,"code":160,"kind":"pure","role":"Handout records, visibility filters, and dialog helpers.","imports":["map","util"]},{"id":"library","name":"library/","files":3,"lines":1082,"code":593,"kind":"pure","role":"Merges the built-in catalogs with the GM customs, tagging each entry default, override, or custom.","imports":["combat","data","entities","util"]},{"id":"log","name":"log/","files":2,"lines":181,"code":61,"kind":"pure","role":"Travelogue entries and the incremental read the panel renders from.","imports":["time","view"]},{"id":"main","name":"main.js","files":1,"lines":171,"code":97,"kind":"root","role":"Builds the AppContext, then calls each wiring module in mount order.","imports":["app","campaign","map","party","storage","ui","view"]},{"id":"map","name":"map/","files":80,"lines":17610,"code":8907,"kind":"mixed","role":"Tile grid, node hierarchy, fog, and region grouping, plus the canvas renderer. The renderer is the glue half, and everything else is pure.","imports":["handout","storage","util"]},{"id":"party","name":"party/","files":3,"lines":340,"code":122,"kind":"pure","role":"Party position and split-party tokens. Moving the party reveals fog.","imports":["map","time"]},{"id":"quest","name":"quest/","files":5,"lines":579,"code":223,"kind":"pure","role":"Quest records, objectives, links, and status transitions.","imports":["combat","entities","map"]},{"id":"storage","name":"storage/","files":32,"lines":7393,"code":3242,"kind":"pure","role":"Serialize, pack, migrate, and the delta history. Browser APIs are confined to thin wrappers.","imports":["combat","entities","handout","library","map","quest","time","util"]},{"id":"time","name":"time/","files":3,"lines":243,"code":82,"kind":"pure","role":"The in-game clock of watches and days.","imports":[]},{"id":"types","name":"types/","files":22,"lines":2914,"code":1396,"kind":"types","role":"Declaration files only, with no runtime code. The .js files point here through JSDoc, so no import edge leads to this directory.","imports":[]},{"id":"ui","name":"ui/","files":102,"lines":18408,"code":11275,"kind":"glue","role":"DOM widgets: panels, dialogs, forms. Draws from callbacks and writes nothing.","imports":["app","combat","data","dice","entities","library","log","map","quest","storage","time","util","view"]},{"id":"util","name":"util/","files":7,"lines":303,"code":111,"kind":"pure","role":"Clamping, identity memos, deep freeze, seeded random, idle scheduling, and text helpers. Imports nothing.","imports":[]},{"id":"view","name":"view/","files":32,"lines":2071,"code":885,"kind":"mixed","role":"View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock. CharacterClaim.js builds the Player-tab picker and is the glue half.","imports":["entities","map","storage","ui","util"]}],"steps":[{"call":"wireCampaignActions","line":102,"role":"dirty flag + header campaign controls; provides markDirty","why":"The order below is a dependency order, not a preference. Almost every cross-module reference resolves when an event fires, long after all of this has run. Three modules reach another module's registrations while they are still mounting, so those registrations must be in place first.","regs":[{"registry":"actions","name":"markDirty"},{"registry":"actions","name":"mergeQueuedPatches"}]},{"call":"wireLibrary","line":105,"role":"Library mode: equipment/bestiary/NPC templates + custom-library file","why":"The library loads before anything that offers its presets (the item form, the enemy gear pickers), so the merged lists are live from the first open.","regs":[]},{"call":"wireCombatScreen","line":109,"role":"combat mode's full-width board","why":"The combat screen mounts before the encounters module, because that module's refresh paths reach `views.combatScreen` while it is still mounting.","regs":[{"registry":"views","name":"combatScreen"}]},{"call":"wireEncounters","line":110,"role":"encounter + initiative panels, bestiary","why":"","regs":[{"registry":"actions","name":"removeCombatant"},{"registry":"actions","name":"addCombatant"},{"registry":"actions","name":"spendBudget"},{"registry":"actions","name":"toggleBudget"},{"registry":"actions","name":"surgeBudget"},{"registry":"actions","name":"advanceCombatTurn"},{"registry":"actions","name":"endCombat"},{"registry":"actions","name":"syncCombatLocation"},{"registry":"views","name":"initiativePanel"}]},{"call":"wireStory","line":111,"role":"travelogue (logEvent), NPCs, quests, handouts","why":"","regs":[{"registry":"actions","name":"logEvent"},{"registry":"views","name":"travelogPanel"},{"registry":"views","name":"npcPanel"},{"registry":"views","name":"buildNPCs"},{"registry":"views","name":"questPanel"}]},{"call":"wireParty","line":115,"role":"roster, sheet, inventory, time","why":"","regs":[{"registry":"actions","name":"getBoundCharacterId"},{"registry":"actions","name":"refreshSelectedCharacter"},{"registry":"actions","name":"getSelectedCharacterId"},{"registry":"actions","name":"passTravelTime"},{"registry":"views","name":"partyPanels"}]},{"call":"wireMapView","line":119,"role":"canvas, trees, inspector, palette, fog, map tools","why":"This call draws the first map, which also marks the encounter and NPC tiles and rebuilds the Build-rail lists those markers share a node scope with. The two modules that own those lists are wired above.","regs":[{"registry":"actions","name":"undoStroke"},{"registry":"actions","name":"meetCreatures"},{"registry":"actions","name":"syncPartyMarker"},{"registry":"actions","name":"syncExits"},{"registry":"actions","name":"syncCreatureMarkers"},{"registry":"actions","name":"refreshMapDescription"},{"registry":"actions","name":"resyncMap"},{"registry":"actions","name":"getSelectedTileId"},{"registry":"actions","name":"focusLocation"},{"registry":"actions","name":"centerOnLocation"},{"registry":"views","name":"regionTree"},{"registry":"views","name":"mapCanvas"},{"registry":"actions","name":"onModeChanged"},{"registry":"actions","name":"onRoleChanged"}]},{"call":"wireGenerateAction","line":120,"role":"shares the map's context rather than routing through actions","why":"","regs":[{"registry":"actions","name":"generateWorld"}]},{"call":"wireDiceTray","line":121,"role":"dice tray + the roll entries it writes to the travelogue","why":"","regs":[{"registry":"actions","name":"rollDice"}]},{"call":"wireSessionControls","line":126,"role":"mode/role switches (applies the initial role), tabs, sidebar","why":"This must run last: mounting the role switch applies the starting role straight away. That refreshes four panels and re-points the character sheet, so everything it touches must already be registered.","regs":[{"registry":"actions","name":"setMode"}]},{"call":"wireShortcuts","line":128,"role":"","why":"","regs":[]}],"stages":[{"id":"raw","name":"in-memory state","size":5853499,"note":"Every tile and every entity written in full, the way they sit in memory."},{"id":"tiles","name":"1. tile defaults","size":2176615,"note":"packTile deletes default-valued fields from a copy, so a field added later keeps its value through the round trip, and withTileDefaults puts the defaults back on load."},{"id":"entities","name":"2. entity defaults","size":2169183,"note":"packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier."},{"id":"assets","name":"3. assets hoisted","size":2169183,"note":"Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It saves space once a GM uploads art for a handout, and more once custom tile art ships."},{"id":"codec","name":"4. tile codec","size":243849,"note":"Each node becomes an art palette, a row-major run-length list of indices, and a run-length fog track. The codec is opt-in per node, and when it meets an id it cannot parse it returns the same object and leaves the node alone."},{"id":"strings","name":"5. string table","size":196197,"note":"Every palette string moves into one strings table at the top of the save, and each palette names it by index. Only the save string has the table, so one encoded node still decodes alone."}],"storageKeys":[{"key":"campaign-builder:assets","file":"src/storage/AssetStore.js","line":30},{"key":"campaign-builder:bound-character","file":"src/view/CharacterBinding.js","line":17},{"key":"campaign-builder:gm-lock","file":"src/storage/GMLock.js","line":25},{"key":"campaign-builder:history","file":"src/storage/HistoryLog.js","line":10},{"key":"campaign-builder:library","file":"src/storage/LibraryStore.js","line":11},{"key":"campaign-builder:minimap-hidden","file":"src/ui/MiniMap.js","line":15},{"key":"campaign-builder:onboarded","file":"src/app/onboarding.js","line":9},{"key":"campaign-builder:patch:","file":"src/storage/PlayerPatch.js","line":28},{"key":"campaign-builder:pending-toast","file":"src/ui/Toast.js","line":108},{"key":"campaign-builder:player-hint-shown","file":"src/app/sessionControls.js","line":11},{"key":"campaign-builder:player-lock","file":"src/boot.js","line":34},{"key":"campaign-builder:quest-groups","file":"src/ui/QuestPanel.js","line":12},{"key":"campaign-builder:reload-view","file":"src/view/ReloadView.js","line":16},{"key":"campaign-builder:role","file":"src/app/sessionControls.js","line":192},{"key":"campaign-builder:save","file":"src/storage/SaveManager.js","line":42},{"key":"campaign-builder:save-mark","file":"src/storage/SaveManager.js","line":59},{"key":"campaign-builder:show-variants","file":"src/ui/PalettePanel.js","line":10},{"key":"campaign-builder:story-cards","file":"src/ui/StoryCards.js","line":7},{"key":"campaign-builder:theme","file":"src/boot.js","line":24}],"commands":[{"command":"pnpm install","note":"Development tools only."},{"command":"pnpm run dev","note":"Dev server on 127.0.0.1:8080. Rebuilds on every source change. Reload the page to see the change."},{"command":"node --test tests/Character.test.js","note":"One file while you iterate."},{"command":"pnpm run test","note":"The whole suite. Run it before every commit."},{"command":"pnpm run coverage","note":"Line, branch, and function coverage across all of src/."},{"command":"pnpm run typecheck","note":"Typechecks src/ and docs/gallery/. Do not use pnpx tsc, which downloads a placeholder package and checks nothing."},{"command":"pnpm run lint","note":"ESLint over the tree."},{"command":"pnpm run build","note":"Minified production output in dist/."},{"command":"pnpm run guide","note":"Rebuilds this page from the source tree."},{"command":"git config core.hooksPath hooks","note":"Once per clone. Turns on the pre-commit gate."}],"checklist":[{"title":"Every new writer returns a new object","note":"No in-place mutation in entities/ or map/. The repaint guard and the WeakMap caches both depend on it.","refs":[{"file":"src/util/memoize.js","symbol":"memoizeByIdentity","line":15}]},{"title":"New pure logic has a test","note":"One tests/\u003cModule>.test.js per source module. Side effects arrive as arguments.","refs":[]},{"title":"New save fields are absorbed, not migrated","note":"withDefaults covers absence. Migrations.js is only for a change of meaning. Add the field to SYNCED_STATE_KEYS.","refs":[{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":41}]},{"title":"Handlers read app.views and app.actions at call time","note":"Capturing a registry entry during wiring breaks the mount order.","refs":[]},{"title":"Color, spacing, radius, and type come from tokens","note":"styles/base.css only, and never an inline var() fallback.","refs":[]},{"title":"Destructive actions confirm first","note":"confirmDelete for a plain entity delete, confirmModal with danger: true for anything else.","refs":[{"file":"src/ui/Modal.js","symbol":"confirmDelete","line":605}]},{"title":"Buttons and empty states come from ui/buttons.js","note":"iconButton, textButton, emptyState, segSwitch. An icon-only button needs an aria-label.","refs":[{"file":"src/ui/buttons.js","symbol":"emptyState","line":306}]},{"title":"Dismiss on the left, primary on the right","note":"Every modal, inline form, and action bar.","refs":[]},{"title":"The file is under 500 lines","note":"Split it by responsibility when it is not.","refs":[]},{"title":"DOM and canvas changes were opened in a browser","note":"Screenshot the change and read the console for 404s on asset paths.","refs":[]},{"title":"Lint, suite, and typecheck all pass","note":"The pre-commit hook runs the formatter and then all three.","refs":[]}],"routerTree":{"start":{"q":"Does the change need the DOM, a canvas, or a browser API?","opts":[{"label":"No","note":"Rules, math, data models, save format.","next":"pure"},{"label":"Yes","note":"Elements, events, drawing, storage APIs.","next":"glue"}]},"pure":{"q":"What does it operate on?","opts":[{"label":"Tiles, nodes, fog","note":"Geometry, hierarchy, reveal.","answer":"map"},{"label":"Characters or foes","note":"Stats, gear, spells, damage.","answer":"entities"},{"label":"The save format","note":"New field, new format, packing.","answer":"storage"},{"label":"Randomness","note":"Dice, rolls, checks.","answer":"dice"}]},"glue":{"q":"Is it one panel, or a behavior that crosses features?","opts":[{"label":"One panel","note":"A list, a form, a card.","answer":"ui"},{"label":"Crosses features","note":"A move triggers an encounter, a cast writes the log.","answer":"app"},{"label":"Drawing on the map","note":"A new render pass or marker.","answer":"canvas"}]}},"routerAnswers":{"map":{"where":"src/map/","test":"tests/\u003cModule>.test.js, with no DOM. Take the node as an argument and return a new node.","trap":"Return the same node object when nothing changed. TileIndex and every WeakMap cache are keyed on node identity, so a mutated node serves stale data forever.","refs":[{"file":"src/map/TileIndex.js","symbol":"tileAt","line":316},{"file":"src/map/FogOfWar.js","symbol":"revealAround","line":27}]},"entities":{"where":"src/entities/, with any catalog data in src/data/","test":"tests/\u003cModule>.test.js. Inject the generator so the result is deterministic.","trap":"Never mutate in place. A writer returns a new object, and the panel repaint guard depends on that. Catalogs in src/data/ are deep-frozen, so copy one before you write it into campaign state.","refs":[{"file":"src/util/deepFreeze.js","symbol":"deepFreeze","line":16},{"file":"src/entities/CreatureTemplate.js","symbol":"fromTemplate","line":71}]},"storage":{"where":"src/storage/","test":"A round trip through serialize and deserialize, plus a migration test if the meaning of a field changed.","trap":"A new field needs no migration, because withDefaults absorbs absence. Only a change of meaning goes in Migrations.js. Add the field to SYNCED_STATE_KEYS as well, which a test compares with the fields of Campaign.","refs":[{"file":"src/storage/Migrations.js","symbol":"migrateState","line":260},{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":41}]},"dice":{"where":"src/dice/, or src/combat/ if it resolves an attack","test":"Pass a stub generator and assert the exact output, the way tests/DiceRoller.test.js does.","trap":"The generator and the clock are arguments, never module state, because every test in this layer asserts an exact result and module state would make that impossible.","refs":[{"file":"src/dice/DiceRoller.js","symbol":"roll","line":32},{"file":"src/combat/AttackResolve.js","symbol":"resolveAttack","line":79}]},"ui":{"where":"src/ui/","test":"Nothing automated. Extract the rules into a pure module and test that, then check the widget itself in a browser.","trap":"Use mountListPanel, buttons.js, and the tokens in styles/base.css before you write new markup. Never write an inline token fallback such as var(--border, #ccc), because a missing token should render as nothing so that the mistake is visible.","refs":[{"file":"src/ui/listPanel.js","symbol":"mountListPanel","line":155},{"file":"src/ui/buttons.js","symbol":"iconButton","line":34}]},"app":{"where":"src/app/\u003cfeature>Wiring.js, or a helper beside it","test":"Split the rule out as a pure function and test that half. The wiring stays thin.","trap":"Read app.views and app.actions inside the handler, never during wiring. Capturing a registry entry at mount time breaks the mount order and brings back import cycles.","refs":[{"file":"src/app/mapTravel.js","symbol":"createMapTravel","line":40}]},"canvas":{"where":"src/map/MapRenderer.js and the render modules beside it, with pure helpers alongside","test":"Visual. Use tests/map-canvas-preview.html and read the console.","trap":"render() only schedules a frame. Add derived data to the shared frame object rather than re-scanning node.tiles, and iterate the visible cell range only.","refs":[{"file":"src/map/MapCanvas.js","symbol":"render","line":131},{"file":"src/map/MapRenderer.js","symbol":"anyRevealed","line":33}]}},"revealRadius":2};</script>
+<script>
+(function () {
+  'use strict';
+
+  var DATA = window.__GUIDE_DATA__;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function count(n, noun) {
+    return n.toLocaleString() + ' ' + noun + (n === 1 ? '' : 's');
+  }
+
+  /* ---------- contents rail ---------- */
+
+  var rail = $('rail');
+  var sections = DATA.sections;
+  sections.forEach(function (s, i) {
+    var li = el('li');
+    var a = el('a', 'rail-link');
+    a.href = '#' + s.id;
+    a.appendChild(el('span', null, String(i + 1).padStart(2, '0')));
+    a.appendChild(el('span', null, s.short));
+    li.appendChild(a);
+    rail.appendChild(li);
+  });
+
+  var links = Array.prototype.slice.call(rail.querySelectorAll('.rail-link'));
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        links.forEach(function (a) {
+          a.setAttribute('aria-current', a.getAttribute('href') === '#' + entry.target.id ? 'true' : 'false');
+        });
+      });
+    },
+    { rootMargin: '-10% 0px -70% 0px' }
+  );
+  sections.forEach(function (s) { var n = $(s.id); if (n) observer.observe(n); });
+
+  /* ---------- import map ---------- */
+
+  var board = $('layerBoard');
+  var verdict = $('layerVerdict');
+  var chipById = {};
+  var selected = null;
+
+  DATA.kindGroups.forEach(function (group) {
+    var members = DATA.dirs.filter(function (d) { return d.kind === group[0]; });
+    if (!members.length) return;
+    var row = el('div', 'layer-row');
+    row.appendChild(el('div', 'layer-kind', group[1]));
+    var chips = el('div', 'chips');
+    members.forEach(function (d) {
+      var b = el('button', 'chip');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', 'false');
+      b.appendChild(el('span', null, d.name));
+      b.appendChild(el('small', null, count(d.files, 'file') + ' / ' + d.lines.toLocaleString() + ' LOC / ' + d.code.toLocaleString() + ' SLOC'));
+      b.addEventListener('click', function () { selectDir(selected === d.id ? null : d.id); });
+      chipById[d.id] = b;
+      chips.appendChild(b);
+    });
+    row.appendChild(chips);
+    board.appendChild(row);
+  });
+
+  function selectDir(id) {
+    selected = id;
+    var dir = DATA.dirs.filter(function (d) { return d.id === id; })[0];
+    DATA.dirs.forEach(function (d) {
+      var chip = chipById[d.id];
+      chip.className = 'chip';
+      chip.setAttribute('aria-pressed', 'false');
+      if (!dir) return;
+      if (d.id === dir.id) { chip.setAttribute('aria-pressed', 'true'); return; }
+      chip.classList.add(dir.imports.indexOf(d.id) >= 0 ? 'allowed' : 'forbidden');
+    });
+
+    verdict.innerHTML = '';
+    if (!dir) {
+      verdict.appendChild(el('div', 'verdict-title', 'Nothing selected'));
+      verdict.appendChild(el('p', null, 'Pick a directory, and the ones it imports light up while the rest fade.'));
+      return;
+    }
+    verdict.appendChild(el('div', 'verdict-title', dir.id === 'main' ? 'src/main.js' : 'src/' + dir.name));
+    verdict.appendChild(el('p', null, dir.role || 'No description yet. Add one to scripts/dev-guide/content.mjs.'));
+    var named = dir.imports.map(function (i) { return i === 'main' ? 'main.js' : i + '/'; });
+    var line = named.length ? 'Imports: ' + named.join(', ') + '.' : 'Imports nothing.';
+    if (dir.kind === 'pure' || dir.kind === 'data') line += ' Never imports ui/ or app/, and never touches the DOM.';
+    verdict.appendChild(el('p', null, line));
+  }
+
+  selectDir(null);
+
+  /* ---------- mount order ---------- */
+
+  var steps = DATA.steps;
+  var stepList = $('stepList');
+  var stepDetail = $('stepDetail');
+  var stepButtons = [];
+  var stepIndex = 0;
+
+  steps.forEach(function (s, i) {
+    var li = el('li');
+    var b = el('button', 'step-btn');
+    b.type = 'button';
+    b.appendChild(el('span', null, String(i + 1).padStart(2, '0')));
+    b.appendChild(el('span', null, s.call));
+    b.addEventListener('click', function () { setStep(i); });
+    stepButtons.push(b);
+    li.appendChild(b);
+    stepList.appendChild(li);
+  });
+
+  function setStep(i) {
+    stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    var step = steps[stepIndex];
+
+    stepButtons.forEach(function (b, n) {
+      b.setAttribute('aria-current', n === stepIndex ? 'true' : 'false');
+      b.classList.toggle('done', n < stepIndex);
+    });
+
+    stepDetail.innerHTML = '';
+    stepDetail.appendChild(el('div', 'plate-label', 'Call ' + (stepIndex + 1) + ' of ' + steps.length + ', main.js line ' + step.line));
+
+    var title = el('div', 'step-call', step.call + '(app)');
+    stepDetail.appendChild(title);
+    if (step.role) stepDetail.appendChild(el('p', null, step.role));
+
+    if (step.why) {
+      var why = el('div', 'step-why');
+      why.appendChild(el('em', null, 'Why here'));
+      why.appendChild(el('span', null, step.why));
+      stepDetail.appendChild(why);
+    }
+
+    var views = [];
+    var actions = [];
+    for (var n = 0; n <= stepIndex; n += 1) {
+      steps[n].regs.forEach(function (r) {
+        (r.registry === 'views' ? views : actions).push({ name: r.name, fresh: n === stepIndex });
+      });
+    }
+
+    var reg = el('div', 'registry');
+    reg.appendChild(registryLine('app.views', views));
+    reg.appendChild(registryLine('app.actions', actions));
+    stepDetail.appendChild(reg);
+
+    $('stepPrev').disabled = stepIndex === 0;
+    $('stepNext').disabled = stepIndex === steps.length - 1;
+  }
+
+  function registryLine(label, items) {
+    var wrap = el('div');
+    wrap.appendChild(el('div', 'reg-line', label + ' (' + items.length + ')'));
+    var chips = el('div', 'chips');
+    if (!items.length) {
+      chips.appendChild(el('span', 'reg-chip', 'empty'));
+    } else {
+      items.forEach(function (it) {
+        chips.appendChild(el('span', 'reg-chip' + (it.fresh ? ' fresh' : ''), it.name));
+      });
+    }
+    wrap.appendChild(chips);
+    return wrap;
+  }
+
+  $('stepPrev').addEventListener('click', function () { setStep(stepIndex - 1); });
+  $('stepNext').addEventListener('click', function () { setStep(stepIndex + 1); });
+  $('stepReset').addEventListener('click', function () { setStep(0); });
+  setStep(0);
+
+  /* ---------- fog demo ---------- */
+
+  var W = 14;
+  var H = 9;
+  var radius = DATA.revealRadius;
+  var party = '6,4';
+  var revealed = Object.create(null);
+  var cells = {};
+  var grid = $('tileGrid');
+  grid.style.gridTemplateColumns = 'repeat(' + W + ', 2rem)';
+
+  for (var y = 0; y < H; y += 1) {
+    for (var x = 0; x < W; x += 1) {
+      (function (id) {
+        var c = el('button', 'cell');
+        c.type = 'button';
+        c.textContent = id;
+        c.setAttribute('aria-label', 'Tile ' + id);
+        c.addEventListener('click', function () { moveTo(id); });
+        cells[id] = c;
+        grid.appendChild(c);
+      })(x + ',' + y);
+    }
+  }
+
+  function revealAround(centerId, r) {
+    var parts = centerId.split(',');
+    var cx = Number(parts[0]);
+    var cy = Number(parts[1]);
+    var added = 0;
+    for (var ty = Math.max(0, cy - r); ty <= Math.min(H - 1, cy + r); ty += 1) {
+      for (var tx = Math.max(0, cx - r); tx <= Math.min(W - 1, cx + r); tx += 1) {
+        var dx = tx - cx;
+        var dy = ty - cy;
+        if (dx * dx + dy * dy > r * r) continue;
+        var id = tx + ',' + ty;
+        if (!revealed[id]) { revealed[id] = true; added += 1; }
+      }
+    }
+    return added;
+  }
+
+  var lastAdded = revealAround(party, radius);
+
+  function readout(label, value) {
+    var s = el('span');
+    s.appendChild(document.createTextNode(label + ' '));
+    s.appendChild(el('b', null, value));
+    return s;
+  }
+
+  function paintTiles() {
+    Object.keys(cells).forEach(function (id) {
+      cells[id].classList.toggle('revealed', !!revealed[id]);
+      cells[id].classList.toggle('party', id === party);
+    });
+    var out = $('tileReadout');
+    out.innerHTML = '';
+    out.appendChild(readout('party.tileId', '"' + party + '"'));
+    out.appendChild(readout('revealed', Object.keys(revealed).length + ' / ' + W * H));
+    out.appendChild(readout('newly revealed', String(lastAdded)));
+    out.appendChild(readout('node identity', lastAdded === 0 ? 'unchanged' : 'replaced'));
+  }
+
+  function moveTo(id) {
+    party = id;
+    lastAdded = revealAround(party, radius);
+    paintTiles();
+  }
+
+  $('fogRadius').addEventListener('click', function () {
+    radius = radius >= 3 ? 1 : radius + 1;
+    this.textContent = 'Reveal radius: ' + radius;
+    lastAdded = revealAround(party, radius);
+    paintTiles();
+  });
+
+  $('fogReset').addEventListener('click', function () {
+    revealed = Object.create(null);
+    lastAdded = revealAround(party, radius);
+    paintTiles();
+  });
+
+  $('fogRadius').textContent = 'Reveal radius: ' + radius;
+  paintTiles();
+
+  /* ---------- packing layers ---------- */
+
+  var stages = DATA.stages;
+  var packBars = $('packBars');
+  var packDetail = $('packDetail');
+  var max = stages[0].size;
+  var barButtons = [];
+
+  stages.forEach(function (p, i) {
+    var row = el('button', 'bar-row');
+    row.type = 'button';
+    row.setAttribute('aria-pressed', 'false');
+    row.appendChild(el('div', 'bar-name', p.name));
+    var track = el('div', 'bar-track');
+    var fill = el('div', 'bar-fill');
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el('div', 'bar-val', p.size.toLocaleString()));
+    row.addEventListener('click', function () { selectPack(i); });
+    barButtons.push(row);
+    packBars.appendChild(row);
+    requestAnimationFrame(function () {
+      setTimeout(function () { fill.style.width = (p.size / max) * 100 + '%'; }, i * 70);
+    });
+  });
+
+  function selectPack(i) {
+    barButtons.forEach(function (b, n) { b.setAttribute('aria-pressed', n === i ? 'true' : 'false'); });
+    var p = stages[i];
+    packDetail.innerHTML = '';
+    packDetail.appendChild(el('div', 'verdict-title', p.name + ': ' + p.size.toLocaleString() + ' characters'));
+    packDetail.appendChild(el('p', null, p.note));
+    if (i > 0) {
+      var cut = Math.round((1 - p.size / stages[i - 1].size) * 100);
+      var total = Math.round((1 - p.size / max) * 100);
+      packDetail.appendChild(el('p', null, i === 1
+        ? 'This layer removes ' + cut + '% of the in-memory state.'
+        : 'This layer removes ' + cut + '% of what reached it. Total against the in-memory state: ' + total + '%.'));
+    }
+  }
+
+  selectPack(stages.length - 1);
+
+  /* ---------- storage keys ---------- */
+
+  var keyList = $('keyList');
+  DATA.storageKeys.forEach(function (k) {
+    var row = el('div', 'cmd');
+    var left = el('div');
+    left.appendChild(el('div', 'cmd-code', k.key));
+    left.appendChild(el('div', 'cmd-note', k.file + ':' + k.line));
+    row.appendChild(left);
+    keyList.appendChild(row);
+  });
+
+  /* ---------- commands ---------- */
+
+  var cmdList = $('cmdList');
+  DATA.commands.forEach(function (c) {
+    var row = el('div', 'cmd');
+    var left = el('div');
+    left.appendChild(el('div', 'cmd-code', c.command));
+    left.appendChild(el('div', 'cmd-note', c.note));
+    row.appendChild(left);
+
+    var copy = el('button', 'btn', 'Copy');
+    copy.type = 'button';
+    copy.setAttribute('aria-label', 'Copy command: ' + c.command);
+    copy.addEventListener('click', function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(c.command).then(function () {
+          copy.textContent = 'Copied';
+          setTimeout(function () { copy.textContent = 'Copy'; }, 1400);
+        }, function () { copy.textContent = 'Blocked'; });
+      } else {
+        copy.textContent = 'Blocked';
+      }
+    });
+    row.appendChild(copy);
+    cmdList.appendChild(row);
+  });
+
+  /* ---------- router ---------- */
+
+  var routerNode = 'start';
+  var router = $('router');
+  var crumbs = $('routerCrumbs');
+  var trail = [];
+
+  function renderRouter() {
+    router.innerHTML = '';
+    crumbs.textContent = trail.length ? trail.join('  /  ') : 'Start';
+
+    var answer = DATA.routerAnswers[routerNode];
+    if (answer) {
+      var dl = el('dl', 'answer');
+      dl.appendChild(el('dt', null, 'Write it in'));
+      var dd = el('dd');
+      dd.appendChild(el('code', null, answer.where));
+      dl.appendChild(dd);
+      dl.appendChild(el('dt', null, 'Test you owe'));
+      dl.appendChild(el('dd', null, answer.test));
+      dl.appendChild(el('dt', null, 'Trap'));
+      dl.appendChild(el('dd', null, answer.trap));
+      if (answer.refs.length) {
+        dl.appendChild(el('dt', null, 'Start reading at'));
+        var refs = el('dd');
+        answer.refs.forEach(function (r, i) {
+          if (i) refs.appendChild(document.createTextNode(' '));
+          refs.appendChild(el('code', null, r.file + ':' + r.line));
+        });
+        dl.appendChild(refs);
+      }
+      router.appendChild(dl);
+
+      var again = el('button', 'btn', 'Start over');
+      again.type = 'button';
+      again.addEventListener('click', function () { routerNode = 'start'; trail = []; renderRouter(); });
+      var bar = el('div', 'toolbar');
+      bar.appendChild(again);
+      router.appendChild(bar);
+      return;
+    }
+
+    var node = DATA.routerTree[routerNode];
+    router.appendChild(el('div', 'q', node.q));
+    var opts = el('div', 'opts');
+    node.opts.forEach(function (o) {
+      var b = el('button', 'opt');
+      b.type = 'button';
+      b.appendChild(el('b', null, o.label));
+      b.appendChild(el('small', null, o.note));
+      b.addEventListener('click', function () {
+        trail.push(o.label);
+        routerNode = o.answer || o.next;
+        renderRouter();
+      });
+      opts.appendChild(b);
+    });
+    router.appendChild(opts);
+  }
+
+  renderRouter();
+
+  /* ---------- pre-flight checklist ---------- */
+
+  var checkList = $('checkList');
+  var checkProgress = $('checkProgress');
+  var checkState = DATA.checklist.map(function () { return false; });
+
+  DATA.checklist.forEach(function (c, i) {
+    var b = el('button', 'check');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', 'false');
+    b.appendChild(el('span', 'check-box', '✓'));
+    var text = el('span', 'check-text', c.title);
+    var note = el('small', null, c.note);
+    if (c.refs.length) {
+      note.appendChild(document.createTextNode(' '));
+      c.refs.forEach(function (r, n) {
+        if (n) note.appendChild(document.createTextNode(', '));
+        note.appendChild(el('code', null, r.file + ':' + r.line));
+      });
+    }
+    text.appendChild(note);
+    b.appendChild(text);
+    b.addEventListener('click', function () {
+      checkState[i] = !checkState[i];
+      b.setAttribute('aria-pressed', checkState[i] ? 'true' : 'false');
+      paintProgress();
+    });
+    checkList.appendChild(b);
+  });
+
+  function paintProgress() {
+    var done = checkState.filter(Boolean).length;
+    checkProgress.textContent = done + ' of ' + DATA.checklist.length + ' cleared'
+      + (done === DATA.checklist.length ? '. Ready to commit.' : '');
+  }
+
+  paintProgress();
+})();
+</script>
+</body>
+</html>

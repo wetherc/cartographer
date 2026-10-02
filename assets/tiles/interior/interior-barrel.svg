@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- An oak barrel with iron hoops, standing upright, seen from the front
+       and above over a transparent ground. A soft contact shadow sits under
+       the round bottom of the barrel. Every hoop and stave follows a level
+       circle of the barrel drawn with the same tilt as the lid, where the
+       ellipse height is 0.32 of its width, and the body outline clips them
+       so each one ends on the sides and the bottom rim. -->
+  <defs>
+    <linearGradient id="staves" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#5a3a1c"/>
+      <stop offset="0.32" stop-color="#9a6a3c"/>
+      <stop offset="0.6" stop-color="#84572e"/>
+      <stop offset="1" stop-color="#4a2f17"/>
+    </linearGradient>
+    <linearGradient id="hoop" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3a3530"/>
+      <stop offset="0.32" stop-color="#8a857a"/>
+      <stop offset="1" stop-color="#2e2a26"/>
+    </linearGradient>
+    <!-- Body: half-width 12 at the top and bottom (y=16 and y=52) and 15 at
+         the belly (y=34), closed by the front half of the bottom circle. -->
+    <path id="body" d="M20 16 Q14 34 20 52 A12 3.84 0 0 0 44 52 Q50 34 44 16 Z"/>
+    <clipPath id="inside"><use href="#body"/></clipPath>
+  </defs>
+  <!-- Contact shadow under the round bottom. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="52.6" rx="15.5" ry="4.6" opacity="0.35"/>
+    <ellipse cx="32" cy="52.6" rx="13.5" ry="4.1" opacity="0.35"/>
+  </g>
+  <use href="#body" fill="url(#staves)"/>
+  <g clip-path="url(#inside)" fill="none">
+    <!-- Stave joints at 60 and 30 degrees either side of the front, and at
+         the front itself. -->
+    <g stroke="#3f2610" stroke-width="0.6">
+      <path d="M21.61 17.92 Q16.41 36.88 21.61 53.92"/>
+      <path d="M26 19.33 Q23 38.99 26 55.33"/>
+      <path d="M32 19.84 V55.84"/>
+      <path d="M38 19.33 Q41 38.99 38 55.33"/>
+      <path d="M42.39 17.92 Q47.59 36.88 42.39 53.92"/>
+    </g>
+    <!-- Iron hoops: the front half of a level circle at the barrel's width
+         for that height, with a lit upper edge. -->
+    <g stroke="url(#hoop)" stroke-width="2.6">
+      <path d="M18.57 21 A13.43 4.3 0 0 0 45.43 21"/>
+      <path d="M17.52 26.5 A14.48 4.63 0 0 0 46.48 26.5"/>
+      <path d="M17.52 41.5 A14.48 4.63 0 0 0 46.48 41.5"/>
+      <path d="M18.57 47 A13.43 4.3 0 0 0 45.43 47"/>
+    </g>
+    <g stroke="#a39d91" stroke-width="0.5" transform="translate(0 -1)">
+      <path d="M18.57 21 A13.43 4.3 0 0 0 45.43 21"/>
+      <path d="M17.52 26.5 A14.48 4.63 0 0 0 46.48 26.5"/>
+      <path d="M17.52 41.5 A14.48 4.63 0 0 0 46.48 41.5"/>
+      <path d="M18.57 47 A13.43 4.3 0 0 0 45.43 47"/>
+    </g>
+  </g>
+  <use href="#body" fill="none" stroke="#2e1a08" stroke-width="0.9"/>
+  <!-- Bung hole on the belly, between two stave joints. -->
+  <ellipse cx="35" cy="38.3" rx="1.2" ry="1.3" fill="#2e1a08"/>
+  <!-- Head: the chime ring and the planked lid set inside it. -->
+  <ellipse cx="32" cy="16" rx="12" ry="3.84" fill="#6a4524" stroke="#2e1a08" stroke-width="0.9"/>
+  <ellipse cx="32" cy="16.3" rx="10.4" ry="3.2" fill="#a57444"/>
+  <path d="M28 13.35 V19.25 M32 13.1 V19.5 M36 13.35 V19.25" stroke="#6a4524" stroke-width="0.6"/>
+</svg>

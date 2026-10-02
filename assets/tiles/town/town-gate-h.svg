@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A gate in an east-west run of the town wall, where a north-south street
+       goes through. The wall matches town-wall-h at both edges, and the street
+       matches road-v at both edges, so the piece works with or without a road
+       overlay under it. -->
+  <defs>
+    <g id="rear-merlon">
+      <rect x="0" y="15" width="5" height="5.5" fill="#a39d91" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="15.25" width="4.5" height="0.7" fill="#bdb7ab"/>
+    </g>
+    <g id="merlon">
+      <rect x="0" y="22" width="5" height="5" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5"/>
+      <rect x="0.25" y="22.25" width="4.5" height="0.9" fill="#c8c2b6"/>
+    </g>
+    <!-- One gate tower, drawn at the origin of its front face. -->
+    <g id="tower">
+      <!-- Roof, drawn like the wall: short merlons on the far parapet, the
+           floor, then taller merlons on the near parapet. -->
+      <g fill="#a39d91" stroke="#5c574e" stroke-width="0.5">
+        <rect x="0" y="-7" width="2.6" height="2.5"/>
+        <rect x="4.2" y="-7" width="2.6" height="2.5"/>
+        <rect x="8.4" y="-7" width="2.6" height="2.5"/>
+      </g>
+      <rect x="0" y="-5.5" width="11" height="1" fill="#a39d91"/>
+      <rect x="0" y="-4.5" width="11" height="4.5" fill="#c8c2b6"/>
+      <path d="M0 0 V-5.5 H11 V0" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+      <path d="M0 -4.5 H11" stroke="#7a7468" stroke-width="0.5"/>
+      <rect x="0" y="0" width="11" height="30" fill="#b0aa9e"/>
+      <g stroke="#7a7468" stroke-width="0.5">
+        <path d="M0 4.7 H11 M0 9 H11 M0 13.3 H11 M0 17.6 H11 M0 21.9 H11 M0 26.2 H11"/>
+        <path d="M5.5 0 V4.7 M2.5 4.7 V9 M8.5 4.7 V9 M5.5 9 V13.3 M2.5 13.3 V17.6 M8.5 13.3 V17.6 M5.5 17.6 V21.9 M2.5 21.9 V26.2 M8.5 21.9 V26.2 M5.5 26.2 V30"/>
+      </g>
+      <rect x="0" y="0" width="11" height="30" fill="none" stroke="#5c574e" stroke-width="0.8"/>
+      <g fill="#b0aa9e" stroke="#5c574e" stroke-width="0.5">
+        <rect x="0" y="-3.5" width="2.6" height="3.5"/>
+        <rect x="4.2" y="-3.5" width="2.6" height="3.5"/>
+        <rect x="8.4" y="-3.5" width="2.6" height="3.5"/>
+      </g>
+      <rect x="5" y="9" width="1" height="3.6" rx="0.5" fill="#3a3630"/>
+      <rect x="5" y="19" width="1" height="3.6" rx="0.5" fill="#3a3630"/>
+    </g>
+    <!-- A pennant on a pole, drawn from the point where the pole shows above
+         the near merlons. -->
+    <g id="pennant">
+      <path d="M0 0 V-8" stroke="#5a4530" stroke-width="0.8"/>
+      <path d="M0 -8 L5.5 -6.6 L0 -5.2 Z" fill="#b03a2e"/>
+    </g>
+  </defs>
+  <!-- The street, the same as road-v. -->
+  <path d="M32 0 L32 64" stroke="#7c6448" stroke-width="20" fill="none"/>
+  <path d="M32 0 L32 64" stroke="#bb9c70" stroke-width="16" fill="none"/>
+  <g stroke="#9c8158" stroke-width="1.5" fill="none"><path d="M27 0 L27 64"/><path d="M37 0 L37 64"/></g>
+  <!-- Wall, the same as town-wall-h. -->
+  <rect y="40" width="64" height="3.2" fill="#000000" opacity="0.18"/>
+  <!-- Rear parapet with its merlons, in line with the front ones and set in
+       light shade because they stand further back. They rise 3 units above
+       the parapet where the front merlons rise 5, because the far side of the
+       wall is foreshortened at this viewing angle. -->
+  <rect y="18" width="64" height="2.5" fill="#a39d91"/>
+  <path d="M0 18.4 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <use href="#rear-merlon" transform="translate(1 0)"/>
+  <use href="#rear-merlon" transform="translate(9 0)"/>
+  <use href="#rear-merlon" transform="translate(17 0)"/>
+  <use href="#rear-merlon" transform="translate(25 0)"/>
+  <use href="#rear-merlon" transform="translate(33 0)"/>
+  <use href="#rear-merlon" transform="translate(41 0)"/>
+  <use href="#rear-merlon" transform="translate(49 0)"/>
+  <use href="#rear-merlon" transform="translate(57 0)"/>
+  <!-- Wall walk between the parapets, with its flagstone joints. -->
+  <rect y="20.5" width="64" height="6.5" fill="#c8c2b6"/>
+  <path d="M0 20.5 H64" stroke="#7a7468" stroke-width="0.5"/>
+  <path d="M4 20.8 V22 M12 20.8 V22 M20 20.8 V22 M28 20.8 V22 M36 20.8 V22 M44 20.8 V22 M52 20.8 V22 M60 20.8 V22" stroke="#a39d91" stroke-width="0.5"/>
+  <rect y="27" width="64" height="13" fill="#b0aa9e"/>
+  <g stroke="#7a7468" stroke-width="0.5">
+    <path d="M0 27 H64 M0 31.3 H64 M0 35.6 H64"/>
+    <path d="M3.5 27 V31.3 M11.5 27 V31.3 M27.5 27 V31.3 M35.5 27 V31.3 M51.5 27 V31.3 M59.5 27 V31.3"/>
+    <path d="M7.5 31.3 V35.6 M55.5 31.3 V35.6 M63.5 31.3 V35.6"/>
+    <path d="M3.5 35.6 V40 M11.5 35.6 V40 M51.5 35.6 V40 M59.5 35.6 V40"/>
+  </g>
+  <path d="M0 40 H64" stroke="#5c574e" stroke-width="0.8"/>
+  <use href="#merlon" transform="translate(1 0)"/>
+  <use href="#merlon" transform="translate(9 0)"/>
+  <use href="#merlon" transform="translate(25 0)"/>
+  <use href="#merlon" transform="translate(33 0)"/>
+  <use href="#merlon" transform="translate(49 0)"/>
+  <use href="#merlon" transform="translate(57 0)"/>
+  <g fill="#3a3630">
+    <rect x="3.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+    <rect x="35.1" y="23.6" width="0.8" height="2.6" rx="0.4"/>
+  </g>
+  <!-- Gate arch over the street: a dark passage with the road bed on its
+       floor, a voussoir ring, and the raised portcullis at the top. -->
+  <path d="M24.5 40 V35 Q32 28.4 39.5 35 V40 Z" fill="#2e2a25"/>
+  <rect x="24.5" y="38.4" width="15" height="1.6" fill="#8a7352"/>
+  <g stroke="#4a4038" stroke-width="0.6">
+    <path d="M27 33.4 V35.4 M29.5 31.8 V35.4 M32 31.4 V35.4 M34.5 31.8 V35.4 M37 33.4 V35.4"/>
+    <path d="M25.6 35.4 H38.4"/>
+  </g>
+  <path d="M24.5 40 V35 Q32 28.4 39.5 35 V40" fill="none" stroke="#7a7468" stroke-width="1.3"/>
+  <path d="M24.5 40 V35 Q32 28.4 39.5 35 V40" fill="none" stroke="#5c574e" stroke-width="0.5"/>
+  <!-- Flanking towers, standing forward of the wall, with their shadows. -->
+  <rect x="13" y="44" width="11" height="3.2" fill="#000000" opacity="0.18"/>
+  <rect x="40" y="44" width="11" height="3.2" fill="#000000" opacity="0.18"/>
+  <use href="#tower" transform="translate(13 14)"/>
+  <use href="#tower" transform="translate(40 14)"/>
+  <rect x="45.5" y="14" width="5.5" height="30" fill="#000000" opacity="0.1"/>
+  <rect x="18.5" y="14" width="5.5" height="30" fill="#000000" opacity="0.1"/>
+  <use href="#pennant" transform="translate(18.5 10.5)"/>
+  <use href="#pennant" transform="translate(45.5 10.5)"/>
+</svg>

@@ -1,0 +1,740 @@
+/* ==========================================================================
+   Character sheet
+   ========================================================================== */
+
+/* The two headline blocks: the name over the always-live HP bar on the left, the
+   level/AC/XP banner over the spell-slot pips on the right. Each is capped to
+   the measure of the column beneath it, so the HP bar ends where the field rows
+   do instead of running on to the card's edge. */
+.character-sheet__head {
+  align-items: stretch;
+  max-width: var(--sheet-measure);
+}
+
+.character-sheet__head-side {
+  align-items: stretch;
+  max-width: var(--sheet-measure);
+}
+
+.character-sheet__summary {
+  align-items: stretch;
+  min-width: 0;
+}
+
+/* The HP block: the label and numbers, a tall full-width bar, then the
+   damage and heal buttons with the amount field between them. */
+.character-sheet__hp-line {
+  align-items: stretch;
+  min-width: 0;
+}
+
+/* The hero bar wraps, so the label and numbers share the first line and the
+   track takes the whole second line. */
+.stat-bar--hero {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.stat-bar--hero .stat-bar__label {
+  width: auto;
+  font-weight: 600;
+}
+
+.stat-bar--hero .stat-bar__text {
+  order: 1;
+  margin-left: auto;
+  min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stat-bar--hero .stat-bar__bonus {
+  order: 2;
+  font-size: 1rem;
+}
+
+.stat-bar--hero .stat-bar__track {
+  order: 3;
+  flex: 1 0 100%;
+  height: 0.9rem;
+  border: 1px solid var(--border);
+}
+
+.character-sheet__hp-controls {
+  flex-wrap: wrap;
+}
+
+.character-sheet__hp-step {
+  flex-shrink: 0;
+}
+
+/* The level-up banner sits above the sheet body, as wide as the body. */
+.character-sheet__level-up {
+  max-width: var(--sheet-measure-body);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.character-sheet__level-up-text {
+  font-weight: 600;
+}
+
+.character-sheet__summary-top {
+  min-width: 0;
+}
+
+.character-sheet__summary .character-sheet__name {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 1.2rem;
+}
+
+.character-sheet__summary .character-sheet__race {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The body holds the two headline blocks, the two section columns, and any
+   full-width section under them (see CharacterSheet.js). One grid column by
+   default, so all of it stacks in source order; the container query below turns
+   on the second one and places each piece. */
+.character-sheet__body {
+  display: grid;
+  align-items: start;
+  gap: var(--space-4) var(--space-5);
+}
+
+.character-sheet__col {
+  min-width: 0;
+  max-width: var(--sheet-measure);
+}
+
+/* The columns supply their own inter-section spacing, and the grid's row gap
+   supplies the spacing between them, so a section that leads a column drops the
+   margin it carries for the single-column case. */
+.character-sheet__col > :first-child {
+  margin-top: 0;
+}
+
+/* Two columns once the card itself is wide enough to give both a readable
+   measure. The query measures the card, not the viewport, so the same sheet
+   mounted in a narrow rail stays stacked on a wide screen. */
+@container character-sheet (min-width: 50rem) {
+  .slot-line--empty {
+    display: flex;
+  }
+
+  /* Both columns take a share of whatever the card gives them, so neither leaves
+     a strip of empty card beside it, and the body as a whole stops at the two
+     measures so they cannot grow past what reads well. The left share is the
+     larger one: it holds the six ability badges, which want one row, and the
+     field rows, whose label and input pull apart if the row runs long. */
+  .character-sheet__body {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    max-width: var(--sheet-measure-body);
+  }
+
+  /* Row one is the two headline blocks: name over HP bar on the left, the
+     level/AC/XP banner over the slot pips on the right, so the bar and the pips
+     land on the same line. Row two is the section column under each. */
+  /* Each piece fills the grid track it sits in; the track widths above are the
+     cap, so the single-column measures are dropped here. */
+  .character-sheet__head {
+    grid-area: 1 / 1;
+    max-width: none;
+  }
+
+  .character-sheet__head-side {
+    grid-area: 1 / 2;
+    max-width: none;
+  }
+
+  .character-sheet__col--main {
+    grid-area: 2 / 1;
+    max-width: none;
+  }
+
+  .character-sheet__col--side {
+    grid-area: 2 / 2;
+    max-width: none;
+  }
+
+  /* The skill block and the castable-spells section, the two pieces the build
+     puts straight in the body, each span both columns on a row of their own,
+     in the order they are appended. */
+  .character-sheet__skills,
+  .character-sheet__spells {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Level on the left, the derived AC and XP progress readouts on the right of the
+   same line. The body's row gap separates it from what follows. */
+.character-sheet__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  max-width: var(--sheet-measure);
+  font-size: var(--text-heading);
+  font-weight: 700;
+}
+
+/* Derived AC and XP progress readouts on the header's right. */
+.character-sheet__header-meta {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  font-weight: 400;
+}
+
+.character-sheet__ac {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Speed sits beside AC and reads as the quieter of the two, because nothing
+   in the app moves a token by feet yet. */
+.character-sheet__speed {
+  font-weight: 400;
+}
+
+.character-sheet__xp-progress {
+  font-weight: 400;
+}
+
+/* Exhaustion in the headline. It takes 2 off every d20 roll per level, so it
+   reads louder than speed. It is empty at level 0, where it takes no space. */
+.character-sheet__exhaustion {
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.character-sheet__exhaustion--fatal {
+  color: var(--danger);
+}
+
+/* The progression section: class line, pending level/improvement rows (text
+   left, action buttons right), the features disclosure, and hit-dice rows. */
+.character-sheet__progress {
+  margin-top: var(--space-4);
+}
+
+/* The text takes the row's slack, so the row's action button parks at its far
+   end. That only reads as one row while the two ends stay close enough to take in
+   together, so the row stops well short of the column it sits in: at the column's
+   full width, "Hit Dice (d8) 3/3" and its Spend button were nearly 300px apart. */
+.character-sheet__progress-row {
+  max-width: 20rem;
+}
+
+.character-sheet__progress-row .character-sheet__progress-text {
+  margin-right: auto;
+}
+
+.character-sheet__classes .character-sheet__progress-text {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.character-sheet__resources {
+  margin-top: var(--space-4);
+}
+
+/* Same shape as a progression row, and capped for the same reason. */
+.character-sheet__resource-row {
+  max-width: 20rem;
+}
+
+.character-sheet__resource-row .character-sheet__resource-label {
+  margin-right: auto;
+}
+
+/* The sheet's measures sit on the root rather than on `.character-sheet`,
+   because the card holding the sheet caps itself against them
+   (`styles/layout.css`) and a variable declared on the sheet is invisible to the
+   sheet's own ancestor. */
+:root {
+  /* How wide the sheet's content is allowed to get while it is one stacked
+     column. Past this a row with a label on the left and a button on the right
+     just pulls the two apart. */
+  --sheet-measure: 34rem;
+  /* What the two columns may grow to once the card is wide enough for both, left
+     then right. The right column gets less because its rows are a short label
+     with an action button at the row's far end. */
+  --sheet-measure-wide: 40rem;
+  --sheet-measure-side: 26rem;
+  /* Where the two-column body stops growing, and so where the card around it
+     stops: past this the columns would be wider than they read well at, and the
+     card would be wider than its content. */
+  --sheet-measure-body: calc(
+    var(--sheet-measure-wide) + var(--sheet-measure-side) + var(--space-5)
+  );
+}
+
+.character-sheet {
+  /* Named so the body's two-column query sizes against the card it is in
+     rather than the viewport. */
+  container: character-sheet / inline-size;
+}
+
+/* The six ability scores as d20-style badges: they flow across as many columns
+   as fit, wrapping to a fresh row rather than squeezing, so each die keeps its
+   size on any panel width. The row stops short of the wide left column, because
+   the tracks share the width they are given and six dice spread across the full
+   column drift apart from each other. */
+.character-sheet__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: var(--space-2);
+  max-width: 32rem;
+}
+
+/* One ability badge: key label, a die shape holding the effective score, and
+   the derived modifier stacked below. The whole thing is a button opening the
+   breakdown popover. */
+.stat-badge {
+  align-items: center;
+  padding: var(--space-2) var(--space-1);
+  font: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+}
+.stat-badge:hover {
+  background: var(--surface-sunken);
+}
+
+.stat-badge__key {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* The face-on d20 holding the effective score: an inline SVG wireframe
+   (hexagon hull, central face, facet edges) drawn in currentColor behind the
+   number, so the buffed/debuffed tint recolors the whole die. */
+.stat-badge__die {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--border);
+}
+.stat-badge__d20 {
+  position: absolute;
+  inset: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+}
+.stat-badge__d20-hull {
+  fill: var(--surface-raised);
+  stroke-width: 2.5;
+}
+.stat-badge__d20-facets {
+  stroke-width: 1.5;
+  opacity: 0.3;
+}
+.stat-badge__d20-face {
+  stroke-width: 1.5;
+  opacity: 0.45;
+}
+.stat-badge--buffed .stat-badge__die {
+  color: var(--mana);
+}
+.stat-badge--debuffed .stat-badge__die {
+  color: var(--danger);
+}
+
+.stat-badge__score {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-badge__mod {
+  font-family: var(--font-mono);
+}
+
+/* Ability-score breakdown popover: base + each source + the total. */
+.stat-breakdown__mod {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.stat-breakdown__rows {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.stat-breakdown__rows dt {
+  color: var(--text-muted);
+}
+.stat-breakdown__rows dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.stat-breakdown__buff {
+  color: var(--mana);
+}
+.stat-breakdown__debuff {
+  color: var(--danger);
+}
+.stat-breakdown__total {
+  font-weight: 700;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1);
+}
+.stat-breakdown__rows dt.stat-breakdown__total {
+  color: var(--text);
+}
+
+/* The saving-throw and skill blocks. Both are the same list of rows: a
+   training dot, the name, the ability it rolls, and the bonus at the right
+   edge. */
+.check-block__rows {
+  display: grid;
+  /* The skill list is 18 rows long, so it flows into as many columns as the
+     column it sits in can hold a readable row in. The saves make one short
+     column of six at the same row width. */
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0 var(--space-2);
+}
+
+/* A row that rolls is a .btn-bare button and a read-only row is a div, so the
+   shared rule sets only what both need. */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0.15rem var(--space-1);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.check-row--roll:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* The name takes the slack, so every bonus lands on the same right edge. A
+   long skill name truncates rather than pushing the number out of line. */
+.check-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check-row__ability {
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+/* Marks a row that rolls at disadvantage before any condition chip, for
+   example Stealth in noisy armor. It is a word, not a color, so it survives
+   both themes and a screen reader. */
+.check-row__slant {
+  flex: 0 0 auto;
+  padding: 0 0.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+.check-row__bonus {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+/* The training dot says the same thing three ways by shape, so it does not
+   rest on color: hollow for untrained, solid for proficient, and solid inside
+   a ring for expertise. The ring is drawn with box-shadow, which sits outside
+   the dot's box and so does not move the row. */
+.check-row__dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  /* The expertise ring needs room to sit clear of the row's edge and of the
+     name beside it. */
+  margin: 0 0.2rem;
+}
+
+.check-row__dot--proficient,
+.check-row__dot--expert {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.check-row__dot--expert {
+  box-shadow:
+    0 0 0 1.5px var(--surface),
+    0 0 0 2.5px var(--text);
+}
+
+/* The footer of the skill block: passive Perception, then the key to the
+   training dots. */
+.check-block__legend {
+  align-items: center;
+  padding-left: 0.3rem;
+  font-size: var(--text-label);
+}
+
+/* Passive Perception closes the skill block, set apart from the rows above it
+   because it is a score and not a roll. */
+.check-block__passive {
+  margin-top: var(--space-1);
+  padding-left: var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* "Playing as" binding picker shown to player tabs above the roster. */
+.party-binding {
+  margin-bottom: var(--space-2);
+}
+
+.party-binding__label {
+  white-space: nowrap;
+}
+
+.party-binding select {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-label);
+}
+
+/* GM-only switch above the roster governing whether the party may split up. */
+.party-split {
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+}
+
+.party-split input {
+  accent-color: var(--accent);
+}
+
+/* ==========================================================================
+   Inventory
+   ========================================================================== */
+
+/* Search / type filter / sort row above the item list. */
+.inventory-panel__controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.inventory-panel__controls select {
+  font-size: var(--text-label);
+}
+
+.inventory-panel__search {
+  flex: 1;
+  min-width: 0;
+}
+
+/* One collapsible type heading per classification carried, with its rows
+   indented under it so the heading reads as the parent of the group. */
+.inventory-panel__group + .inventory-panel__group {
+  margin-top: var(--space-2);
+}
+
+.inventory-panel__group-rows {
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--border);
+}
+
+.inventory-panel__row {
+  padding: var(--space-1) 0;
+}
+
+/* Name/type line stacked over the optional description. */
+.inventory-panel__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__description {
+  font-style: italic;
+}
+
+/* An item's open edit form, boxed so it reads as one unit inside the list. */
+.inventory-panel__editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin: var(--space-1) 0;
+}
+
+.inventory-panel__editor .form {
+  margin-top: 0;
+}
+
+/* Inline give form under a row: recipient picker, count, confirm/cancel. */
+.inventory-panel__give {
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+}
+
+.inventory-panel__give select {
+  flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__give-count {
+  width: 3.5rem;
+}
+
+/* The count form: the captioned Amount field, with its buttons level with
+   the input rather than with the caption. */
+.inventory-panel__count {
+  align-items: flex-end;
+}
+
+.inventory-panel__count-amount {
+  width: 6rem;
+}
+
+/* One pill per mechanical effect, wrapping under the name line, so an item
+   with many modifiers stays scannable instead of one long comma run. */
+.inventory-panel__effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.inventory-panel__effect {
+  color: var(--text-muted);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+.inventory-panel__label {
+  flex: 1;
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Item authoring form
+
+   The controls only the item editor has. Its wrapper, rows, and captions are
+   the shared .form primitives (forms.css); these are the item-specific sizes
+   on top. The form mounts inline in the inventory panel and in the Library
+   rail, so it carries its own class stem rather than the panel's.
+   ========================================================================== */
+
+/* The type picker fills its caption, and the caption claims a wide share of
+   the row, so a long type name reads without wrapping. The cap keeps the
+   picker from swallowing the whole line on a wide card. */
+.form__label:has(.item-form__type-select) {
+  flex: 1 1 7rem;
+  min-width: 7rem;
+  max-width: 16rem;
+}
+
+.item-form__type-select {
+  width: 100%;
+  font-size: var(--text-label);
+}
+
+/* Fixed-value readouts in the add form (a shield's non-negotiable +2 AC),
+   sized to sit level with the neighboring inputs. */
+.item-form__note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+/* The line under the AC row that marks a helmet, gloves, or greaves piece as a
+   house rule. */
+.item-form__house-rule {
+  margin: 0;
+  font-size: var(--text-label);
+}
+
+/* Weapon damage editor: one row per dice term (count, die, damage type),
+   the base roll first, riders after, then the add-a-term button. */
+.item-form__dice-count {
+  width: 3rem;
+  text-align: center;
+}
+
+/* Marks the next input as the term's flat bonus, so "1 d4 + 1 force" reads as
+   one damage roll rather than as four unrelated controls. */
+.item-form__damage-plus {
+  color: var(--text-muted);
+}
+
+/* Names a term's type where there is only one to have, in place of a
+   single-option picker. */
+.item-form__damage-type {
+  color: var(--text-muted);
+}
+
+/* The damage editor stacks its rows in a stretch flex column; keep the add
+   button sized to its label instead of spanning the full width. */
+.item-form__damage-add {
+  align-self: flex-start;
+}
+
+/* Inflicted status effects: removable chips plus the add row. Named apart
+   from .inventory-panel__effects, the read-only pill row on an item row. */
+.item-form__effect-input {
+  width: 8rem;
+}
+
+/* Weapon property flags: one checkbox per 5e property, wrapped as a row
+   of compact labels. */
+.item-form__properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: var(--text-label);
+}
+
+/* The player-tab hint under the "Playing as" picker. It is for the GM who
+   sets a player tab up, so the Player view hides it (see shell.css). */
+.party-binding-hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+}
+
+.character-sheet__hp-amount {
+  width: 3.5rem;
+}
+
+/* The sheet tabs keep their natural width and sit together at the start of
+   the strip. With flex: 1 on a wide sheet, the four tabs spread out far
+   enough apart to read as four separate labels. */
+#sheet-tabs .tabs__tab {
+  flex: 0 0 auto;
+}

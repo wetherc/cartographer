@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A stone hearth with a wooden mantel and a log fire, seen from the
+       front and above, over a transparent ground. A soft contact shadow sits
+       on the line where the hearthstone meets the floor. -->
+  <defs>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#ffb347" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="soot" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#120c08"/>
+      <stop offset="1" stop-color="#3a2416"/>
+    </linearGradient>
+  </defs>
+  <!-- Contact shadow on the base line y=56. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="56" rx="22" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="56" rx="20" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Hearthstone: top face and front face, lit by the fire. -->
+  <rect x="12" y="48" width="40" height="5" fill="#9a9488" stroke="#5c574e" stroke-width="0.8"/>
+  <rect x="12" y="53" width="40" height="3" fill="#6e6960" stroke="#5c574e" stroke-width="0.8"/>
+  <ellipse cx="32" cy="50.5" rx="17" ry="4" fill="url(#glow)"/>
+  <!-- Stone surround with staggered courses. -->
+  <rect x="14" y="14" width="36" height="34" fill="#8a857a" stroke="#4c4841" stroke-width="0.9"/>
+  <g stroke="#5c574e" stroke-width="0.7" fill="none">
+    <path d="M14.5 20.5 H49.5 M14.5 27 H49.5 M14.5 33.5 H49.5 M14.5 40 H49.5"/>
+    <path d="M21 14.5 V20.5 M29 14.5 V20.5 M37 14.5 V20.5 M44.5 14.5 V20.5"/>
+    <path d="M18 20.5 V27 M46 20.5 V27 M19.5 27 V33.5 M44.5 27 V33.5"/>
+    <path d="M18 33.5 V40 M46 33.5 V40 M19.5 40 V47.5 M44.5 40 V47.5"/>
+  </g>
+  <path d="M14.8 15 H49.2" stroke="#a39d91" stroke-width="0.8"/>
+  <!-- Arched opening: a band of lighter voussoirs around a sooty firebox. -->
+  <path d="M22 48 V31 Q22 23 32 23 Q42 23 42 31 V48" fill="none" stroke="#a39d91" stroke-width="3.2"/>
+  <path d="M22 48 V31 Q22 23 32 23 Q42 23 42 31 V48 Z" fill="url(#soot)" stroke="#3a3530" stroke-width="0.9"/>
+  <ellipse cx="32" cy="41" rx="9" ry="7" fill="url(#glow)"/>
+  <!-- Embers and two crossed logs. -->
+  <ellipse cx="32" cy="46.6" rx="8.5" ry="1.4" fill="#c2461e"/>
+  <g stroke="#4e2d11" stroke-width="3" stroke-linecap="round">
+    <path d="M24.5 46.2 L38 42.4"/>
+    <path d="M39.5 46.2 L26 42.4"/>
+  </g>
+  <circle cx="24.5" cy="46.2" r="1.3" fill="#b58552"/>
+  <circle cx="39.5" cy="46.2" r="1.3" fill="#b58552"/>
+  <!-- Flames: an orange body with a yellow core. -->
+  <path d="M25 44 Q24 38 27.5 34 Q27.5 38 29.5 39 Q29 33 32.5 27.5 Q33.2 33.5 35.5 36 Q36 33.5 37.5 32 Q40.2 38 39 44 Z" fill="#ff8a2a"/>
+  <path d="M28 44 Q27.5 40.5 30 37.5 Q30.5 40 32 40.5 Q32.3 36.5 34 34 Q35.2 38 36.5 40 Q37 42.5 36 44 Z" fill="#ffd36b"/>
+  <!-- Wooden mantel shelf: top face and front face. -->
+  <rect x="11" y="9.5" width="42" height="3" fill="#9a6d42" stroke="#3f2a15" stroke-width="0.8"/>
+  <rect x="11" y="12.5" width="42" height="3" fill="#6a4524" stroke="#3f2a15" stroke-width="0.8"/>
+  <!-- A clay jug and a candle on the mantel. -->
+  <ellipse cx="18" cy="9.2" rx="2.4" ry="2.2" fill="#a8603a" stroke="#5e3218" stroke-width="0.6"/>
+  <ellipse cx="18" cy="7.6" rx="0.9" ry="0.6" fill="#3a1e0e"/>
+  <rect x="45.2" y="6" width="1.6" height="4.4" fill="#efe6c8" stroke="#a89a78" stroke-width="0.3"/>
+  <path d="M46 3.4 Q47 5 46 6.1 Q45 5 46 3.4 Z" fill="#ff9a2e"/>
+</svg>

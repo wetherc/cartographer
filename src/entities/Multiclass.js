@@ -1,0 +1,137 @@
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
+/** @typedef {import('../types/class.js').ClassRef} ClassRef */
+
+import { clamp } from '../util/num.js';
+import { proficiencyBonus } from './Modifiers.js';
+
+/**
+ * Class-list mechanics. A character's classes are a list of `ClassRef`s
+ * whose levels sum to at most the stored character level. The XP engine
+ * owns that total. A shortfall is a pending level, earned by XP but not yet
+ * assigned to a class. The multiclass level-up flow spends this pending
+ * level. This module is pure list arithmetic. It deliberately knows nothing
+ * about class definitions (Classes.js reads them), so it can sit below every
+ * other entity module without a cycle.
+ */
+
+/**
+ * A character's classes. Older saves carried a scalar `class` and `subclass`
+ * pair instead of a list. The app reads those as a one-entry list at the
+ * character's full level until `withDefaults` folds them in. A classless
+ * character yields an empty list.
+ * @param {SpellCaster} character
+ * @returns {ClassRef[]}
+ */
+export function getClasses(character) {
+  if (character.classes) return character.classes;
+  if (!character.class) return [];
+  return [{ classId: character.class, level: totalLevel(character), subclass: character.subclass }];
+}
+
+/**
+ * The character's first (primary) class, or null for a classless character.
+ * The primary class anchors single-class behavior: its definition supplies the
+ * hit die at level 1 and the full proficiency grant.
+ * @param {Character} character
+ * @returns {ClassRef | null}
+ */
+export function primaryClass(character) {
+  return getClasses(character)[0] ?? null;
+}
+
+/**
+ * The character's level in one class, 0 if they have no levels in it.
+ * @param {Character} character
+ * @param {string} classId
+ * @returns {number}
+ */
+export function classLevelOf(character, classId) {
+  return getClasses(character).find((ref) => ref.classId === classId)?.level ?? 0;
+}
+
+/** @param {{ level: number }} character @returns {number} the stored total, at least 1 */
+export function totalLevel(character) {
+  return Math.max(1, Math.floor(character.level) || 1);
+}
+
+/**
+ * The class levels the character has assigned, summed across the list.
+ * @param {SpellCaster} character
+ * @returns {number}
+ */
+export function assignedLevel(character) {
+  return getClasses(character).reduce((sum, ref) => sum + Math.max(0, Math.floor(ref.level)), 0);
+}
+
+/**
+ * Levels earned by XP but not yet assigned to a class: the stored character
+ * level minus the class levels assigned. Always 0 for a classless character.
+ * With no classes, there is nothing to assign a level to.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function pendingLevels(character) {
+  if (getClasses(character).length === 0) return 0;
+  return Math.max(0, totalLevel(character) - assignedLevel(character));
+}
+
+/**
+ * The proficiency bonus of a character. A classed character reads it at the
+ * sum of its assigned class levels, so a level earned by XP but not yet
+ * assigned adds nothing: a Wizard 5 with six pending levels rolls with +3,
+ * the bonus of Wizard 5. A classless character has nothing to assign and
+ * reads it at its stored level.
+ * @param {SpellCaster} character
+ * @returns {number}
+ */
+export function characterProficiency(character) {
+  const classed = getClasses(character).length > 0;
+  return proficiencyBonus(classed ? Math.max(1, assignedLevel(character)) : totalLevel(character));
+}
+
+/**
+ * Sanitize a class list against a level budget. Entries with no class id
+ * drop out. Levels floor to whole numbers of at least 1. Duplicate class
+ * ids keep only their first entry. The levels sum to at most `cap`.
+ *
+ * The cap matters because nothing else enforces it. `pendingLevels` is the
+ * stored level minus this sum, so a list that oversells the level reports
+ * zero pending levels and quietly loses the levels it has left to assign.
+ * The function takes entries in order until the budget runs out. The last
+ * entry that still fits is trimmed to what remains, and the function drops
+ * anything after it. This case is reachable only from an imported or
+ * hand-edited save, since every writer in the app assigns one level at a
+ * time. A `subclass` that is not a string (a hand-edited save) is dropped,
+ * because the sheet prints it and the caster readers trim it.
+ * @param {ClassRef[]} classes
+ * @param {number} cap total class levels allowed
+ * @returns {ClassRef[]}
+ */
+export function sanitizeClasses(classes, cap) {
+  /** @type {ClassRef[]} */
+  const next = [];
+  const seen = new Set();
+  let used = 0;
+  for (const ref of classes) {
+    if (!ref.classId || seen.has(ref.classId)) continue;
+    const level = clamp(Math.floor(ref.level) || 1, 1, cap - used);
+    if (level < 1) break;
+    seen.add(ref.classId);
+    used += level;
+    const { subclass, ...rest } = ref;
+    next.push(typeof subclass === 'string' ? { ...rest, level, subclass } : { ...rest, level });
+  }
+  return next;
+}
+
+/**
+ * Set the character's class list wholesale, sanitized against the character's
+ * stored level. See `sanitizeClasses`. This function is pure.
+ * @param {Character} character
+ * @param {ClassRef[]} classes
+ * @returns {Character}
+ */
+export function withClasses(character, classes) {
+  return { ...character, classes: sanitizeClasses(classes, totalLevel(character)) };
+}

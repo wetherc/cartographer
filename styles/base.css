@@ -1,0 +1,1060 @@
+/* ==========================================================================
+   Design tokens
+   Single source of truth for color, spacing, type, radius, and elevation.
+   Every color token is a light-dark() pair resolved by the root color-scheme:
+   by default that follows the OS preference, and the header's theme toggle
+   pins it via data-theme on <html>. Everything else references these custom
+   properties so components never hand-pick raw values.
+   ========================================================================== */
+
+/* The three bundled faces (fonts/README.md). IM Fell English is the display
+   face, reserved for the wordmark alone: its period letterforms smear on a
+   low-density screen below about 24 pixels. Alegreya SC is the titling face
+   for panel titles and the names of people and places, and Alegreya Sans
+   carries all other text. font-display: swap keeps the first paint from
+   blocking on a font file. */
+@font-face {
+  font-family: 'IM Fell English';
+  src: url('../fonts/fell-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IM Fell English';
+  src: url('../fonts/fell-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya SC';
+  src: url('../fonts/alegreya-sc-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya SC';
+  src: url('../fonts/alegreya-sc-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Skip links at the top of the page. Each stays off screen until it has
+   keyboard focus, and then shows over the top left of the header. */
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-2);
+  z-index: 1000;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Library and Combat mode hide the map, so a link to it would move focus
+   nowhere. */
+body:not(.mode-build) .skip-link--build,
+body.mode-library .skip-link:not(.skip-link--build),
+body.mode-combat .skip-link:not(.skip-link--build) {
+  display: none;
+}
+
+/* Visually hidden but exposed to assistive tech (live regions, labels). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Color — light-dark(light value, dark value). The palette is drawn from the
+     materials of a cartographer's worktable: laid paper and iron-gall ink in
+     the light theme, a lampblack desk after dark. The accent is rubric red,
+     the ink medieval scribes reserved for headings. Danger is a deeper blood
+     red kept apart from it: rubric appears as bare text and fills, danger
+     always bordered or filled, so the two never read as one. Every text token
+     holds 4.5:1 or better on all four surfaces, and --border-strong holds
+     3:1 on all four for control boundaries; --border is a hairline for
+     decorative rules only. tests/Contrast.test.js checks both limits. The
+     tightest pairs, light then dark: --text-muted on --surface-sunken 4.83
+     and on --surface-raised 5.29; --warning on --surface-sunken 4.84 and on
+     --surface-raised 7.25; --border-strong on --surface-sunken 3.17 and on
+     --surface-raised 3.10. */
+  --bg: light-dark(#f3ecdd, #171209);
+  --surface: light-dark(#faf5e9, #201a10);
+  --surface-raised: light-dark(#fffdf5, #2a2215);
+  --surface-sunken: light-dark(#e9e0cc, #120d06);
+  --border: light-dark(#d6cab0, #3d3421);
+  --border-strong: light-dark(#8d7a55, #7f6c4b);
+  --text: light-dark(#2e2418, #ede2c8);
+  --text-muted: light-dark(#6a5e4b, #a3947a);
+  --accent: light-dark(#9d2f21, #dd8166);
+  --accent-hover: light-dark(#7f251a, #e79b83);
+  --accent-contrast: light-dark(#faf5e9, #171209);
+  --danger: light-dark(#8a1f14, #e58579);
+  --danger-contrast: light-dark(#faf5e9, #171209);
+  --success: light-dark(#33604a, #7fae8f);
+  --success-contrast: light-dark(#faf5e9, #171209);
+  --warning: light-dark(#7f580e, #d8a94e);
+  --warning-contrast: light-dark(#faf5e9, #171209);
+  --mana: light-dark(#33517e, #8aa7d6);
+  --mana-contrast: light-dark(#faf5e9, #171209);
+  --focus-ring: light-dark(#9d2f21, #dd8166);
+  --shadow-tint: light-dark(rgb(46 32 12), rgb(0 0 0));
+
+  /* Over-map chrome (map controls, toasts, tooltips, the onboarding scrim) is
+     deliberately pinned dark in both themes — it floats over map art, not the
+     page surface, so it stays constant rather than following light-dark(). */
+  --overlay-bg: #171209;
+  --overlay-text: #ede2c8;
+  --overlay-npc: #8aa7d6; /* NPC tint readable on --overlay-bg; --mana's light value is not */
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Type. --font-display appears only in the wordmark: at smaller sizes its
+     period letterforms blur on a 1x screen. --font-title carries every other
+     display role (panel titles, names of people and places). Its glyphs are
+     small caps, so rules that use it set no font-variant-caps. */
+  --font-display: 'IM Fell English', 'Iowan Old Style', Palatino, serif;
+  --font-title: 'Alegreya SC', 'Iowan Old Style', Palatino, serif;
+  --font-sans: 'Alegreya Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --text-display: 1.5rem;
+  --text-heading: 1.125rem;
+  --text-body: 1rem;
+  --text-label: 0.8125rem;
+  --line-body: 1.5;
+
+  /* Radius. Tighter than the old 0.375 to 0.75rem scale so the chrome keeps
+     the engraved-plate posture, but soft enough on controls that a button
+     still reads as pressable rather than blocky. The plate frame itself keeps
+     its own near-square corner in .card. --radius-pill is a value large
+     enough that the corners always resolve to a half-round cap, whatever the
+     element's height. */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* Motion. Three speeds cover every transition here: --press for the button
+     depress, which has to land before the finger lifts; --fast for a hover or
+     state change on something already on screen; --base for a surface arriving
+     or leaving. */
+  --transition-press: 40ms;
+  --transition-fast: 120ms;
+  --transition-base: 250ms;
+
+  /* Elevation (color-mix fades the theme's shadow tint to the wanted alpha) */
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 8%, transparent);
+  --shadow-2: 0 2px 8px color-mix(in srgb, var(--shadow-tint) 12%, transparent);
+  --shadow-3: 0 8px 24px color-mix(in srgb, var(--shadow-tint) 18%, transparent);
+}
+
+/* The chevron for custom-styled <select>s. A url() can't live in a light-dark()
+   token (that resolves <color> only), so the theme's arrow is swapped the same
+   way color-scheme is: OS preference by default, pinned by data-theme. The SVG
+   stroke is the muted text color of each theme. */
+:root {
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236a5e4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a3947a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}
+
+/* The theme toggle pins the scheme; without data-theme the OS preference wins.
+   Set before first paint by the inline script in index.html's <head>. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236a5e4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a3947a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Panels fill in after the page first paints, so the page usually grows past
+   one screen a moment after load and gains a scrollbar. Reserving the gutter up
+   front stops that from narrowing every column at once. */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  padding: var(--space-4);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   Utilities
+   One class per recurring treatment, for the handful of idioms that were
+   otherwise restated in every feature sheet. A utility carries no identity —
+   `.u-muted` says how a bit of text looks, not what it is — so an element keeps
+   its component class for the rest of its styling and for anything that needs
+   to select it. They sit here, ahead of the feature sheets, so a component rule
+   always wins when the two set the same property.
+
+   Only add one when the pattern is already repeated several times and the
+   values come from the token scale. Anything with a component-specific value
+   belongs in that component's rule.
+   ========================================================================== */
+
+/* Secondary text: captions, hints, derived readouts, row metadata. */
+.u-muted {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The two flex idioms nearly every container here is one of. `.u-row` is a
+   horizontal bar with its items centred across it; `.u-col` is a vertical
+   stack. Neither sets a gap, because the spacing varies and the token belongs
+   with the element rather than the direction, so pair one with a `.u-g*` below.
+   A container that wants a different cross-axis alignment (baseline, stretch,
+   flex-start) keeps its own `align-items` in its component rule, which wins. */
+.u-row {
+  display: flex;
+  align-items: center;
+}
+
+.u-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-wrap {
+  flex-wrap: wrap;
+}
+
+/* Gap on the space scale, for use with `.u-row`/`.u-col`. An off-scale or
+   asymmetric gap stays a declaration in the component's rule. */
+.u-g1 {
+  gap: var(--space-1);
+}
+
+.u-g2 {
+  gap: var(--space-2);
+}
+
+.u-g3 {
+  gap: var(--space-3);
+}
+
+.u-g4 {
+  gap: var(--space-4);
+}
+
+/* ==========================================================================
+   Shared primitives
+   Every class a builder in src/ui/ applies lives here, so the primitive layer
+   is one file and a feature sheet only ever adds modifiers on top of it.
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1;
+  /* A link built by iconLink or textLink wears the same look, so it drops
+     the browser's link underline. */
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast) ease,
+    border-color var(--transition-fast) ease,
+    transform var(--transition-press) ease;
+}
+
+.btn:hover {
+  background: var(--surface-sunken);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn--danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn--danger:hover {
+  background: var(--danger);
+  color: var(--danger-contrast);
+}
+
+.btn--success {
+  background: transparent;
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn--success:hover {
+  background: var(--success);
+  color: var(--success-contrast);
+}
+
+/* Square, compact button for a single icon (steppers, remove, etc.) */
+.btn--icon {
+  padding: var(--space-1);
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* A control that is a button for the keyboard and the screen reader but wears
+   no button chrome: a breadcrumb crumb, a disclosure header, a tree row, a
+   menu item, a spell-slot pip. It strips the browser's button presentation
+   back to the surrounding text and leaves the rest to the component's own
+   class, which sits in a later sheet and so wins on any property it sets. */
+.btn-bare {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+/* A cluster of related .btn actions joined into one strip, the same silhouette
+   as a .seg-switch but with no active state: the buttons keep their own
+   borders and variants, the shared edges collapse to a single line, and only
+   the outer corners round. A hovered or focused button lifts above its
+   neighbors so its border and focus ring draw whole. */
+.btn-cluster {
+  display: inline-flex;
+}
+
+.btn-cluster .btn {
+  border-radius: 0;
+}
+
+.btn-cluster .btn + .btn {
+  margin-left: -1px;
+}
+
+.btn-cluster .btn:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.btn-cluster .btn:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.btn-cluster .btn:hover,
+.btn-cluster .btn:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+/* Segmented control (Play/Build, theme, GM/Player, dice-tray d20 mode): a
+   bordered strip of joined .btn segments. The active segment takes a tinted
+   fill, accent text, and an accent bar on its bottom edge. A solid accent
+   fill marks the primary action (.btn--primary, such as Save), so a current
+   state and a button that acts do not look the same. */
+.seg-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.seg-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.seg-switch__btn + .seg-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.seg-switch__btn--active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.seg-switch__btn--active:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  color: var(--accent-hover);
+}
+
+/* Selectable list row (world-tree nodes, roster members): a full-width
+   .btn-bare button that highlights on hover and boxes the current row. */
+.row-select {
+  flex: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text);
+}
+
+.row-select:hover {
+  background: var(--surface-sunken);
+}
+
+.row-select--current {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+
+/* Sub-heading inside a panel section (spell groups, quest groups, palette
+   sections, sheet labels): one treatment for the role everywhere. */
+.section-label {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Shared "nothing here yet" copy for panels with no content. */
+.empty-state {
+  margin: 0;
+  padding: var(--space-2) 0;
+  font-style: italic;
+}
+
+/* A small labeled tag (status conditions, weapon effects, tag-field pills),
+   optionally with a trailing x. Built by ui/buttons.js's chip/removableChip;
+   feature sheets add modifiers on top rather than restating these. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.chip__remove {
+  color: var(--text-muted);
+  padding: 0 0.15rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.chip__remove:hover {
+  color: var(--danger);
+}
+
+/* A read-only status marker on a list row: the library's built-in/custom
+   source, an NPC's disposition, a spell's known/prepared state. Color comes
+   from the per-feature modifier. */
+.badge {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+}
+
+/* The three shared readings of a marker: good, bad, and nothing much. A tinted
+   background at this alpha keeps the text colour readable in both themes. A
+   feature whose marker means something outside this scale (a spell that is
+   prepared, a library entry that is custom) adds its own modifier instead. */
+.badge--success {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  color: var(--success);
+}
+
+.badge--danger {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+.badge--neutral {
+  background: var(--surface-sunken);
+  opacity: 0.85;
+}
+
+.field {
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+/* Pin single-line controls to one explicit height so a native <select> and a
+   text/number <input> sharing a form row line up. A bare <select> ignores
+   line-height for its box metrics and renders ~2.5px shorter than an <input>
+   otherwise. box-sizing is border-box globally, so the height covers padding
+   and border: 1.5em line box + the top/bottom padding + the 1px borders.
+   Textareas are excluded — they size to their `rows`. */
+input.field,
+select.field {
+  height: calc(1.5em + 2 * var(--space-2) + 2px);
+}
+
+/* Replace the OS-native <select> chrome with the app's own control surface: no
+   platform bezel, and a themed chevron drawn in the padding gutter reserved on
+   the right so a long option label never runs under it. */
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: calc(1.5rem + var(--space-2));
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right var(--space-2) center;
+  background-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* Opt into the customizable-<select> model so the opened option list is drawn
+   with app CSS instead of the OS popup. This is a progressive enhancement: an
+   engine without customizable-select support treats `base-select` as an invalid
+   appearance value and drops it, falling back to the `appearance: none` rule
+   above — so the closed control stays themed everywhere, and only a supporting
+   engine (Chromium today; WebKit/Firefox as they ship it) also themes the
+   popup. The auto-generated picker chevron is hidden because the closed control
+   already carries our own `--select-chevron`, and every browser shows that one;
+   letting the native icon through too would double the arrow where base-select
+   is active. */
+select.field,
+select.field::picker(select) {
+  appearance: base-select;
+}
+
+select.field::picker-icon {
+  display: none;
+}
+
+/* The popped-open list: the app's raised surface, border, and elevation, with
+   comfortable option rows that highlight on hover and mark the current choice
+   with the accent rather than the platform's selection color. */
+select.field::picker(select) {
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-3);
+}
+
+select.field option {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+select.field option:hover,
+select.field option:focus {
+  background: var(--surface-sunken);
+}
+
+select.field option:checked {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The per-option checkmark the customizable model adds for the current choice;
+   the accent-colored, bolded label already reads as "selected". */
+select.field option::checkmark {
+  display: none;
+}
+
+.field:focus {
+  border-color: var(--focus-ring);
+}
+
+/* A disabled control (e.g. the custom-race entry once a catalog race is
+   picked, or the derived max HP) reads as inert: sunken, dimmed, and the
+   cursor says why. */
+.field:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* A captioned checkbox from formFields: the box and its caption on one line,
+   sized and spaced to match the captioned fields it shares a row with, so it
+   reads as the same weight of control. */
+.field-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.field-check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+/* A panel is drawn as a map plate: a strong outer border with a faint inner
+   rule 3px inside (the neatline of an engraved atlas plate), and its title
+   breaking the top rule as a cartouche. The title's background matches the
+   page so the rule reads as passing behind it; a card that floats over
+   something other than the page (the onboarding card) overrides the title
+   back into the flow in its own sheet. */
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  /* Near square on purpose: the plate frame is the engraved gesture, and the
+     softer control radii sit inside it. */
+  border-radius: 3px;
+  padding: var(--space-4);
+  box-shadow: var(--shadow-1);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: 1px solid var(--border);
+  border-radius: 1px;
+}
+
+/* A card whose title straddles the frame needs headroom, or the cartouche
+   collides with whatever sits above it (the sidebar's tab strip). */
+.card:has(> .card__title) {
+  margin-top: 0.55em;
+}
+
+/* The title straddles the top border, so no single background matches what is
+   behind it. A gradient split at the border line paints the top half in the
+   page color and the bottom half in the card color, and each half disappears
+   into its own ground; line-height 1 with -0.5em keeps the split on the
+   border. */
+.card__title {
+  position: absolute;
+  top: -0.5em;
+  left: var(--space-4);
+  margin: 0;
+  padding: 0 var(--space-2);
+  line-height: 1;
+  background: linear-gradient(var(--bg) 50%, var(--surface) 50%);
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   Tabs: a strip of tabs over a stack of panels, one shown at a time.
+   ========================================================================== */
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+
+/* A tab is a .btn-bare button, which is where the reset comes from. */
+.tabs__tab {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tabs__tab:hover {
+  color: var(--text);
+}
+
+.tabs__tab[aria-selected='true'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tabs__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Sixteen panels are declared in index.html, so this stack stays a rule rather
+   than u-col on every one of them. */
+.tabs__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The display:flex above would otherwise defeat the hidden attribute the tab
+   strip toggles them with. */
+.tabs__panel[hidden] {
+  display: none;
+}
+
+/* The Equipment and Spellbook tabs are form-like: on a wide hiDPI display their
+   rows stretch uncomfortably, so cap their measure. Inventory keeps the full
+   width for its dense, multi-column item rows, and the Character tab keeps it
+   too because the sheet splits into columns rather than stretching. */
+.tabs__panel--narrow {
+  max-width: 34rem;
+}
+
+/* ==========================================================================
+   Modal (native <dialog>)
+   ========================================================================== */
+
+.modal {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  padding: var(--space-5);
+  min-width: 18rem;
+  max-width: 90vw;
+  box-shadow: var(--shadow-3);
+  /* The reading width of dialog text. A dialog shrinks to fit its content, so
+     one long prompt, caption, or option label would stretch it to 90vw. */
+  --modal-measure: 30rem;
+}
+
+/* Text wraps at the reading width, and a select stops there too, so a long
+   prompt or option label wraps instead of widening the dialog. */
+.modal__message,
+.modal__field > span:first-child,
+.modal__field > select {
+  max-width: var(--modal-measure);
+}
+
+.modal::backdrop {
+  background: color-mix(in srgb, var(--shadow-tint) 45%, transparent);
+}
+
+.modal__title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 1.25rem;
+}
+
+.modal__message {
+  margin: 0 0 var(--space-4);
+  white-space: pre-line; /* multi-line alerts (e.g. the shortcut list) */
+}
+
+/* A field's own failure line (a rejected image pick), reported in place rather
+   than as a second dialog over the form the GM is still filling in. */
+.modal__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+/* A live line inside a form, such as a placement warning. It takes no space
+   while it is empty. */
+.modal__note {
+  color: var(--warning);
+  font-size: var(--text-label);
+}
+
+.modal__note:empty {
+  display: none;
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* A button field (e.g. the creation form's reroll) has no caption text, so
+   push the button down to sit level with its row-mate's input. */
+.modal__field:has(> .btn) {
+  justify-content: flex-end;
+}
+
+/* A checkbox field reads as one line — caption, then the box — rather than as a
+   caption stacked over a lone tick box. It also sits level with the inputs
+   beside it in a row, which the column layout would not. */
+.modal__field--check {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
+/* Fields another field's onChange has hidden (e.g. the stat inputs while the
+   standard-array pill grid is showing). */
+.modal__field--hidden {
+  display: none;
+}
+
+/* The assignment pill grid (e.g. standard-array scores): one row per target,
+   the value pills repeated across each row, the held value filled in. The
+   pills flex to fill the modal's width; the row label reads as a heading. */
+
+.modal__pillgrid-label {
+  width: 2.5rem;
+  flex: none;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal__pill {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  padding: var(--space-1) 0;
+  text-align: center;
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.modal__pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.modal__pill--selected,
+.modal__pill--selected:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+/* Tag fields (e.g. bonus languages): finalized pills plus an inline entry —
+   Enter turns the typed text into a pill, the x removes one. The box carries
+   the .field border; the entry inside is borderless. */
+.modal__tags {
+  cursor: text;
+}
+
+.modal__tags .chip {
+  white-space: nowrap;
+}
+
+.modal__tags-input {
+  flex: 1;
+  min-width: 6rem;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  outline: none;
+  padding: 0;
+}
+
+/* Two-column form dialogs (e.g. the encounter editor): fields flow two per
+   row, with the title, any field marked full, and the actions spanning both
+   columns. */
+.modal--wide .modal__form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+  /* A fixed width, not a minimum: a caption that lengthens mid-edit (e.g. the
+     point-buy budget readout) wraps instead of resizing the whole dialog.
+     The max-width stops the form at the content width of the dialog. On a
+     phone, 85vw is wider than a dialog at its 90vw cap once the padding and
+     a scrollbar come off, and the dialog then scrolls sideways. */
+  width: min(var(--modal-measure), 85vw);
+  max-width: 100%;
+}
+
+.modal--wide .modal__title {
+  margin-bottom: var(--space-2);
+}
+
+.modal--wide .modal__title,
+.modal--wide .modal__field--full,
+.modal--wide .modal__actions {
+  grid-column: 1 / -1;
+}
+
+/* A field that begins a row: the pair it belongs to (weapon and armor) stays
+   together when an odd number of fields comes before it. */
+.modal--wide .modal__field--break {
+  grid-column-start: 1;
+}
+
+/* A section heading inside a long form (Basics, Combat, Placement), in a
+   dialog or an inline rail form. The type comes from .section-label, and
+   this rule adds the rule above it and spans both columns of a wide dialog. */
+.modal__section {
+  grid-column: 1 / -1;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* Situational fields tucked behind a disclosure (an attack's bonus dice): the
+   box opens closed, so a plain Enter submits their defaults unseen. */
+.modal__advanced {
+  grid-column: 1 / -1;
+}
+
+.modal__advanced-summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.modal__advanced-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.modal--wide .modal__advanced-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+}
+
+/* ==========================================================================
+   Reduced motion
+   Everything animated here is decoration: a hover fade, a chevron turning, a
+   toast sliding in. A reader who asks the OS for less motion gets the end
+   state immediately. The durations are cut to a value near zero rather than
+   to none, so a transitionend or animationend listener still fires.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

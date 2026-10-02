@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Wind-sculpted drift hill: a long lit windward slope, a steep shaded
+         lee face with a curved edge, a cast shadow to the east, a white
+         cornice along the crest, and bare ground where the wind scours it. -->
+    <g id="hl">
+      <path d="M-12 1 Q2 4.6 17 1.4 Q19.4 2.6 16 3.8 Q0 6 -11 2.8 Z" fill="#b7c5cf" opacity="0.7"/>
+      <path d="M-15 1 C-11 -7 -3 -10.5 4 -9 C10 -7.6 14.5 -3.5 16 1 Z" fill="#f6f9fb"/>
+      <path d="M4 -9 C10 -7.6 14.5 -3.5 16 1 L5 1 C8.5 -2 8.4 -6 4 -9 Z" fill="#c3d0da"/>
+      <path d="M-4.4 -8.7 Q-1.6 -9.9 2.4 -9.4 Q-0.6 -8.3 -4.4 -8.7 Z" fill="#8c7f6a"/>
+      <path d="M-12 -3 C-8 -8 -2 -9.9 3.6 -9.1" stroke="#ffffff" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <g stroke="#d7e0e7" stroke-width="0.8" fill="none" stroke-linecap="round">
+        <path d="M-9 -1.6 Q-6 -3.6 -2 -3.8"/>
+        <path d="M-5 0 Q-2 -1.4 1 -1.3"/>
+      </g>
+    </g>
+    <!-- Dead shrub poking through the snow. -->
+    <g id="sh">
+      <ellipse cx="0" cy="0.3" rx="3" ry="0.9" fill="#c6d2db"/>
+      <path d="M0 0 L-1.6 -3.6 M0 0 L0.4 -4.4 M0 0 L2 -3.2 M-1 -2.2 L-2.6 -2.8 M0.3 -3 L1.6 -4.2" stroke="#6e5a44" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- Hare tracks: paired prints along a gentle curve. -->
+    <g id="tr" fill="#a9b8c3">
+      <ellipse cx="0" cy="0" rx="0.6" ry="0.4"/><ellipse cx="1.2" cy="-1" rx="0.6" ry="0.4"/>
+      <ellipse cx="4" cy="-0.6" rx="0.6" ry="0.4"/><ellipse cx="5.1" cy="-1.8" rx="0.6" ry="0.4"/>
+      <ellipse cx="8" cy="-1.8" rx="0.6" ry="0.4"/><ellipse cx="9.2" cy="-3" rx="0.6" ry="0.4"/>
+      <ellipse cx="12" cy="-2.6" rx="0.6" ry="0.4"/><ellipse cx="13.1" cy="-3.8" rx="0.6" ry="0.4"/>
+      <ellipse cx="16" cy="-3" rx="0.6" ry="0.4"/><ellipse cx="17.2" cy="-4.2" rx="0.6" ry="0.4"/>
+    </g>
+    <!-- Boulder with a snow cap. -->
+    <g id="bd">
+      <ellipse cx="1" cy="2.2" rx="6" ry="1.5" fill="#b7c5cf" opacity="0.8"/>
+      <path d="M-5 2 L-4 -2.5 L-0.5 -4 L3.5 -2.5 L5 2 Z" fill="#7d858e"/>
+      <path d="M-0.5 -4 L3.5 -2.5 L5 2 L0 2 Z" fill="#636b74"/>
+      <path d="M-4 -2.5 L-0.5 -4 L3.5 -2.5 Q0 -1.2 -4 -2.5 Z" fill="#f6f9fb"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#dfe7ea"/>
+  <g fill="#d4dde2">
+    <ellipse cx="50" cy="14" rx="9" ry="6"/>
+    <ellipse cx="14" cy="50" rx="10" ry="6"/>
+  </g>
+  <!-- Edge band: identical across snow-hills variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so drifts continue across tile edges. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#d4dde2"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#d4dde2"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#d4dde2"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#d4dde2"/>
+    <ellipse cx="-1" cy="26" rx="8" ry="5" fill="#e9eff1"/>
+    <ellipse cx="63" cy="26" rx="8" ry="5" fill="#e9eff1"/>
+    <ellipse cx="30" cy="-1" rx="9" ry="5" fill="#d4dde2"/>
+    <ellipse cx="30" cy="63" rx="9" ry="5" fill="#d4dde2"/>
+    <use href="#hl" transform="translate(1 44) scale(0.55)"/>
+    <use href="#hl" transform="translate(65 44) scale(0.55)"/>
+    <use href="#hl" transform="translate(46 2) scale(0.6)"/>
+    <use href="#hl" transform="translate(46 66) scale(0.6)"/>
+    <use href="#sh" transform="translate(20 1)"/>
+    <use href="#sh" transform="translate(20 65)"/>
+    <use href="#sh" transform="translate(-1 12) scale(0.9)"/>
+    <use href="#sh" transform="translate(63 12) scale(0.9)"/>
+  </g>
+  <use href="#bd" transform="translate(14 16)"/>
+  <use href="#hl" transform="translate(40 28) scale(0.9)"/>
+  <use href="#sh" transform="translate(24 24) scale(0.9)"/>
+  <use href="#hl" transform="translate(18 38) scale(0.7)"/>
+  <use href="#tr" transform="translate(30 50) rotate(-12)"/>
+  <use href="#sh" transform="translate(56 44)"/>
+  <use href="#hl" transform="translate(28 60) scale(0.65)"/>
+</svg>

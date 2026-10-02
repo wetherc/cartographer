@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="10" rx="7" ry="4" fill="#63a651"/>
+  <ellipse cx="55" cy="57" rx="6" ry="3.5" fill="#529044"/>
+  <!-- Round cobbled pad in the same perspective as the well. The pad is
+       drawn as circles and squashed to the 3:8.5 ratio of the well rim,
+       so the dashed rings of cobbles thin toward the front and back. -->
+  <g transform="translate(32 45) scale(1 0.353)">
+    <circle r="25" fill="#6b6155"/>
+    <circle r="23.4" fill="#7a6f61"/>
+    <g fill="none" stroke="#9b9082" stroke-width="3" stroke-linecap="round">
+      <circle r="21.4" stroke-dasharray="3.2 1.6"/>
+      <circle r="17.2" stroke-dasharray="2.8 1.6"/>
+      <circle r="13" stroke-dasharray="2.4 1.5"/>
+    </g>
+  </g>
+  <!-- Stone well: a cylinder of coursed stone, dark water inside the rim. -->
+  <ellipse cx="32" cy="47" rx="11" ry="3.2" fill="#3d3a34" opacity="0.45"/>
+  <path d="M23.5 36 V45 A8.5 3 0 0 0 40.5 45 V36 Z" fill="#a39d91"/>
+  <path d="M32 36 H40.5 V45 A8.5 3 0 0 1 32 48 Z" fill="#8a8479"/>
+  <g fill="none" stroke="#6f6a60" stroke-width="0.6">
+    <path d="M23.5 39 A8.5 3 0 0 0 40.5 39 M23.5 42 A8.5 3 0 0 0 40.5 42"/>
+    <path d="M27 38.4 V41.4 M32 39 V42 M37 38.4 V41.4 M24.8 40.6 V43.6 M29.5 41.9 V44.9 M34.5 41.9 V44.9 M39.2 40.6 V43.6 M27 44.4 V47.4 M32 45 V48 M37 44.4 V47.4"/>
+  </g>
+  <path d="M23.5 36 V45 A8.5 3 0 0 0 40.5 45 V36" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+  <ellipse cx="32" cy="36" rx="8.5" ry="3" fill="#b8b2a6" stroke="#5c574e" stroke-width="0.7"/>
+  <ellipse cx="32" cy="36" rx="6.3" ry="2" fill="#23313a"/>
+  <path d="M28.5 36.4 Q30 35.8 31.5 36.3" stroke="#4a6a80" stroke-width="0.5" fill="none"/>
+  <!-- Timber frame, shingled gable roof, and windlass with rope and bucket. -->
+  <rect x="23" y="20" width="1.6" height="16.5" fill="#6f583a"/>
+  <rect x="39.4" y="20" width="1.6" height="16.5" fill="#5f4529"/>
+  <rect x="23.5" y="24" width="17" height="1.8" rx="0.9" fill="#8a6f4a" stroke="#5f4529" stroke-width="0.4"/>
+  <path d="M41 24.9 H43.3 V28.4 H45" stroke="#4c4841" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <path d="M31 25.8 V33" stroke="#c9b894" stroke-width="0.6"/>
+  <path d="M29.5 32.5 H32.5 L32.1 35.2 H29.9 Z" fill="#8a6f4a" stroke="#5f4529" stroke-width="0.4"/>
+  <path d="M29.6 32.5 Q31 30.8 32.4 32.5" stroke="#4c4841" stroke-width="0.4" fill="none"/>
+  <polygon points="19.5,21 32,11.5 44.5,21" fill="#8a6f4a"/>
+  <polygon points="32,11.5 44.5,21 32,21" fill="#6f583a"/>
+  <path d="M23.5 18 H40.5 M27.5 15 H36.5" stroke="#5f4529" stroke-width="0.5" fill="none"/>
+  <path d="M19.5 21 L32 11.5 L44.5 21 Z" fill="none" stroke="#4c3a26" stroke-width="0.7" stroke-linejoin="round"/>
+  <!-- Stone trough on the east side and a bucket left on the cobbles. -->
+  <g>
+    <ellipse cx="49.5" cy="46.2" rx="5.5" ry="1" fill="#3d3a34" opacity="0.4"/>
+    <rect x="45" y="42.6" width="9" height="3.2" fill="#8a8479"/>
+    <rect x="45" y="40.4" width="9" height="2.2" fill="#b8b2a6"/>
+    <rect x="45.8" y="40.8" width="7.4" height="1.4" fill="#4a7a9a"/>
+    <path d="M46.6 41.4 H49" stroke="#8ac2e6" stroke-width="0.4"/>
+    <rect x="45" y="40.4" width="9" height="5.4" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+    <path d="M45 42.6 H54" stroke="#5c574e" stroke-width="0.5"/>
+  </g>
+  <g>
+    <path d="M14.5 45.5 H18 L17.5 49 H15 Z" fill="#8a6f4a" stroke="#5f4529" stroke-width="0.4"/>
+    <ellipse cx="16.25" cy="45.5" rx="1.75" ry="0.6" fill="#4a7a9a"/>
+    <path d="M14.8 45.4 Q16.25 43.2 17.7 45.4" stroke="#4c4841" stroke-width="0.4" fill="none"/>
+  </g>
+  <path d="M28 60 Q32 59 36 60" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

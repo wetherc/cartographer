@@ -1,0 +1,508 @@
+/* ==========================================================================
+   World tree (Build-mode left rail)
+   ========================================================================== */
+
+.app-buildrail {
+  width: 18rem;
+  flex-shrink: 0;
+}
+
+/* A class, not the #build-tools id, so the mode-based hide rule below (a
+   class-specificity selector) can still win over it. */
+.app-buildrail--stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The tree scrolls inside the rail that contains it. build-shell.css sets
+   the rail height on a wide window, and responsive.css caps it when the rail
+   stacks below the map. */
+.app-buildrail--tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-buildrail--tree .world-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The Play-mode World card shares the Session tab with the Time, Encounters,
+   and Party cards, so its tree gets a smaller box. */
+.world-card .world-tree {
+  max-height: min(22rem, 45vh);
+}
+
+.world-card .world-tree__search {
+  margin-bottom: var(--space-2);
+}
+
+.world-tree__search {
+  width: 100%;
+}
+
+.world-tree {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.world-tree__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Each level indents by about half a chevron slot plus a small gap. The guide
+   line sits under the centre of the parent chevron. */
+.world-tree__children .world-tree__children {
+  padding-left: var(--space-1);
+  border-left: 1px solid var(--border);
+  margin-left: 0.55rem;
+}
+
+/* The tree item is the li, and it contains its whole branch, so its focus
+   ring goes on the name button of its own row. */
+.world-tree__item:focus-visible {
+  outline: none;
+}
+
+.world-tree__item:focus-visible > .world-tree__row .row-select {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* The node rows are .row-select buttons (base.css). */
+.world-tree__row .row-select {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* A fixed-width chevron slot on every row keeps labels aligned. Leaf rows
+   render an empty spacer in the same slot. */
+.world-tree__toggle {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.world-tree__toggle svg {
+  transition: transform var(--transition-fast) ease;
+}
+
+.world-tree__toggle--open svg {
+  transform: rotate(90deg);
+}
+
+.world-tree__toggle--leaf {
+  cursor: default;
+}
+
+/* Warning badge on a node nothing leads to or that has no way out. The
+   sentence itself is the tooltip and accessible name of the badge. */
+.world-tree__warning {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--warning);
+  font-size: var(--text-label);
+}
+
+/* The count of warnings inside a collapsed branch. The number takes the
+   muted text colour, because --warning is too light for label-sized text. */
+.world-tree__warning--hidden {
+  color: var(--text-muted);
+}
+
+.world-tree__warning--hidden svg {
+  color: var(--warning);
+}
+
+.world-tree__warning[hidden] {
+  display: none;
+}
+
+/* The actions button of a Build row. It stays faint until the row is
+   hovered or has focus, so a long list reads as names first. */
+.world-tree__more {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  opacity: 0.55;
+}
+
+.world-tree__row:hover .world-tree__more,
+.world-tree__item:focus > .world-tree__row .world-tree__more {
+  opacity: 1;
+}
+
+.world-tree__more:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* Layout reflow by mode: Build shows the world tree, Play shows the sidebar. */
+body.mode-play .app-buildrail {
+  display: none;
+}
+
+body.mode-build .app-sidebar {
+  display: none;
+}
+
+/* An authoring problem with the node in view. It sits under the Build tabs, so
+   it shows whichever tab is open, and the tabs stay in place when it comes and
+   goes. The text takes the body colour and the warning colour goes to the border and a tint:
+   --warning is a mid amber that clears AA against a surface only at heading
+   sizes, and this line is label-sized. */
+.build-warning {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  font-size: var(--text-label);
+}
+
+.build-warning__text {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+/* Nothing to warn about. The text element stays in the document for the sake
+   of its live region, so the empty state is a styling matter rather than a JS
+   one. */
+.build-warning:has(.build-warning__text:empty) {
+  display: none;
+}
+
+.generate__hint {
+  margin: 0 0 var(--space-2);
+}
+
+/* ==========================================================================
+   Tile palette (Build-mode right rail)
+   ========================================================================== */
+
+.palette__tools {
+  /* A 2-column grid so the four tool buttons are all the same width,
+     regardless of label length. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.palette__tools .palette__item {
+  /* Center the icon + label; the grid track sets the width. */
+  justify-content: center;
+  min-width: 0;
+}
+
+.palette__item--active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Art-size row: 1x/2x/3x stamp footprint for the next painted tile. */
+/* The Region brush picker, shown under the tools while that brush is active. */
+.palette__region {
+  margin-bottom: var(--space-3);
+}
+
+.palette__region[hidden] {
+  display: none;
+}
+
+.palette__region-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.palette__region-row .form__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.palette__hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-label);
+}
+
+.palette__scale {
+  margin-bottom: var(--space-3);
+}
+
+.palette__scale-label {
+  margin-right: auto;
+}
+
+.palette__scale .palette__item {
+  min-width: 2.5rem;
+  justify-content: center;
+}
+
+/* "Show variants" checkbox under the art-size row. */
+.palette__variants {
+  margin-bottom: var(--space-3);
+}
+
+/* Collapsible swatch sections (Terrain / Roads / Buildings / Interior). The
+   section list scrolls as a whole rather than each grid individually, when
+   build-shell.css gives it a fixed height. */
+.palette__sections {
+  overflow-y: auto;
+  /* Expanding a section can summon the vertical scrollbar, which narrows the
+     content box mid-layout and flashes a horizontal scrollbar. Reserve the
+     gutter up front and never scroll horizontally. */
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  /* The active swatch outline draws 3px outside the swatch (2px width plus
+     1px offset), and the overflow above clips anything past the padding
+     box. The padding gives the outline room on every side, and the negative
+     margin keeps the grid aligned with the rows above it. */
+  padding: 3px;
+  margin: -3px;
+}
+
+.palette__grid {
+  display: grid;
+  /* As many 2.875rem columns as the rail width allows, so a wider rail shows
+     more swatches per row. */
+  grid-template-columns: repeat(auto-fill, minmax(2.875rem, 1fr));
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+}
+
+/* `display: grid` outranks the hidden attribute, so a collapsed section's
+   grid needs the explicit override. */
+.palette__grid[hidden] {
+  display: none;
+}
+
+.palette__swatch {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  cursor: pointer;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.palette__swatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* While Inspect, Region, or an eraser is the tool, the swatches fade. A
+   click on one still picks it as the brush, and hover or focus shows it at
+   full strength. */
+.palette--tool .palette__swatch img {
+  opacity: 0.45;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.palette--tool .palette__swatch:hover img,
+.palette--tool .palette__swatch:focus-visible img {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Tile inspector (Build-mode right rail)
+   ========================================================================== */
+
+.tile-inspector__coord {
+  font-family: var(--font-mono);
+}
+
+.tile-inspector__field--inline {
+  color: var(--text);
+}
+
+/* The one-line hint under the Discoverable checkbox, indented to the label text. */
+.tile-inspector__hint {
+  margin: 0 0 0 1.6rem;
+  font-size: var(--text-label);
+}
+
+.tile-inspector__notes {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.tile-inspector__new-region {
+  align-self: flex-start;
+}
+
+/* ==========================================================================
+   Encounter authoring list (Build-mode right rail)
+   ========================================================================== */
+
+/* Each row stacks a header line (name + actions) over the stat chip grid. */
+.build-encounters__row {
+  padding: var(--space-1) 0;
+}
+
+.build-encounters__label {
+  flex: 1;
+  font-size: var(--text-label);
+}
+
+/* A placed encounter's name doubles as a "show on map" link. It is a .btn-bare
+   button, so only the label's own type size is set here. */
+.build-encounters__label--link {
+  font-size: var(--text-label);
+}
+
+.build-encounters__label--link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* The hint over the map while a creature dialog waits for a tile pick. It
+   sits below the map toolbar (2.25rem tall at the top of the map), so the
+   zoom and pan buttons stay in reach during the pick. */
+.map-pick-hint {
+  position: absolute;
+  top: calc(2 * var(--space-2) + 2.25rem);
+  left: 50%;
+  z-index: 2;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--space-3));
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  transform: translateX(-50%);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--text-label);
+  text-align: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.map-pick-hint__text {
+  margin: 0;
+}
+
+/* Only the Cancel button takes the pointer, so a click beside it still
+   reaches the tile under the hint. */
+.map-pick-hint .btn {
+  pointer-events: auto;
+}
+
+/* The Build-mode tool chip on the map toolbar. It names what a click on the
+   map does, so a brush whose palette is out of view never paints unseen. */
+.map-controls__tool {
+  max-width: 16rem;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  border-left: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
+  font-size: var(--text-label);
+  color: var(--overlay-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body:not(.mode-build) .map-controls__tool {
+  display: none;
+}
+
+/* The name of the picked swatch, above the swatch sections. */
+.palette__picked {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* The empty state over a map with no tiles. Build mode shows the card with
+   the paint and generate buttons, and Play mode shows the plain card. The
+   wrapper lets pointer events through to the canvas, and only the card
+   buttons take them. */
+.map-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  pointer-events: none;
+}
+
+.map-empty[hidden],
+body.mode-library .map-empty,
+body.mode-combat .map-empty,
+body.mode-build .map-empty__card--play,
+body:not(.mode-build) .map-empty__card--build,
+body.role-player .map-empty__gm {
+  display: none;
+}
+
+/* The card frame and its text let a click through to the canvas below, so the
+   cells under the card still paint. Only the buttons take the pointer. */
+.map-empty__card {
+  pointer-events: none;
+  max-width: 22rem;
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  text-align: center;
+  align-items: center;
+}
+
+.map-empty__card .btn {
+  pointer-events: auto;
+}
+
+.map-empty__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.map-empty__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+/* The parent name after a search result, as in "Temple, Ashogate". */
+.world-tree__parent {
+  color: var(--text-muted);
+}
+
+/* The head of the Tile inspector: the art of the tile beside its name. */
+.tile-inspector__art {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.tile-inspector__name {
+  font-weight: 600;
+}

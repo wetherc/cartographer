@@ -1,0 +1,584 @@
+/* ==========================================================================
+   Breadcrumb
+   ========================================================================== */
+
+.breadcrumb {
+  font-size: var(--text-label);
+}
+
+/* A crumb is a .btn-bare button, except for the last one, which is the current
+   location and so a plain span. */
+.breadcrumb__crumb {
+  color: var(--accent);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.breadcrumb__crumb:hover {
+  background: var(--surface-sunken);
+}
+
+/* The current location is a place name, so it wears the titling face; the
+   crumbs before it stay in the body face as plain links. */
+.breadcrumb__crumb[aria-current] {
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: default;
+}
+
+.breadcrumb__crumb[aria-current]:hover {
+  background: none;
+}
+
+.breadcrumb__anchor {
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+
+.breadcrumb__separator {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Dice tray
+   ========================================================================== */
+
+.dice-tray__summary .dice-tray__d20 {
+  color: var(--accent);
+}
+
+.dice-tray {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+/* The flex display beats the hidden attribute, so the closed tray needs this
+   rule to stay closed. */
+.dice-tray[hidden] {
+  display: none;
+}
+
+/* The dice sit in a grid that fits as many columns as the tray width allows.
+   Each cell is a small plate with the die name, a minus button, the count, and
+   a plus button. A cell needs 8rem for "d100" and its two buttons, so a
+   narrower cell would push the label under the minus button. A tray narrower
+   than one cell falls back to one full-width column. A die with a count other
+   than zero takes the accent color, so the loaded dice read at a glance. */
+.dice-tray__dice {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(8rem, 100%), 1fr));
+  gap: var(--space-1);
+}
+
+.dice-tray__die {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 2px var(--space-1) 2px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.dice-tray__die--set {
+  border-color: var(--accent);
+}
+
+.dice-tray__label {
+  flex: 1 0 auto;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dice-tray__die--set .dice-tray__label {
+  color: var(--accent);
+}
+
+.dice-tray__step.btn--icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.dice-tray__step.btn--icon:hover {
+  border-color: var(--border-strong);
+}
+
+.dice-tray__count {
+  min-width: 1.25rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.dice-tray__mode-row .seg-switch {
+  display: flex;
+  width: 100%;
+}
+
+.dice-tray__mode-row .seg-switch__btn {
+  flex: 1;
+  justify-content: center;
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+  text-align: center;
+}
+
+/* The DC field and the Roll button share the last line of the tray. */
+.dice-tray__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dice-tray__target-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dice-tray__target {
+  width: 4rem;
+  text-align: center;
+}
+
+.dice-tray__roll {
+  flex: 1;
+}
+
+.dice-tray__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  min-height: 1.5rem;
+}
+
+/* The display rule above beats the hidden attribute, so the empty box needs
+   its own rule to stay out of the layout before the first roll. */
+.dice-tray__result[hidden] {
+  display: none;
+}
+
+/* The total reads first and large, so the GM can call it out from across the
+   table. The dice and the modifier sit beside it in small type. */
+.dice-tray__total {
+  font-family: var(--font-mono);
+  font-size: var(--text-display);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dice-tray__detail {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.dice-tray__verdict {
+  flex-basis: 100%;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--success);
+}
+
+.dice-tray__verdict--fail {
+  color: var(--danger);
+}
+
+.dice-tray__title {
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Disclosure (collapsible panel headers)
+   ========================================================================== */
+
+/* A header is a .btn-bare button, so only the box it occupies is set here. A
+   header that carries .section-label as well takes the label type size from it,
+   which is what makes a collapsible group heading look like every other one. */
+.disclosure {
+  width: 100%;
+  padding: var(--space-1) 0;
+}
+
+.disclosure__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast) ease;
+}
+
+.disclosure--open .disclosure__chevron {
+  transform: rotate(90deg);
+}
+
+/* ==========================================================================
+   Fact line
+   ========================================================================== */
+
+/* A label over the value it names. The label's own casing and size come from
+   .section-label, so only the box is set here. */
+.fact-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* The dense form: the label beside its value instead of above it. A caller
+   that wants the values to line up down a block gives the label a fixed
+   width in its own sheet. */
+.fact-line--row {
+  flex-direction: row;
+  gap: var(--space-2);
+}
+
+.fact-line__value {
+  min-width: 0;
+}
+
+/* ==========================================================================
+   HP healthbar
+   ========================================================================== */
+
+/* One full-width line per pool on the collapsed card: label, track, numbers. */
+.stat-bar {
+  width: 100%;
+  min-width: 0;
+}
+
+.stat-bar__label {
+  flex-shrink: 0;
+  width: 2.5rem;
+}
+
+.stat-bar__track {
+  flex: 1;
+  height: 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.stat-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
+
+.stat-bar__fill--mana {
+  background: var(--mana);
+}
+
+.stat-bar__fill--critical {
+  background: var(--danger);
+}
+
+.stat-bar__text {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The numbers sit at the end of the row, after the heal stepper on the sheet.
+   Their box is wide enough for three digits on each side of the slash, so a
+   pool crossing 9/10 or 99/100 does not widen the text and shove the track and
+   the steppers to its left. The compact form is excluded: its numbers are
+   absolutely placed over a fixed-width track and reserve nothing. */
+.stat-bar:not(.stat-bar--compact) .stat-bar__text {
+  flex-shrink: 0;
+  min-width: 4.75rem;
+}
+
+/* At-a-glance health, for a roster row with no space for a label column: a
+   fixed-width track with the raw numbers centered on top of the fill. */
+.stat-bar--compact {
+  flex: 0 0 auto;
+  width: 4.5rem;
+}
+
+.stat-bar--compact .stat-bar__track {
+  position: relative;
+  height: 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.stat-bar--compact .stat-bar__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Banded fill: the whole bar takes the color of the remaining fraction,
+   rather than flipping one critical state. An unauthored pool bands to
+   "none" and stays an empty track. */
+.stat-bar[data-band='mid'] .stat-bar__fill {
+  background: var(--warning);
+}
+
+.stat-bar[data-band='low'] .stat-bar__fill {
+  background: var(--danger);
+}
+
+/* The compact bar's numbers lie over the fill, and full text on a solid band
+   color is unreadable in one theme or the other. The compact fill is
+   therefore a tint of the band color over the sunken track, the same
+   treatment as a badge, so the text always sits on a quiet ground while the
+   band hue still reads. The full-size bars above keep their solid fills;
+   nothing overlays them. These sit after the banded rules so the compact
+   tint wins each band at equal specificity. */
+.stat-bar--compact .stat-bar__fill {
+  background: color-mix(in srgb, var(--success) 38%, var(--surface-sunken));
+}
+
+.stat-bar--compact[data-band='mid'] .stat-bar__fill {
+  background: color-mix(in srgb, var(--warning) 38%, var(--surface-sunken));
+}
+
+.stat-bar--compact[data-band='low'] .stat-bar__fill {
+  background: color-mix(in srgb, var(--danger) 38%, var(--surface-sunken));
+}
+
+/* Temporary points riding on top of the pool (bonus HP). */
+.stat-bar__bonus {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--mana);
+}
+
+/* Spell-slot readout on the sheet: one line per spell level, with the ordinal,
+   the pips, and the free count such as "2 of 3". Shares .stat-bar's label
+   column, so every level line stays indented past the "Slots" label. */
+.slot-line {
+  align-items: flex-start;
+
+  /* The line reserves one row of groups even when it has nothing to show, so
+     selecting a non-caster after a caster does not move the rows below the
+     header. One row is one line of 24 px pip buttons. A pool keeps at most four
+     slots, so its pips always fit on one line. */
+  min-height: 24px;
+}
+
+/* The reserved line for a character with no slot pools at all. In the
+   stacked sheet it takes no room, because an empty band of one pip row sits
+   between the level line and the ability scores. The two-column sheet keeps
+   the room (character.css), where the line shares a row with the HP bar. */
+.slot-line--empty {
+  display: none;
+  visibility: hidden;
+}
+
+.slot-line__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The spell level over its pips and the free count, such as "2 of 3". */
+.slot-line__level {
+  min-width: 2.25rem;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.slot-line__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* A spent slot: the hollow ring dims and takes a diagonal stroke, so it reads
+   apart from a free pip by its form as well as its weight. */
+.slot-line__pip {
+  position: relative;
+}
+
+.slot-line__pip--spent {
+  opacity: 0.45;
+}
+
+.slot-line__pip--spent::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.85em;
+  height: 2px;
+  background: currentColor;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.slot-line__groups {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.slot-line__group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.slot-line__pips {
+  display: flex;
+  min-width: calc(4 * 24px);
+  gap: 0;
+  font-size: 1rem;
+  line-height: 1.1;
+  color: var(--mana);
+}
+
+/* Interactive pip: click a filled one to spend the slot, an empty one to
+   restore it. A .btn-bare button, so the pip glyph is the whole control. */
+.slot-line__pip,
+.exhaustion-bar__pip {
+  /* WCAG 2.5.8 asks for a 24 px target. The glyph is about 12 px wide, so the
+     button pads out around it. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.slot-line__pip:hover:not(:disabled) {
+  transform: scale(1.25);
+}
+
+/* A spent slot a player may not refill: still readable, no longer a control. */
+.slot-line__pip:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Death-save line. It shows on the combat screen and on the character sheet
+   while a character is at 0 HP, from one builder, so both read the same. The
+   pips are text glyphs: filled for a save already rolled, empty for one still
+   to come. Color separates the two halves, and the row carries an aria-label
+   with the counts in words, because a row of circles does not read aloud. */
+.death-saves__pips {
+  font-size: var(--text-label);
+  line-height: 1.1;
+}
+
+.death-saves__pip--success {
+  color: var(--success);
+}
+
+.death-saves__pip--failure {
+  color: var(--danger);
+}
+
+/* The first failure pip, which starts the second half of the row. */
+.death-saves__pip--split {
+  margin-left: var(--space-2);
+}
+
+/* A dead character's line is the loudest thing in its column. A stable one is
+   a resolved state, so it stays in the muted voice the label already has. */
+.death-saves--dead .death-saves__label {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Exhaustion row. It shows on the character sheet and on both creature panels,
+   from one builder, so all three read the same. One pip per level, filled up to
+   the current one. A GM clicks a pip to set the level, so each pip is a button
+   with its own accessible name. A spectator gets plain glyphs instead. */
+.exhaustion-bar__pips {
+  font-size: var(--text-label);
+  line-height: 1.1;
+  gap: 0.1rem;
+  color: var(--warning);
+}
+
+.exhaustion-bar__pip:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+/* Each pip is a ring with its level number inside. A filled pip is a solid
+   disc, and its number takes the contrast color of the disc. */
+.exhaustion-bar__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.exhaustion-bar__pip--filled .exhaustion-bar__num {
+  background: var(--warning);
+  border-color: var(--warning);
+  color: var(--warning-contrast);
+}
+
+/* The sixth level kills, so its pip reads apart from the five that only cost a
+   penalty. A GM sees where the row ends before clicking it. */
+.exhaustion-bar__pip--fatal {
+  color: var(--danger);
+}
+
+.exhaustion-bar__pip--filled.exhaustion-bar__pip--fatal .exhaustion-bar__num {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-contrast);
+}
+
+/* At the fatal level the whole row is the loudest thing on the card. */
+.exhaustion-bar--fatal .exhaustion-bar__summary {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* The More or Less button under a folded text (FoldText.js). */
+.fold-text__more {
+  align-self: flex-start;
+  min-height: 0;
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: var(--text-label);
+  text-decoration: underline;
+}
+
+/* FoldText.js hides the button while the text fits. The .btn display rule
+   otherwise wins over the hidden attribute and shows a More that folds
+   nothing. */
+.fold-text__more[hidden] {
+  display: none;
+}
