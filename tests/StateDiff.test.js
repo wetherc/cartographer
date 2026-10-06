@@ -15,9 +15,17 @@ import { buildState } from '../src/storage/SaveManager.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 
-/** A state whose every id-keyed collection is populated, for path coverage. */
+/** @type {ReturnType<typeof buildState> | undefined} */
+let shared;
+
+/**
+ * A state whose every id-keyed collection is populated, for path coverage.
+ * The build takes about 200 ms, so the suite shares one state, and no test
+ * writes into it.
+ */
 function exampleState() {
-  return buildState(buildExampleCampaign(new TilePalette()));
+  shared ??= buildState(buildExampleCampaign(new TilePalette()));
+  return shared;
 }
 
 /** Deep clone through JSON, which is the shape the log round-trips through. */
@@ -373,7 +381,12 @@ test('the example campaign round-trips through a diff of unrelated edits', () =>
 });
 
 test('randomly mutated campaigns round-trip', () => {
-  const base = clone(exampleState());
+  // Each round clones, diffs, and compares the whole state, so its cost grows
+  // with the 28,000 tiles of the example. Eight tiles a node leave every node
+  // and every collection in place, and cut a round from about 100 ms to a few.
+  const full = exampleState();
+  const nodes = full.nodes.map((n) => ({ ...n, tiles: n.tiles.slice(0, 8) }));
+  const base = clone({ ...full, nodes });
   let seed = 20260727;
   const random = () => {
     seed = (seed * 1103515245 + 12345) % 2147483648;
