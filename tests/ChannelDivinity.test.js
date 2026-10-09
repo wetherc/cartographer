@@ -227,3 +227,21 @@ test('a legendary undead that lets the save fail is turned', async () => {
   assert.equal(s2.legendaryResistanceUsed, undefined);
   assert.ok(app.log.some((l) => /^Skeleton 2 is turned/.test(l)));
 });
+
+test('Turn Undead and Preserve Life do nothing outside a fight', async () => {
+  const app = fight();
+  const cleric = found(app);
+  app.state.combat = null;
+  const prompt = /** @type {any} */ (async () => ({ targets: 's1' }));
+  assert.equal(await turnUndead(app, cleric, { prompt }), false);
+  assert.equal(await preserveLife(app, cleric, { prompt }), false);
+  assert.equal(uses(app), 1);
+});
+
+test('a Turn Undead pick that names no fighter in the list is skipped', async () => {
+  const app = fight();
+  const prompt = /** @type {any} */ (async () => ({ targets: 'ghost, ,s1' }));
+  assert.equal(await turnUndead(app, found(app), { prompt, rng: () => 0 }), true);
+  assert.equal(uses(app), 0);
+  assert.ok(app.log.some((l) => /^Skeleton/.test(l)));
+});

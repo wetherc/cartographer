@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { creatureSummary, spellSummary } from '../src/app/librarySummaries.js';
+import { creatureSummary, featSummary, spellSummary } from '../src/app/librarySummaries.js';
 
 const bite = { name: 'Bite', damage: [{ count: 2, sides: 4, damageType: 'piercing' }] };
 
@@ -34,4 +34,56 @@ test('creatureSummary names who a friendly creature is', () => {
 test('spellSummary capitalizes the school', () => {
   const spell = { level: 0, school: 'evocation', effect: { kind: 'attack' }, concentration: false };
   assert.equal(spellSummary(/** @type {any} */ (spell)), 'Cantrip Evocation | attack');
+});
+
+test('spellSummary marks a leveled concentration spell', () => {
+  const spell = { level: 2, school: 'enchantment', effect: { kind: 'save' }, concentration: true };
+  assert.equal(
+    spellSummary(/** @type {any} */ (spell)),
+    'Level 2 Enchantment | save | concentration',
+  );
+});
+
+test('featSummary names each effect kind', () => {
+  const feat = (effects, prerequisite) => /** @type {any} */ ({ effects, prerequisite });
+  assert.equal(featSummary(feat([{ kind: 'asi', abilities: ['STR', 'DEX'] }])), '+1 STR/DEX');
+  assert.equal(featSummary(feat([{ kind: 'asi', abilities: [] }])), '+1 any');
+  assert.equal(
+    featSummary(feat([{ kind: 'concentrationAdvantage' }])),
+    'advantage on concentration saves',
+  );
+  assert.equal(featSummary(feat([{ kind: 'hp', perLevel: 2 }])), '+2 HP per level');
+  assert.equal(featSummary(feat([{ kind: 'initiative', bonus: 5 }])), '+5 initiative');
+  assert.match(
+    featSummary(
+      feat([{ kind: 'rider', rider: { dice: { count: 1, sides: 4 }, rolls: ['save'] } }]),
+    ),
+    / rider$/,
+  );
+});
+
+test('featSummary lists proficiency picks with singular and plural counts', () => {
+  const effect = {
+    kind: 'proficiency',
+    skills: { choose: 1 },
+    saves: { choose: 2 },
+    expertise: { choose: 1 },
+    armor: ['light', 'medium'],
+    tools: { choose: 1 },
+    languages: { choose: 1 },
+  };
+  assert.equal(
+    featSummary(/** @type {any} */ ({ effects: [effect] })),
+    '1 skill, 2 saves, expertise, armor: light, medium, tools, languages',
+  );
+  const plural = { kind: 'proficiency', skills: { choose: 3 }, saves: { choose: 1 } };
+  assert.equal(featSummary(/** @type {any} */ ({ effects: [plural] })), '3 skills, 1 save');
+});
+
+test('featSummary reads text only for a feat with no effects, and flags a prerequisite', () => {
+  assert.equal(featSummary(/** @type {any} */ ({ effects: [] })), 'text only');
+  assert.equal(
+    featSummary(/** @type {any} */ ({ effects: [], prerequisite: 'STR 13' })),
+    'text only | prerequisite',
+  );
 });

@@ -64,15 +64,19 @@ as it loads. Both need a document, so neither is in the table.
 
 Because every other file has a row, the line total sits well below the
 per-file scores of the pure modules. For example, the line total is near
-78 percent, while each module in `src/entities/` covers 100 percent of its lines. These
+79 percent, while each module in `src/entities/` covers 100 percent of its lines. These
 rows pull the total down:
 
 | Files | Reason for the low score |
 | --- | --- |
 | `src/ui/*` panels, dialogs, and widgets | They build and mount elements, and a runner with no DOM can call almost none of that code |
 | `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The other `src/app/` modules keep the per-feature logic, and the suites cover it there |
-| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, and `MapExport` | They draw to a 2D context, and only a browser shows what they drew |
-| `src/storage/fileIO.js` | It keeps the download and upload primitives, which need a browser |
+| The `src/app/` action modules: `campaignActions`, `replaceActions`, `historySteps`, `externalSaves`, `nodeActions`, `generateAction`, `rosterActions`, `creatureForm`, `encounterPanels`, `splitParty`, and `sessionControls` | Each one opens dialogs, listens for clicks, or reloads the page. Their decisions live in pure modules with their own tests, such as `view/NodeForms.js`, `view/ReplaceFlow.js`, `view/SaveReport.js`, `map/NodeCleanup.js`, and `storage/SaveNotices.js` |
+| The small `src/app/` glue modules: `headerMenu`, `mapBuildTools`, `mapChrome`, `mapNarration`, `mapPick`, `mapTeleport`, `onboarding`, `onboardingNext`, `phoneViews`, `shortcuts`, `shortenedLoadPrompts`, and the dialog of `healCure` | They toggle elements, ask a question in a dialog, or move the view. `mapTeleport` reads its landing from `view/TeleportLanding.js` |
+| The canvas modules: `MapCanvas`, `MapCanvasPointer`, `MapRenderer`, `MapMarkers`, `MapDecorations`, `RegionOverlay`, `CanvasText`, and `MapExport` | They draw to a 2D context or handle pointer events, and only a browser shows what they drew. Their layout math lives in tested modules such as `RegionLabels.js`, `MapGeometry.js`, and `CoordLabels.js` |
+| `src/storage/fileIO.js` and `src/storage/IndexedDbAssets.js` | They keep the download, upload, and IndexedDB primitives, which need a browser |
+| `src/view/CharacterClaim.js` | It builds the character picker of a Player tab with the helpers in `ui/` |
+| `docs/gallery/runtime.js` | It runs the widget gallery page in a browser |
 
 A low score on one of these files is expected. A low score on any other
 file shows missing tests.

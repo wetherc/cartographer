@@ -1,11 +1,10 @@
-import { tileIdAt } from '../map/MapGeometry.js';
-import { resolveEntryTile } from '../map/EntryPoint.js';
 import { forgetCharacterEntries, forgetEntries } from '../map/EntryMemory.js';
 import { recallAll } from '../party/CharacterTokens.js';
 import { textButton } from '../ui/buttons.js';
 import { el } from '../ui/dom.js';
 import { openDialog } from '../ui/Modal.js';
 import { isGM } from '../view/ViewRole.js';
+import { teleportLanding } from '../view/TeleportLanding.js';
 import { passLock } from './lockGuard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -68,20 +67,8 @@ export function createTeleport(app, env, travel) {
     if (choice === 'view') env.goToNode(nodeId);
     if (choice !== 'teleport') return;
     if (!(await passLock(app, node))) return;
-    // Resolve the landing spot against the node's real tiles. This makes
-    // sure that a teleport into a sparse or walled node, for example a
-    // generated dungeon, never strands the party on a wall or an empty
-    // cell. The party lands on the node's first revealed tile, and a
-    // tile-less node falls back to the grid center.
-    const target = resolveEntryTile(
-      node,
-      node.tiles.find((t) => t.revealed)?.id ??
-        tileIdAt(Math.floor(node.width / 2), Math.floor(node.height / 2)),
-    );
-    // No revealed tile means the party has never set foot here. This
-    // teleport is then the region's discovery. The code checks this before
-    // moveTo reveals fog.
-    const firstVisit = !node.tiles.some((t) => t.revealed);
+    // Read the landing and the discovery flag before moveTo reveals fog.
+    const { tileId: target, firstVisit } = teleportLanding(node);
     const before = grid.getNode(nodeId);
     partyTracker.moveTo(nodeId, target);
     state.characters = recallAll(state.characters); // the whole party teleports

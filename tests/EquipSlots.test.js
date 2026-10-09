@@ -75,3 +75,16 @@ test('the picker detail lists every effect and a stack size', () => {
     '3 carried',
   );
 });
+
+test('an item of a type the slot refuses, kept from an old save, sorts after the rest', () => {
+  const hero = kit();
+  const old = { ...hero, equipment: { ...hero.equipment, offHand: 'potion' } };
+  const choices = slotChoices(old, slot('offHand'));
+  assert.equal(choices.equipped?.id, 'potion');
+  assert.equal(choices.items.at(-1)?.id, 'potion');
+});
+
+test('the picker detail reads an item with no quantity as one', () => {
+  const { quantity: _drop, ...bare } = item('r', 'Rope', { type: 'gear' });
+  assert.equal(pickerDetail(/** @type {any} */ (bare)), '');
+});

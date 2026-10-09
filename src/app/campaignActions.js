@@ -13,6 +13,7 @@ import { saveCampaign } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { isGM } from '../view/ViewRole.js';
 import { saveStatusText } from '../view/SaveStatus.js';
+import { saveToast } from '../view/SaveReport.js';
 import { wirePlayerPatches } from './playerPatches.js';
 import { savesHeld } from '../storage/ShortenedLoad.js';
 import { confirmSaveWhileHeld } from './shortenedLoadPrompts.js';
@@ -241,9 +242,9 @@ export function wireCampaignActions(app) {
    */
   function reportSave(result, automatic = false) {
     const { landed, message } = saveOutcome(result, mirrorActive());
-    const quiet = !landed && automatic && failureShown;
-    if (message && !quiet) app.toasts.show(message, { level: landed ? 'status' : 'error' });
-    failureShown = !landed && (automatic || failureShown);
+    const report = saveToast({ landed, message }, automatic, failureShown);
+    if (report.toast) app.toasts.show(report.toast.message, { level: report.toast.level });
+    failureShown = report.failureShown;
     if (!landed) return false;
     reportFootprint(result.footprint);
     return true;

@@ -23,6 +23,7 @@ import { replaceIsUndoable, saveCampaign } from '../storage/HistoryLog.js';
 import { mirrorActive } from '../storage/AssetMirror.js';
 import { discardPatches } from '../storage/PlayerPatch.js';
 import { confirmShortenedImport } from './shortenedLoadPrompts.js';
+import { importProblem, importedToast, reloadToast } from '../view/ReplaceFlow.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -64,7 +65,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
     // Patches of player tabs name entities of the campaign that this one
     // replaces, so the next GM boot does not merge them.
     discardPatches();
-    queueToastAfterReload([toastMessage, message, loss].filter(Boolean).join(' '));
+    queueToastAfterReload(reloadToast([toastMessage, message, loss]));
     setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
     location.reload();
   }
@@ -138,10 +139,9 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
       app.toasts.show('That file is not a readable campaign JSON.', { level: 'error' });
       return;
     }
-    // Any JSON record parses as a campaign, and one with no map nodes gives
-    // the party and the map view nowhere to start.
-    if (state.nodes.length === 0) {
-      app.toasts.show('That file has no map, so it is not a campaign file.', { level: 'error' });
+    const problem = importProblem(state);
+    if (problem) {
+      app.toasts.show(problem, { level: 'error' });
       return;
     }
     if (!(await confirmShortenedImport(state))) return;
@@ -180,6 +180,6 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
     // The reload makes every module re-initialize from the same
     // loadFromLocalStorage path that a normal page load takes, including the
     // library wiring's fresh read of the customs written above.
-    persistAndReload(state, adopt ? 'Campaign and library imported.' : 'Campaign imported.');
+    persistAndReload(state, importedToast(adopt));
   });
 }

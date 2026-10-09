@@ -1,13 +1,21 @@
-import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.js';
+import { tilesOutsideBounds } from '../map/TileGrid.js';
 import { collectSubtreeIds } from '../map/WorldTree.js';
-import { NODE_KINDS, coerceNodeKind, environFieldOptions } from '../map/NodeKinds.js';
+import { coerceNodeKind } from '../map/NodeKinds.js';
 import { MAX_MAP_EDGE, freshNodeId, mapSizeProblem } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { deleteNodeQuestion } from '../view/DeleteNodeText.js';
-import { capitalize } from '../util/text.js';
-import { clampInt } from '../util/num.js';
+import {
+  deleteFallback,
+  editedNode,
+  editedSize,
+  newChildNode,
+  nodeFieldChange,
+  nodeKindFields,
+  shrinkQuestion,
+  sizeField,
+} from '../view/NodeForms.js';
 import { resyncMapViews } from './mapResync.js';
 import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
 import { keyItemNames, lockFields, readLockFields, unknownKeyWarning } from '../map/NodeLock.js';
@@ -32,65 +40,6 @@ function inLastSave(nodeId) {
   } catch {
     return false;
   }
-}
-
-/**
- * These are the modal fields (kind and environment) shared by the new-node
- * and edit-node prompts. Environment lists the tags of the chosen kind, and
- * `nodeFieldChange` refills it when Kind changes, so a region never offers
- * "Inn". The model stores whatever string is chosen.
- * @param {NodeKind} kind
- * @param {string | null} environ
- * @returns {import('../types/modal.js').ModalField[]}
- */
-function nodeKindFields(kind, environ) {
-  return [
-    {
-      name: 'kind',
-      label: 'Kind',
-      type: 'select',
-      value: kind,
-      options: NODE_KINDS.map((k) => ({ value: k, label: capitalize(k) })),
-    },
-    {
-      name: 'environ',
-      label: 'Environment',
-      type: 'select',
-      value: environ ?? '',
-      options: environFieldOptions(kind, environ),
-    },
-  ];
-}
-
-/**
- * The onChange of the node dialogs. A Kind change refills Environment with
- * the tags of the new kind, and a Lock change enables Key item only for a
- * lock.
- * @param {string} name
- * @param {import('../types/modal.js').ModalFormHandle} form
- */
-export function nodeFieldChange(name, form) {
-  if (name === 'kind') {
-    form.setOptions('environ', environFieldOptions(form.get('kind'), null));
-  } else if (name === 'lockState') {
-    form.setDisabled('lockRequires', form.get('lockState') === '');
-  }
-}
-
-/**
- * A map width or height field of the New map and Map settings dialogs. The
- * caption states the range. The field sets no `min` or `max`, because the
- * number field moves a value outside those bounds into range when it loses
- * focus, and a click on Create would then accept 64 for a typed 3000 with no
- * message. `mapSizeProblem` refuses the value instead and names the field.
- * @param {'width' | 'height'} name
- * @param {string | number} value
- * @param {number} max
- * @returns {import('../types/modal.js').ModalField}
- */
-function sizeField(name, value, max) {
-  const label = `${capitalize(name)} (tiles, 1 to ${max})`;
-  return { name, label, type: 'number', value };
 }
 
 /**
@@ -135,15 +84,7 @@ export function createNodeActions(app, env) {
     );
     if (!values) return null;
     const id = freshNodeId(nodeExists);
-    const width = clampInt(values.width, 1);
-    const height = clampInt(values.height, 1);
-    const kind = coerceNodeKind(values.kind, 'region');
-    grid.addNode(
-      createMapNode(id, values.name.trim() || 'Untitled', parentId, width, height, {
-        kind,
-        environ: values.environ || null,
-      }),
-    );
+    grid.addNode(newChildNode(id, parentId, values));
     // This is not a resync. A new empty node changes nothing that the
     // canvas or the breadcrumb draws, only the tree it appears in and the
     // Region brush list.
@@ -257,9 +198,7 @@ export function createNodeActions(app, env) {
       app.actions.logEvent('travel', `The party moves to ${parent?.name ?? after.party.nodeId}.`);
     }
     if (removed.has(navigator.currentNodeId)) {
-      const fallback =
-        node.parentId && grid.getNode(node.parentId) ? node.parentId : [...grid.nodes.keys()][0];
-      env.goToNode(fallback);
+      env.goToNode(deleteFallback(node, nodeExists, [...grid.nodes.keys()]));
     } else {
       // The current node survived, but a link it drew can be gone.
       resyncMapViews(app, env);
@@ -316,30 +255,22 @@ export function createNodeActions(app, env) {
         },
       );
       if (!values) return;
-      width = clampInt(values.width, 1, Infinity, node.width);
-      height = clampInt(values.height, 1, Infinity, node.height);
+      ({ width, height } = editedSize(node, values));
       const lost = tilesOutsideBounds(node, width, height);
       if (
         !lost.length ||
-        (await confirmModal(
-          `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
-          { title: `Shrink ${node.name}?`, variant: 'danger', confirmLabel: 'Shrink' },
-        ))
+        (await confirmModal(shrinkQuestion(node.name, lost.length), {
+          title: `Shrink ${node.name}?`,
+          variant: 'danger',
+          confirmLabel: 'Shrink',
+        }))
       ) {
         break;
       }
       typed = values;
     }
-    const kind = coerceNodeKind(values.kind, node.kind);
+    grid.updateNode(editedNode(node, values));
     const lock = readLockFields(values);
-    const { lock: _old, ...resized } = resizeNode(node, width, height);
-    grid.updateNode({
-      ...resized,
-      ...(lock ? { lock } : {}),
-      name: values.name.trim() || node.name,
-      kind,
-      environ: values.environ || null,
-    });
     app.actions.markDirty();
     const keyWarning = unknownKeyWarning(lock, keyNames);
     if (keyWarning) app.toasts.show(keyWarning);

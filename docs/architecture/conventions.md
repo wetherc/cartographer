@@ -411,8 +411,9 @@ the canvas, and you check the glue in a browser.
 | `entities/ItemDraft.js`, `entities/SpellDraft.js` | `ui/ItemForm.js`, `ui/SpellForm.js` |
 | `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcuts.js` |
 | `map/NodeEdits.js`, `map/NodeCleanup.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |
+| `view/NodeForms.js`, `view/ReplaceFlow.js`, `view/SaveReport.js`, `view/TeleportLanding.js` | `app/nodeActions.js`, `app/replaceActions.js`, `app/campaignActions.js`, `app/mapTeleport.js` |
 
-The last four rows split a UI or wiring module in the same way. Make the
+The last five rows split a UI or wiring module in the same way. Make the
 same split when you change such a module, because the decision that glue
 makes usually does not need the DOM. A submit handler that reads six inputs
 and builds an object is a control read plus a pure function. A keydown
