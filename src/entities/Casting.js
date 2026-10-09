@@ -47,7 +47,8 @@ export { buffCondition };
  * reads. The type rules of a spell read `creatureType` and
  * `conditionImmunities` (see `SpellTypeRules.js`). `evasion` marks a target
  * with the Evasion feature, which takes no damage from a DEX save that halves
- * on a success and half on a failure.
+ * on a success and half on a failure. `lucky` marks a target with the
+ * Halfling's Lucky trait, which rolls a natural 1 on its save again.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -64,6 +65,7 @@ export { buffCondition };
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
  *   evasion?: boolean,
+ *   lucky?: boolean,
  * }} CastTarget
  */
 

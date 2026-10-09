@@ -93,7 +93,8 @@ export const DEFAULT_RACES = [
     weapons: [],
     tools: [],
     languages: ['Common', 'Draconic'],
-    traits: ['Draconic Ancestry', 'Breath Weapon', 'Damage Resistance'],
+    resistanceChoice: ['acid', 'cold', 'fire', 'lightning', 'poison'],
+    traits: ['Draconic Ancestry', 'Breath Weapon'],
   },
   {
     id: 'gnome',

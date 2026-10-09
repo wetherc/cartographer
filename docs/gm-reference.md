@@ -2583,9 +2583,30 @@ feat that grants expertise.
 
 Creation picks a class, a race, and a background, and offers the skill
 choices of the class. A Half-Elf also picks two abilities other than CHA
-that gain +1 each, and two skills of any kind (Skill Versatility). From these three choices, the sheet assembles the
-proficiencies: saving throws, skills, weapons, armor, tools, and languages.
-Every list stays editable afterward.
+that gain +1 each, and two skills of any kind (Skill Versatility). A
+Dragonborn picks the damage type of its Draconic Ancestry and resists that
+type. From these choices, the sheet assembles the proficiencies: saving
+throws, skills, weapons, armor, tools, and languages. Every list stays
+editable afterward.
+
+These race traits change rolls by themselves:
+
+| Trait | Race | Effect |
+| --- | --- | --- |
+| Lucky | Halfling | A natural 1 on an ability check or a saving throw rolls again, and the new roll stands |
+| Brave | Halfling | Advantage on a spell save against Frightened |
+| Fey Ancestry | Elf, Half-Elf | Advantage on a spell save against Charmed |
+| Dwarven Resilience | Dwarf | Resistance to poison damage, and advantage on a spell save that poisons or deals poison damage |
+| Gnome Cunning | Gnome | Advantage on every INT, WIS, and CHA save against a spell |
+
+The app applies Lucky to the saves and checks that it rolls, not to attack
+rolls. The save traits apply to the saves that a spell asks for. A save
+from a creature action or one that the GM calls at the table still needs
+the advantage set by hand. The remaining race traits are text on the sheet,
+and the GM applies them: the Dragonborn Breath Weapon, Stonecunning, the
+High Elf cantrip, the Dwarf tool pick, Trance, Naturally Stealthy, Halfling
+Nimbleness, Artificer's Lore, Tinker, Relentless Endurance,
+Savage Attacks, Hellish Resistance, Infernal Legacy, and Extra Language.
 
 The class sets the hit die, and the class with its subclass sets the caster
 type. Max HP comes from the hit die plus the CON modifier per level. The Hill

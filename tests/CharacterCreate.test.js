@@ -442,3 +442,16 @@ test('buildCharacter applies the Half-Elf ability and skill picks', () => {
   assert.deepEqual(c.raceTraits?.abilityIncreases, { CHA: 2, STR: 1, CON: 1 });
   assert.deepEqual(getProficiencies(c).skills.sort(), ['arcana', 'stealth']);
 });
+
+test('a Dragonborn pick shows the ancestry resistance and buildCharacter applies it', () => {
+  const form = fakeForm({ race: 'dragonborn' });
+  characterFormChange('race', form);
+  assert.equal(form.hidden.raceResistance, false);
+  const field = characterFields().find((f) => f.name === 'raceResistance');
+  assert.deepEqual(
+    field?.options?.map((o) => o.value),
+    ['acid', 'cold', 'fire', 'lightning', 'poison'],
+  );
+  const c = buildCharacter(values({ race: 'dragonborn', raceResistance: 'cold' }), []);
+  assert.deepEqual(c.raceTraits?.resistances, ['cold']);
+});

@@ -145,6 +145,7 @@ export function targetSave(target, dc, failedBy, rng) {
   return resolveSave(target.saveBonus ?? 0, dc, {
     mode: target.saveMode ?? 'normal',
     conditions: [...(target.conditions ?? []), ...(target.riders ?? [])],
+    lucky: target.lucky === true,
     rng,
   });
 }

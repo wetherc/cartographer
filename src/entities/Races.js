@@ -52,16 +52,18 @@ function snapshotRace(def) {
       ? { abilityChoice: { ...def.abilityChoice, exclude: [...def.abilityChoice.exclude] } }
       : {}),
     ...(def.skillChoice ? { skillChoice: { ...def.skillChoice } } : {}),
+    ...(def.resistanceChoice ? { resistanceChoice: [...def.resistanceChoice] } : {}),
   };
 }
 
 /**
  * The valid picks for a race's choices. Ability picks must be distinct and
  * outside the race's exclude list, and skill picks must be distinct. Each
- * list stops at the race's count, so extra or invalid picks drop out.
+ * list stops at the race's count, so extra or invalid picks drop out. The
+ * resistance pick must be one of the race's `resistanceChoice` types.
  * @param {RaceDef} def
  * @param {RacePicks} picks
- * @returns {{ abilities: string[], skills: string[] }}
+ * @returns {{ abilities: string[], skills: string[], resistance: string | null }}
  */
 export function validRacePicks(def, picks) {
   const choice = def.abilityChoice;
@@ -73,6 +75,10 @@ export function validRacePicks(def, picks) {
   return {
     abilities: abilities.slice(0, choice?.count ?? 0),
     skills: skills.slice(0, def.skillChoice?.count ?? 0),
+    resistance:
+      picks.resistance && def.resistanceChoice?.includes(picks.resistance)
+        ? picks.resistance
+        : null,
   };
 }
 
@@ -110,7 +116,7 @@ export function withRace(character, raceId, picks = {}) {
   const def = getRace(raceId);
   if (!def) return character;
   const stats = statsWithoutRace(character);
-  const { abilities, skills } = validRacePicks(def, picks);
+  const { abilities, skills, resistance } = validRacePicks(def, picks);
   /** @type {Record<string, number>} */
   const gains = { ...def.abilityIncreases };
   const amount = def.abilityChoice?.amount ?? 0;
@@ -118,8 +124,12 @@ export function withRace(character, raceId, picks = {}) {
   for (const [key, gain] of Object.entries(gains)) {
     stats[key] = (stats[key] ?? 10) + gain;
   }
+  const snapshot = snapshotRace(def);
   const raceTraits = {
-    ...snapshotRace(def),
+    ...snapshot,
+    ...(resistance
+      ? { resistances: [...snapshot.resistances, resistance], chosenResistance: resistance }
+      : {}),
     abilityIncreases: gains,
     ...(skills.length ? { chosenSkills: skills } : {}),
   };
@@ -163,9 +173,11 @@ export function resolveRace(character) {
   const snapshot = snapshotRace(def);
   const applied = character.raceTraits?.abilityIncreases;
   const chosen = character.raceTraits?.chosenSkills ?? [];
+  const picked = character.raceTraits?.chosenResistance;
   return {
     ...snapshot,
     ...(applied ? { abilityIncreases: { ...applied } } : {}),
     ...(chosen.length ? { chosenSkills: [...chosen] } : {}),
+    ...(picked ? { resistances: [...snapshot.resistances, picked], chosenResistance: picked } : {}),
   };
 }

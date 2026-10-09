@@ -17,6 +17,7 @@ import { riderSources } from './FeatChoices.js';
 import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
 import { hasFeature } from './Features.js';
 import { listASIChoices } from './LevelUp.js';
+import { isLucky } from './RaceTraits.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -104,15 +105,25 @@ export function proficientSave(character, ability) {
  * judges nothing. Advantage and disadvantage use the shared dice roller,
  * which keeps the discarded die in the result. The rider dice draw before the
  * d20.
+ *
+ * With `lucky` (the Halfling trait), a natural 1 on the kept die rolls the
+ * d20 again, and the new roll stands.
  * @param {number} bonus
  * @param {number | null} dc
  * @param {import('../types/entities.js').RiderRoll} kind
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} opts
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean }} opts
  * @returns {CheckResult}
  */
-function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, conditions = [] }) {
+function resolveD20(
+  bonus,
+  dc,
+  kind,
+  { mode = 'normal', rng = Math.random, conditions = [], lucky = false },
+) {
   const rider = rollRiders(conditions, kind, rng);
-  const result = roll({ counts: { d20: 1 }, modifier: bonus + rider.modifier, mode }, rng);
+  const once = () => roll({ counts: { d20: 1 }, modifier: bonus + rider.modifier, mode }, rng);
+  const first = once();
+  const result = lucky && first.results[0]?.rolls[0] === 1 ? once() : first;
   return {
     roll: result,
     total: result.total,
@@ -148,6 +159,7 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  *   ability?: string,
  *   slants?: ('advantage' | 'disadvantage' | null)[],
  *   tired?: number,
+ *   lucky?: boolean,
  * }} [opts]
  * @returns {SaveResult}
  */
@@ -180,6 +192,7 @@ export function savingThrow(character, ability, dc, opts = {}) {
       conditions: riderSources(character),
       ability,
       tired: exhaustionLevel(character),
+      lucky: isLucky(character),
       ...opts,
     }),
     proficient: proficientSave(character, ability),
@@ -300,7 +313,7 @@ export function initiativeBonus(character) {
  * check rolls here and joins the bonus, which is how Guidance reaches a check.
  * @param {number} bonus
  * @param {number | null} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean }} [opts]
  * @returns {CheckResult}
  */
 export function resolveCheck(bonus, dc, opts = {}) {
@@ -325,6 +338,7 @@ export function abilityCheck(character, key, dc = null, opts = {}) {
   return {
     ...resolveCheck(checkBonus(character, key), dc, {
       conditions: riderSources(character),
+      lucky: isLucky(character),
       ...(tiredCheck(character) ? { mode: /** @type {const} */ ('disadvantage') } : {}),
       ...opts,
     }),

@@ -14,7 +14,7 @@ import { withSpellSlots } from '../entities/SpellSlots.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
-import { splitList, splitTrimmedList } from '../util/text.js';
+import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
 import { statFields, readStats } from './statFields.js';
 import {
   POINT_BUY_BUDGET,
@@ -60,6 +60,9 @@ function skillOptions(classId) {
 
 /** The HP a classless character starts with. This character has no hit die to derive HP from. */
 const CLASSLESS_MAX_HP = 10;
+
+/** The damage types that any race offers as a resistance pick. */
+const RESISTANCE_PICKS = [...new Set(RACE_LIST.flatMap((r) => r.resistanceChoice ?? []))];
 
 /**
  * The options, pick count, and caption of the race ability multiselect for
@@ -122,6 +125,14 @@ export function characterFields() {
       options: [],
       full: true,
       columns: true,
+      hidden: true,
+    },
+    {
+      name: 'raceResistance',
+      label: 'Draconic ancestry resistance',
+      type: 'select',
+      value: RESISTANCE_PICKS[0],
+      options: RESISTANCE_PICKS.map((type) => ({ value: type, label: capitalize(type) })),
       hidden: true,
     },
     {
@@ -284,6 +295,7 @@ export function characterFormChange(name, form, rng = Math.random) {
       form.setLabel(field, choice.label);
       form.setHidden(field, choice.count === 0);
     }
+    form.setHidden('raceResistance', !getRace(raceId)?.resistanceChoice?.length);
   }
   if (name === 'class') {
     const choice = getClass(form.get('class'))?.skillChoice;
@@ -344,6 +356,7 @@ export function buildCharacter(values, existingIds) {
     character = withRace(character, race.id, {
       abilities: splitList(values.raceAbilities ?? ''),
       skills: splitList(values.raceSkills ?? '').filter((id) => SKILL_IDS.includes(id)),
+      resistance: values.raceResistance ?? '',
     });
   } else if (values.customRace.trim()) {
     character = withCustomRace(character, values.customRace.trim());

@@ -170,11 +170,12 @@ test('validRacePicks drops picks for a race with no choice and caps the counts',
   assert.deepEqual(validRacePicks(dwarf, { abilities: ['STR'], skills: ['stealth'] }), {
     abilities: [],
     skills: [],
+    resistance: null,
   });
   const half = /** @type {any} */ (getRace('half-elf'));
   assert.deepEqual(
     validRacePicks(half, { abilities: ['CHA', 'STR', 'DEX', 'CON'], skills: ['a', 'b', 'c'] }),
-    { abilities: ['STR', 'DEX'], skills: ['a', 'b'] },
+    { abilities: ['STR', 'DEX'], skills: ['a', 'b'], resistance: null },
   );
-  assert.deepEqual(validRacePicks(half, {}), { abilities: [], skills: [] });
+  assert.deepEqual(validRacePicks(half, {}), { abilities: [], skills: [], resistance: null });
 });

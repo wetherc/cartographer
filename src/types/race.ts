@@ -41,8 +41,12 @@ export interface RaceDef {
   /** Extra skill proficiencies of the player's choice (the Half-Elf's Skill
    * Versatility). */
   skillChoice?: { count: number };
-  /** Race trait names. These are display names only, not yet given a
-   * mechanical effect (the same status as ClassDef.featuresByLevel). */
+  /** The damage types a player picks one resistance from (the Dragonborn's
+   * Draconic Ancestry). */
+  resistanceChoice?: string[];
+  /** Race trait names. `entities/RaceTraits.js` gives a few of them an effect
+   * on d20 rolls (Lucky, Brave, Fey Ancestry, Dwarven Resilience, Gnome
+   * Cunning). The rest are display names only. */
   traits: string[];
 }
 
@@ -54,10 +58,14 @@ export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'> & {
   /** The skills picked through `skillChoice`. `abilityIncreases` already
    * contains the abilities picked through `abilityChoice`. */
   chosenSkills?: string[];
+  /** The resistance picked through `resistanceChoice`, also listed in
+   * `resistances`. */
+  chosenResistance?: string;
 };
 
 /** The player's picks for a race's choices. */
 export interface RacePicks {
   abilities?: string[];
   skills?: string[];
+  resistance?: string;
 }

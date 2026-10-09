@@ -28,6 +28,7 @@ import { wardSpellDamage } from './damageWard.js';
 import { resistSpellSaves } from './legendaryResistance.js';
 import { actionIdOf, spendAction } from '../entities/CreatureActions.js';
 import { healingBonus } from '../entities/HealingBonus.js';
+import { isLucky, raceSaveSlant, spellRaceSave } from '../entities/RaceTraits.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -190,20 +191,23 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     // brings rolls with only the target's own slant.
     const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
     if (saveAbility) {
+      const raceSave = spellRaceSave(resolved.effect, saveAbility);
       castTargets = chosen.map((t) => {
         // A target's untrained armor slants its STR or DEX save. The slant
         // folds in with the target's chips, so an advantage chip cancels it.
         const found = findCombatant(app, t.id);
+        const character = found?.kind === 'character' ? found.entity : null;
         const outcome = saveOutcome(
           t.conditions,
           saveAbility,
-          t.armorPenalty ? ['disadvantage'] : [],
+          [t.armorPenalty ? 'disadvantage' : null, raceSaveSlant(character, raceSave)],
           found ? exhaustionLevel(found.entity) : 0,
         );
-        const evasion = found?.kind === 'character' && hasFeature(found.entity, 'Evasion');
+        const evasion = character !== null && hasFeature(character, 'Evasion');
         return {
           ...t,
           ...(evasion ? { evasion: true } : {}),
+          ...(isLucky(character) ? { lucky: true } : {}),
           // Every live target carries a derived bonus. A target the roster lost
           // while the dialog sat open carries none and saves on the flat die.
           saveBonus: t.saveBonus ?? 0,

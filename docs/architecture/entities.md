@@ -555,6 +555,18 @@ them with `validRacePicks`. The chosen abilities join the snapshot's
 `abilityIncreases`, so a later race change takes them back off the scores.
 The chosen skills go to the snapshot's `chosenSkills`, which `resolveRace`
 keeps and `assembleProficiencies` merges with the fixed race skills.
+A `resistanceChoice` (the Dragonborn ancestry) lists damage types, and the
+picked one joins the snapshot's `resistances` as `chosenResistance`, where
+`defensesOf` reads it.
+
+`entities/RaceTraits.js` turns some trait names into roll effects.
+`isLucky` makes `resolveD20` in Checks.js roll a natural 1 again on a
+character's save or check, and on a spell target save through the `lucky`
+flag of `CastTarget`. `raceSaveSlant` returns advantage for Brave, Fey
+Ancestry, Dwarven Resilience, and Gnome Cunning, and `spellCastResolve`
+folds it into each spell target's save mode with the context from
+`spellRaceSave`. A creature has no race, so these functions return no
+effect for it.
 
 ### Subclass casting
 
