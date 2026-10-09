@@ -35,3 +35,15 @@ test('readStats clamps each stat to a positive integer, defaulting garbage to 10
   assert.equal(stats.WIS, 10, 'blank reads as 10');
   assert.equal(stats.CHA, 10, 'missing reads as 10');
 });
+
+test('acFieldLabel names the AC in use only when armor is worn', async () => {
+  const { acFieldLabel, BASE_AC_LABEL } = await import('../src/app/statFields.js');
+  assert.equal(acFieldLabel({ AC: 15 }, null), BASE_AC_LABEL);
+  const plate = { name: 'Plate', baseAC: 18, armorWeight: 'heavy' };
+  assert.equal(acFieldLabel({ AC: 12, DEX: 14 }, plate), `${BASE_AC_LABEL}, AC in use 18`);
+});
+
+test('statFields captions the AC field as the AC without armor', () => {
+  const ac = statFields(STAT_KEYS).find((f) => f.name === 'stat-AC');
+  assert.equal(ac.label, 'Base AC (no armor)');
+});

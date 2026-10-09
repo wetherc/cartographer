@@ -1244,7 +1244,10 @@ The six ability scores plus AC are the only stats that a creature has.
 
 The Build chip for AC reads "Base AC". This is the AC without armor: 10
 plus the DEX modifier by default, or higher for natural armor or a shield.
-The Play chip and the combat card show the AC with armor.
+The Play chip and the combat card show the AC with armor. While the
+creature wears armor, the Build row also shows "AC in use" beside the Base
+AC chip, and the creature form captions its AC field "Base AC (no armor),
+AC in use 16" (for example) as you change the armor, AC, or DEX.
 
 Worn armor replaces the 10 + DEX part with its own base AC and the part of
 the DEX modifier that its weight allows. See [Armor class](#armor-class).

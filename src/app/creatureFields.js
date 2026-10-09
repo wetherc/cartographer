@@ -34,7 +34,7 @@ import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear } from './gearFields.js';
-import { readStats, statFields } from './statFields.js';
+import { acLabelFromForm, readStats, statFields } from './statFields.js';
 import { arrangeFields, syncDependents } from './creatureLayout.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
@@ -129,7 +129,15 @@ function tierOptions() {
  * @returns {ModalField[]}
  */
 export function creatureFields(seed, gear, { stats = true } = {}) {
-  const fields = blueprintFields(seed, gear, stats);
+  const built = blueprintFields(seed, gear, stats);
+  /** @type {Record<string, string>} */
+  const values = Object.fromEntries(
+    built.map((field) => [field.name, String(('value' in field ? field.value : '') ?? '')]),
+  );
+  const acLabel = acLabelFromForm((name) => values[name] ?? '', gear);
+  const fields = built.map((field) =>
+    field.name === 'stat-AC' ? { ...field, label: acLabel } : field,
+  );
   const casters = casterFields(seed);
   return arrangeFields(fields, casters);
 }
@@ -376,10 +384,28 @@ function blueprintFields(seed, gear, stats) {
  *
  * Each call returns a fresh handler, which holds the "a stat was touched"
  * flag for one open form.
- * @param {{ restampStats: boolean }} options
+ *
+ * With `gear`, which a form that shows the stat block passes, the handler
+ * also rewrites the AC caption after a change of armor, AC, DEX, level, or
+ * tier, so the caption names the AC that combat uses.
+ * @param {{ restampStats: boolean, gear?: GearOptions }} options
  * @returns {(name: string, form: ModalFormHandle) => void}
  */
-export function creatureFieldsChange({ restampStats }) {
+export function creatureFieldsChange({ restampStats, gear }) {
+  const restamp = restampChange(restampStats);
+  return (name, form) => {
+    restamp(name, form);
+    if (gear && ['armor', 'stat-AC', 'stat-DEX', 'level', 'tier'].includes(name))
+      form.setLabel('stat-AC', acLabelFromForm(form.get, gear));
+  };
+}
+
+/**
+ * The spell refilter and stat re-stamp part of `creatureFieldsChange`.
+ * @param {boolean} restampStats
+ * @returns {(name: string, form: ModalFormHandle) => void}
+ */
+function restampChange(restampStats) {
   let statsTouched = false;
   return (name, form) => {
     syncDependents(name, form);

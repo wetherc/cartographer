@@ -97,6 +97,10 @@ export function mountStatBlockBar(container, callbacks) {
               title: `Modify ${name} for a number of rounds`,
             });
       root.appendChild(statChip);
+      // Worn armor replaces part of the base AC, so a Build row names the AC
+      // that combat uses beside the editable base.
+      if (callbacks.mode === 'base' && name === 'AC' && total !== base)
+        root.appendChild(el('span', 'statblock-bar__in-use', `AC in use ${total}`));
     }
   }
 

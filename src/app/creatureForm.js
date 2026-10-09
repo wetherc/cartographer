@@ -62,7 +62,10 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   // A template's stat block is authoritative, so a level change does not
   // re-stamp over it. A bare preset seed carries no block, and the defaults
   // keep re-stamping until a stat is hand-edited.
-  const statsChange = creatureFieldsChange({ restampStats: !existing && !seed?.stats });
+  const statsChange = creatureFieldsChange({
+    restampStats: !existing && !seed?.stats,
+    ...(stats ? { gear } : {}),
+  });
   const partyChange = moveToPartyChange(app);
   const placeChange = placementChange(app);
   const mapPick = pickOnMapChange(app);

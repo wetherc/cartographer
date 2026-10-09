@@ -43,6 +43,14 @@
   font-weight: 600;
 }
 
+/* The AC in use beside a Build row's Base AC chip. It is plain text, not a
+   control, so it has no border. */
+.statblock-bar__in-use {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  text-align: center;
+}
+
 /* The Generate dialog's seed row and live layout preview. */
 /* The form fills the dialog up to 34rem. The dialog is at most 90vw wide
    with its padding inside, so a 90vw form would overflow it on a phone. */

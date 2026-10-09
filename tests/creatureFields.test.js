@@ -325,3 +325,37 @@ test('creatureFieldsChange enables and disables the dependents of an edited fiel
   onChange('maxHP', form);
   assert.equal(form.disabled.has('maxHP'), false);
 });
+
+test('the AC field names the AC in use while armor is picked', () => {
+  const gear = gearOptions(null);
+  const bare = creatureFields({ disposition: 'neutral', stats: { AC: 15 } }, gear);
+  assert.equal(field(bare, 'stat-AC').label, 'Base AC (no armor)');
+  // Level 1 stamps Leather Armor (11 + DEX), which replaces 10 + DEX of the
+  // authored AC: 15 - 10 + 11 = 16 at DEX 10.
+  const leveled = creatureFields(
+    { disposition: 'hostile', level: 1, stats: { AC: 15, DEX: 10 } },
+    gear,
+  );
+  assert.equal(field(leveled, 'stat-AC').label, 'Base AC (no armor), AC in use 16');
+});
+
+test('creatureFieldsChange rewrites the AC caption when the armor or AC changes', () => {
+  const gear = gearOptions(null);
+  const onChange = creatureFieldsChange({ restampStats: false, gear });
+  /** @type {Map<string, string>} */
+  const labels = new Map();
+  const form = {
+    ...fakeForm({ armor: 'Leather Armor', 'stat-AC': '12', 'stat-DEX': '14' }),
+    setLabel: (/** @type {string} */ name, /** @type {string} */ text) => labels.set(name, text),
+  };
+  onChange('armor', form);
+  assert.equal(labels.get('stat-AC'), 'Base AC (no armor), AC in use 13');
+  form.set('armor', '');
+  onChange('armor', form);
+  assert.equal(labels.get('stat-AC'), 'Base AC (no armor)');
+  labels.clear();
+  onChange('name', form);
+  assert.equal(labels.size, 0, 'other fields leave the caption alone');
+  creatureFieldsChange({ restampStats: false })('armor', form);
+  assert.equal(labels.size, 0, 'a form with no gear has no AC caption to update');
+});

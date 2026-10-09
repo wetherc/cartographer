@@ -44,7 +44,7 @@ export function buildCreatureTemplateForm({
     fields: creatureFields(seed, gear),
     // A new template re-stamps the stat defaults as level or tier change,
     // until a stat is hand-edited. An edit keeps the stored block.
-    onChange: creatureFieldsChange({ restampStats: !template }),
+    onChange: creatureFieldsChange({ restampStats: !template, gear }),
     assemble: (values) => {
       // The read-back types `stats` optional, because a surface can leave
       // the block out. This form always shows it.
