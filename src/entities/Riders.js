@@ -218,9 +218,10 @@ export function rollRiders(sources, kind, rng = Math.random) {
 export function spendRiders(conditions, spent) {
   if (!spent || spent.length === 0) return conditions;
   const names = new Set(spent);
-  return conditions.filter((c) => {
+  const kept = conditions.filter((c) => {
     if (!names.has(c.name) || !chipRider(c)?.once) return true;
     names.delete(c.name);
     return false;
   });
+  return kept.length === conditions.length ? conditions : kept;
 }

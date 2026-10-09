@@ -182,7 +182,7 @@ function sweepChips(app, rule) {
  */
 export function endFightEffects(app, { rng = Math.random } = {}) {
   for (const { id, conditions } of [...app.state.characters, ...app.state.creatures]) {
-    for (const chip of ongoingChips(conditions ?? [])) {
+    for (const chip of ongoingChips(conditions)) {
       const found = chip.expires ? findCombatant(app, id) : null;
       if (found && !isGone(found)) dealOngoing(app, id, chip, rng);
     }

@@ -429,3 +429,49 @@ test('a turn-end chip names the numbered foe it burns and frees', () => {
   assert.ok(app.log.some((l) => /^Acid Arrow deals .* to Ogre 2\.$/.test(l)));
   assert.ok(app.log.includes('Ogre 2 is no longer affected by Acid Arrow.'));
 });
+
+test('the start of an unknown combatant turn grants and logs nothing', () => {
+  const app = stubApp();
+  startTurnEffects(app, 'nobody', { rng: seq([]) });
+  assert.deepEqual(app.log, []);
+});
+
+test('Heroism chips of one name grant the largest temporary HP once', () => {
+  const hero = (/** @type {number} */ n, /** @type {string} */ casterId) =>
+    createCondition('Heroism', 10, { mods: { tempHPEachTurn: n }, source: { casterId } });
+  const app = stubApp([
+    { ...foe('ogre'), conditions: [createCondition('Heroism', 10), hero(3, 'a'), hero(5, 'b')] },
+  ]);
+  startTurnEffects(app, 'ogre', { rng: seq([]) });
+  assert.equal(creature(app, 'ogre').bonusHP, 5);
+});
+
+test('a Haste chip that ends at a turn boundary leaves lethargy, logged after the end line', () => {
+  const haste = createCondition('Haste', null, {
+    mods: { extraAction: true },
+    expires: { who: 'ogre', at: 'end', count: 1 },
+  });
+  const app = stubApp([{ ...foe('ogre'), conditions: [haste] }]);
+  endTurnEffects(app, 'ogre', { rng: seq([]) });
+  const ended = app.log.indexOf('Ogre is no longer affected by Haste.');
+  const lethargic = app.log.findIndex((l) => l.startsWith('Ogre is lethargic'));
+  assert.ok(ended >= 0 && lethargic > ended, app.log.join('\n'));
+});
+
+test('a combatant that leaves during its turn-end damage takes no more of it', () => {
+  const app = stubApp();
+  cast(app, 'phantasmal-killer', { slot: '4', target: 'ogre', dc: '30' }, [d20(2)]);
+  const frightened = creature(app, 'ogre').conditions[0];
+  // A second chip that burns on every turn end, beside the retry chip.
+  const burn = createCondition('Burning', 3, {
+    ongoing: { damage: [{ count: 1, sides: 4, damageType: 'fire' }] },
+  });
+  app.state.creatures = [{ ...creature(app, 'ogre'), conditions: [frightened, burn] }];
+  const log = app.actions.logEvent;
+  app.actions.logEvent = (/** @type {any} */ kind, /** @type {string} */ line) => {
+    log(kind, line);
+    if (line.includes(' deals ')) app.state.creatures = [];
+  };
+  endTurnEffects(app, 'ogre', { rng: seq([d20(2)]) });
+  assert.equal(app.log.filter((l) => l.includes(' deals ')).length, 1);
+});

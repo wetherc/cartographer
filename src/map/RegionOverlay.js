@@ -1,16 +1,15 @@
-import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js';
+import { blockRect, cellEdge, newBlockRect } from './MapGeometry.js';
 import { groupOutline, regionSlots } from './RegionOutline.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel, labelFont } from './CanvasText.js';
-import { keepClearOfEdges, labelSpots, placeLabels } from './RegionLabels.js';
-import { coordLabelLayout } from './CoordLabels.js';
+import {
+  regionBorderWidth,
+  regionCellBoxes,
+  regionLabelMetrics,
+  regionNameLayout,
+} from './RegionOverlayLayout.js';
 
-/** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
-/** @typedef {import('./RegionLabels.js').LabelSpot} LabelSpot */
-
-/** The font size of a region name, in CSS pixels. */
-const REGION_LABEL_PX = 12;
 
 /**
  * Draw the region overlays of the node in view: a tint over each region's
@@ -43,22 +42,10 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
   for (const group of view.regionGroups) {
     blockRect(rect, group, view, size);
     if (!rect.visible) continue;
+    const cells = regionCellBoxes(group, view, size, revealedIds);
+    if (cells.length === 0) continue;
     const clip = new Path2D();
-    let any = false;
-    for (let i = 0; i < group.tileIds.length; i++) {
-      if (revealedIds && !revealedIds.has(group.tileIds[i])) continue;
-      const cell = group.cells[i];
-      const cx = cellEdge(cell.x, size, view.offsetX);
-      const cy = cellEdge(cell.y, size, view.offsetY);
-      clip.rect(
-        cx,
-        cy,
-        cellEdge(cell.x + 1, size, view.offsetX) - cx,
-        cellEdge(cell.y + 1, size, view.offsetY) - cy,
-      );
-      any = true;
-    }
-    if (!any) continue;
+    for (const c of cells) clip.rect(c.x, c.y, c.w, c.h);
     const hue = INK.regionHues[(slots.get(group.childNodeId) ?? 0) % INK.regionHues.length];
     // The target of the Region brush draws its tint three times over and a
     // wider border, so its cells stand out from the other regions.
@@ -73,7 +60,7 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
       outline.moveTo(cellEdge(e.x1, size, view.offsetX), cellEdge(e.y1, size, view.offsetY));
       outline.lineTo(cellEdge(e.x2, size, view.offsetX), cellEdge(e.y2, size, view.offsetY));
     }
-    const width = Math.max(2, Math.min(4, size / 12)) * px * (emphasis > 1 ? 2 : 1);
+    const width = regionBorderWidth(size, px, emphasis > 1);
     ctx.lineCap = 'square';
     ctx.strokeStyle = INK.regionRim;
     ctx.lineWidth = width * 2 + 2 * px;
@@ -107,61 +94,15 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
  * @param {string[]} [blockedIds] tiles with a token or marker, which no name plate covers
  */
 export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName, blockedIds = []) {
-  const node = view.node;
-  if (!node || !getNodeName || view.regionGroups.length === 0) return;
-  const size = tileSize * view.scale;
-  const px = view.pixelRatio ?? 1;
-  const fontSize = Math.round(REGION_LABEL_PX * px);
-  const padX = 4 * px;
-  const padY = 2 * px;
-  const h = fontSize + padY * 2;
-  /** @type {string[]} */
-  const names = [];
-  /** @type {number[]} */
-  const widths = [];
-  /** @type {LabelSpot[][]} */
-  const spots = [];
+  if (!view.node || !getNodeName || view.regionGroups.length === 0) return;
+  const { fontSize, padX, padY } = regionLabelMetrics(view.pixelRatio ?? 1);
   ctx.save();
   ctx.font = labelFont(fontSize, '400');
-  for (const group of view.regionGroups) {
-    const name = getNodeName(group.childNodeId);
-    if (!name) continue;
-    const cells = revealedIds
-      ? group.cells.filter((_, i) => revealedIds.has(group.tileIds[i]))
-      : group.cells;
-    if (cells.length === 0) continue;
-    names.push(name);
-    widths.push(ctx.measureText(name).width + padX * 2);
-    spots.push(labelSpots(cells, node.height));
-  }
+  const measure = (/** @type {string} */ name) => ctx.measureText(name).width;
+  const labels = regionNameLayout(view, revealedIds, tileSize, getNodeName, blockedIds, measure);
   ctx.restore();
-  // placeLabels stops at the spot that it keeps, so the last spot asked for
-  // each name is the anchor of its placed box.
-  /** @type {LabelSpot[]} */
-  const anchors = [];
-  const boxes = placeLabels(
-    spots,
-    (i, spot) => {
-      anchors[i] = spot;
-      const y = cellEdge(spot.y, size, view.offsetY);
-      return {
-        x: cellEdge(spot.x, size, view.offsetX),
-        y: spot.above ? y - h : y,
-        w: widths[i],
-        h,
-      };
-    },
-    px,
-    // A name also keeps out from under the floating mini-map.
-    [...cellBoxes(blockedIds, view, size), ...(view.occluders ?? []).filter((o) => o.float)],
-  );
-  const edge = mapAreaEdge(view, tileSize);
-  boxes.forEach((placed, i) => {
-    const { x, y } = anchors[i];
-    const box = placed && keepClearOfEdges(placed, cellBoxes([`${x},${y}`], view, size)[0], edge);
-    if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;
-    if (box.x + box.w < 0 || box.y + box.h < 0) return;
-    drawPlatedLabel(ctx, names[i], box.x + padX, box.y + padY, {
+  for (const { name, box } of labels) {
+    drawPlatedLabel(ctx, name, box.x + padX, box.y + padY, {
       fontSize,
       weight: '400',
       align: 'left',
@@ -172,45 +113,5 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
       padX,
       padY,
     });
-  });
-}
-
-/**
- * The least x and y where a region name may start: the canvas edge, or the
- * far side of a row or column digit strip pinned to that edge. A strip that
- * sits off the map, beside its edge, lies left of or above every cell, so it
- * moves no name.
- * @param {import('./CoordLabels.js').CoordView} view
- * @param {number} tileSize base tile size in buffer px at scale 1
- * @returns {{ x: number, y: number }}
- */
-export function mapAreaEdge(view, tileSize) {
-  const layout = coordLabelLayout(view, tileSize);
-  const rows = layout?.rows;
-  const columns = layout?.columns;
-  return {
-    x: Math.max(0, rows ? rows.x + rows.w : 0),
-    y: Math.max(0, columns ? columns.y + columns.h : 0),
-  };
-}
-
-/**
- * The screen boxes of the listed tiles, for the label layout to keep clear.
- * @param {string[]} ids tile ids in "x,y" form
- * @param {MapView} view
- * @param {number} size the on-screen tile size in buffer px
- * @returns {import('./RegionLabels.js').LabelBox[]}
- */
-export function cellBoxes(ids, view, size) {
-  /** @type {import('./RegionLabels.js').LabelBox[]} */
-  const boxes = [];
-  for (const id of ids) {
-    const c = parseCoords(id);
-    if (!c) continue;
-    const x = cellEdge(c.x, size, view.offsetX);
-    const y = cellEdge(c.y, size, view.offsetY);
-    const w = cellEdge(c.x + 1, size, view.offsetX) - x;
-    boxes.push({ x, y, w, h: cellEdge(c.y + 1, size, view.offsetY) - y });
   }
-  return boxes;
 }

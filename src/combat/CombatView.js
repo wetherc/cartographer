@@ -153,7 +153,7 @@ export function hpOf(found) {
  * modifiers applied), or a character's armor AC. Every kind has one, so the
  * return is never null.
  * @param {ResolvedCombatant} found
- * @returns {number | null}
+ * @returns {number}
  */
 export function acOf(found) {
   if (found.kind === 'character') return armorClass(found.entity);

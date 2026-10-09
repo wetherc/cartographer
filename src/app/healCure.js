@@ -1,5 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
-import { applyCure, cureOptions, EXHAUSTION } from '../entities/HealCure.js';
+import { applyCure, cureOptions } from '../entities/HealCure.js';
+import { cureDialog, cureLabel } from '../view/CureDialog.js';
 import { findCombatant } from './combatants.js';
 import { storeCharacterChips, storeCreature } from './combatantWrites.js';
 
@@ -15,30 +16,9 @@ import { storeCharacterChips, storeCreature } from './combatantWrites.js';
 
 /** @type {CurePick} */
 async function askCure(spell, targetName, choices) {
-  const values = await promptModal(
-    `${spell.name} on ${targetName}`,
-    [
-      {
-        name: 'cure',
-        label: 'Condition to end',
-        type: 'select',
-        full: true,
-        value: choices[0],
-        options: choices.map((c) => ({ value: c, label: cureLabel(c) })),
-      },
-    ],
-    { submitLabel: 'End it' },
-  );
+  const { title, fields, options } = cureDialog(spell.name, targetName, choices);
+  const values = await promptModal(title, fields, options);
   return values?.cure ?? null;
-}
-
-/**
- * How the log and the dialog name what a heal ends.
- * @param {string} name
- * @returns {string}
- */
-function cureLabel(name) {
-  return name === EXHAUSTION ? 'one level of exhaustion' : name;
 }
 
 /**

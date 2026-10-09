@@ -93,7 +93,7 @@ function buffChip(spell) {
 export function wardRaise(found, spell) {
   const conditions = [...(found.entity.conditions ?? []), buffChip(spell)];
   const next = /** @type {any} */ ({ ...found, entity: { ...found.entity, conditions } });
-  return (acOf(next) ?? 0) - (acOf(found) ?? 0);
+  return acOf(next) - acOf(found);
 }
 
 /**
@@ -165,7 +165,7 @@ export async function offerWard(app, ward, message, { cast, ask = confirmModal }
   });
   const before = findCombatant(app, ward.id);
   if (!yes || !before) return 0;
-  const acBefore = acOf(before) ?? 0;
+  const acBefore = acOf(before);
   const slot = ward.plan.slotLevels[0];
   await cast(
     app,
@@ -174,7 +174,7 @@ export async function offerWard(app, ward, message, { cast, ask = confirmModal }
     { writeBack: ward.store },
   );
   const after = findCombatant(app, ward.id);
-  return after ? Math.max(0, (acOf(after) ?? 0) - acBefore) : 0;
+  return after ? Math.max(0, acOf(after) - acBefore) : 0;
 }
 
 /**

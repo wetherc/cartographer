@@ -137,6 +137,9 @@ not draw as a fragment over the row digits. A name whose anchor cell still
 shows slides right or down to the edge.
 The names draw in their own pass after the selection outline, so the outline
 of a selected tile never cuts through a name plate.
+`src/map/RegionOverlayLayout.js` computes the tinted cells, the border
+width, and the name boxes with no canvas, and `RegionOverlay.js` only draws
+what it returns. A test can then check the layout in Node.
 
 The view field `highlightRegionId` names one child node. Its groups draw the
 tint three times over and a border twice as wide. Build mode sets it to the

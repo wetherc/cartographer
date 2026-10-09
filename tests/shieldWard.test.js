@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { offerWard, pendingWard, wardRaise } from '../src/app/shieldWard.js';
+import { offerWard, pendingWard, wardRaise, wardSpellAttack } from '../src/app/shieldWard.js';
+import { emptyLibrary, setActiveLibrary } from '../src/library/Library.js';
 import { rollWeaponAttack } from '../src/app/weaponAttack.js';
 import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
@@ -368,4 +369,60 @@ test('a ward that only blocks the spell says so in its question', async () => {
   });
   assert.equal(raised, 0);
   assert.deepEqual(asked, ['Hit. Cast Shield as a reaction (blocks the spell)?']);
+});
+
+test('the ward that adds the most AC wins, and an entity with no chip list still gets one', () => {
+  const bulwark = {
+    ...spellById('shield'),
+    id: 'bulwark',
+    name: 'Bulwark',
+    effect: { kind: 'buff', mods: { ac: 2 }, until: 'caster-start' },
+  };
+  setActiveLibrary({ ...emptyLibrary(), spells: [bulwark] });
+  try {
+    const mage = wizard('mage', ['bulwark', 'shield']);
+    delete mage.conditions;
+    const ward = pendingWard(stubApp({ mage }), 'mage', 'hero');
+    assert.equal(ward?.spell.id, 'shield');
+    assert.equal(ward?.bonus, 5);
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
+});
+
+test('a ward that raises no AC is offered only when it blocks the attacking spell', () => {
+  const bark = createCondition('Barkskin', 10, { mods: { acMin: 25 } });
+  const app = stubApp({ mage: { ...wizard('mage', ['shield']), conditions: [bark] } });
+  assert.equal(pendingWard(app, 'mage', 'hero'), null);
+  const ward = pendingWard(app, 'mage', 'evoker', 'magic-missile');
+  assert.equal(ward?.bonus, 0);
+  assert.equal(ward?.blocks, true);
+});
+
+test('offerWard casts with no slot for a slotless plan, and raises nothing for a defender gone after the cast', async () => {
+  const app = stubApp();
+  const ward = /** @type {any} */ (pendingWard(app, 'mage', 'hero'));
+  /** @type {any[]} */
+  const values = [];
+  const raised = await offerWard(app, { ...ward, plan: { ...ward.plan, slotLevels: [] } }, 'Hit.', {
+    cast: /** @type {any} */ (
+      async (/** @type {any} */ _app, /** @type {any} */ _plan, /** @type {any} */ v) => {
+        values.push(v);
+        app.state.characters = app.state.characters.filter((c) => c.id !== 'mage');
+      }
+    ),
+    ask: async () => true,
+  });
+  assert.deepEqual(values, [{ target: 'mage' }]);
+  assert.equal(raised, 0);
+});
+
+test('an attack spell outcome with no target id asks nothing', () => {
+  const app = stubApp();
+  const outcomes = [{ target: { name: 'Shadow' }, hit: true, attack: { total: 15 }, ac: 12 }];
+  const out = wardSpellAttack(app, spellById('fire-bolt'), { outcomes }, 'evoker', {
+    cast: resolveCast,
+    ask: never,
+  });
+  assert.equal(out, null);
 });
