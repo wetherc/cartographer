@@ -825,7 +825,7 @@ as a `ModalField[]`:
 | `casterFields.js` | The class, level, and spell pickers, and `refilterSpellsOnChange` |
 
 `promptModal` renders such a spec as a dialog, and `buildSpecForm` in
-`ui/SpecForm.js` renders it as an inline rail form. A field, a default, a
+`ui/SpecForm.js` renders it as a form that the Library panel shows in a dialog. A field, a default, a
 range limit, and a cross-field rule are each written once, in the shared
 module. A dialog adds the placement fields from `locationFields.js` around
 the spec. Their "Pick on map" button calls `pickMapTile` in `mapPick.js`.
@@ -1003,7 +1003,10 @@ Inside the wiring:
 tabs, and the sidebar collapse. It registers `setMode`.
 
 The mode switch in the header has three buttons: Play, Build, and Library.
-Library mode hides the map column and shows only the template lists. The
+Library mode hides the map column and shows only the template lists. Like
+Play and Build, it is a fixed screen with no page scroll, so the header stays
+in view. On a wide window only the card of the open tab scrolls, and on a
+narrow one the whole Library rail scrolls under the header. The
 fourth mode, combat, has no button. The app enters it through `setMode`
 while a fight is running, and a request for combat mode with no fight lands
 on Play. Each mode sets a body class (`mode-play`, `mode-build`,

@@ -4,8 +4,7 @@
    the center, the play dock (party roster and dice tray) sits on its left,
    and the sidebar tabs sit on its right. Each column scrolls on its own, so
    the map, the party, the dice, and the open sheet stay in view together.
-   Combat and Build mode have their own shells, and Library mode keeps the
-   scrolling page.
+   Combat, Build, and Library mode have their own shells.
    ========================================================================== */
 
 @media (min-width: 68.0625rem) {

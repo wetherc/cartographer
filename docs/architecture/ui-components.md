@@ -255,11 +255,11 @@ follows these rules:
   data needs a second way to mark the cache stale, which the single
   `update()` entry point exists to avoid. View state that is not campaign
   data belongs to the panel: which row is in edit mode, which section is
-  open, which tab shows. For example, `LibraryPanel`'s `update` closes an
-  open inline editor, but keeps its filter text and selected subtab. The
-  input and the tab strip are built once, and only the lists redraw. The
-  close also puts back the focused control and the scroll offsets from when
-  the editor opened, because hiding the list resets them to the top.
+  open, which tab shows. For example, `LibraryPanel`'s `update` redraws its
+  lists but keeps its filter text and selected subtab. The input and the
+  tab strip are built once, and only the lists redraw. Its editor opens in
+  a dialog over the list, so the list keeps its scroll offset while the GM
+  edits an entry.
 - **Every mutation leaves through a callback.** Panels do not write state
   and do not open dialogs. A panel calls `callbacks.onEdit(id)`, and the
   wiring module prompts, writes, and redraws. Panels then contain only DOM
@@ -872,8 +872,12 @@ in view.
 
 ## Inline forms
 
-The Library rail's authoring forms render inline, not in a dialog, so they
-build from `src/ui/formFields.js` and not from `Modal.js`:
+The Library rail's authoring forms are plain elements with their own Cancel
+and Save row, so they build from `src/ui/formFields.js` and not from
+`promptModal`. `LibraryPanel` shows each one in a dialog through
+`openDialog`, titled with the row action, such as "Customize Bane" or "New
+spell". The Cancel and Save row stays at the bottom edge of the dialog while
+a long form scrolls:
 
 ```js
 labeled(caption, control, opts?)    -> HTMLElement        // captions the control

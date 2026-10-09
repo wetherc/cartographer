@@ -3339,6 +3339,10 @@ customizations, and a campaign import offers to restore them. See
 | Reset library | Removes all customizations and restores the built-in defaults. It is disabled while the library has no customizations |
 
 The Library file card sits at the top of Library mode, above the tabs.
+The header stays in view, and the list of the open tab scrolls on its own.
+A new entry or an edit opens in a dialog over the list. Press Escape or
+**Cancel** to close it with no change. The list keeps its place, so you
+return to the row that you edited.
 
 At startup, if the browser has no customizations, the app loads
 `library/campaign-library.json` from the project directory. The merged

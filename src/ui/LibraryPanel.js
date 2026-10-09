@@ -1,9 +1,9 @@
 import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
-import { captureFocus, restoreFocus } from './focusMemory.js';
 import { labeled, select, setOptions, textField } from './formFields.js';
 import { facetOptions, matchesFacets } from '../library/LibraryFacets.js';
 import { mountListPanel } from './listPanel.js';
+import { openDialog } from './Modal.js';
 import { buildTabs } from './Tabs.js';
 
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
@@ -23,9 +23,10 @@ import { buildTabs } from './Tabs.js';
  * Mount one Library-rail list, for equipment, creatures, or spells.
  * It shows every built-in default plus the GM's overrides and additions,
  * with each row tagged by source. Editing goes through either
- * `buildEditor`, an inline form rendered in place of the list, the item
- * form's home turf, or `onEdit`, a modal dialog. Overrides and customs
- * get a remove button that reverts or deletes.
+ * `buildEditor`, a form that this panel shows in a dialog over the list,
+ * or `onEdit`, which opens a dialog of its own. The list stays in place
+ * under the dialog, so its scroll offset and the filter do not change.
+ * Overrides and customs get a remove button that reverts or deletes.
  *
  * This panel owns no library state. `getEntries` supplies the rows, and
  * every mutation flows back through a callback, matching the other
@@ -60,14 +61,6 @@ export function mountLibraryPanel(container, callbacks) {
   /** This is the selected subtab id, kept across rerenders like the filter. */
   const subtabs = callbacks.subtabs ?? [];
   let activeSubtab = subtabs[0]?.id ?? null;
-  /** True when an inline editor is open. The list is hidden in that case. */
-  let editing = false;
-  /** Where the GM was when the editor opened: the focused control, and the
-   * scroll offset of each scrolled box around and inside the list. Hiding
-   * the list resets those offsets, so the close puts them back, and the GM
-   * returns to the row they edited instead of the top of a long list. */
-  /** @type {{ focus: import('./focusMemory.js').FocusMemo | null, scroll: [Element, number][] }} */
-  let memo = { focus: null, scroll: [] };
 
   /** The facet selects, such as class and level for spells, with their
    * chosen tag. They sit beside the name filter and stay across rerenders. */
@@ -78,28 +71,37 @@ export function mountLibraryPanel(container, callbacks) {
   }));
   const chosen = () => facets.map((f) => f.picker.value);
 
-  // The chrome hides while an inline editor is open, instead of being
-  // torn down. The filter text and the selected subtab come back
-  // untouched. The editor is tall, and a list scrolling behind it
-  // buries the Save button.
   const chrome = el('div');
-  const editorHost = el('div');
-  root.append(chrome, editorHost);
+  root.appendChild(chrome);
 
   /** @param {LibrarySource} source */
   const badgeText = (source) =>
     source === 'override' ? 'customized' : source === 'custom' ? 'custom' : '';
 
-  /** @param {string | null} key the entry being edited, or null for a new one */
-  function openEditor(key) {
+  /**
+   * Show the editor form in a dialog. The form's own Cancel and Save buttons
+   * close the dialog through `close`, and Escape closes it as a cancel. The
+   * lists redraw when the dialog closes, and the dialog returns focus to the
+   * row button that opened it.
+   * @param {string | null} key the entry being edited, or null for a new one
+   * @param {string} title
+   */
+  function openEditor(key, title) {
     const buildEditor = callbacks.buildEditor;
     if (!buildEditor) return;
-    memo = { focus: captureFocus(chrome, document.activeElement), scroll: scrolledBoxes(root) };
-    editing = true;
-    chrome.hidden = true;
-    // The active subtab rides along, so a panel whose subtabs hold different
-    // entry kinds can pick the right form for a new entry.
-    editorHost.appendChild(buildEditor(key, update, activeSubtab ?? undefined));
+    void openDialog({
+      className: 'modal--library-editor',
+      title,
+      build: (close) => {
+        // The active subtab goes along, so a panel whose subtabs list
+        // different entry kinds can pick the right form for a new entry.
+        const editor = buildEditor(key, () => close(), activeSubtab ?? undefined);
+        const first = /** @type {HTMLElement | null} */ (
+          editor.querySelector('input, select, textarea')
+        );
+        return { body: [editor], initialFocus: first };
+      },
+    }).then(refresh);
   }
 
   chrome.appendChild(
@@ -109,7 +111,7 @@ export function mountLibraryPanel(container, callbacks) {
       textButton(
         callbacks.addLabel,
         async () => {
-          if (callbacks.buildEditor) openEditor(null);
+          if (callbacks.buildEditor) openEditor(null, callbacks.addLabel);
           else if (callbacks.onAdd && (await callbacks.onAdd())) refresh();
         },
         { icon: 'add' },
@@ -259,8 +261,9 @@ export function mountLibraryPanel(container, callbacks) {
         title: entry.source === 'default' ? 'Customize' : 'Edit',
         onClick: () => {
           if (callbacks.buildEditor) {
-            openEditor(entry.key);
-            // The list is hidden behind the editor now, so redrawing it wastes work.
+            const verb = entry.source === 'default' ? 'Customize' : 'Edit';
+            openEditor(entry.key, `${verb} ${entry.name}`);
+            // The dialog redraws the lists when it closes.
             return false;
           }
           return callbacks.onEdit?.(entry.key);
@@ -299,33 +302,5 @@ export function mountLibraryPanel(container, callbacks) {
     for (const list of lists.values()) list.update();
   }
 
-  /** Close any open editor and redraw, which is also the editor's own exit. */
-  function update() {
-    if (editing) {
-      editing = false;
-      editorHost.innerHTML = '';
-      chrome.hidden = false;
-      refresh();
-      restoreFocus(chrome, memo.focus);
-      for (const [box, top] of memo.scroll) box.scrollTop = top;
-      return;
-    }
-    refresh();
-  }
-
-  return { update };
-}
-
-/**
- * The scroll offsets of the page, of each ancestor of `root`, and of each
- * box inside it, for every box that is scrolled away from its top.
- * @param {HTMLElement} root
- * @returns {[Element, number][]}
- */
-function scrolledBoxes(root) {
-  /** @type {Element[]} */
-  const boxes = [...root.querySelectorAll('*')];
-  for (let node = root.parentElement; node; node = node.parentElement) boxes.push(node);
-  if (document.scrollingElement) boxes.push(document.scrollingElement);
-  return boxes.filter((box) => box.scrollTop > 0).map((box) => [box, box.scrollTop]);
+  return { update: refresh };
 }
