@@ -84,3 +84,11 @@ test('an edited handout starts on its own place and audience', () => {
   assert.equal(field(fields, 'audience').value, 'bram');
   assert.equal(field(fields, 'title').value, 'H');
 });
+
+test('the handout dialog marks its title required and takes prose in a text area', () => {
+  const fields = handoutFields(app(), null, null);
+  assert.equal(field(fields, 'title').label, 'Title (required)');
+  const body = field(fields, 'body');
+  assert.equal(body.type, 'textarea');
+  assert.ok(body.rows > 1, 'the text area shows several lines');
+});

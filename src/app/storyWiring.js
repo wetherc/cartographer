@@ -241,7 +241,7 @@ export function wireStory(app) {
     key: 'quests',
     noun: 'quest',
     fields: (quest) => [
-      { name: 'title', label: 'Title', value: quest?.title ?? '' },
+      { name: 'title', label: 'Title (required)', value: quest?.title ?? '' },
       { name: 'notes', label: 'Notes', value: quest?.notes ?? '' },
       {
         name: 'unlocks',

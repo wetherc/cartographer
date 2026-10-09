@@ -22,7 +22,7 @@ import {
   textareaField,
   textField,
 } from './formFields.js';
-import { readImageFile } from './imageField.js';
+import { buildImagePickField } from './ImagePickField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
 
@@ -264,42 +264,14 @@ export function promptModal(title, fields, options = {}) {
             box.checked = !!value && value !== '0';
           };
         } else if (field.type === 'file') {
-          // `readImageFile` decodes, downscales, and re-encodes a picked image
-          // under a size cap before it becomes the field's value. The input
-          // stays untouched, so the field keeps its initial value and an
-          // existing image survives an edit.
-          input = el('input', 'field');
-          input.type = 'file';
-          input.accept = 'image/*';
-          let dataUrl = field.value !== undefined ? String(field.value) : '';
-          // A rejected pick reports inline, not through `alertModal`. This
-          // dialog stays open. A second modal on top steals focus from the
-          // form the GM is editing.
-          const error = el('p', 'modal__error');
-          error.setAttribute('role', 'alert');
-          error.hidden = true;
-          input.addEventListener('change', () => {
-            const picked = /** @type {HTMLInputElement} */ (input);
-            const file = picked.files?.[0];
-            if (!file) return;
-            error.hidden = true;
-            reads[field.name] = readImageFile(file).then(
-              (url) => {
-                dataUrl = url;
-              },
-              (/** @type {Error} */ failure) => {
-                // Clear the selection so a re-pick of the same file fires
-                // `change` again. A file input stays silent when a pick
-                // matches its current value, so without this the retry does
-                // nothing.
-                picked.value = '';
-                error.textContent = failure.message;
-                error.hidden = false;
-              },
-            );
+          // The picked image's decode is tracked, so a quick submit waits for
+          // it. An existing image stays the value until a new pick replaces it.
+          const pick = buildImagePickField(field, (read) => {
+            reads[field.name] = read;
           });
-          getters[field.name] = () => dataUrl;
-          extras[field.name] = error;
+          input = asInput(pick.element);
+          getters[field.name] = pick.get;
+          extras[field.name] = pick.error;
         } else if (
           field.type === 'multiselect' ||
           field.type === 'tags' ||

@@ -44,8 +44,14 @@ export function handoutFields(app, handout, preset) {
   }
   const start = handout ?? preset ?? { nodeId: party.nodeId, tileId: null };
   return [
-    { name: 'title', label: 'Title', value: handout?.title ?? '' },
-    { name: 'body', label: 'Read-aloud / lore', value: handout?.body ?? '' },
+    { name: 'title', label: 'Title (required)', value: handout?.title ?? '' },
+    {
+      name: 'body',
+      label: 'Read-aloud / lore',
+      type: 'textarea',
+      rows: 5,
+      value: handout?.body ?? '',
+    },
     handout
       ? {
           name: 'image',

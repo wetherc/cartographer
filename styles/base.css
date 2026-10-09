@@ -867,6 +867,20 @@ select.field option::checkmark {
   font-size: var(--text-label);
 }
 
+/* The image field of a form dialog: a themed "Choose image" button in place
+   of the browser's file input, with the picked file's name beside it. */
+.image-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.image-pick__name {
+  font-size: var(--text-label);
+  overflow-wrap: anywhere;
+}
+
 /* A live line inside a form, such as a placement warning. It takes no space
    while it is empty. */
 .modal__note {

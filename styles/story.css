@@ -230,6 +230,7 @@
   padding: var(--space-2);
   font-size: var(--text-label);
   line-height: 1.5;
+  white-space: pre-line; /* the dialog text area keeps line breaks */
   background: var(--surface-sunken);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);

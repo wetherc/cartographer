@@ -235,7 +235,7 @@ export interface EntityListSpec<K extends EntityListKey> {
   prompt?: (
     title: string,
     fields: ModalField[],
-    options?: { submitLabel?: string; wide?: boolean },
+    options?: { submitLabel?: string; wide?: boolean; submitRequires?: string[] },
   ) => Promise<Record<string, string> | null>;
   confirm?: (name: string) => Promise<boolean>;
 }

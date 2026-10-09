@@ -2867,7 +2867,7 @@ The Quests panel in the Story tab lists active and completed quests.
 
 | Control | What it does |
 | --- | --- |
-| New quest | Opens the quest dialog, with Title, Notes, Unlocks, and the reward fields |
+| New quest | Opens the quest dialog, with Title, Notes, Unlocks, and the reward fields. **Create** stays disabled while the title is blank |
 | Status mark | Completes or reopens the quest |
 | Eye | Reveals the quest to players, or hides it again |
 | Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
@@ -2963,9 +2963,9 @@ A handout is read-aloud text or lore, with an optional picture.
 
 | Field | Meaning |
 | --- | --- |
-| Title | The name of the handout |
-| Read-aloud / lore | The text |
-| Image (optional) | A picture. When you edit a handout, leave the field empty to keep the current picture |
+| Title (required) | The name of the handout. **Create** and **Save** stay disabled while the title is blank |
+| Read-aloud / lore | The text, in a box of several lines. Line breaks stay in the text |
+| Image (optional) | A picture. Click **Choose image** to pick a file, and the file name shows beside the button. When you edit a handout, leave the field empty to keep the current picture |
 | Shows at | Everywhere (campaign-wide), anywhere in one node, or one tile of one node |
 | Only for (none checked: every player) | The characters who see the handout |
 

@@ -52,6 +52,9 @@ export function wireEntityList(app, spec) {
     confirm = confirmDelete,
   } = spec;
 
+  // The submit button stays disabled while the title is blank, so a dialog
+  // with a blank title cannot close and drop the rest of what the GM typed.
+  const submitRequires = [titleKey];
   const read = () => /** @type {Entry<K>[]} */ (app.state[key]);
   /** @param {Entry<K>[]} next */
   const write = (next) => {
@@ -70,7 +73,7 @@ export function wireEntityList(app, spec) {
 
   return {
     onAdd: async () => {
-      const values = await prompt(`New ${noun}`, fields(null));
+      const values = await prompt(`New ${noun}`, fields(null), { submitRequires });
       const title = readTitle(values);
       if (!values || !title) return null;
       const list = read();
@@ -86,7 +89,10 @@ export function wireEntityList(app, spec) {
       return created;
     },
     onEdit: async (entity) => {
-      const values = await prompt(`Edit ${noun}`, fields(entity), editOptions);
+      const values = await prompt(`Edit ${noun}`, fields(entity), {
+        ...editOptions,
+        submitRequires,
+      });
       const title = readTitle(values);
       if (!values || !title) return false;
       // The entry is read again by id. The copy the dialog opened with can be

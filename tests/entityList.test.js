@@ -52,7 +52,11 @@ test('adding appends an entry with an id slugged from its title', async () => {
   assert.equal(app.dirty, 1);
   assert.equal(prompts[0].title, 'New quest', 'the noun names the add dialog');
   assert.equal(prompts[0].fields[0].value, '', 'the add dialog starts empty');
-  assert.equal(prompts[0].options, undefined, 'no edit options reach the add dialog');
+  assert.deepEqual(
+    prompts[0].options,
+    { submitRequires: ['title'] },
+    'the add dialog requires a title and gets no edit options',
+  );
 });
 
 test('an added id avoids colliding with the ids already in the list', async () => {
@@ -99,7 +103,7 @@ test('the edit dialog gets the spec edit options and keeps the entry id', async 
     patch: (entry, title) => ({ ...entry, title }),
     editOptions: { submitLabel: 'Save' },
     prompt: async (title, fields, options) => {
-      assert.deepEqual(options, { submitLabel: 'Save' });
+      assert.deepEqual(options, { submitLabel: 'Save', submitRequires: ['title'] });
       return { title: 'Renamed' };
     },
     confirm: async () => true,
