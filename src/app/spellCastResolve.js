@@ -422,7 +422,10 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     // without waiting.
     /** @param {typeof result} checked */
     const guard = (checked) => {
-      const guarding = wardSpellDamage(app, resolved, checked, entity.id, { ask });
+      const guarding = wardSpellDamage(app, resolved, checked, entity.id, {
+        ask,
+        cast: resolveCast,
+      });
       return guarding ? guarding.then(finish) : finish(checked);
     };
     // A legendary creature that failed the save of a save spell can turn it
@@ -432,7 +435,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       const resisting = resistSpellSaves(app, resolved, checked, { ask });
       return resisting ? resisting.then(guard) : guard(checked);
     };
-    const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
+    const warding = wardSpellAttack(app, resolved, result, entity.id, { ask, cast: resolveCast });
     if (warding) return warding.then(resist);
     return resist(result);
   };

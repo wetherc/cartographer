@@ -7,7 +7,6 @@ import { createCondition } from '../entities/Conditions.js';
 import { wardTurns, wardedOutcome } from '../entities/CastRolls.js';
 import { findCombatant, logName, spellsOf } from './combatants.js';
 import { reactionCaster, reactionPlan } from './reactionGate.js';
-import { resolveCast } from './spellCastResolve.js';
 
 /**
  * The pause before an attack hits a defender that can raise its AC with a
@@ -38,6 +37,15 @@ import { resolveCast } from './spellCastResolve.js';
  *   title: string, confirmLabel: string, cancelLabel: string,
  * }) => Promise<boolean>} WardAsk
  */
+
+/**
+ * The function that casts the ward on a yes. Every caller passes `resolveCast`
+ * from `spellCastResolve.js`. The ward modules take it as an argument because
+ * `spellCastResolve.js` imports them, and an import back would make a cycle.
+ * @typedef {typeof import('./spellCastResolve.js').resolveCast} WardCast
+ */
+
+/** How a ward casts, and how it asks. @typedef {{ cast: WardCast, ask?: WardAsk }} WardOptions */
 
 /**
  * One defender's ready reaction: the spell, the AC it adds once its chip
@@ -141,10 +149,10 @@ export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
  * @param {AppContext} app
  * @param {Ward} ward
  * @param {string} message what the attack did, ahead of the question
- * @param {{ ask?: WardAsk }} [opts]
+ * @param {WardOptions} opts
  * @returns {Promise<number>}
  */
-export async function offerWard(app, ward, message, { ask = confirmModal } = {}) {
+export async function offerWard(app, ward, message, { cast, ask = confirmModal }) {
   const name = ward.spell.name;
   const gain = [
     ...(ward.bonus > 0 ? [`+${ward.bonus} AC`] : []),
@@ -159,7 +167,7 @@ export async function offerWard(app, ward, message, { ask = confirmModal } = {})
   if (!yes || !before) return 0;
   const acBefore = acOf(before) ?? 0;
   const slot = ward.plan.slotLevels[0];
-  await resolveCast(
+  await cast(
     app,
     ward.plan,
     { target: ward.id, ...(slot ? { slot: String(slot) } : {}) },
@@ -197,10 +205,10 @@ function spellHitMessage(app, spell, o) {
  * @param {Spell} spell
  * @param {R} result
  * @param {string} casterId
- * @param {{ ask?: WardAsk }} [opts]
+ * @param {WardOptions} opts
  * @returns {Promise<R> | null}
  */
-export function wardSpellAttack(app, spell, result, casterId, opts = {}) {
+export function wardSpellAttack(app, spell, result, casterId, opts) {
   const effect = spell.effect;
   if (effect.kind !== 'attack') return null;
   const blocked = (/** @type {AttackOutcome} */ o) =>

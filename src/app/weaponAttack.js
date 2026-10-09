@@ -33,6 +33,7 @@ import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
 import { offerDamageWard, pendingDamageWard } from './damageWard.js';
 import { offerRedirect, pendingRedirect } from './redirectWard.js';
+import { resolveCast } from './spellCastResolve.js';
 import { attackDialog } from './attackFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -288,11 +289,11 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
     const guard = pendingDamageWard(app, defender.id, attacker.id, damage.byType, defense);
     if (!guard) return strike();
     const hitLine = `${attackerName} hits ${defenderName} with ${weapon.name} for ${damage.total} damage.`;
-    return offerDamageWard(app, guard, hitLine, { ask }).then(strike);
+    return offerDamageWard(app, guard, hitLine, { ask, cast: resolveCast }).then(strike);
   };
   if (ward && result.total < ac + ward.bonus) {
     const hitLine = `${attackerName} hits ${defenderName} with ${weapon.name} (${result.total} vs AC ${ac}).`;
-    return offerWard(app, ward, hitLine, { ask }).then(land);
+    return offerWard(app, ward, hitLine, { ask, cast: resolveCast }).then(land);
   }
   return land(0);
 }

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castPlan, castSpellAction, castSpellOutOfCombat } from '../src/app/spellCast.js';
+import { castPlan } from '../src/app/castPlan.js';
+import { castSpellAction, castSpellOutOfCombat } from '../src/app/spellCast.js';
 import {
   chosenTargets,
   combatTargets,

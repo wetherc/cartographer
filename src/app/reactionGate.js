@@ -4,7 +4,7 @@ import { canReact } from '../entities/ConditionEffects.js';
 import { isGM } from '../view/ViewRole.js';
 import { findCombatant } from './combatants.js';
 import { combatTargets, rosterTargets } from './spellTargets.js';
-import { castPlan } from './spellCast.js';
+import { castPlan } from './castPlan.js';
 
 /**
  * The checks that every reaction pause runs before it asks its question.

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { offerWard, pendingWard, wardRaise } from '../src/app/shieldWard.js';
 import { rollWeaponAttack } from '../src/app/weaponAttack.js';
-import { castPlan } from '../src/app/spellCast.js';
+import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { findCombatant } from '../src/app/combatants.js';
 import { acOf } from '../src/combat/CombatView.js';
@@ -360,6 +360,7 @@ test('a ward that only blocks the spell says so in its question', async () => {
   /** @type {string[]} */
   const asked = [];
   const raised = await offerWard(app, { ...ward, bonus: 0, blocks: true }, 'Hit.', {
+    cast: resolveCast,
     ask: async (message) => {
       asked.push(message);
       return false;

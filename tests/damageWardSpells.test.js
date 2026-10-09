@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { wardSpellDamage } from '../src/app/damageWard.js';
-import { castPlan } from '../src/app/spellCast.js';
+import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { canSpend, spend } from '../src/combat/ActionBudget.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
@@ -256,9 +256,15 @@ test('a spell with no reaction in reach lands without waiting', () =>
     const result = {
       outcomes: [{ target: { id: 'mage' }, hit: true, damage: { byType: [fire(5)] } }],
     };
-    assert.equal(wardSpellDamage(app, spellById('fire-bolt'), result, 'evoker'), null);
+    assert.equal(
+      wardSpellDamage(app, spellById('fire-bolt'), result, 'evoker', { cast: resolveCast }),
+      null,
+    );
     const nameless = { outcomes: [{ target: {}, hit: true, damage: { byType: [fire(5)] } }] };
-    assert.equal(wardSpellDamage(app, spellById('fire-bolt'), nameless, 'evoker'), null);
+    assert.equal(
+      wardSpellDamage(app, spellById('fire-bolt'), nameless, 'evoker', { cast: resolveCast }),
+      null,
+    );
   }));
 
 test('the question names a ray tally and a spell that rolls no save', () =>
@@ -272,14 +278,23 @@ test('the question names a ray tally and a spell that rolls no save', () =>
     const shots = [{ damage: { byType: [fire(5)] } }, {}];
     const rays = { outcomes: [{ target: mage, shots, hits: 1, fired: 2 }] };
     const app = stubApp();
-    await wardSpellDamage(app, spellById('scorching-ray'), rays, 'evoker', { ask });
+    await wardSpellDamage(app, spellById('scorching-ray'), rays, 'evoker', {
+      ask,
+      cast: resolveCast,
+    });
     const noRoll = {
       outcomes: [{ target: mage, noRoll: true, taken: 4, damage: { byType: [fire(4)] } }],
     };
-    await wardSpellDamage(app, spellById('burning-hands'), noRoll, 'evoker', { ask });
+    await wardSpellDamage(app, spellById('burning-hands'), noRoll, 'evoker', {
+      ask,
+      cast: resolveCast,
+    });
     assert.deepEqual(
       asked.map((m) => m.split(' Cast ')[0]),
       ['Scorching Ray: 1 of 2 hit Mage for 5 damage.', 'Burning Hands deals 4 damage to Mage.'],
     );
-    assert.equal(wardSpellDamage(app, spellById('cure-wounds'), rays, 'evoker', { ask }), null);
+    assert.equal(
+      wardSpellDamage(app, spellById('cure-wounds'), rays, 'evoker', { ask, cast: resolveCast }),
+      null,
+    );
   }));

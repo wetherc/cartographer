@@ -56,8 +56,11 @@ files alone.
 
 `tests/moduleLoad.test.js` imports every file under `src/` except
 `main.js` and `boot.js`, so every other module has a row and the total
-covers the whole tree. This test is also a load check. A renamed export or
-a circular import fails there, even in a file with no test of its own.
+covers the whole tree. This test is also a load check. A renamed export
+fails there, even in a file with no test of its own. It loads the modules in
+one fixed order, so it misses an import cycle that throws only when the
+browser enters the cycle from another module. `tests/importCycles.test.js`
+checks the static import graph of `src/` and fails on any cycle.
 
 `main.js` builds the app as it loads, and `boot.js` writes to the document
 as it loads. Both need a document, so neither is in the table.

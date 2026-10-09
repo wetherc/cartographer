@@ -12,7 +12,7 @@ import { gearOptions } from '../src/app/gearFields.js';
 import { createCharacter, withHP } from '../src/entities/Character.js';
 import { roll } from '../src/dice/DiceRoller.js';
 import { STAT_KEYS } from '../src/entities/Modifiers.js';
-import { castPlan } from '../src/app/spellCast.js';
+import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { replaceById } from '../src/entities/Roster.js';
 import { createResource } from '../src/entities/Resource.js';

@@ -691,7 +691,8 @@ bar starts. Casting a spell is the same job, split across five modules:
 
 | Module | Owns |
 | --- | --- |
-| `spellCast.js` | The two entry points (`castSpellAction` in combat, `castSpellOutOfCombat` outside it) and the cast plan |
+| `spellCast.js` | The two entry points (`castSpellAction` in combat, `castSpellOutOfCombat` outside it) and the cast dialog |
+| `castPlan.js` | The cast plan: the caster view, the targets with their save bonuses, the spendable slots, the save DC, the component and armor checks, and the dialog fields. It does not import the resolver, so the reaction pauses can build a plan without an import cycle |
 | `spellTargets.js` | Which creatures a spell can reach |
 | `spellCastFields.js` | The dialog fields |
 | `spellCastResolve.js` | Rolling the cast, and the chip that lets the caster repeat it on a later turn |

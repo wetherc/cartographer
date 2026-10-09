@@ -5,7 +5,6 @@ import { defensesOf } from '../entities/DamageDefenses.js';
 import { landingDamage, wardType } from '../entities/DamageWard.js';
 import { logName, spellsOf } from './combatants.js';
 import { reactionCaster, reactionPlan } from './reactionGate.js';
-import { resolveCast } from './spellCastResolve.js';
 
 /**
  * The pause after the damage roll of a weapon hit, a spell attack hit, or a
@@ -80,10 +79,10 @@ export function pendingDamageWard(app, defenderId, attackerId, groups, options =
  * @param {AppContext} app
  * @param {DamageWard} ward
  * @param {string} message what the hit did, ahead of the question
- * @param {{ ask?: import('./shieldWard.js').WardAsk }} [opts]
+ * @param {import('./shieldWard.js').WardOptions} opts
  * @returns {Promise<boolean>} whether the cast went ahead
  */
-export async function offerDamageWard(app, ward, message, { ask = confirmModal } = {}) {
+export async function offerDamageWard(app, ward, message, { cast, ask = confirmModal }) {
   const name = ward.spell.name;
   const yes = await ask(`${message} Cast ${name} as a reaction (resist ${ward.type})?`, {
     title: 'Reaction',
@@ -92,7 +91,7 @@ export async function offerDamageWard(app, ward, message, { ask = confirmModal }
   });
   if (!yes) return false;
   const slot = ward.plan.slotLevels[0];
-  await resolveCast(
+  await cast(
     app,
     ward.plan,
     { target: ward.id, 'resist-type': ward.type, ...(slot ? { slot: String(slot) } : {}) },
@@ -136,10 +135,10 @@ function spellDamageMessage(app, spell, o, total) {
  * @param {import('../types/spell.js').Spell} spell
  * @param {R} result
  * @param {string} casterId
- * @param {{ ask?: import('./shieldWard.js').WardAsk }} [opts]
+ * @param {import('./shieldWard.js').WardOptions} opts
  * @returns {Promise<R> | null}
  */
-export function wardSpellDamage(app, spell, result, casterId, opts = {}) {
+export function wardSpellDamage(app, spell, result, casterId, opts) {
   const kind = spell.effect.kind;
   if (kind !== 'attack' && kind !== 'save') return null;
   const outcomes = /** @type {(AttackOutcome | SaveOutcome)[]} */ (result.outcomes);

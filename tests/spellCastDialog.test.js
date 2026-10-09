@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castPlan, castSpellAction, castSpellOutOfCombat } from '../src/app/spellCast.js';
+import { castPlan } from '../src/app/castPlan.js';
+import { castSpellAction, castSpellOutOfCombat } from '../src/app/spellCast.js';
 import { createResource } from '../src/entities/Resource.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';

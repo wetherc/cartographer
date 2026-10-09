@@ -9,8 +9,10 @@ import { dirname, join } from 'node:path';
  *
  * This does two jobs. It is a load smoke test: a module that no suite imports
  * still has to parse, and its own imports still have to resolve, so a renamed
- * export or a circular import in a file with no test of its own fails here
- * instead of in the browser. It also fixes the coverage denominator. The
+ * export in a file with no test of its own fails here instead of in the
+ * browser. `importCycles.test.js` checks for import cycles.
+ *
+ * The test also fixes the coverage denominator. The
  * coverage report of Node lists only the files that were loaded, so a module
  * that nothing imported was missing from the table rather than sitting in it
  * at zero. That silently flattered the total. With every file loaded, the

@@ -852,7 +852,7 @@ strings reads as empty, and an unknown boon drops.
 `invokedSpell` returns a spell as the invocations change it: Eldritch Blast
 with `addsModifier` or a new range, and an at-will spell with a Self range
 or with no material. `app/combatants.spellsOf` and the sheet spell list map
-their spells through it, and `castPlan` in `app/spellCast.js` maps its spell
+their spells through it, and `castPlan` in `app/castPlan.js` maps its spell
 again. A spell that the caster also knows lists as the book has it, because
 those lists pass `atWill: false`, and `castPlan` applies the at-will
 changes only on the at-will cast. `invocationCast` tells `castPlan` how the
@@ -1274,7 +1274,7 @@ The call sites act on the list in these ways:
 - `app/spellCast.js` refuses a cast before the resolver runs, so a refused cast
   spends no slot. The dialog offers an "Ignore armor" opt-out beside the
   components opt-out.
-- `app/spellCast.js` also marks a character that is the target of a STR or DEX
+- `app/castPlan.js` also marks a character that is the target of a STR or DEX
   save spell with `armorPenalty`. The resolver adds that slant to the target's
   save through the `extra` parameter of `saveOutcome`.
 
@@ -1577,7 +1577,7 @@ that the caller computed, and only the character path goes through
 
 The cast dialog follows that split. `targetSaveBonus` in `app/combatants.js`
 returns a derived bonus for either kind of combatant. It returns nothing only
-for a target that was deleted while the dialog was open. `app/spellCast.js`
+for a target that was deleted while the dialog was open. `app/castPlan.js`
 adds the returned bonus to each target of a save spell and shows it in the
 target picker, such as `Rook (WIS +6)`, in place of the AC that a save never
 reads. The dialog asks for one typed number for the targets that have no
@@ -2047,7 +2047,7 @@ damage, such as Witch Bolt, also records the creatures that it hit in
 `repeat.targetIds`, and it opens the repeat only on a hit
 (`SpellRepeat.opensRepeat`).
 
-`castPlan` in `app/spellCast.js` finds the chip with
+`castPlan` in `app/castPlan.js` finds the chip with
 `SpellRepeat.heldRepeat` and builds a free plan: no slot, no component
 check, no armor check, and the cost of `repeat.cost` or of the casting time.
 `castSpell` takes the `free` option and skips the spellbook check and the
@@ -2295,7 +2295,7 @@ which has no dice tray, works the same as an attack, which has one.
 - `CastRolls.js` rolls the caster's chips once per projectile, because each
   projectile is its own attack roll. An auto-hit projectile rolls no attack, so
   no rider applies to it. The caster view has no conditions, so
-  `app/spellCast.js` passes in the chips of the real combatant as
+  `app/spellCastResolve.js` passes in the chips of the real combatant as
   `casterConditions`. The log lines name the dice of every ray, because the
   tally line prints no to-hit numbers of its own.
 - `Checks.resolveSave` rolls the roller's chips. Every save in the app goes
