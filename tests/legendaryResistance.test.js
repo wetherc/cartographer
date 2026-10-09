@@ -145,3 +145,11 @@ test('restoreAllResistance refills each creature, and keeps a list with nothing 
   const fresh = [king, goblin];
   assert.equal(restoreAllResistance(fresh), fresh, 'no use spent returns the same list');
 });
+
+test('a resisted save of a target with Evasion takes no damage', () => {
+  const turned = resistedOutcome(
+    { halfOnSave: true },
+    { saved: false, evaded: true, taken: 5, damage: { total: 10 } },
+  );
+  assert.equal(turned.taken, 0);
+});

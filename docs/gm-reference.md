@@ -1637,6 +1637,14 @@ when the turn ends and before you click **Next turn**. A legendary action
 that is not an attack, such as a move, has no button, so describe it at
 the table.
 
+### Evasion
+
+A character with the Evasion feature (rogue 7, monk 7) takes no damage when
+it makes a DEX save against a spell that deals half damage on a success,
+such as Fireball or Lightning Bolt. On a failed save it takes half damage.
+The log line adds "Evasion" after the damage. A creature with an Evasion
+trait gets no automatic change, so adjust its damage by hand.
+
 ### Legendary resistance
 
 A creature with **Legendary resistance per day** set can turn a failed

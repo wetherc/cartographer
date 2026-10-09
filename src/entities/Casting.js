@@ -45,7 +45,9 @@ export { buffCondition };
  * a Paralyzed or Unconscious target takes from a melee spell attack. `hp` is
  * the target's current HP, which only a spell with an HP limit or an HP pool
  * reads. The type rules of a spell read `creatureType` and
- * `conditionImmunities` (see `SpellTypeRules.js`).
+ * `conditionImmunities` (see `SpellTypeRules.js`). `evasion` marks a target
+ * with the Evasion feature, which takes no damage from a DEX save that halves
+ * on a success and half on a failure.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -61,6 +63,7 @@ export { buffCondition };
  *   riders?: import('./Riders.js').RiderSource[],
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
+ *   evasion?: boolean,
  * }} CastTarget
  */
 
@@ -416,7 +419,9 @@ function resolveEffect(spell, ctx) {
       // in place of any chip that would have failed the save.
       const autoFailedBy = noRoll ? reason || limitFails : (target.autoFailSave ?? limitFails);
       const { roll: save, success: saved, rider } = targetSave(target, saveDC, autoFailedBy, rng);
-      const taken = saved ? (effect.halfOnSave ? Math.floor(hit.total / 2) : 0) : hit.total;
+      const evaded = evades(effect, target);
+      const half = Math.floor(hit.total / 2);
+      const taken = saved ? (effect.halfOnSave && !evaded ? half : 0) : evaded ? half : hit.total;
       const condition = !saved ? (effect.condition ?? null) : null;
       return {
         target,
@@ -432,6 +437,7 @@ function resolveEffect(spell, ctx) {
         // The rider rides the chip, so it lands only when the chip does.
         conditionRider: condition ? (effect.rider ?? null) : null,
         ...(!saved && ongoing ? { ongoing } : {}),
+        ...(evaded ? { evaded: true } : {}),
         ...extra,
       };
     });
@@ -465,4 +471,16 @@ function resolveEffect(spell, ctx) {
   }
 
   return [];
+}
+
+/**
+ * Whether Evasion changes the damage a target takes from a save spell. It
+ * applies only to a DEX save that deals half damage on a success, such as
+ * Fireball or Lightning Bolt.
+ * @param {{ saveAbility?: string, halfOnSave?: boolean }} effect
+ * @param {{ evasion?: boolean }} target
+ * @returns {boolean}
+ */
+export function evades(effect, target) {
+  return target.evasion === true && effect.saveAbility === 'DEX' && effect.halfOnSave === true;
 }

@@ -510,7 +510,7 @@ function applySave(app, spell, result, casterId) {
     // change. Otherwise they apply per type, after the halving of a save.
     const taken =
       o.taken > 0
-        ? defendedDamage(app, o.target.id, o.damage.byType, { halve: o.saved })
+        ? defendedDamage(app, o.target.id, o.damage.byType, { halve: o.saved || !!o.evaded })
         : { total: 0, notes: [] };
     const defended = taken.notes.length > 0 ? ` (${taken.notes.join(', ')})` : '';
     // A spell that rolls no save states the HP rule that reached the target
@@ -523,7 +523,8 @@ function applySave(app, spell, result, casterId) {
     const groups = o.damage?.byType ?? [];
     const types = [...new Set(groups.map((g) => g.damageType).filter(Boolean))];
     const typed = types.length > 0 ? ` ${types.join(' and ')}` : '';
-    const takes = `takes ${taken.total}${typed} damage${top}${defended}`;
+    const evaded = o.evaded ? ', Evasion' : '';
+    const takes = `takes ${taken.total}${typed} damage${top}${evaded}${defended}`;
     /** @param {string} text */
     const line = (text) =>
       o.noRoll

@@ -83,7 +83,7 @@ export function resistedOutcome(effect, outcome) {
   return {
     ...rest,
     saved: true,
-    taken: effect.halfOnSave ? Math.floor(total / 2) : 0,
+    taken: effect.halfOnSave && !outcome.evaded ? Math.floor(total / 2) : 0,
     condition: null,
     conditionRider: null,
     resisted: true,

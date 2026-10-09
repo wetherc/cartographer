@@ -122,3 +122,45 @@ test('an HP-limit save with a later retry rolls no first save for Legendary Resi
   assert.equal(ogre.noRoll, true);
   assert.equal(canResist(ogre), false);
 });
+
+test('Evasion halves a failed DEX half-on-save and negates a made one', async () => {
+  const { evades } = await import('../src/entities/Casting.js');
+  const fire = spell({
+    id: 'fire',
+    ritual: false,
+    targetCount: 2,
+    effect: {
+      kind: 'save',
+      saveAbility: 'DEX',
+      damage: [{ count: 1, sides: 10, damageType: 'fire' }],
+      halfOnSave: true,
+    },
+  });
+  const mage = caster('wizard', { prepared: ['fire'] });
+  /** @param {number} unit @param {number} bonus */
+  const cast = (unit, bonus) =>
+    castSpell(mage, fire, {
+      targets: [
+        { id: 'rogue', name: 'Rogue', saveBonus: bonus, evasion: true },
+        { id: 'fighter', name: 'Fighter', saveBonus: bonus },
+      ],
+      saveDC: 15,
+      rng: () => unit,
+    });
+  // Every die lands on its top face: 10 fire, and a 20 on the save.
+  const made = cast(0.999, 0);
+  const [rogueMade, fighterMade] = /** @type {any[]} */ (made.ok ? made.outcomes : []);
+  assert.equal(rogueMade.saved, true);
+  assert.equal(rogueMade.taken, 0);
+  assert.equal(rogueMade.evaded, true);
+  assert.equal(fighterMade.taken, 5);
+  // A low face fails both saves, and Evasion halves the damage.
+  const failed = cast(0, -10);
+  const [rogueFailed, fighterFailed] = /** @type {any[]} */ (failed.ok ? failed.outcomes : []);
+  assert.equal(rogueFailed.saved, false);
+  assert.equal(rogueFailed.taken, Math.floor(fighterFailed.taken / 2));
+  // Only a DEX save that halves on a success counts.
+  assert.equal(evades({ saveAbility: 'CON', halfOnSave: true }, { evasion: true }), false);
+  assert.equal(evades({ saveAbility: 'DEX', halfOnSave: false }, { evasion: true }), false);
+  assert.equal(evades({ saveAbility: 'DEX', halfOnSave: true }, {}), false);
+});

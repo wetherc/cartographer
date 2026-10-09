@@ -15,6 +15,7 @@ import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/
 import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
 import { findCombatant, hpOf, targetConditions } from './combatants.js';
+import { hasFeature } from '../entities/Features.js';
 import { castTypeFields } from '../entities/CreatureType.js';
 import { sourceSlant } from '../entities/SourceSlant.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
@@ -193,8 +194,11 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
           saveAbility,
           t.armorPenalty ? ['disadvantage'] : [],
         );
+        const found = findCombatant(app, t.id);
+        const evasion = found?.kind === 'character' && hasFeature(found.entity, 'Evasion');
         return {
           ...t,
+          ...(evasion ? { evasion: true } : {}),
           // Every live target carries a derived bonus. A target the roster lost
           // while the dialog sat open carries none and saves on the flat die.
           saveBonus: t.saveBonus ?? 0,
