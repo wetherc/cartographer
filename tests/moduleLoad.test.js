@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -59,4 +59,11 @@ test('every module under src loads on its own', async () => {
     }
   }
   assert.deepEqual(failures, [], 'a module that no suite imports still has to load');
+});
+
+test('no source file under src contains a raw NUL byte', () => {
+  // Git treats a file with a raw NUL byte as binary, so its diffs and grep
+  // matches go blank. Code that needs a NUL separator writes the `\u0000` escape.
+  const withNul = jsFiles(SRC).filter((file) => readFileSync(file).includes(0));
+  assert.deepEqual(withNul, []);
 });

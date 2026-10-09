@@ -497,3 +497,7 @@ test('undo prunes an expertise another writer stacked on a feat-granted skill', 
   assert.deepEqual(undone.proficiencies?.skills, []);
   assert.deepEqual(undone.proficiencies?.expertise, [], 'expertise cannot outlive its skill');
 });
+
+test('slotKey joins class and class level with a NUL separator, as saved choices expect', () => {
+  assert.equal(slotKey({ classId: 'fighter', classLevel: 4 }), 'fighter\u00004');
+});
