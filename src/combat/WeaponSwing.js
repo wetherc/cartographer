@@ -246,11 +246,16 @@ export function attackLine(setup, roll) {
  * proficiency never reaches damage. `sneakDice` is how many d6 Sneak Attack
  * added, so the caller can spend the flag for the turn. `riderNote` names the
  * hit riders and the Lifedrinker damage that the hit added, for the log.
+ * `rolledMode` is the mode the d20 rolled with, after the tray's own toggle.
+ * Without it, the mode of the setup applies.
  * @param {SwingSetup} setup
- * @param {{ attacker: any, defender?: { conditions?: import('../types/entities.js').Condition[] }, weapon: Weapon, tweaks: AttackTweaks, crit: boolean, rng: () => number }} hit
+ * @param {{ attacker: any, defender?: { conditions?: import('../types/entities.js').Condition[] }, weapon: Weapon, tweaks: AttackTweaks, crit: boolean, rng: () => number, rolledMode?: import('../types/dice.js').RollMode | null }} hit
  * @returns {{ damage: ReturnType<typeof rollDamage>, sneakDice: number, riderNote: string }}
  */
-export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit, rng }) {
+export function hitDamage(
+  setup,
+  { attacker, defender = {}, weapon, tweaks, crit, rng, rolledMode },
+) {
   // A two-handed swing of a versatile weapon reads the two-handed dice
   // instead of the one-handed ones. The live attacker must still have the
   // other hand free, because the dialog read the equipment before its await.
@@ -261,8 +266,11 @@ export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit
     weapon.versatileDamage?.length;
   // Sneak Attack adds its dice only on a hit. An attacker without the
   // feature, or a weapon that is neither finesse nor ranged, has no dice to
-  // add, whatever the dialog said.
-  const sneakDice = tweaks.sneak && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
+  // add, whatever the dialog said. A swing at disadvantage cannot use Sneak
+  // Attack under the 5e rule, so it adds no dice and spends no use.
+  const disadvantaged = (rolledMode ?? setup.mode) === 'disadvantage';
+  const sneakDice =
+    tweaks.sneak && !disadvantaged && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
   const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
     crit,
     bonusDice: tweaks.damageDice ?? 0,

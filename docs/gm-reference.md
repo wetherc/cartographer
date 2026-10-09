@@ -1735,7 +1735,11 @@ a critical hit doubles them. The damage line of the log names them.
 
 The 5e condition for the dice is advantage on the attack, or an ally next
 to the target. The app checks neither, so the box is where you state that
-the condition was met.
+the condition was met. A swing at disadvantage can never use Sneak Attack.
+When you pick Disadvantage in the dialog, the box is disabled and its label
+says `not at disadvantage`. When the swing rolls at disadvantage for another
+reason, such as Poisoned under Auto, a ticked box adds no dice and spends no
+use.
 
 The app tracks the once-per-turn limit. After the dice land, the box is gone
 for the rest of the turn, and it comes back on the next turn of any

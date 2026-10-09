@@ -255,6 +255,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
       tweaks: { ...tweaks, surprise: surpriseDiceFor(attacker, app.state.combat, defender.id) },
       crit,
       rng,
+      rolledMode: result.selection?.mode ?? setup.mode,
     });
     // Sneak Attack adds its dice only on a hit, so the flag is spent here
     // rather than beside the swing.

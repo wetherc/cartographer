@@ -109,6 +109,8 @@ export function attackDialog({
     hasExtraAction(attacker.conditions),
   );
   const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
+  const sneakBox = sneakDice > 0 && canSpend(participant, 'sneak');
+  const sneakLabel = `Sneak Attack (+${sneakDice}d6)`;
   // A creature with Multiattack can roll every swing of it from one dialog.
   // The box shows only while the Attack action is unspent, because a spent
   // action leaves only the banked swings.
@@ -187,11 +189,13 @@ export function attackDialog({
       // not used it this turn, and swings a finesse or ranged weapon. Whether
       // the rogue earned it, from advantage or from an ally beside the
       // target, is the GM's call at the table.
-      ...(sneakDice > 0 && canSpend(participant, 'sneak')
+      // A swing at disadvantage cannot use it, so picking Disadvantage
+      // disables the box and says why.
+      ...(sneakBox
         ? [
             {
               name: 'sneak',
-              label: `Sneak Attack (+${sneakDice}d6)`,
+              label: sneakLabel,
               type: /** @type {const} */ ('checkbox'),
               value: false,
               full: true,
@@ -271,6 +275,17 @@ export function attackDialog({
       wide: true,
       advancedLabel: 'Situational modifiers',
       ...(cannotPay ? { submitRequires: ['free-action'] } : {}),
+      ...(sneakBox
+        ? {
+            /** @param {string} name @param {import('../types/modal.js').ModalFormHandle} form */
+            onChange: (name, form) => {
+              if (name !== 'mode') return;
+              const blocked = form.get('mode') === 'disadvantage';
+              form.setDisabled('sneak', blocked);
+              form.setLabel('sneak', blocked ? `${sneakLabel}: not at disadvantage` : sneakLabel);
+            },
+          }
+        : {}),
     },
   };
 }

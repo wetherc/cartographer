@@ -1373,6 +1373,48 @@ test('a sneak attack adds its d6, names them in the log, and spends the flag', (
   assert.match(damage, /with sneak attack 2d6/);
 });
 
+test('a sneak attack at disadvantage adds no dice and spends no use', () => {
+  const { app, hero, spends } = budgetApp();
+  const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
+  rollWeaponAttack(app, {
+    attacker: rogue,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (FINESSE_SWORD),
+    tweaks: { sneak: true, mode: 'disadvantage' },
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, [
+    { id: 'hero', cost: 'attack', attacksPerAction: 1, extraAction: false },
+  ]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  assert.equal(/sneak attack/.test(damage), false);
+});
+
+test('a Poisoned rogue on auto mode adds no sneak dice', () => {
+  const { app, hero, spends } = budgetApp();
+  const rogue = {
+    ...hero,
+    classes: [{ classId: 'rogue', level: 3 }],
+    level: 3,
+    conditions: [{ name: 'Poisoned' }],
+  };
+  rollWeaponAttack(app, {
+    attacker: rogue,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (FINESSE_SWORD),
+    tweaks: { sneak: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(
+    spends.some((s) => s.cost === 'sneak'),
+    false,
+  );
+  assert.ok(
+    app.log.some((entry) => entry.includes('hits Goblin')),
+    'the swing hit',
+  );
+});
+
 test('a critical sneak attack doubles the dice it names', () => {
   const hero = makeHero({ STR: 16 });
   const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };

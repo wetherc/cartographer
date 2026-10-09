@@ -134,3 +134,32 @@ test('a swing the turn cannot pay for needs the opt-out box ticked', () => {
   assert.equal(reaction.title, 'Opportunity attack with Sword');
   assert.ok(!names(reaction).includes('free-action'));
 });
+
+test('picking Disadvantage disables the Sneak Attack box and says why', () => {
+  const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
+  const rapier = { ...SWORD, name: 'Rapier', properties: ['finesse'] };
+  const d = dialog({ attacker: rogue, weapon: /** @type {any} */ (rapier) });
+  /** @type {Record<string, string>} */
+  const values = { mode: 'disadvantage' };
+  /** @type {Record<string, boolean>} */
+  const disabled = {};
+  /** @type {Record<string, string>} */
+  const labels = {};
+  const form = /** @type {any} */ ({
+    get: (/** @type {string} */ n) => values[n],
+    setDisabled: (/** @type {string} */ n, /** @type {boolean} */ v) => (disabled[n] = v),
+    setLabel: (/** @type {string} */ n, /** @type {string} */ v) => (labels[n] = v),
+  });
+  const onChange = /** @type {any} */ (d.options).onChange;
+  onChange('cover', form);
+  assert.deepEqual(disabled, {}, 'other fields change nothing');
+  onChange('mode', form);
+  assert.equal(disabled.sneak, true);
+  assert.equal(labels.sneak, 'Sneak Attack (+2d6): not at disadvantage');
+  values.mode = 'advantage';
+  onChange('mode', form);
+  assert.equal(disabled.sneak, false);
+  assert.equal(labels.sneak, 'Sneak Attack (+2d6)');
+  // A dialog with no Sneak Attack box has no change handler.
+  assert.equal(/** @type {any} */ (dialog().options).onChange, undefined);
+});
