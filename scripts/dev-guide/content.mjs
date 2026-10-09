@@ -284,7 +284,7 @@ export const SNIPPETS = {
   appContext: { file: 'src/types/app.ts', symbol: 'AppContext' },
   mountOrder: {
     file: 'src/main.js',
-    region: { from: 'wireCampaignActions(app)', to: 'wireShortcuts(app)' },
+    region: { from: 'wireCampaignActions(app)', to: 'wireShortcuts(app, wireSearch(app))' },
   },
   panel: { file: 'src/ui/TimePanel.js', symbol: 'mountTimePanel' },
   repaint: { file: 'src/ui/listPanel.js', symbol: 'repaintNeeded' },

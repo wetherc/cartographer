@@ -16,8 +16,9 @@ import { SHORTCUT_HELP, shortcutFor } from '../view/Shortcuts.js';
  * action turns into. Save, Undo, and Redo go through the header buttons,
  * not their own handlers, so a shortcut and a click run the same code path.
  * @param {AppContext} app
+ * @param {{ focus: () => void }} search the header search box, which "/" focuses
  */
-export function wireShortcuts(app) {
+export function wireShortcuts(app, search) {
   document.addEventListener('keydown', (event) => {
     const target = /** @type {HTMLElement} */ (event.target);
     const typing =
@@ -32,6 +33,12 @@ export function wireShortcuts(app) {
     // Only modifier-key combinations have a browser default worth stopping.
     // A bare letter has no default, so preventing it has no visible effect.
     if (event.ctrlKey || event.metaKey) event.preventDefault();
+    // Firefox opens its quick find on "/", so the search key stops that.
+    if (action === 'search') {
+      event.preventDefault();
+      search.focus();
+      return;
+    }
 
     if (action === 'save') mustGetElement('save-btn').click();
     else if (action === 'undo') mustGetElement('undo-btn').click();

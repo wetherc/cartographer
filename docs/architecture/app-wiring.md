@@ -93,7 +93,8 @@ call order in `main.js` a dependency order:
 | 10 | `wireHeaderMenu` | Wires the phone Menu button of the header, which reads only the header markup |
 | 11 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
 | 12 | `wirePhoneViews` | Reads the sidebar tabs that step 11 wires, to follow the selected tab |
-| 13 | `wireShortcuts` | Adds the global key listener |
+| 13 | `wireSearch` | Mounts the header search box, which reads app state and the grid on each keystroke and jumps through `focusLocation` and `centerOnLocation` |
+| 14 | `wireShortcuts` | Adds the global key listener, and takes the search box from step 13 for the `/` key |
 
 ### State that stays out of `app.state`
 
@@ -1082,6 +1083,22 @@ elements), and the click or call that each action becomes. Save, Undo, and
 Redo click the header buttons, so a shortcut and a click run the same code.
 Ctrl/Cmd+Z is the one entry that reads app state: in Build mode it undoes
 the last stroke, and in every other mode it undoes the last save.
+
+
+### searchWiring.js
+
+`searchWiring.js` mounts the header search box (`ui/CampaignSearch.js`) and
+turns a chosen match into a jump. The matching is the pure
+`src/view/CampaignSearch.js`, which takes the campaign records and the viewer
+and returns the matches grouped by kind. A Player tab finds only what its
+role reads elsewhere: revealed quests and their shown objectives, revealed
+handouts in its audience, met creatures, the player lines of the travelogue,
+and maps with a revealed tile. Quest, creature, and tile notes are GM-only.
+A tile match calls `focusLocation` on a GM tab and `centerOnLocation` on a
+Player tab, then focuses the map. A record match opens Play mode and the
+sidebar tab of its list, and scrolls to the row whose `data-entry-id` (set
+by `listPanel.js`) or `data-log-id` names the record. A row that the list
+does not draw, such as a quest in a folded group, falls back to the card.
 
 `onboarding.js` shows the overlay over a blank campaign until the GM picks
 one of its three ways forward or dismisses it. After that, the overlay does

@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'back'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'back'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'|'search'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -126,6 +126,8 @@ const PATHS = {
   ],
   moon: ['M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z'],
   monitor: ['M4 5h16v11H4z', 'M9 20h6', 'M12 16v4'],
+  // A lens with a handle marks the campaign search box.
+  search: ['M11 4a7 7 0 100 14 7 7 0 000-14z', 'M20 20l-4-4'],
 };
 
 /**

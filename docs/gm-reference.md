@@ -148,6 +148,27 @@ options are System (a monitor icon), Light (a sun), and Dark (a moon).
 The app stores the choice per browser. A dark GM laptop and a light table
 display can run at the same time.
 
+## Campaign search
+
+The search box in the header finds a word in every part of the campaign.
+Press `/` or click the box, and type. The list groups the matches by kind:
+maps, quests, NPCs and creatures, handouts, tile notes, creature notes, and
+the travelogue. Each group shows up to five matches, and a line under it
+counts the rest. Every word you type must occur in the match, in any field.
+
+Use the arrow keys to move through the list, and press Enter to open the
+match. A click opens it too. Escape closes the list, and a second Escape
+clears the box. A map, a tile note, or a creature with a place opens its map
+and centers the tile. A quest, a handout, a creature with no place, or a log
+line opens its list in the sidebar and marks the row. Between phone width
+and a wide screen, the box shows as a lens button until you focus it.
+
+A Player tab finds only what that tab can read elsewhere: revealed quests
+and their shown steps, revealed handouts for its character, the creatures
+that the party met, the player lines of the travelogue, and the maps where
+the fog has cleared a tile. Quest notes, creature notes, and tile notes
+stay GM-only, so a Player tab never matches them.
+
 ## Campaign controls
 
 The header buttons create, save, and move the whole campaign. They show in
@@ -3330,6 +3351,7 @@ Press `?` anywhere for the shortcut reference.
 | Key | Action |
 | --- | --- |
 | ? | Show the shortcut reference |
+| / | Focus the campaign search box |
 | Ctrl/Cmd+S | Save |
 | Ctrl/Cmd+Z | In Build mode, undo the last stroke. In Play and Library mode, undo to the previous save |
 | Ctrl/Cmd+Shift+Z | In Build mode, redo the last undone stroke. In Play and Library mode, redo the last undone save |

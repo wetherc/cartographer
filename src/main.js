@@ -26,6 +26,7 @@ import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
 import { wireHeaderMenu } from './app/headerMenu.js';
 import { wirePhoneViews } from './app/phoneViews.js';
+import { wireSearch } from './app/searchWiring.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
@@ -122,7 +123,7 @@ function start() {
   // sheet, so everything it touches must already be registered.
   wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
   wirePhoneViews(); // phone bottom bar; follows the sidebar tabs wired just above
-  wireShortcuts(app);
+  wireShortcuts(app, wireSearch(app));
   // A Player tab bound to one character opens on that character's sheet, so
   // the player sees the map and their sheet side by side. A reload below
   // still restores the tab the player had open.

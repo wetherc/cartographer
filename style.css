@@ -26,4 +26,5 @@
 @import url('styles/build-shell.css'); /* Build mode: the fixed screen with its own scrolling rails */
 @import url('styles/full-sheet.css'); /* the full character sheet over Play mode */
 @import url('styles/sheet-summary.css'); /* the summary card in the sidebar, and what the full sheet adds */
+@import url('styles/search.css'); /* the header search box and its list of matches */
 @import url('styles/responsive.css'); /* narrow-viewport stacking; keep last */

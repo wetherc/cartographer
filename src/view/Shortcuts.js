@@ -5,7 +5,7 @@
  * does, and the two places where it depends on mode and role.
  */
 
-/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'redo-stroke' | 'build' | 'play' | 'help' | 'sheet'} ShortcutAction */
+/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'redo-stroke' | 'build' | 'play' | 'help' | 'sheet' | 'search'} ShortcutAction */
 
 /**
  * The shortcut list that the '?' dialog shows. This list stays beside the
@@ -16,6 +16,7 @@
  */
 export const SHORTCUT_HELP = [
   '?: show this list',
+  '/: search the campaign',
   'Ctrl/Cmd+S: save the campaign',
   'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
   'Ctrl/Cmd+Shift+Z: redo (Build: last undone edit; Play: next save)',
@@ -48,7 +49,8 @@ export const SHORTCUT_HELP = [
  * function checks it after the modifier combinations, and skips it
  * entirely when any modifier is held. Help is open to everyone, because a
  * player who cannot switch modes can still want to know what the map keys
- * do.
+ * do. Search is open to everyone too, and a Player tab finds only what
+ * its role can read.
  * @param {{ key: string, ctrlKey?: boolean, metaKey?: boolean, altKey?: boolean, shiftKey?: boolean }} event
  * @param {{ mode: string, gm: boolean }} context
  * @returns {ShortcutAction | null}
@@ -66,6 +68,7 @@ export function shortcutFor(event, context) {
   if (event.key === 'b' && context.gm) return 'build';
   if (event.key === 'p' && context.gm) return 'play';
   if (event.key === '?') return 'help';
+  if (event.key === '/') return 'search';
   if (event.key === 'c' && context.mode === 'play') return 'sheet';
   return null;
 }

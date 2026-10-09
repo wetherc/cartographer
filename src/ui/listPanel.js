@@ -209,6 +209,9 @@ export function mountListPanel(container, options) {
    */
   function buildRow(entry, ctx) {
     const row = el('div', classes.row ?? `${options.className}__row`);
+    // A record with an id names its row, so a search result can find it.
+    const id = /** @type {{ id?: unknown }} */ (entry).id;
+    if (typeof id === 'string') row.dataset.entryId = id;
     for (const modifier of classes.rowModifiers?.(entry, ctx.gm) ?? []) {
       if (modifier) row.classList.add(modifier);
     }

@@ -58,6 +58,7 @@ test('an unbound key asks for nothing', () => {
 test('the help dialog documents every shortcut', () => {
   assert.deepEqual(SHORTCUT_HELP, [
     '?: show this list',
+    '/: search the campaign',
     'Ctrl/Cmd+S: save the campaign',
     'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
     'Ctrl/Cmd+Shift+Z: redo (Build: last undone edit; Play: next save)',
@@ -86,4 +87,12 @@ test('C opens the full sheet in Play mode only, for either role', () => {
   assert.equal(shortcutFor({ key: 'c' }, gmInPlay), 'sheet');
   assert.equal(shortcutFor({ key: 'c' }, player), 'sheet');
   assert.equal(shortcutFor({ key: 'c' }, gmInBuild), null);
+});
+
+test('slash focuses the search box for the GM and for players, with no modifier', () => {
+  assert.equal(shortcutFor({ key: '/' }, gmInPlay), 'search');
+  assert.equal(shortcutFor({ key: '/' }, gmInBuild), 'search');
+  assert.equal(shortcutFor({ key: '/' }, player), 'search');
+  assert.equal(shortcutFor({ key: '/', ctrlKey: true }, gmInPlay), null);
+  assert.ok(SHORTCUT_HELP.some((line) => line.startsWith('/:')));
 });
