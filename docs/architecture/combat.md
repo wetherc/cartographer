@@ -873,12 +873,16 @@ and, during a fight, the round. The column passes `withRound` to `entryItem`,
 so a fight line reads "Round 2" there and "Day 1, Dusk, round 2" in the
 travelogue.
 
-The travelogue keeps its newest 200 entries (`TRAVELOG_LIMIT`). A fight of five
-rounds with ten combatants can log more than that. `logEvent` therefore passes
-the running fight's `startedAt` to `appendEntry`, which then trims only the
-entries older than the fight. The list can grow past 200 during a fight, up to
-`TRAVELOG_FIGHT_LIMIT` (1,000). The first line logged after the fight ends
-trims the list back to 200. The column keeps as many rows as the larger limit.
+The travelogue counts its entries in two budgets (`TRAVELOG_LIMITS` and
+`logBudget` in `log/Travelogue.js`). Story entries (travel, notes, and
+rests) and chatter entries (rolls and fight lines) each keep their newest
+200, so a long fight or a busy dice tray removes only older chatter and
+never a travel line. A fight of five rounds with ten combatants can log more
+than 200 lines. `logEvent` therefore passes the running fight's `startedAt`
+to `appendEntry`, which then trims only the chatter older than the fight.
+The chatter can grow past 200 during a fight, up to `TRAVELOG_FIGHT_LIMIT`
+(1,000). The first line logged after the fight ends trims it back to 200.
+The column keeps as many rows as the larger limit.
 
 ### GM-only lines
 

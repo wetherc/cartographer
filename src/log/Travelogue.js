@@ -12,16 +12,34 @@ import { formatClock } from '../time/GameClock.js';
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 /** @typedef {import('../types/log.js').LogEntryKind} LogEntryKind */
 
-/** How many entries a travelogue keeps before it removes the oldest. */
-export const TRAVELOG_LIMIT = 200;
+/** @typedef {import('../types/log.js').LogBudget} LogBudget */
 
 /**
- * The most entries a travelogue keeps while a fight runs. The entries of the
- * running fight stay past `TRAVELOG_LIMIT`, so the combat log column can
- * show the fight from its first initiative roll. This cap bounds a fight
+ * How many entries of each budget a travelogue keeps before it removes the
+ * oldest of that budget. Story entries (travel, notes, and rests) have their
+ * own budget, so a long fight or a busy dice tray cannot push the story of
+ * the campaign out of the log.
+ * @type {Readonly<Record<LogBudget, number>>}
+ */
+export const TRAVELOG_LIMITS = Object.freeze({ story: 200, chatter: 200 });
+
+/**
+ * The most chatter entries a travelogue keeps while a fight runs. The lines
+ * of the running fight stay past the chatter limit, so the combat log column
+ * can show the fight from its first initiative roll. This cap bounds a fight
  * that the GM never ends.
  */
 export const TRAVELOG_FIGHT_LIMIT = 1000;
+
+/**
+ * The budget that an entry kind counts against. Rolls and fight lines are
+ * chatter, and every other kind is story.
+ * @param {LogEntryKind} kind
+ * @returns {LogBudget}
+ */
+export function logBudget(kind) {
+  return kind === 'roll' || kind === 'combat' ? 'chatter' : 'story';
+}
 
 /**
  * @param {string} id
@@ -58,30 +76,40 @@ export function stampLabel(entry, withRound = false) {
 
 /**
  * Append an entry, and return a new list. Entries are stored oldest first.
- * Once the list exceeds `limit`, the function trims the oldest entries, so
- * the list never grows without bound.
+ * Each budget of `limits` counts its own entries (see `logBudget`). Once a
+ * budget has more entries than its limit, the function removes the oldest
+ * entries of that budget, so the list never grows without bound and a flood
+ * of rolls never removes a travel line.
  *
- * `keepSince` is the `startedAt` of a running fight. The trim then removes
- * only entries older than it, so a long fight does not push its own first
- * lines out of the combat log column. The list can grow past `limit` while
- * the fight runs, up to `TRAVELOG_FIGHT_LIMIT`, and the first append after
- * the fight ends trims it back.
+ * `keepSince` is the `startedAt` of a running fight. The chatter trim then
+ * removes only chatter older than it, so a long fight does not push its own
+ * first lines out of the combat log column. The chatter can grow past its
+ * limit while the fight runs, up to `TRAVELOG_FIGHT_LIMIT`, and the first
+ * append after the fight ends trims it back.
  * @param {LogEntry[]} log
  * @param {LogEntry} entry
- * @param {number} [limit]
+ * @param {Readonly<Record<LogBudget, number>>} [limits]
  * @param {number | null} [keepSince]
  * @returns {LogEntry[]}
  */
-export function appendEntry(log, entry, limit = TRAVELOG_LIMIT, keepSince = null) {
+export function appendEntry(log, entry, limits = TRAVELOG_LIMITS, keepSince = null) {
   const next = [...log, entry];
-  if (next.length <= limit) return next;
-  let cut = next.length - limit;
-  if (keepSince !== null) {
-    const found = next.findIndex((e) => e.at >= keepSince);
-    const fightStart = found === -1 ? next.length : found;
-    cut = Math.max(Math.min(cut, fightStart), next.length - TRAVELOG_FIGHT_LIMIT);
+  /** @type {Record<LogBudget, number[]>} the list indexes of each budget, oldest first */
+  const members = { story: [], chatter: [] };
+  next.forEach((e, i) => members[logBudget(e.kind)].push(i));
+  const dropped = new Set();
+  for (const budget of /** @type {LogBudget[]} */ (['story', 'chatter'])) {
+    const indexes = members[budget];
+    let cut = indexes.length - limits[budget];
+    if (cut <= 0) continue;
+    if (keepSince !== null && budget === 'chatter') {
+      const found = indexes.findIndex((i) => next[i].at >= keepSince);
+      const fightStart = found === -1 ? indexes.length : found;
+      cut = Math.max(Math.min(cut, fightStart), indexes.length - TRAVELOG_FIGHT_LIMIT);
+    }
+    for (const i of indexes.slice(0, cut)) dropped.add(i);
   }
-  return next.slice(cut);
+  return dropped.size === 0 ? next : next.filter((_, i) => !dropped.has(i));
 }
 
 /**

@@ -1,6 +1,10 @@
 /** What produced a travelogue entry, used only to tag and style rows. */
 export type LogEntryKind = 'travel' | 'combat' | 'note' | 'rest' | 'roll';
 
+/** The share of the travelogue that an entry kind counts against. Story is
+ * travel, notes, and rests. Chatter is rolls and fight lines. */
+export type LogBudget = 'story' | 'chatter';
+
 /** One automatically recorded event in the party's travelogue. */
 export interface LogEntry {
   id: string;

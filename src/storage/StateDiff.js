@@ -227,7 +227,7 @@ function diffRecord(before, after, path, pattern, ops) {
  * records each insertion's and removal's index, so inverting the op
  * restores the element's position instead of appending it. This index keeps
  * the capped travelogue cheap. Once the travelogue is full, every logged
- * event removes the oldest entry and appends a new one. Without the index,
+ * event removes an older entry and appends a new one. Without the index,
  * the inverse of that pair needs the whole id sequence.
  *
  * The function emits an `order` op only for a genuine permutation of the

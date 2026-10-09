@@ -1,6 +1,6 @@
 import { textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { entriesAfter, isoTimestamp, stampLabel, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { entriesAfter, isoTimestamp, stampLabel } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 
@@ -31,12 +31,14 @@ export function entryItem(entry, withRound = false) {
   if (iso !== null) time.dateTime = iso;
   if (time.textContent !== wall) time.title = wall;
 
-  return el(
+  const item = el(
     'li',
     `travelog__item travelog__item--${entry.kind}`,
     time,
     el('span', 'travelog__message', entry.message),
   );
+  item.dataset.logId = entry.id;
+  return item;
 }
 
 /**
@@ -47,7 +49,10 @@ export function entryItem(entry, withRound = false) {
  * other thin DOM-wrapper panels. Rendering is append-only. `update`
  * prepends only the entries logged since the last call, through
  * `entriesAfter`, and rebuilds from scratch only when the log was cleared
- * or replaced. A `logEvent` costs one row, not a full rerender. A change of
+ * or replaced. A `logEvent` costs one row, not a full rerender. The log
+ * trims each budget on its own (see `Travelogue.appendEntry`), so the
+ * trimmed entries can sit anywhere in the list. When the panel has more rows
+ * than the log has entries, it removes the rows whose entries are gone. A change of
  * `getRole` also rebuilds the list, because the two roles read different
  * lines (see `LogVisibility.entriesFor`).
  * @param {HTMLElement} container
@@ -84,7 +89,12 @@ export function mountTravelogPanel(container, callbacks) {
     // The list is newest first. Prepending in oldest-to-newest order
     // leaves the newest row on top.
     for (const entry of fresh ?? entries) list.prepend(entryItem(entry));
-    while (list.children.length > TRAVELOG_LIMIT) list.lastElementChild?.remove();
+    if (list.children.length > entries.length) {
+      const kept = new Set(entries.map((e) => e.id));
+      for (const row of [...list.children]) {
+        if (!kept.has(/** @type {HTMLElement} */ (row).dataset.logId ?? '')) row.remove();
+      }
+    }
 
     const hasEntries = list.children.length > 0;
     empty.hidden = hasEntries;

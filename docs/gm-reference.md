@@ -3014,8 +3014,12 @@ the round, such as "Round 2".
 
 | Limit | Value |
 | --- | --- |
-| Entries kept | The newest 200 |
-| Entries kept while a fight runs | Every line of the fight, up to 1,000 entries in all |
+| Story entries kept (Travel, Note, and Rest) | The newest 200 |
+| Roll and Combat entries kept | The newest 200 |
+| Roll and Combat entries kept while a fight runs | Every line of the fight, up to 1,000 |
+
+The two counts are separate. A long fight or many dice rolls remove only
+older Roll and Combat entries, and the story entries stay.
 
 **Clear log** deletes every entry after a confirmation.
 

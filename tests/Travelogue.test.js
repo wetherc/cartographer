@@ -6,7 +6,8 @@ import {
   entriesAfter,
   isoTimestamp,
   stampLabel,
-  TRAVELOG_LIMIT,
+  logBudget,
+  TRAVELOG_LIMITS,
   TRAVELOG_FIGHT_LIMIT,
 } from '../src/log/Travelogue.js';
 
@@ -34,22 +35,66 @@ test('appendEntry does not mutate the input list', () => {
 
 test('appendEntry trims the oldest entries once past the limit', () => {
   let log = [];
-  for (let i = 0; i < TRAVELOG_LIMIT + 5; i++) {
+  const limit = TRAVELOG_LIMITS.story;
+  for (let i = 0; i < limit + 5; i++) {
     log = appendEntry(log, createEntry(`e${i}`, 'travel', `m${i}`, i));
   }
-  assert.equal(log.length, TRAVELOG_LIMIT);
-  // The five oldest (e0..e4) were dropped; the newest is retained.
+  assert.equal(log.length, limit);
+  // The five oldest (e0..e4) were dropped; the newest is kept.
   assert.equal(log[0].id, 'e5');
-  assert.equal(log[log.length - 1].id, `e${TRAVELOG_LIMIT + 4}`);
+  assert.equal(log[log.length - 1].id, `e${limit + 4}`);
 });
 
-test('appendEntry honors a custom limit', () => {
+test('appendEntry honors custom limits', () => {
   let log = [];
-  for (let i = 0; i < 4; i++) log = appendEntry(log, createEntry(`e${i}`, 'note', 'x', i), 2);
+  const limits = { story: 2, chatter: 2 };
+  for (let i = 0; i < 4; i++) log = appendEntry(log, createEntry(`e${i}`, 'note', 'x', i), limits);
   assert.deepEqual(
     log.map((e) => e.id),
     ['e2', 'e3'],
   );
+});
+
+test('logBudget counts rolls and fight lines as chatter, and the rest as story', () => {
+  assert.equal(logBudget('roll'), 'chatter');
+  assert.equal(logBudget('combat'), 'chatter');
+  for (const kind of /** @type {const} */ (['travel', 'note', 'rest'])) {
+    assert.equal(logBudget(kind), 'story');
+  }
+});
+
+test('a flood of rolls and fight lines never removes a story entry', () => {
+  const limits = { story: 3, chatter: 3 };
+  let log = [
+    createEntry('t1', 'travel', 'Entered the Keep.', 1),
+    createEntry('n1', 'note', 'Met the Castellan.', 2),
+  ];
+  for (let i = 0; i < 50; i++) {
+    log = appendEntry(log, createEntry(`r${i}`, i % 2 ? 'roll' : 'combat', 'x', 10 + i), limits);
+  }
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['t1', 'n1', 'r47', 'r48', 'r49'],
+  );
+  log = appendEntry(log, createEntry('s1', 'rest', 'Long rest.', 100), limits);
+  log = appendEntry(log, createEntry('t2', 'travel', 'Left.', 101), limits);
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['n1', 'r47', 'r48', 'r49', 's1', 't2'],
+    'the story budget trims only its own oldest entry',
+  );
+});
+
+test('the regression case: a long fight and many travel lines keep every story line', () => {
+  let log = [];
+  for (let i = 0; i < 50; i++) log = appendEntry(log, createEntry(`t${i}`, 'travel', 'x', i));
+  for (let i = 0; i < 300; i++) {
+    log = appendEntry(log, createEntry(`c${i}`, 'combat', 'x', 100 + i), TRAVELOG_LIMITS, 100);
+  }
+  log = appendEntry(log, createEntry('n', 'note', 'After the fight.', 500));
+  assert.equal(log.filter((e) => e.kind === 'travel').length, 50);
+  assert.equal(log.filter((e) => e.kind === 'combat').length, TRAVELOG_LIMITS.chatter);
+  assert.equal(log.at(-1)?.id, 'n');
 });
 
 test('entriesAfter returns the whole log when nothing was rendered yet', () => {
@@ -69,7 +114,8 @@ test('entriesAfter returns only the entries newer than the given id', () => {
 
 test('entriesAfter still finds the id after older entries were trimmed away', () => {
   let log = [];
-  for (let i = 0; i < 5; i++) log = appendEntry(log, createEntry(`e${i}`, 'note', 'x', i), 3);
+  for (let i = 0; i < 5; i++)
+    log = appendEntry(log, createEntry(`e${i}`, 'note', 'x', i), { story: 3, chatter: 3 });
   // e2 survived the trim to ['e2','e3','e4'].
   assert.deepEqual(
     entriesAfter(log, 'e2').map((e) => e.id),
@@ -93,7 +139,12 @@ test('a running fight keeps its own entries past the limit', () => {
   /** @type {import('../src/types/log.js').LogEntry[]} */
   let log = [];
   const add = (i, keepSince) => {
-    log = appendEntry(log, createEntry(`e${i}`, 'combat', `m${i}`, i), 3, keepSince);
+    log = appendEntry(
+      log,
+      createEntry(`e${i}`, 'combat', `m${i}`, i),
+      { story: 3, chatter: 3 },
+      keepSince,
+    );
   };
   for (let i = 0; i < 3; i++) add(i, null);
   // The fight starts at time 2, so e2 onward belongs to it.
@@ -117,7 +168,7 @@ test('a fight that never ends stops growing at the fight limit', () => {
   /** @type {import('../src/types/log.js').LogEntry[]} */
   let log = [];
   for (let i = 0; i < TRAVELOG_FIGHT_LIMIT + 5; i++) {
-    log = appendEntry(log, createEntry(`e${i}`, 'combat', `m${i}`, i), TRAVELOG_LIMIT, 0);
+    log = appendEntry(log, createEntry(`e${i}`, 'combat', `m${i}`, i), TRAVELOG_LIMITS, 0);
   }
   assert.equal(log.length, TRAVELOG_FIGHT_LIMIT);
   assert.equal(log[0].id, 'e5');

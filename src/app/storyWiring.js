@@ -2,7 +2,7 @@ import { viewedPlacement } from './locationFields.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
-import { appendEntry, createEntry, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { appendEntry, createEntry, TRAVELOG_LIMITS } from '../log/Travelogue.js';
 import { entriesFor } from '../log/LogVisibility.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import { segSwitch } from '../ui/buttons.js';
@@ -85,7 +85,7 @@ export function wireStory(app) {
         clock: state.clock,
         round: state.combat?.round,
       }),
-      TRAVELOG_LIMIT,
+      TRAVELOG_LIMITS,
       state.combat?.startedAt ?? null,
     );
     app.views.travelogPanel.update();
