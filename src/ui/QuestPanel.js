@@ -118,6 +118,7 @@ export function mountQuestPanel(container, callbacks) {
           icon: done ? 'check' : 'circle',
           label: done ? `Reopen ${quest.title}` : `Complete ${quest.title}`,
           pressed: done,
+          focusKey: `status:${quest.id}`,
           onClick: () => callbacks.onToggle(quest),
         },
         quest,

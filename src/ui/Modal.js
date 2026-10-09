@@ -24,7 +24,7 @@ import {
 } from './formFields.js';
 import { buildImagePickField } from './ImagePickField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
-import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
+import { dialogPartId, noteFocus, pickReturnFocus, repairFocus } from './dialogFocus.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -123,12 +123,22 @@ export function openDialog(spec) {
         delete dialog.dataset.suspended;
         return;
       }
+      // The caller often re-renders the list that contains the opener once
+      // the promise resolves, and that removes the opener from the page.
+      // Focus goes back at once, and again on the next frame when the
+      // re-render dropped it onto the body.
       /** @param {any} value */
       const finish = (value) => {
         dialog.remove();
-        const target = pickReturnFocus([spec.returnFocus, opener, document.querySelector('main')]);
-        /** @type {HTMLElement | null} */ (target)?.focus();
+        const main = /** @type {HTMLElement | null} */ (document.querySelector('main'));
+        const target = pickReturnFocus([spec.returnFocus, opener, main]);
+        const note = noteFocus(
+          /** @type {HTMLElement | null} */ (target === main ? opener : target),
+          document.body,
+        );
         resolve(value);
+        /** @type {HTMLElement | null} */ (target)?.focus();
+        requestAnimationFrame(() => repairFocus(document, note, main));
       };
       const result = spec.result ? spec.result(dialog.returnValue) : undefined;
       if (result instanceof Promise) result.then(finish);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dialogPartId, pickReturnFocus } from '../src/ui/dialogFocus.js';
+import { dialogPartId, noteFocus, pickReturnFocus, repairFocus } from '../src/ui/dialogFocus.js';
 
 /**
  * `openDialog` decides where focus lands after a dialog closes, and what id
@@ -53,4 +53,92 @@ test('a return target the caller named wins over the opener', () => {
   const stated = { isConnected: true };
   const opener = { isConnected: true };
   assert.equal(pickReturnFocus([stated, opener, connected]), stated);
+});
+
+/**
+ * A stub page for `noteFocus` and `repairFocus`. Each control is a button
+ * with an accessible name. `focus()` moves the page's active element, and a
+ * control that leaves the page (`isConnected` false) refuses focus, as the
+ * browser does.
+ */
+function page() {
+  /** @type {any} */
+  const doc = { activeElement: null, body: null };
+  /** @type {any[]} */
+  let controls = [];
+  /** @param {string} label @param {any} [parentElement] */
+  const button = (label, parentElement = null) => ({
+    tagName: 'BUTTON',
+    className: 'btn',
+    textContent: label,
+    isConnected: true,
+    parentElement,
+    getAttribute: (/** @type {string} */ name) => (name === 'aria-label' ? label : null),
+    focus() {
+      if (this.isConnected) doc.activeElement = this;
+    },
+  });
+  const panel = {
+    isConnected: true,
+    parentElement: null,
+    querySelector: () => controls.find((c) => c.isConnected) ?? null,
+  };
+  doc.body = {
+    isConnected: true,
+    querySelectorAll: () => controls.filter((c) => c.isConnected),
+    contains: (/** @type {any} */ target) => controls.includes(target),
+  };
+  panel.parentElement = doc.body;
+  /** @param {string[]} labels */
+  const render = (labels) => {
+    for (const c of controls) c.isConnected = false;
+    controls = labels.map((label) => button(label, panel));
+    return controls;
+  };
+  return { doc, panel, render, button };
+}
+
+test('repairFocus leaves focus alone when the caller moved it', () => {
+  const { doc, render } = page();
+  const [opener, other] = render(['Complete A', 'Edit A']);
+  const note = noteFocus(opener, doc.body);
+  doc.activeElement = other;
+  assert.equal(repairFocus(doc, note, null), null);
+  assert.equal(doc.activeElement, other);
+});
+
+test('repairFocus finds the rebuilt control by the opener signature', () => {
+  const { doc, render } = page();
+  const [opener] = render(['Complete A', 'Complete B']);
+  const note = noteFocus(opener, doc.body);
+  const [again] = render(['Complete A', 'Complete B']);
+  doc.activeElement = doc.body;
+  assert.equal(repairFocus(doc, note, null), again);
+  assert.equal(doc.activeElement, again);
+});
+
+test('repairFocus focuses the opener when it is still in the page', () => {
+  const { doc, render } = page();
+  const [opener] = render(['Complete A']);
+  const note = noteFocus(opener, doc.body);
+  assert.equal(repairFocus(doc, note, null), opener);
+});
+
+test('repairFocus falls back to the first control of the nearest live ancestor', () => {
+  const { doc, render } = page();
+  const [opener] = render(['Complete A', 'Complete B']);
+  const note = noteFocus(opener, doc.body);
+  const [first] = render(['Group Active', 'Complete B']);
+  assert.equal(repairFocus(doc, note, null), first);
+});
+
+test('repairFocus ends on the fallback when the ancestors are gone too', () => {
+  const { doc, render, panel, button } = page();
+  const [opener] = render(['Complete A']);
+  const note = noteFocus(opener, doc.body);
+  render([]);
+  panel.isConnected = false;
+  const main = button('Main');
+  assert.equal(repairFocus(doc, note, /** @type {any} */ (main)), main);
+  assert.equal(repairFocus(doc, noteFocus(null, doc.body), null), null);
 });

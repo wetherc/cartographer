@@ -732,6 +732,18 @@ element is still in the document, focus goes to the `<main>` landmark.
 `pickReturnFocus` in `src/ui/dialogFocus.js` makes this choice. It is a pure
 function with its own tests.
 
+The dialog resolves its promise first and then focuses that element. A
+caller often re-renders its list once the promise resolves, as the quest
+Complete flow does, and the re-render removes the control that just took
+focus. So `openDialog` notes the opener with `noteFocus` before it
+resolves, and on the next frame `repairFocus` checks where focus went. When
+focus sits on the page body, it tries the opener, then the rebuilt control
+with the same `focusMemory.js` signature, then the first control in the
+nearest ancestor still in the page, then `<main>`. Focus that the caller
+moved to a live element stays there. A toggle whose label changes on a press
+sets `data-focus-key`, as the quest Complete marker does, so its signature
+stays the same after the re-render.
+
 The lifecycle itself is `openDialog`, also exported from `Modal.js`. Use it
 for a dialog that is not a form, a message, or a question:
 
@@ -1508,7 +1520,7 @@ have unit tests where they sit:
 | `tests/imageField.test.js` | `fitDimensions`, `encodeSizes`, `encodeAttempts`, `pickFit` |
 | `tests/context-menu.test.js` | `clampToViewport` |
 | `tests/Tooltip.test.js` | `tipPlacement` |
-| `tests/dialogFocus.test.js` | `pickReturnFocus` and `dialogPartId` |
+| `tests/dialogFocus.test.js` | `pickReturnFocus`, `dialogPartId`, `noteFocus`, and `repairFocus` |
 | `tests/focusMemory.test.js` | `captureFocus`, `restoreFocus`, `controlSignature` (with stub nodes) |
 | `tests/rovingIndex.test.js` | `rovingTarget`, `columnsFromTops` |
 | `tests/listPanel.test.js` | `repaintNeeded` |
