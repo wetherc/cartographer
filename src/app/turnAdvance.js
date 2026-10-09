@@ -1,5 +1,5 @@
 import { advanceTurn, currentParticipant } from '../combat/Initiative.js';
-import { skipsTurn } from '../combat/CombatView.js';
+import { isGone, skipsTurn } from '../combat/CombatView.js';
 import { findCombatant } from './combatants.js';
 import { endTurnEffects, startTurnEffects } from './turnEffects.js';
 
@@ -43,11 +43,18 @@ export function advancePastHeld(app, { setCombat, tickRound, rng = Math.random }
   if (!combat) return null;
   /** @type {string[]} */
   const skipped = [];
-  const result = advanceTurn(combat, (p) => {
-    if (!skipsTurn(findCombatant(app, p.id))) return false;
-    skipped.push(p.id);
-    return true;
-  });
+  const result = advanceTurn(
+    combat,
+    (p) => {
+      if (!skipsTurn(findCombatant(app, p.id))) return false;
+      skipped.push(p.id);
+      return true;
+    },
+    (p) => {
+      const found = findCombatant(app, p.id);
+      return !found || isGone(found);
+    },
+  );
   setCombat(result.state);
   // A skipped combatant below the old pointer sits before the wrap, so its
   // turn belongs to the round that is ending and runs before the tick.

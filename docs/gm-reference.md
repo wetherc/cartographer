@@ -1506,8 +1506,10 @@ muted label and a dashed edge, and its tooltip names the cost, as in
 
 The whole turn comes back when the turn of that combatant starts again. The
 reaction comes back at the same time, not at the top of the round. A
-combatant that the turn order steps past, because it is down or cannot act,
-keeps what it spent.
+combatant that the turn order steps past because it cannot act, such as a
+Lethargic or Stunned one, gets its reaction and its legendary actions back,
+and keeps the rest of what it spent. A combatant that is dead or defeated
+gets nothing back.
 
 The pips never block a button. Instead, the dialog refuses a swing or a
 cast that the turn cannot pay for. The dialog then offers an **Ignore

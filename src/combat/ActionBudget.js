@@ -216,6 +216,21 @@ export function refresh(participant) {
 }
 
 /**
+ * Give back the reaction and the legendary actions of a participant whose
+ * turn the pointer steps past. 5e refreshes both at the start of the owner's
+ * turn, and a held turn (Lethargic, or a save out of Hold Person) still
+ * starts. The rest of the spent budget stays, because the combatant took no
+ * action on that turn. Identity survives when neither was spent.
+ * @param {Participant} participant
+ * @returns {Participant}
+ */
+export function refreshHeld(participant) {
+  const used = budgetOf(participant.used);
+  if (!used.reaction && used.legendary === 0) return participant;
+  return { ...participant, used: { ...used, reaction: false, legendary: 0 } };
+}
+
+/**
  * Give a participant its Sneak Attack back. The 5e limit is once per turn, and
  * a turn is anyone's turn: a rogue that spent the dice on its own swing can
  * spend them again on an opportunity attack during somebody else's turn. Every

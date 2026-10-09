@@ -11,6 +11,7 @@ import {
   freshBudget,
   isFresh,
   refresh,
+  refreshHeld,
   resetSneak,
   spend,
   spendAttack,
@@ -342,4 +343,14 @@ test('the spell flags are read, spent, and freed with the bonus action', () => {
   assert.equal(canSpend(cast, 'bonusSpell'), false);
   const freed = unspend(cast, 'bonus');
   assert.equal(budgetOf(freed.used).bonusSpell, false);
+});
+
+test('refreshHeld gives back only the reaction and the legendary actions', () => {
+  const fresh = at();
+  assert.equal(refreshHeld(fresh), fresh, 'identity when nothing was spent');
+  const worn = at({ action: true, reaction: true, legendary: 1 });
+  const back = refreshHeld(worn);
+  assert.equal(back.used?.reaction, false);
+  assert.equal(back.used?.legendary, 0);
+  assert.equal(back.used?.action, true);
 });

@@ -6,7 +6,14 @@
  * elsewhere in this codebase.
  */
 
-import { endSurprise, freshBudget, refresh, resetSneak, surprisedBudget } from './ActionBudget.js';
+import {
+  endSurprise,
+  freshBudget,
+  refresh,
+  refreshHeld,
+  resetSneak,
+  surprisedBudget,
+} from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -139,15 +146,17 @@ export function currentParticipant(state) {
  *
  * The participant the pointer lands on gets a whole action budget back,
  * because their turn is what begins. A participant the pointer steps past
- * keeps a spent budget: they cannot act, and their own next turn start clears
- * it if something revives them. A surprised participant whose turn ends, or
- * whose turn the pointer steps past, is no longer surprised and gets its
- * reaction back.
+ * keeps the rest of a spent budget, because it cannot act, but it gets its
+ * reaction and its legendary actions back, since its turn still starts. A
+ * participant that `isGone` names (dead, defeated, or removed) gets nothing
+ * back. A surprised participant whose turn ends, or whose turn the pointer
+ * steps past, is no longer surprised and gets its reaction back.
  * @param {CombatState} state
  * @param {(participant: Participant) => boolean} [isDefeated]
+ * @param {(participant: Participant) => boolean} [isGone]
  * @returns {{ state: CombatState, wrapped: boolean }}
  */
-export function advanceTurn(state, isDefeated = () => false) {
+export function advanceTurn(state, isDefeated = () => false, isGone = () => false) {
   if (state.order.length === 0) return { state, wrapped: false };
   let index = state.index;
   let round = state.round;
@@ -164,8 +173,12 @@ export function advanceTurn(state, isDefeated = () => false) {
     if (!isDefeated(state.order[index])) break;
   }
   // The turn that ends, and each turn the pointer steps past, ends the
-  // surprise of its combatant.
-  const unsurprised = state.order.map((p, at) => (passed.has(at) ? endSurprise(p) : p));
+  // surprise of its combatant. A held turn that the pointer steps past also
+  // gives back the reaction and the legendary actions of a combatant that is
+  // still in the fight.
+  const held = (/** @type {Participant} */ p, /** @type {number} */ at) =>
+    at !== state.index && at !== index && !isGone(p) ? refreshHeld(p) : p;
+  const unsurprised = state.order.map((p, at) => (passed.has(at) ? held(endSurprise(p), at) : p));
   const order = unsurprised.some((p, at) => p !== state.order[at]) ? unsurprised : state.order;
   return { state: { ...state, index, round, order: refreshTurn(order, index) }, wrapped };
 }

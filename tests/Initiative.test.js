@@ -172,6 +172,36 @@ test('advanceTurn leaves a skipped combatant with its spent budget', () => {
   assert.equal(result.state.order[1].used?.bonus, true, 'b never got a turn to refresh');
 });
 
+test('advanceTurn gives a held combatant its reaction and legendary actions back', () => {
+  const state = startCombat([
+    createParticipant('a', 20),
+    createParticipant('b', 15),
+    createParticipant('c', 12),
+    createParticipant('d', 10),
+  ]);
+  /** @param {any} p */
+  const worn = (p) => ({
+    ...p,
+    used: { ...spend(spend(p, 'bonus'), 'reaction').used, legendary: 2 },
+  });
+  const spent = {
+    ...state,
+    order: [state.order[0], worn(state.order[1]), worn(state.order[2]), state.order[3]],
+  };
+  const result = advanceTurn(
+    spent,
+    (p) => p.id === 'b' || p.id === 'c',
+    (p) => p.id === 'c',
+  );
+  assert.equal(currentParticipant(result.state)?.id, 'd');
+  const [, held, gone] = result.state.order;
+  assert.equal(held.used?.reaction, false, 'a held turn still starts');
+  assert.equal(held.used?.legendary, 0);
+  assert.equal(held.used?.bonus, true, 'the rest of the budget stays spent');
+  assert.equal(gone.used?.reaction, true, 'a combatant out of the fight gets nothing back');
+  assert.equal(gone.used?.legendary, 2);
+});
+
 test('advanceTurn gives everyone their Sneak Attack back, not just the lander', () => {
   // Once per turn means anyone's turn, so a rogue that spent the dice on its
   // own swing gets them back for an opportunity attack on the next turn.
