@@ -17,6 +17,7 @@ import {
   textareaField,
   textField,
 } from './formFields.js';
+import { exhaustive } from '../util/exhaustive.js';
 import { buildImagePickField } from './ImagePickField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 
@@ -201,9 +202,9 @@ function buildControl(field, hooks) {
     }
     default: {
       // A field kind added to `ModalField` without a case here fails the
-      // typecheck at this line.
-      const unknown = /** @type {never} */ (field);
-      throw new Error(`No control for the "${/** @type {any} */ (unknown).type}" field kind`);
+      // typecheck at this call.
+      const kind = exhaustive(field, /** @type {any} */ (field).type);
+      throw new Error(`No control for the "${kind}" field kind`);
     }
   }
 }
