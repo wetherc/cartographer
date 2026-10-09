@@ -14,6 +14,7 @@
 import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { clamp } from '../util/num.js';
 import { strongestPerName } from './Conditions.js';
+import { formatModifier } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').RollRider} RollRider */
@@ -130,10 +131,10 @@ export function riderText(rider) {
   const parts = [];
   const dice = rider.dice ?? 0;
   if (dice !== 0) {
-    parts.push(`${dice > 0 ? '+' : '-'}${Math.abs(dice)}${rider.die ?? DEFAULT_RIDER_DIE}`);
+    parts.push(`${formatModifier(dice)}${rider.die ?? DEFAULT_RIDER_DIE}`);
   }
   const flat = rider.flat ?? 0;
-  if (flat !== 0) parts.push(`${flat > 0 ? '+' : ''}${flat}`);
+  if (flat !== 0) parts.push(formatModifier(flat));
   return parts.join(' ');
 }
 

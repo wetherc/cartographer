@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   abilityModifier,
   formatModifier,
+  signedTerm,
   proficiencyBonus,
   defaultEnemyStats,
   normalizeStatBlock,
@@ -104,4 +105,9 @@ test('normalizeStatBlock derives a missing AC from DEX', () => {
   assert.equal(normalizeStatBlock({}).AC, 10);
   assert.equal(normalizeStatBlock({ DEX: 16 }).AC, 13);
   assert.equal(normalizeStatBlock({ DEX: 7 }).AC, 8);
+});
+
+test('signedTerm spaces the sign from the amount', () => {
+  assert.equal(signedTerm(3), '+ 3');
+  assert.equal(signedTerm(-2), '- 2');
 });

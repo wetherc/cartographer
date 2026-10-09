@@ -1,3 +1,5 @@
+import { formatModifier } from '../entities/Modifiers.js';
+
 /** @typedef {import('../types/dice.js').DieType} DieType */
 /** @typedef {import('../types/dice.js').DiceCounts} DiceCounts */
 /** @typedef {import('../types/dice.js').DiceSelection} DiceSelection */
@@ -113,7 +115,7 @@ export function attackTweak(count, die, flat, rng = Math.random) {
     modifier -= rolls.reduce((sum, value) => sum + value, 0);
     notes.push(`-${-count}${die} [${rolls.join(',')}]`);
   }
-  if (flat !== 0) notes.push(`${flat > 0 ? '+' : ''}${flat}`);
+  if (flat !== 0) notes.push(formatModifier(flat));
   return { counts, modifier, note: notes.join(' ') };
 }
 
@@ -141,7 +143,7 @@ export function damageReadout(groups) {
     text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
     detail: groups
       .map((g) => {
-        const sign = `${g.bonus > 0 ? '+' : '-'}${Math.abs(g.bonus)}`;
+        const sign = formatModifier(g.bonus);
         // A group with no dice shows only the flat amount, with no leading
         // separator.
         const bonus = g.bonus === 0 ? '' : `${g.rolls.length > 0 ? ' ' : ''}${sign}`;

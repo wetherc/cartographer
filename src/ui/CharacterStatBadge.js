@@ -38,7 +38,7 @@ function openStatBreakdown(key, breakdown) {
       for (const { source, delta, rounds } of sources) {
         addRow(
           `${source} (${rounds === undefined ? 'while equipped' : `${rounds} more rounds`})`,
-          `${delta > 0 ? '+' : ''}${delta}`,
+          formatModifier(delta),
           delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
         );
       }

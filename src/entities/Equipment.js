@@ -3,6 +3,7 @@ import { withHeals } from './HealDice.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clampInt } from '../util/num.js';
+import { formatModifier } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
@@ -146,7 +147,7 @@ export function formatDamage(parts) {
     .filter(damagePartRolls)
     .map((p) => {
       const bonus = p.bonus ?? 0;
-      const sign = bonus === 0 ? '' : `${bonus > 0 ? '+' : '-'}${Math.abs(bonus)}`;
+      const sign = bonus === 0 ? '' : formatModifier(bonus);
       const dice = p.count > 0 ? `${p.count}d${p.sides}` : '';
       return `${dice}${sign} ${p.damageType}`.trim();
     })
@@ -450,7 +451,7 @@ export function itemEffects(item) {
     }
   }
   for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
-    if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
+    if (delta !== 0) parts.push(`${formatModifier(delta)} ${stat}`);
   }
   if (item.statusEffects?.length) parts.push(`inflicts ${item.statusEffects.join(', ')}`);
   // This is what tells a GM, from the inventory list alone, which stack is

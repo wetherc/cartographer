@@ -87,6 +87,16 @@ export function formatModifier(modifier) {
 }
 
 /**
+ * A nonzero term of a sum, with a space after its sign, as in `+ 3` or `- 2`.
+ * Roll summaries print it after the dice, as in `d20 (14) + 3`.
+ * @param {number} value
+ * @returns {string}
+ */
+export function signedTerm(value) {
+  return `${value < 0 ? '-' : '+'} ${Math.abs(value)}`;
+}
+
+/**
  * A default stat block for an enemy of a given level. The block holds the
  * six ability scores plus AC (10 plus the block's DEX modifier).
  *

@@ -12,7 +12,12 @@
  */
 
 import { effectiveStatBlock } from './Creature.js';
-import { abilityModifier, crProficiencyBonus, proficiencyBonus } from './Modifiers.js';
+import {
+  abilityModifier,
+  crProficiencyBonus,
+  formatModifier,
+  proficiencyBonus,
+} from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
 import { checkAbility } from './Checks.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
@@ -108,21 +113,14 @@ export function proficiencySummary(creature) {
   const skills = creature.proficiencies?.skills ?? [];
   if (saves.length > 0) {
     parts.push(
-      `Saves ${saves.map((a) => `${a} ${signed(creatureSaveBonus(creature, a))}`).join(', ')}`,
+      `Saves ${saves.map((a) => `${a} ${formatModifier(creatureSaveBonus(creature, a))}`).join(', ')}`,
     );
   }
   if (skills.length > 0) {
     const listed = skills.map(
-      (id) => `${skillName(id)} ${signed(creatureCheckBonus(creature, id))}`,
+      (id) => `${skillName(id)} ${formatModifier(creatureCheckBonus(creature, id))}`,
     );
     parts.push(`Skills ${listed.join(', ')}`);
   }
   return parts.join(' | ');
-}
-
-/** A bonus with its sign, the way a stat block prints one.
- * @param {number} bonus
- * @returns {string} */
-function signed(bonus) {
-  return bonus < 0 ? String(bonus) : `+${bonus}`;
 }

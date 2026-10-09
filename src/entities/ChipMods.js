@@ -1,5 +1,5 @@
 import { clampInt } from '../util/num.js';
-import { ABILITY_SCORES } from './Modifiers.js';
+import { ABILITY_SCORES, formatModifier } from './Modifiers.js';
 import { DAMAGE_TYPES } from './Equipment.js';
 import { strongestPerName } from './Conditions.js';
 
@@ -213,7 +213,7 @@ export function withChipAC(ac, mods) {
 export function modsSummary(mods) {
   if (!mods) return '';
   const parts = [];
-  if (mods.ac) parts.push(`${mods.ac > 0 ? '+' : ''}${mods.ac} AC`);
+  if (mods.ac) parts.push(`${formatModifier(mods.ac)} AC`);
   if (mods.acBase) parts.push(`base AC ${mods.acBase} + DEX without armor`);
   if (mods.acMin) parts.push(`AC at least ${mods.acMin}`);
   if (mods.maxHP) parts.push(`+${mods.maxHP} max HP`);

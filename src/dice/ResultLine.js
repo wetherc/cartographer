@@ -4,6 +4,8 @@
  * with a target ends in a short verdict.
  */
 
+import { formatModifier, signedTerm } from '../entities/Modifiers.js';
+
 /**
  * Split a roll into its readout parts. `detail` lists each die group with its
  * rolls in parentheses, then a signed modifier, for example "2d6 (4, 4) + 3".
@@ -20,9 +22,8 @@ export function resultSummary(result, target) {
   });
   let detail = parts.join(' + ');
   if (result.modifier !== 0) {
-    const sign = result.modifier > 0 ? '+' : '-';
-    const amount = Math.abs(result.modifier);
-    detail = detail === '' ? `${sign}${amount}` : `${detail} ${sign} ${amount}`;
+    const term = detail === '' ? formatModifier(result.modifier) : signedTerm(result.modifier);
+    detail = detail === '' ? term : `${detail} ${term}`;
   }
   const dropped = result.results.flatMap((r) => r.dropped ?? []);
   if (dropped.length > 0) detail += `, ${result.selection.mode}, dropped ${dropped.join(', ')}`;
