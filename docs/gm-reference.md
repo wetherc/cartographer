@@ -1994,7 +1994,7 @@ check rolled from the character sheet.
 | Incapacitated | Loses its turn |
 | Invisible | Attacks with advantage. Attacks against it have disadvantage |
 | Paralyzed | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves at once |
-| Petrified | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves at once |
+| Petrified | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves at once. Resists all damage and is immune to poison damage |
 | Poisoned | Attacks and ability checks at disadvantage |
 | Prone | Attacks at disadvantage. Melee attacks against it have advantage, and ranged attacks against it have disadvantage |
 | Restrained | Attacks at disadvantage. Attacks against it have advantage. DEX saves at disadvantage |

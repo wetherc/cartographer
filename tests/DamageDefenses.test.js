@@ -121,3 +121,19 @@ test('defensesOf adds the resistances of chips, and Stoneskin only against a non
   assert.equal(applyDefenses(hit, defensesOf(holder, { nonmagical: true })).total, 4);
   assert.equal(applyDefenses(hit, defensesOf(holder)).total, 9);
 });
+
+test('a Petrified combatant resists every damage type and is immune to poison', () => {
+  const stone = defensesOf({
+    defenses: { resist: [], vulnerable: [], immune: ['fire'] },
+    conditions: [{ name: 'Petrified' }],
+  });
+  assert.deepEqual(stone.immune, ['fire', 'poison']);
+  assert.ok(stone.resist.includes('slashing'));
+  assert.ok(stone.resist.includes('psychic'));
+  assert.equal(stone.resist.includes('poison'), false);
+  const hit = applyDefenses([group('slashing', 9), group('poison', 6)], stone);
+  assert.equal(hit.total, 4, 'half the slashing, none of the poison');
+  // The chip name matches in any case, and a plain target keeps its lists.
+  assert.ok(defensesOf({ conditions: [{ name: ' petrified' }] }).immune.includes('poison'));
+  assert.deepEqual(defensesOf({ conditions: [{ name: 'Prone' }] }), none);
+});

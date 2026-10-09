@@ -63,11 +63,12 @@ const WEAPON_TYPES = ['bludgeoning', 'piercing', 'slashing'];
  * (Protection from Energy). A chip with `resistNonmagical` (Stoneskin) adds
  * bludgeoning, piercing, and slashing only when `nonmagical` says the hit
  * comes from a nonmagical weapon, because a spell or a magic weapon gets
- * through it.
+ * through it. A Petrified combatant resists every damage type and is immune
+ * to poison, as the 5e condition says.
  * @param {{
  *   defenses?: DamageDefenses,
  *   raceTraits?: { resistances?: string[] },
- *   conditions?: { mods?: import('../types/entities.js').ChipMods }[],
+ *   conditions?: { name?: string, mods?: import('../types/entities.js').ChipMods }[],
  * }} entity
  * @param {{ nonmagical?: boolean }} [options]
  * @returns {DamageDefenses}
@@ -79,7 +80,14 @@ export function defensesOf(entity, { nonmagical = false } = {}) {
     ...(c.mods?.resist ?? []),
     ...(nonmagical && c.mods?.resistNonmagical ? WEAPON_TYPES : []),
   ]);
-  return { ...own, resist: [...new Set([...own.resist, ...race, ...chips])] };
+  const stone = (entity.conditions ?? []).some((c) => c.name?.trim().toLowerCase() === 'petrified');
+  const resist = [...own.resist, ...race, ...chips, ...(stone ? DAMAGE_TYPES : [])];
+  const immune = stone ? [...new Set([...own.immune, 'poison'])] : own.immune;
+  return {
+    ...own,
+    resist: [...new Set(resist)].filter((t) => !stone || t !== 'poison'),
+    immune,
+  };
 }
 
 /**

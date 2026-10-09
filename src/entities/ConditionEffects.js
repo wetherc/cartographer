@@ -79,6 +79,8 @@ export const CONDITION_EFFECTS = {
     meleeAutoCrit: true,
     autoFailSaves: BODY_SAVES,
   },
+  // Its resistance to all damage and its poison immunity live in
+  // `DamageDefenses.defensesOf`, which every damage path reads.
   petrified: { noActions: true, attacksAgainst: 'advantage', autoFailSaves: BODY_SAVES },
   poisoned: { attacks: 'disadvantage', checks: 'disadvantage' },
   prone: {
