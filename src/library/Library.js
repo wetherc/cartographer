@@ -1,31 +1,11 @@
 import { withHeals } from '../entities/HealDice.js';
-import { spellbookOf, stringList } from '../entities/LoadCoercion.js';
+import { normalizeSpell } from '../entities/SpellEntry.js';
+import { spellbookOf } from '../entities/LoadCoercion.js';
 import { emptySpellbook } from '../entities/CharacterSpellbook.js';
-import { WEAPON_TYPES, ITEM_TYPES, HEALING_TYPES } from '../entities/Equipment.js';
+import { WEAPON_TYPES, ITEM_TYPES } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
-import {
-  MAX_TARGET_COUNT,
-  normalizeMaterials,
-  normalizeProjectiles,
-  normalizeTargetCount,
-} from '../entities/SpellNormalize.js';
-import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import { normalizeRider } from '../entities/Riders.js';
-import {
-  attackExtras,
-  buffExtras,
-  normalizeLevelsPerStep,
-  normalizeParts,
-  normalizeRepeat,
-  saveExtras,
-} from '../entities/SpellFields.js';
-import { healTypeRules } from '../entities/SpellTypeRules.js';
-import {
-  DEFAULT_SPELLS,
-  SPELL_SCHOOLS,
-  SPELL_ABILITIES,
-  SPELL_EFFECT_KINDS,
-} from '../data/spells.js';
+import { DEFAULT_SPELLS } from '../data/spells.js';
 import {
   WEAPON_PRESETS,
   ARMOR_PRESETS,
@@ -51,7 +31,6 @@ import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
 import { normalizeFeatRequirement } from '../entities/FeatRequirement.js';
-import { cureFields } from '../entities/HealCure.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -236,155 +215,6 @@ function withCoercedWeapon(raw) {
   // Only a true flag is kept, so a string "false" in a hand-edited file
   // cannot mark the weapon magical.
   return { ...rest, ...coerceWeapon(raw), ...(raw.magical === true ? { magical: true } : {}) };
-}
-
-/**
- * Normalize one parsed spell into a valid Spell. This function defaults
- * descriptive fields and repairs the effect into one of the discriminated
- * shapes. An unrecognized effect kind falls back to a
- * text-only utility effect. This way a malformed import still round-trips as
- * a spell that casts nothing, instead of being dropped. This function is
- * pure.
- * @param {Record<string, any>} raw
- * @param {string} id
- * @returns {Spell}
- */
-function normalizeSpell(raw, id) {
-  const kind = SPELL_EFFECT_KINDS.includes(raw.effect?.kind) ? raw.effect.kind : 'utility';
-  // The creature name is the whole point of a summons, so an entry that names
-  // none casts nothing and falls through to the utility arm below.
-  const summons =
-    kind === 'summons' && typeof raw.effect.creature === 'string' ? raw.effect.creature.trim() : '';
-  /** @type {import('../types/spell.js').SpellEffect} */
-  let effect;
-  if (kind === 'attack') {
-    // Projectiles stay absent when the entry says nothing. This matches the
-    // single attack roll that every entry written before this field assumed.
-    const projectiles = normalizeProjectiles(raw.effect.projectiles);
-    effect = {
-      kind: 'attack',
-      damage: normalizeParts(raw.effect.damage),
-      ...(projectiles ? { projectiles } : {}),
-      ...attackExtras(raw.effect),
-    };
-  } else if (kind === 'save') {
-    const condition =
-      typeof raw.effect.condition === 'string' && raw.effect.condition ? raw.effect.condition : '';
-    // A rider rides the chip, so it means nothing without one, the same as a
-    // repeated save.
-    const rider = condition ? normalizeRider(raw.effect.rider) : null;
-    const hpLimit = clampInt(raw.effect.hpLimit, 0);
-    effect = {
-      kind: 'save',
-      saveAbility: SPELL_ABILITIES.includes(raw.effect.saveAbility)
-        ? raw.effect.saveAbility
-        : 'DEX',
-      damage: normalizeParts(raw.effect.damage),
-      halfOnSave: !!raw.effect.halfOnSave,
-      ...(condition ? { condition } : {}),
-      // A repeated save only has meaning alongside a condition, so it stays
-      // absent otherwise. An entry written before this field reads as a
-      // condition that runs for the spell's whole duration.
-      ...(raw.effect.saveEnds && condition ? { saveEnds: true } : {}),
-      ...(hpLimit > 0 ? { hpLimit } : {}),
-      ...(rider ? { rider } : {}),
-      ...saveExtras(raw.effect, condition),
-    };
-  } else if (kind === 'heal') {
-    effect = {
-      kind: 'heal',
-      healing: normalizeParts(raw.effect.healing, HEALING_TYPES),
-      ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
-      ...(raw.effect.revives === true ? { revives: true } : {}),
-      ...(raw.effect.stabilizes === true ? { stabilizes: true } : {}),
-      ...cureFields(raw.effect),
-      ...healTypeRules(raw.effect),
-    };
-  } else if (kind === 'buff') {
-    // An unnamed chip stays absent, and the cast falls back to the spell's
-    // own name. A buff with neither a chip name nor a rider is still a valid
-    // spell: it puts a chip named after itself on each target.
-    const rider = normalizeRider(raw.effect.rider);
-    effect = {
-      kind: 'buff',
-      ...(typeof raw.effect.condition === 'string' && raw.effect.condition.trim()
-        ? { condition: raw.effect.condition.trim() }
-        : {}),
-      ...(rider ? { rider } : {}),
-      ...buffExtras(raw.effect),
-    };
-  } else if (summons) {
-    // A count holds to the same cap as a target count, because both put that
-    // many creatures into one fight.
-    effect = {
-      kind: 'summons',
-      creature: summons,
-      count: clampInt(raw.effect.count, 1, MAX_TARGET_COUNT, 1),
-      ...(clampInt(raw.effect.countPerStep, 0) > 0
-        ? { countPerStep: clampInt(raw.effect.countPerStep, 0, MAX_TARGET_COUNT) }
-        : {}),
-    };
-  } else {
-    effect = { kind: 'utility' };
-  }
-
-  // Scaling dice add to whatever the effect deals. A heal spell's per-level
-  // dice are restorative too.
-  const scalingDamage = normalizeParts(
-    raw.scaling?.damagePerLevel,
-    kind === 'heal' ? HEALING_TYPES : undefined,
-  );
-  const scalingTargets = clampInt(raw.scaling?.targetsPerLevel, 0);
-  const levelsPerStep = normalizeLevelsPerStep(raw.scaling?.levelsPerStep);
-  const scaling =
-    scalingDamage.length > 0 || scalingTargets > 0 || levelsPerStep
-      ? {
-          ...(scalingDamage.length > 0 ? { damagePerLevel: scalingDamage } : {}),
-          ...(scalingTargets > 0 ? { targetsPerLevel: scalingTargets } : {}),
-          ...(levelsPerStep ? { levelsPerStep } : {}),
-        }
-      : undefined;
-  const repeat = normalizeRepeat(raw.repeat);
-
-  // An absent target count stays absent. The resolver reads this as one
-  // creature, so no entry written before this field existed becomes an area
-  // spell by omission. The shared normalizer processes any value present.
-  const targetCount =
-    raw.targetCount === undefined || raw.targetCount === null
-      ? undefined
-      : normalizeTargetCount(raw.targetCount);
-
-  // A named material is an M component, even when the entry did not list the
-  // letter. The material block implies the M component. This function
-  // repairs it here, not in the form, so an imported entry does not lose its
-  // material the next time a GM edits it. The form only shows the material
-  // fields when M is checked.
-  const materials = normalizeMaterials(raw.materials);
-  const letters = stringList(raw.components);
-  if (materials && !letters.includes('M')) letters.push('M');
-
-  return {
-    id,
-    name: raw.name.trim(),
-    level: clampInt(raw.level, 0, 9),
-    school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
-    classes: stringList(raw.classes),
-    // Timing is structured, but an entry can carry either the object or the
-    // printed string that an older library wrote. The parsers read both
-    // forms, and keep anything unclassified as plain text.
-    castingTime: parseCastingTime(raw.castingTime ?? '1 action'),
-    range: typeof raw.range === 'string' ? raw.range : 'Self',
-    components: letters,
-    ...(materials ? { materials } : {}),
-    duration: parseDuration(raw.duration ?? 'Instantaneous'),
-    concentration: !!raw.concentration,
-    ritual: !!raw.ritual,
-    description: typeof raw.description === 'string' ? raw.description : '',
-    ...(targetCount === undefined ? {} : { targetCount }),
-    effect,
-    ...(scaling ? { scaling } : {}),
-    ...(repeat ? { repeat } : {}),
-  };
 }
 
 /**

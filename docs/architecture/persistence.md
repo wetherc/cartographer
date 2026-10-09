@@ -1165,9 +1165,10 @@ never a migration step:
 
 1. Update the type in `src/types/spell.ts` (or `feat.ts`). Make a new field
    optional or give it a stated default.
-2. Change `normalizeSpell` (or `normalizeFeat`) in `library/Library.js` so
-   that it accepts the new format, coerces the old format into it, and keeps
-   any original free text that it cannot interpret. A throw here fails the
+2. Change `normalizeSpell` in `entities/SpellEntry.js` (or `normalizeFeat`
+   in `library/Library.js`) so that it accepts the new format, coerces the
+   old format into it, and keeps any original free text that it cannot
+   interpret. A throw here fails the
    load of the whole library, and a dropped entry deletes a record that the
    GM wrote.
 3. Update the editor form (`ui/SpellForm.js` or `ui/FeatForm.js`) to read and

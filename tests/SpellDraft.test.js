@@ -116,10 +116,10 @@ test('a heal keeps the spellcasting modifier flag when the form ticks it', () =>
   assert.equal('addsModifier' in assembleEffect(effectDraft({ kind: 'heal' })), false);
 });
 
-test('a heal effect reads the dice as healing', () => {
+test('a heal effect reads the dice as healing dice', () => {
   assert.deepEqual(assembleEffect(effectDraft({ kind: 'heal' })), {
     kind: 'heal',
-    healing: fire,
+    healing: [part(3, 6, 'healing')],
   });
 });
 
@@ -486,4 +486,32 @@ test('a save draft and an on-hit draft keep the chip mods of their condition', (
     attacksAgainst: 'advantage',
     once: true,
   });
+});
+
+test('the form and the library import repair a spell the same way', async () => {
+  const { normalizeSpell } = await import('../src/entities/SpellEntry.js');
+  const typed = assembleSpell(
+    draft({
+      effect: effectDraft({
+        kind: 'save',
+        saveAbility: 'WIS',
+        dealsDamage: true,
+        condition: ' Frightened ',
+        saveEnds: true,
+      }),
+    }),
+  );
+  const imported = normalizeSpell({ ...typed, effect: { ...typed.effect } }, 'x');
+  assert.deepEqual(imported, { id: 'x', ...typed });
+  assert.equal(typed.effect.kind === 'save' && typed.effect.condition, 'Frightened');
+});
+
+test('a heal spell scales with healing dice from the form', () => {
+  const spell = assembleSpell(
+    draft({
+      effect: effectDraft({ kind: 'heal' }),
+      scaling: { damagePerLevel: fire, targetsPerLevel: 0 },
+    }),
+  );
+  assert.deepEqual(spell.scaling, { damagePerLevel: [part(3, 6, 'healing')] });
 });

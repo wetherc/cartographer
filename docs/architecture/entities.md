@@ -952,8 +952,8 @@ Revivify and Raise Dead ship with it, and the spell form offers it as the
 stabilizes a dying character through `app/deathSaves.stabilizeCharacter`.
 `HealTarget.healBlocked` gives any other target the reason `notDying`.
 Spare the Dying ships with it, and the spell form offers it as the
-"Stabilizes the dying" box. `Library.normalizeSpell` and
-`SpellDraft.assembleEffect` keep each flag only when it is true.
+"Stabilizes the dying" box. `SpellEntry.normalizeSpellEffect`, which both the
+library import and the spell form use, keeps each flag only when it is true.
 
 `DiceRoller.rollDamage` groups the terms by damage type and adds the bonus of
 each term to its own group. The `modifier` argument (the attacker's ability
@@ -1860,10 +1860,10 @@ rolls its current bonus there, not the recorded one, so a save proficiency
 gained after the cast counts.
 
 A spell allows the repeated save with `saveEnds` on its save effect.
-`Library.normalizeSpell` keeps the flag when the effect names a condition and
-drops it otherwise. The spell form offers it as the "Save ends each turn" box,
-which shows once a save names a condition, and `SpellDraft.assembleEffect`
-follows the same rule. Hold Person, Blindness/Deafness, Hold Monster,
+`SpellEntry.normalizeSpellEffect` keeps the flag when the effect names a
+condition and drops it otherwise. The spell form offers it as the "Save ends
+each turn" box, which shows once a save names a condition, and the form
+assembles its effect through the same function. Hold Person, Blindness/Deafness, Hold Monster,
 Phantasmal Killer, Power Word Stun, and Sunburst ship with it.
 
 The repeated save, the condition-effect table, and the rider are the rules
@@ -2336,9 +2336,11 @@ The two Library authoring forms split the same way. `ui/ItemForm.js` and
 `assembleSpell` take the strings and booleans of a form and return the
 finished item or spell. They drop the fields that the chosen type or effect
 kind does not use, so a type change before submit cannot leave armor fields on
-a rope or a save ability on an attack. Both run the same tolerant parsers as a
-library import, so a typed entry and an imported entry read a value the same
-way.
+a rope or a save ability on an attack. `assembleSpell` applies the two form
+gates (a save that deals no damage, an attack that fires no projectiles) and
+then calls `SpellEntry.normalizeSpellBody`, the same repair that a library
+import runs through `normalizeSpell`. So a typed spell and an imported spell
+read a value the same way.
 
 The app stores the background and the assembled proficiency lists, but the
 sheet shows only part of them. Save and skill training shows in the check rows
