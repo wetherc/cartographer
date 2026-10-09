@@ -1261,7 +1261,9 @@ the character's own tile.
   tokens to draw on a node.
 - `moveCharacter` moves one character.
 - `recallAll` removes every individual location, which brings everyone back
-  to the shared party position.
+  to the shared party position. It returns the same array when no character
+  has a location, so a party step does not give `state.characters` a new
+  identity and repaint the panels that depend on it, such as the handouts.
 - `isSplit` and `characterPosition` support the regroup flow described
   below.
 

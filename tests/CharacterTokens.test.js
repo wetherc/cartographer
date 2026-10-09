@@ -171,3 +171,12 @@ test('followedPosition follows a bound character, and the party otherwise', () =
   assert.equal(followedPosition(placed, position, null), position);
   assert.equal(followedPosition(placed, position, 'gone'), position);
 });
+
+test('recallAll and recallFrom return the same array when nobody moves', () => {
+  assert.equal(recallAll(party), party);
+  assert.equal(recallFrom(party, new Set(['cave'])), party);
+  const placed = moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '0,1' });
+  assert.equal(recallFrom(placed, new Set(['town'])), placed);
+  assert.notEqual(recallAll(placed), placed);
+  assert.equal(recallAll(placed)[1], placed[1], 'an unplaced character keeps its object');
+});

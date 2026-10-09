@@ -95,26 +95,40 @@ export function regroupCandidates(characters, nodeExists) {
 /**
  * Recall every character to the party marker. This is the whole-party
  * teleport: any individually placed character loses its own location and
- * follows the party again.
+ * follows the party again. The input array comes back unchanged when no
+ * character has a location, so a panel that depends on the roster does not
+ * repaint on every party step.
  * @param {Character[]} characters
  * @returns {Character[]}
  */
 export function recallAll(characters) {
-  return characters.map((c) => (c.location ? { ...c, location: null } : c));
+  return recallWhere(characters, () => true);
 }
 
 /**
  * Recall the characters that stand in any of the given nodes. A node edit
  * that removes nodes calls this, so no character keeps a location on a map
- * that no longer exists. Characters elsewhere keep their own location.
+ * that no longer exists. Characters elsewhere keep their own location. The
+ * input array comes back unchanged when no character stands in those nodes.
  * @param {Character[]} characters
  * @param {Set<string>} nodeIds
  * @returns {Character[]}
  */
 export function recallFrom(characters, nodeIds) {
-  return characters.map((c) =>
-    c.location && nodeIds.has(c.location.nodeId) ? { ...c, location: null } : c,
-  );
+  return recallWhere(characters, (location) => nodeIds.has(location.nodeId));
+}
+
+/**
+ * Clear the location of each placed character whose location passes `test`.
+ * The function returns the input array when no character matches.
+ * @param {Character[]} characters
+ * @param {(location: import('../types/map.js').PartyPosition) => boolean} test
+ * @returns {Character[]}
+ */
+function recallWhere(characters, test) {
+  const recalled = (/** @type {Character} */ c) => !!c.location && test(c.location);
+  if (!characters.some(recalled)) return characters;
+  return characters.map((c) => (recalled(c) ? { ...c, location: null } : c));
 }
 
 /**
