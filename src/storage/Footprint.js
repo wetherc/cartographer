@@ -110,6 +110,24 @@ export function writeStored(key, value) {
 }
 
 /**
+ * `writeStored` for a value the app can run without, such as a viewer
+ * preference or a lock heartbeat. A full origin or a blocked storage area
+ * makes `setItem` throw, and this helper returns false instead, so the
+ * caller goes on without the stored value.
+ * @param {string} key
+ * @param {string} value
+ * @returns {boolean} whether the write landed
+ */
+export function tryWriteStored(key, value) {
+  try {
+    writeStored(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * `localStorage.removeItem`, recorded in the ledger.
  * @param {string} key
  */

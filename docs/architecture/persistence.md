@@ -99,6 +99,13 @@ overlay, and the fold memory of the Story tab use them too, although they
 live outside `src/storage/`. `view/FoldMemory.js` takes the writer as a
 parameter, so its unit test can pass a stub.
 
+A write that the app can run without goes through `tryWriteStored`, which
+returns false where `writeStored` throws. The heartbeat locks, the theme
+choice, the onboarding flag, the fold memory, the mini-map toggle, the palette
+variant toggle, and the Player hint use it. On a full origin a throw from one of these writes stops
+the boot of the app, because `main.js` calls the wiring modules with no
+`try` around them.
+
 `HistoryLog.trimToCap` reads delta sizes from the same ledger. Writes from
 other tabs arrive as `storage` events, and `onExternalSave` passes each one to
 the ledger. The ledger reads the origin again when the key count differs from

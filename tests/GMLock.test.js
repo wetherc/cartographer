@@ -11,7 +11,7 @@ import {
   releaseLock,
   createHeartbeatLock,
 } from '../src/storage/GMLock.js';
-import { installLocalStorage, installWindow } from './helpers/env.js';
+import { installLocalStorage, installQuotaStorage, installWindow } from './helpers/env.js';
 
 test('claimLock succeeds on a free, own, or expired lock and refreshes the timestamp', () => {
   assert.deepEqual(claimLock(null, 'a', 100), { id: 'a', at: 100 });
@@ -153,4 +153,22 @@ test('pagehide releases the lock so a follower need not wait out the TTL', () =>
   fire('pagehide', {});
   assert.equal(lock.heldKey(), null);
   assert.equal(loadLock('k'), null);
+});
+
+test('a full origin neither throws from saveLock nor refuses a claim', async () => {
+  installWindow();
+  installQuotaStorage(0);
+  assert.equal(saveLock({ id: 'a', at: 5 }), false);
+  const lock = createHeartbeatLock({
+    onYield: () => assert.fail('no takeover happened'),
+    heartbeat: 2,
+  });
+  assert.equal(lock.claim('k'), true, 'the boot goes on without a stored lock');
+  assert.equal(lock.heldKey(), 'k');
+  assert.equal(loadLock('k'), null);
+  // The heartbeat writes fail quietly too.
+  await new Promise((resolve) => {
+    setTimeout(resolve, 10);
+  });
+  lock.release();
 });

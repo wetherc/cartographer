@@ -5,7 +5,7 @@ import { GM_LOCK_KEY, createHeartbeatLock } from '../storage/GMLock.js';
 import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
 import { confirmModal } from '../ui/Modal.js';
 import { iconButton, segSwitch } from '../ui/buttons.js';
-import { writeStored } from '../storage/Footprint.js';
+import { tryWriteStored } from '../storage/Footprint.js';
 
 /** localStorage key set once the first switch to the Player view showed its toast. */
 const PLAYER_HINT_KEY = 'campaign-builder:player-hint-shown';
@@ -184,7 +184,7 @@ export function wireSessionControls(app) {
       // the campaign controls, so a toast names the way back.
       if (role === 'player' && next === 'player' && app.state.role === 'gm' && !yielding) {
         if (localStorage.getItem(PLAYER_HINT_KEY) !== '1') {
-          writeStored(PLAYER_HINT_KEY, '1');
+          tryWriteStored(PLAYER_HINT_KEY, '1');
           app.toasts.show('Player view. Click GM to return.');
         }
       }

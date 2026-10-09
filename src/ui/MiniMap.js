@@ -3,7 +3,7 @@ import { INK } from '../map/CanvasInk.js';
 import { compassArea, miniMapStartsOpen, miniMapTileSize, paintTerrain } from '../map/MiniMap.js';
 import { groupOutline } from '../map/RegionOutline.js';
 import { TileRaster } from '../map/TileRaster.js';
-import { writeStored } from '../storage/Footprint.js';
+import { tryWriteStored } from '../storage/Footprint.js';
 
 /** @typedef {import('../map/MiniMap.js').MiniMapView} MiniMapView */
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -67,7 +67,7 @@ export function mountMiniMap(container, options) {
 
   function toggle() {
     open = !open;
-    writeStored(HIDDEN_KEY, open ? '0' : '1');
+    tryWriteStored(HIDDEN_KEY, open ? '0' : '1');
     update();
   }
 

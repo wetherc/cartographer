@@ -1,5 +1,5 @@
 import { segSwitch } from './buttons.js';
-import { removeStored, writeStored } from '../storage/Footprint.js';
+import { removeStored, tryWriteStored } from '../storage/Footprint.js';
 import { THEME_STORAGE_KEY, THEMES, normalizeTheme, themeLabel } from '../view/Theme.js';
 
 /** @typedef {import('../view/Theme.js').ThemePreference} ThemePreference */
@@ -33,7 +33,7 @@ export function mountThemeToggle(container) {
     onChange: (next) => {
       theme = next;
       if (theme === 'system') removeStored(THEME_STORAGE_KEY);
-      else writeStored(THEME_STORAGE_KEY, theme);
+      else tryWriteStored(THEME_STORAGE_KEY, theme);
       applyTheme();
     },
   });

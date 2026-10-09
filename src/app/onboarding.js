@@ -1,7 +1,7 @@
 import { el, mustGetElement } from '../ui/dom.js';
 import { textButton } from '../ui/buttons.js';
 import { isBlankCampaign } from '../campaign/Campaigns.js';
-import { writeStored } from '../storage/Footprint.js';
+import { tryWriteStored } from '../storage/Footprint.js';
 import { showNextSteps } from './onboardingNext.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -57,7 +57,7 @@ function showOnboarding(app) {
   // overlay goes, where it would otherwise drop to the page body. An option
   // that opens a dialog then moves focus on from the map.
   const dismiss = () => {
-    writeStored(ONBOARDED_KEY, '1');
+    tryWriteStored(ONBOARDED_KEY, '1');
     mustGetElement('map-canvas').focus();
     overlay.remove();
   };

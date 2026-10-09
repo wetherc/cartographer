@@ -6,9 +6,10 @@ import {
   removeStored,
   storageFootprint,
   storedLength,
+  tryWriteStored,
   writeStored,
 } from '../src/storage/Footprint.js';
-import { installLocalStorage } from './helpers/env.js';
+import { installLocalStorage, installQuotaStorage } from './helpers/env.js';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -142,4 +143,12 @@ test('no code outside src/storage/ writes localStorage directly', () => {
     .filter((path) => !sessionOnly.has(path))
     .filter((path) => writesLocal(readFileSync(join(root, path), 'utf8')));
   assert.deepEqual(offenders, [], 'use writeStored and removeStored from storage/Footprint.js');
+});
+
+test('tryWriteStored reports a quota failure instead of throwing', () => {
+  installQuotaStorage(10);
+  assert.equal(tryWriteStored('a', '1'), true);
+  assert.equal(localStorage.getItem('a'), '1');
+  assert.equal(tryWriteStored('b', 'x'.repeat(20)), false);
+  assert.equal(localStorage.getItem('b'), null);
 });

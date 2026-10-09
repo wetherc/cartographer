@@ -4,7 +4,7 @@ import { setTip } from './Tooltip.js';
 import { checkbox } from './formFields.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType, isTerrainType, isVariantType } from '../map/TileCatalog.js';
-import { removeStored, writeStored } from '../storage/Footprint.js';
+import { removeStored, tryWriteStored } from '../storage/Footprint.js';
 
 /** localStorage key of the "Show variants" choice. Absent means off. */
 const SHOW_VARIANTS_KEY = 'campaign-builder:show-variants';
@@ -224,7 +224,7 @@ export function mountPalettePanel(
   });
   variantsToggle.input.addEventListener('change', () => {
     showVariants = variantsToggle.input.checked;
-    if (showVariants) writeStored(SHOW_VARIANTS_KEY, '1');
+    if (showVariants) tryWriteStored(SHOW_VARIANTS_KEY, '1');
     else removeStored(SHOW_VARIANTS_KEY);
     applyVisibility();
   });

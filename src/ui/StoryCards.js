@@ -2,7 +2,7 @@ import { textButton } from './buttons.js';
 import { buildDisclosure } from './Disclosure.js';
 import { el } from './dom.js';
 import { browserStorage, readFolds, toggleFold } from '../view/FoldMemory.js';
-import { writeStored } from '../storage/Footprint.js';
+import { tryWriteStored } from '../storage/Footprint.js';
 
 const FOLD_KEY = 'campaign-builder:story-cards';
 
@@ -49,7 +49,8 @@ export function mountStoryCards(panel, cards) {
     /** @param {boolean} folded @param {boolean} store */
     function setFolded(folded, store) {
       card?.classList.toggle('card--folded', folded);
-      if (store && folds.has(spec.id) !== folded) toggleFold(writeStored, FOLD_KEY, folds, spec.id);
+      if (store && folds.has(spec.id) !== folded)
+        toggleFold(tryWriteStored, FOLD_KEY, folds, spec.id);
     }
     ready = true;
     setFolded(folds.has(spec.id), false);

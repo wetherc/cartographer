@@ -18,7 +18,7 @@
  * one tab.
  */
 
-import { removeStored, writeStored } from './Footprint.js';
+import { removeStored, tryWriteStored } from './Footprint.js';
 
 /** @typedef {{ id: string, at: number }} GMLockRecord */
 
@@ -87,12 +87,15 @@ export function loadLock(key = GM_LOCK_KEY) {
 }
 
 /**
- * Persist a claimed lock record.
+ * Persist a claimed lock record. A full origin returns false instead of
+ * throwing. The lock record is rewritten on every boot and every heartbeat,
+ * so a throw here would stop the boot of a tab on a full origin.
  * @param {GMLockRecord} record
  * @param {string} [key]
+ * @returns {boolean} whether the record reached storage
  */
 export function saveLock(record, key = GM_LOCK_KEY) {
-  writeStored(key, JSON.stringify(record));
+  return tryWriteStored(key, JSON.stringify(record));
 }
 
 /**
@@ -160,6 +163,9 @@ export function createHeartbeatLock({
     const next = claimLock(loadLock(key), tabId, now(), ttl);
     if (!next) return false;
     held = key;
+    // On a full origin the record does not reach storage. The claim still
+    // succeeds, so the boot goes on. Other tabs then see no lock, and the
+    // heartbeat keeps trying to write it.
     saveLock(next, key);
     if (timer === null) {
       timer = setInterval(() => {
