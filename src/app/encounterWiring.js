@@ -63,9 +63,12 @@ export function wireEncounters(app) {
   /** @param {import('../types/combat.js').CombatState | null} next */
   function setCombat(next) {
     const ended = next === null && state.combat !== null;
+    const started = next !== null && state.combat === null;
     state.combat = next;
     app.actions.markDirty();
     if (ended) endFightEffects(app);
+    // The Time panel locks its rest and Advance buttons while a fight runs.
+    if (started || ended) app.views.timePanel.update();
   }
 
   /**

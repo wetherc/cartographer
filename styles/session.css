@@ -132,7 +132,24 @@
   font-family: var(--font-title);
   font-weight: 400;
   font-size: 1.2rem;
+}
+
+/* The time spent inside the current watch, in words and as a thin bar. Walks
+   add minutes, so the GM sees how close the next watch is. */
+.time-panel__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.time-panel__bar {
+  flex: 1;
+  min-width: 3rem;
+  height: 0.375rem;
+  accent-color: var(--accent);
 }
 
 .time-panel__actions {
@@ -143,6 +160,13 @@
 
 .time-panel__btn {
   font-size: var(--text-label);
+}
+
+/* The rest and Advance buttons during a fight. They stay focusable, so the
+   tooltip can say why they do nothing. */
+.time-panel__btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================

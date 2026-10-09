@@ -157,3 +157,16 @@ export function longRestClock(clock) {
 export function offersRestUntilDawn(clock) {
   return WATCHES[clock.watch] === 'Afternoon' || WATCHES[clock.watch] === 'Dusk';
 }
+
+/**
+ * How far the clock is into its current watch, as words for the Time panel:
+ * "Start of the watch", "30 minutes in", "3 hours 30 minutes in". Walks add
+ * minutes inside a watch, and `formatClock` names only the watch, so without
+ * this line a GM cannot see that the next short walk moves the watch on.
+ * @param {GameClock} clock
+ * @returns {string}
+ */
+export function formatWatchProgress(clock) {
+  const minutes = clock.minutes ?? 0;
+  return minutes > 0 ? `${formatMinutes(minutes)} in` : 'Start of the watch';
+}

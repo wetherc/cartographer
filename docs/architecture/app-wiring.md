@@ -510,8 +510,11 @@ answers back.
 
 `partyWiring.js` owns the roster, the character sheet, the inventory, the
 spellbook, and the Time panel. It registers `refreshSelectedCharacter`,
-`getBoundCharacterId`, `getSelectedCharacterId`, and the `partyPanels` view,
-which re-reads everything those panels show.
+`getBoundCharacterId`, `getSelectedCharacterId`, the `partyPanels` view,
+which re-reads everything those panels show, and the `timePanel` view. The
+`setCombat` helper of `encounterWiring.js` updates `timePanel` when a fight
+starts or ends, because the Advance and rest buttons lock while
+`state.combat` is set.
 
 It also mounts the full sheet (`ui/FullSheet.js`). The full sheet borrows the
 sheet card of the sidebar and moves it into a view the width of the page.

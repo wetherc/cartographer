@@ -12,6 +12,7 @@ import {
   minutesUntil,
   longRestClock,
   offersRestUntilDawn,
+  formatWatchProgress,
 } from '../src/time/GameClock.js';
 
 test('advanceMinutes adds up inside a watch and rolls over into the next', () => {
@@ -155,4 +156,14 @@ test('longRestClock rests eight hours and keeps the minutes', () => {
 test('only Afternoon and Dusk offer a long rest until Dawn', () => {
   const offers = WATCHES.map((_, watch) => offersRestUntilDawn({ day: 1, watch }));
   assert.deepEqual(offers, [false, false, false, true, true, false]);
+});
+
+test('formatWatchProgress names the time spent inside the current watch', () => {
+  assert.equal(formatWatchProgress(createClock()), 'Start of the watch');
+  assert.equal(formatWatchProgress(advanceMinutes(createClock(), 30)), '30 minutes in');
+  assert.equal(formatWatchProgress(advanceMinutes(createClock(), 210)), '3 hours 30 minutes in');
+  // Advance passes four hours and keeps the minutes already spent.
+  const advanced = advanceWatches(advanceMinutes(createClock(), 210), 1);
+  assert.equal(formatClock(advanced), 'Day 1, Morning');
+  assert.equal(formatWatchProgress(advanced), '3 hours 30 minutes in');
 });

@@ -78,6 +78,7 @@ const VIEW_NAMES = [
   'handoutPanel',
   'travelogPanel',
   'partyPanels',
+  'timePanel',
 ];
 
 /**

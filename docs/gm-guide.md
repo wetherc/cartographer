@@ -711,6 +711,12 @@ in-game clock forward.
 4. For a long rest from Afternoon or Dusk, the **Long rest** dialog asks
    how long to rest. Click **Rest 8 hours** or **Rest until Dawn**. At any
    other time, the long rest takes eight hours with no dialog.
+5. A short rest ends with a message that names the features it restored
+   and the new time. When nobody is hurt, the short rest opens no dialog,
+   so this message is the only sign that the hour passed.
+
+The rest buttons and **Advance** do nothing while a fight runs, and their
+tooltip says "End the fight first". End the fight, then rest.
 
 | Rest | What comes back |
 | --- | --- |

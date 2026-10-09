@@ -41,6 +41,7 @@ import { startingCharacterId } from '../view/ReloadView.js';
 import { characterPosition } from '../party/CharacterTokens.js';
 import { wireSplitParty } from './splitParty.js';
 import { rosterActions } from './rosterActions.js';
+import { restoredPoolNames, shortRestToast } from '../view/RestSummary.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -358,9 +359,17 @@ export function wireParty(app, reloadView = null) {
 
   wireTabs(mustGetElement('sheet-tabs'));
 
+  // Time does not pass during a fight. A rest would heal and refill the
+  // party while the turn order and budgets stayed where they were, and
+  // turn-boundary chips such as Shield do not end with game time. The
+  // handlers check again after their dialogs, because a fight can start
+  // in another tab while a dialog is open.
+  const fightRunning = () => state.combat !== null;
   const timePanel = mountTimePanel(mustGetElement('time-container'), {
     getClock: () => state.clock,
+    blockedReason: () => (fightRunning() ? 'End the fight first' : null),
     onAdvance: () => {
+      if (fightRunning()) return;
       state.clock = advanceWatches(state.clock, 1);
       passTime(app, 1);
       app.actions.markDirty();
@@ -369,8 +378,10 @@ export function wireParty(app, reloadView = null) {
     // the rest. The rest resolves after the dialog closes, so this handler
     // refreshes the clock readout itself.
     onShortRest: async () => {
+      if (fightRunning()) return;
       const counts = await askShortRestDice(state.characters);
-      if (!counts) return;
+      if (!counts || fightRunning()) return;
+      const before = state.characters;
       /** @type {string[]} */
       const spent = [];
       state.characters = state.characters.map((character) => {
@@ -393,10 +404,16 @@ export function wireParty(app, reloadView = null) {
         'rest',
         ['The party takes a short rest.', ...spent, `Now ${formatClock(state.clock)}.`].join(' '),
       );
+      // With nobody hurt the rest opens no dialog, so this toast is the only
+      // sign on screen that an hour passed.
+      app.toasts.show(
+        shortRestToast(restoredPoolNames(before, state.characters), formatClock(state.clock)),
+      );
     },
     // A long rest lasts eight hours. From Afternoon or Dusk, the GM can let
     // it run on until Dawn instead, and a cancel there cancels the rest.
     onLongRest: async () => {
+      if (fightRunning()) return;
       const before = state.clock;
       let after = longRestClock(before);
       if (offersRestUntilDawn(before)) {
@@ -409,7 +426,7 @@ export function wireParty(app, reloadView = null) {
           ],
           { title: 'Long rest' },
         );
-        if (choice === 'cancel') return;
+        if (choice === 'cancel' || fightRunning()) return;
         if (choice === 'dawn') after = dawn;
       }
       const left = state.characters.filter((c) => !gainsLongRest(c));
@@ -426,6 +443,8 @@ export function wireParty(app, reloadView = null) {
       }
     },
   });
+
+  app.views.timePanel = timePanel;
 
   app.actions.passTravelTime = (minutes) => {
     if (passTravelTime(app, minutes)) timePanel.update();

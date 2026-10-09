@@ -77,6 +77,9 @@ export interface AppViews {
   travelogPanel: Updatable;
   /** Roster, sheet, equipment, inventory, spellbook, clock, split toggle. */
   partyPanels: Updatable;
+  /** The Time panel alone. A fight that starts or ends refreshes it, because
+   * its buttons lock while a fight runs. */
+  timePanel: Updatable;
 }
 
 /** Cross-module operations, registered by the module that owns the state

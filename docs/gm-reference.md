@@ -955,8 +955,9 @@ the map.
 | A deeper outdoor map, such as a town | 1 minute |
 | A building interior | None |
 
-The minutes add up across walks, and the Time panel shows the next watch
-once 4 hours have passed. When a walk moves the clock into a new watch, a message and a Travelogue
+The minutes add up across walks. The Time panel shows the minutes spent
+inside the current watch, and it shows the next watch once 4 hours have
+passed. When a walk moves the clock into a new watch, a message and a Travelogue
 entry name the length of the walk and the new time, for example "The walk
 took 4 hours. Now Day 2, Midday." A split character's walk spends no time. A
 teleport, a way out of a map, and a forced move from another map spend no
@@ -2815,14 +2816,26 @@ removed, the item comes off.
 
 The Time panel shows the in-game day and watch, for example "Day 3, Dusk".
 A day has six watches: Dawn, Morning, Midday, Afternoon, Dusk, and Night.
-Only a GM tab shows the buttons. A walk of the party also moves the clock
+Under the watch, a line and a thin bar show the time spent inside that
+watch, for example "3 hours 30 minutes in". At the start of a watch the
+line reads "Start of the watch". Only a GM tab shows the buttons. A walk of the party also moves the clock
 on, by the time that [Party movement](#party-movement) lists for each map.
 
 | Button | Time passed | Effect |
 | --- | --- | --- |
-| Advance | One watch | None beyond the time |
+| Advance | One watch, 4 hours. The minutes already spent inside the watch stay, so "Day 1, Dawn, 3 hours 30 minutes in" becomes "Day 1, Morning, 3 hours 30 minutes in" | None beyond the time |
 | Short rest | One hour | Refills pact slots and each short-rest pool (see [Class feature pools](#class-feature-pools) and [Custom pools](#custom-pools)). Sorcerous Restoration gives 4 sorcery points at sorcerer 20. Restores no HP, because in 5e only spent hit dice heal on a short rest |
 | Long rest | Eight hours, two watches. From Afternoon or Dusk, a dialog also offers to rest until the next Dawn | Restores HP and every resource except a No rest pool, refills the spell slots, and takes one level of exhaustion off each character. A character at 0 HP gains nothing |
+
+A short rest ends with a message that names the pools it restored and the
+new time, for example "Short rest: 1 hour. Second Wind and Action Surge
+restored. Now Day 1, Morning." When no character is hurt, the short rest
+opens no dialog and goes straight to that message.
+
+The three buttons do nothing while a fight runs, and their tooltip reads
+"End the fight first". A rest in a fight would heal and refill the party
+while the turn order stayed where it was, and effects that end at a turn
+boundary, such as Shield, do not end with game time.
 
 | Unit | Length |
 | --- | --- |
