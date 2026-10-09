@@ -21,6 +21,7 @@
 @import url('styles/library.css'); /* Library mode: template lists, custom-library file controls */
 @import url('styles/spells.css'); /* spell authoring form, spellbook, cast modal */
 @import url('styles/combat.css'); /* Combat mode: the full-width fight screen */
+@import url('styles/combat-shell.css'); /* Combat mode: the fixed screen, gear disclosures, and the phone turn bar */
 @import url('styles/play-shell.css'); /* Play mode: the fixed screen with its own scrolling columns */
 @import url('styles/build-shell.css'); /* Build mode: the fixed screen with its own scrolling rails */
 @import url('styles/full-sheet.css'); /* the full character sheet over Play mode */

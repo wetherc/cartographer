@@ -113,6 +113,8 @@ src/app/turnEffects.js ....... what the start and the end of one turn do:
                                chips that end at a boundary
 src/app/combatEnd.js ......... the End combat confirmation and the XP award
 styles/combat.css ............ the mode's layout and the screen's styles
+styles/combat-shell.css ...... the fixed frame on a wide window, the Gear
+                               disclosure, and the phone turn bar
 ```
 
 ## The module that writes the fight
@@ -829,8 +831,18 @@ drawing a field that it was given.
 
 ## The layout
 
-The screen has three columns above a turn ribbon. Below a width of 1100px,
-the columns stack.
+The screen has three columns under a turn ribbon. On a window wider than
+68rem (1089 px), `styles/combat-shell.css` makes the screen a fixed frame of
+the window height, like Play and Build. The page does not scroll, and the
+active column, the board, and the log column each scroll on their own. Under
+1440 px the two side columns narrow, so the Party and Foes groups stay side by
+side. At 68rem and below the columns stack in one scrolling page.
+
+On a phone (40rem and below) the ribbon puts the round above the chips, and
+the chips form one row that scrolls sideways. Each render scrolls that row to
+the chip of the current turn. The Previous turn and Next turn buttons sit in
+the `.combat-ribbon__turn` group, which the phone layout pins to the bottom of
+the window with the name of the acting combatant.
 
 ### The active column
 
@@ -869,7 +881,11 @@ inspection, so inspecting a foe never offers its weapons to a player.
 ### The board
 
 The board shows the two sides as labelled groups of cards
-(`CombatantCard.js`). Each card shows the loadout in a compact form.
+(`CombatantCard.js`). Each card shows the name, initiative, HP, AC, and
+conditions. The loadout in its compact form sits under the card in a closed
+**Gear** disclosure, because the card is a button and cannot contain another
+control. A module-level set keeps the ids of the open disclosures, so a
+disclosure stays open when the board rebuilds.
 `LoadoutBlock.js` draws both forms, so a card and the active column always
 describe a combatant the same way. The host trims each card to what the viewer
 can see.

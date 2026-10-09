@@ -1314,7 +1314,7 @@ The combat screen runs one fight at the full width of the page.
 | --- | --- |
 | Top | The turn ribbon: one chip per combatant in initiative order, with its name and number, as in "Gray Wolf 2" |
 | Left column | The active combatant: initiative, AC, HP, conditions with the GM's add and remove controls, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
-| Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
+| Center | The board: one card per combatant, with an HP bar, AC, and conditions. Click **Gear** under a card to show its short loadout. A dying, stable, or dead character shows a chip for its state |
 | Right column | The **Log** and **Map** tabs, with the dice tray docked below them. **Log** shows the combat log. **Map** shows a read-only map of nine by nine tiles around the party, with the fog of the Play map and a marker on the tile of each hostile creature that still stands. Markers show only near the party, as on the Play map |
 
 | Ribbon or card mark | Meaning |
@@ -1326,6 +1326,11 @@ The combat screen runs one fight at the full width of the page.
 | Sword on a chip | A foe |
 | Strike-through | A defeated combatant |
 | Dashed edge | A combatant that cannot act, such as a stunned one, which is still in the fight but loses its turn. A dying or stable character at 0 HP shows the same edge, because it is still alive |
+
+On a wide window the combat screen fits the window, and each column scrolls
+on its own. On a phone the ribbon chips scroll sideways, and a bar at the
+bottom of the window shows whose turn it is with **Previous turn** and
+**Next turn**.
 
 A click on a ribbon chip inspects that combatant without a change of turn.
 The left column then reads **Inspecting** and shows a **Back to current

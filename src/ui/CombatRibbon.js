@@ -89,6 +89,7 @@ export function mountCombatRibbon(callbacks) {
       chips.appendChild(button);
     });
     roveGroup(element, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
+    scrollToCurrent();
     // Ending a turn belongs to whoever is taking it. The GM can advance the
     // fight from any turn. A player sees the control only on the turn of the
     // character their tab is bound to. This reads as finishing their own turn,
@@ -108,8 +109,18 @@ export function mountCombatRibbon(callbacks) {
         ? textButton('Previous turn', callbacks.onPrevious, { icon: 'back' })
         : null;
     if (previous) previous.disabled = view.round === 1 && view.turnIndex === 0;
-    controls.append(
-      textButton('Back to map', callbacks.onLeave, { icon: 'map' }),
+    // The turn group keeps the name of the acting combatant and the turn
+    // buttons. On a phone it is a bar pinned to the bottom of the window, so
+    // Next turn stays in reach while the GM scrolls the cards. The name shows
+    // only there, because on a wider screen the ribbon chips sit beside it.
+    const turn = el(
+      'div',
+      'combat-ribbon__turn',
+      el(
+        'span',
+        'combat-ribbon__now',
+        acting ? `${acting.name ?? 'Unknown combatant'}'s turn` : '',
+      ),
       ...(previous ? [previous] : []),
       ...(mayEndTurn
         ? [
@@ -122,6 +133,10 @@ export function mountCombatRibbon(callbacks) {
             }),
           ]
         : []),
+    );
+    controls.append(
+      textButton('Back to map', callbacks.onLeave, { icon: 'map' }),
+      turn,
       ...(gm
         ? [
             textButton('End combat', callbacks.onEnd, {
@@ -131,6 +146,19 @@ export function mountCombatRibbon(callbacks) {
           ]
         : []),
     );
+  }
+
+  /**
+   * On a narrow screen the chips form one row that scrolls sideways. This
+   * scrolls the row so the chip of the current turn is in view, and it leaves
+   * the page scroll alone. The chip row is the offset parent of its chips.
+   */
+  function scrollToCurrent() {
+    if (chips.scrollWidth <= chips.clientWidth) return;
+    const current = /** @type {HTMLElement | null} */ (
+      chips.querySelector('.combat-ribbon__chip--current')
+    );
+    if (current) chips.scrollLeft = Math.max(0, current.offsetLeft - 16);
   }
 
   function clear() {

@@ -1211,7 +1211,8 @@ an earlier one, so the order is part of the contract:
    control sizes
 7. `character.css`, `paperdoll.css`, `sheet-features.css`,
    `inventory-grid.css`, `session.css`, `party.css`, `story.css`,
-   `quest.css`, `library.css`, `spells.css`, `combat.css`, `play-shell.css`,
+   `quest.css`, `library.css`, `spells.css`, `combat.css`, `combat-shell.css`,
+   `play-shell.css`,
    `build-shell.css`, `full-sheet.css`, `sheet-summary.css`: one sheet for
    each feature area
 8. `responsive.css`: narrow-viewport stacking. **Keep this sheet last.**
@@ -1379,8 +1380,10 @@ The few layout switches are in known places:
   - `@media (max-width: 40rem)` shrinks the mini-map and moves it below
     the map controls.
 
-  `combat.css` has one more, `@media (max-width: 1100px)`, which stacks the
-  combat screen's columns. The fit that opens a map never draws a tile
+  `combat.css` has one more, `@media (max-width: 68rem)`, which stacks the
+  combat screen's columns. `combat-shell.css` makes the combat screen a
+  fixed frame above that width, and pins the turn buttons to the bottom of
+  the window at 40rem and below. The fit that opens a map never draws a tile
   smaller than `READABLE_TILE_PX` (32 px, `src/map/MapGeometry.js`), so a
   narrow viewport shows a readable part of a large map and not all of it at
   a quarter size. The Fit button calls `fit({ whole: true })`, which drops

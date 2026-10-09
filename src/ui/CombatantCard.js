@@ -127,9 +127,6 @@ export function combatantCard(row, selection = {}) {
     card.appendChild(el('div', 'combatant-card__meta', `AC ${row.ac}`));
   }
 
-  const loadout = selection.loadout ? loadoutBlock(selection.loadout) : null;
-  if (loadout) card.appendChild(loadout);
-
   // A dying character's status goes in the same chip row as its conditions.
   // The Unconscious chip says it cannot act. This chip says whether it is
   // still rolling, out of danger, or gone.
@@ -149,10 +146,42 @@ export function combatantCard(row, selection = {}) {
     );
   }
 
+  const gear = selection.loadout ? gearDisclosure(row, selection.loadout) : null;
   const reaction = selection.reaction ? reactionRow(row, selection.reaction) : null;
   const legendary = selection.legendary ? legendaryRow(row, selection.legendary) : null;
-  if (!reaction && !legendary) return card;
-  return el('div', 'combatant-slot', card, reaction, legendary);
+  if (!gear && !reaction && !legendary) return card;
+  return el('div', 'combatant-slot', card, gear, reaction, legendary);
+}
+
+/**
+ * The ids of the combatants whose gear disclosure is open. The board rebuilds
+ * its cards on every change, so this set restores an open disclosure after a
+ * rebuild. Without it every hit or turn would close the gear the GM reads.
+ * @type {Set<string>}
+ */
+const openGear = new Set();
+
+/**
+ * The combatant's armor, weapons, spells, and slots behind a closed
+ * disclosure, so a board card shows only its name, HP, AC, and conditions.
+ * The disclosure sits outside the card, because the card is a button and a
+ * button cannot contain another control. Returns null for an empty loadout.
+ * @param {CombatantRow} row
+ * @param {Loadout} loadout
+ * @returns {HTMLElement | null}
+ */
+function gearDisclosure(row, loadout) {
+  const block = loadoutBlock(loadout);
+  if (!block) return null;
+  const summary = el('summary', 'combatant-card__gear-summary', 'Gear');
+  summary.setAttribute('aria-label', `Gear of ${row.name ?? 'Unknown combatant'}`);
+  const details = el('details', 'combatant-card__gear', summary, block);
+  details.open = openGear.has(row.id);
+  details.addEventListener('toggle', () => {
+    if (details.open) openGear.add(row.id);
+    else openGear.delete(row.id);
+  });
+  return details;
 }
 
 /**

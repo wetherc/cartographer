@@ -154,9 +154,9 @@ export function mountCombatScreen(container, callbacks) {
   const log = mountCombatLog();
   const board = el('div', 'combat-board');
   const diceDock = el('div', 'combat-screen__dice-dock');
-  // The borrowed dice tray sits under the log in the right column, which
-  // sticks to the top of the screen (see combat.css). A long active column
-  // would otherwise push the tray below the bottom of the screen.
+  // The borrowed dice tray sits under the log in the right column. On a wide
+  // window each column scrolls on its own (see combat-shell.css), so a long
+  // active column does not push the tray below the bottom of the screen.
   const left = el('div', 'combat-screen__left', column.element);
   const map = callbacks.getMapView ? mountCombatMap(callbacks.getMapView) : null;
   const tabs = map
