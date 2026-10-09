@@ -476,3 +476,44 @@ test('addGold pays into the gold stack, a stack named gold, or a new purse', asy
     2,
   );
 });
+
+test('addItem gives a renamed stack its own row instead of merging by id', () => {
+  let hero = addItem(createCharacter('c1', 'Hero'), item('dagger', 'Dagger'));
+  hero = updateItem(hero, 'dagger', { ...hero.inventory[0], name: 'Dagger +1' });
+  hero = addItem(hero, item('dagger', 'Dagger'));
+  assert.deepEqual(
+    hero.inventory.map((i) => [i.id, i.name, i.quantity]),
+    [
+      ['dagger', 'Dagger +1', 1],
+      ['dagger-2', 'Dagger', 1],
+    ],
+  );
+  hero = addItem(hero, item('dagger', 'Dagger'));
+  assert.equal(hero.inventory[1].quantity, 2, 'the next plain dagger finds the plain stack');
+});
+
+test('addItem treats a missing field and a blank one as the same stack', () => {
+  let hero = addItem(createCharacter('c1', 'Hero'), item('rope', 'Rope', { notes: '' }));
+  const { notes: _drop, ...bare } = item('rope', 'Rope');
+  hero = addItem(hero, /** @type {any} */ (bare));
+  assert.deepEqual(
+    hero.inventory.map((i) => [i.id, i.quantity]),
+    [['rope', 2]],
+  );
+});
+
+test('transferItem keeps the notes of a magic item apart from a plain stack', () => {
+  let giver = addItem(
+    createCharacter('g', 'Giver'),
+    item('dagger', 'Dagger', { notes: 'Glows near orcs.' }),
+  );
+  let receiver = addItem(createCharacter('r', 'Taker'), item('dagger', 'Dagger'));
+  ({ giver, receiver } = transferItem(giver, receiver, 'dagger', 1));
+  assert.deepEqual(
+    receiver.inventory.map((i) => [i.id, i.notes ?? '']),
+    [
+      ['dagger', ''],
+      ['dagger-2', 'Glows near orcs.'],
+    ],
+  );
+});

@@ -50,9 +50,11 @@ separately:
   the start of the stored level to that start.
 - `Character.js` looks up a character's resources and inventory by id.
   `spendResource` and `restoreResource` delegate to the matching
-  `ResourcePool` through `Resource.js`. `addItem` and `removeItem` merge or
-  split inventory stacks by item id, and each stack drops once its quantity
-  reaches 0.
+  `ResourcePool` through `Resource.js`. `addItem` merges a new item into a
+  stack only when every field other than the id and the quantity matches
+  (`sameStack`), and an item that matches no stack gets a fresh id from
+  `slugId` when its own id is taken. `removeItem` splits a stack by item id,
+  and each stack drops once its quantity reaches 0.
 
 ### Reserved resource pools
 

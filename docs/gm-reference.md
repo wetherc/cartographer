@@ -2808,7 +2808,9 @@ pane sits beside the tiles, and on a narrow one it sits under them.
 | Heals when drunk | For a consumable: the heal dice, as a count, a die size, and a flat bonus. A count of 0 means the item heals nothing. A potion preset fills it |
 
 Only the GM adds an item. A player uses, gives away, and discards what the
-character carries.
+character carries. A new or given item joins an existing stack only when its
+name, type, notes, and every other field match. Otherwise it gets a row of its
+own, so a renamed "Dagger +1" and a plain Dagger stay apart.
 
 | Control | Shows for | What it does |
 | --- | --- | --- |

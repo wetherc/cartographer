@@ -1,4 +1,4 @@
-import { updateById } from './Roster.js';
+import { slugId, updateById } from './Roster.js';
 import { derive } from './Progression.js';
 import { pruneEquipment } from './Equipment.js';
 
@@ -14,18 +14,69 @@ import { pruneEquipment } from './Equipment.js';
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 
 /**
- * Add an item, merging quantity into an existing stack with the same id.
+ * A comparable form of a stack's fields, without its id and quantity. Keys
+ * sort, and an empty value (undefined, null, '', false, or an empty list or
+ * record) drops out, so an item missing a field matches one that keeps it
+ * blank.
+ * @param {unknown} value
+ * @returns {unknown}
+ */
+function comparable(value) {
+  if (Array.isArray(value)) return value.map(comparable);
+  if (value === null || typeof value !== 'object') return value;
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  for (const key of Object.keys(value).sort()) {
+    const field = comparable(/** @type {Record<string, unknown>} */ (value)[key]);
+    const empty =
+      field === undefined ||
+      field === null ||
+      field === '' ||
+      field === false ||
+      (Array.isArray(field) && field.length === 0) ||
+      (typeof field === 'object' && Object.keys(field).length === 0);
+    if (!empty) out[key] = field;
+  }
+  return out;
+}
+
+/**
+ * Whether two items can share one stack: every field other than the id and
+ * the quantity matches. A "Dagger" renamed "Dagger +1" keeps its "dagger" id,
+ * so an id match alone would turn the next plain dagger into a second
+ * "Dagger +1".
+ * @param {InventoryItem} a
+ * @param {InventoryItem} b
+ * @returns {boolean}
+ */
+export function sameStack(a, b) {
+  const { id: _a, quantity: _qa, ...left } = a;
+  const { id: _b, quantity: _qb, ...right } = b;
+  return JSON.stringify(comparable(left)) === JSON.stringify(comparable(right));
+}
+
+/**
+ * Add an item, merging quantity into an existing stack whose fields match
+ * (see `sameStack`). An item that matches no stack gets a row of its own. Its
+ * id is kept when free, and otherwise `slugId` derives a fresh one from its
+ * name, so two different items never share an id.
  * @param {Character} character
  * @param {InventoryItem} item
  * @returns {Character}
  */
 export function addItem(character, item) {
-  const existing = character.inventory.find((i) => i.id === item.id);
-  if (!existing) return { ...character, inventory: [...character.inventory, item] };
+  const existing =
+    character.inventory.find((i) => i.id === item.id && sameStack(i, item)) ??
+    character.inventory.find((i) => sameStack(i, item));
+  if (!existing) {
+    const ids = character.inventory.map((i) => i.id);
+    const id = ids.includes(item.id) ? slugId(item.name, ids) : item.id;
+    return { ...character, inventory: [...character.inventory, { ...item, id }] };
+  }
 
   return {
     ...character,
-    inventory: updateById(character.inventory, item.id, (i) => ({
+    inventory: updateById(character.inventory, existing.id, (i) => ({
       ...i,
       quantity: i.quantity + item.quantity,
     })),
@@ -35,7 +86,8 @@ export function addItem(character, item) {
 /**
  * Hand part of a stack (or all of it) from one party member to another. The
  * giver loses `quantity`, unequipping the item if the whole stack goes, and
- * the receiver gains it, merging into an existing stack with the same id.
+ * the receiver gains it, merging into a stack whose fields match (see
+ * `addItem`).
  * A missing item, a non-positive count, or self-transfer changes nothing.
  * This function is pure and returns both updated characters.
  * @param {Character} giver
