@@ -1,5 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
 import { removeItem } from '../entities/CharacterInventory.js';
+import { getHP } from '../entities/Character.js';
 import { potionBlocked, potionHeals, potionSelection } from '../entities/Potions.js';
 import { applyToTarget } from './combatantWrites.js';
 import { logName } from './combatants.js';
@@ -17,7 +18,8 @@ import { logName } from './combatants.js';
  *
  * The item leaves the stack through `store` before the heal lands, so the
  * inventory panel shows the smaller stack, and the heal then reaches every
- * panel through the character write.
+ * panel through the character write. The result line goes to the log and to
+ * a toast, because the full sheet hides the dice tray.
  * @param {AppContext} app
  * @param {Character} drinker the character whose inventory holds the potion
  * @param {InventoryItem} item
@@ -62,14 +64,33 @@ export async function drinkPotion(app, drinker, item, store, { prompt = promptMo
   }
   const { result } = app.actions.rollDice(potionSelection(heals), null);
   store(removeItem(drinker, item.id, 1));
-  const name = logName(app, drinker);
-  app.actions.logEvent(
-    'combat',
-    recipient.id === drinker.id
-      ? `${name} drinks a ${item.name} (${result.total} HP).`
-      : `${name} gives a ${item.name} to ${logName(app, recipient)} (${result.total} HP).`,
-  );
   applyToTarget(app, recipient.id, result.total, true);
+  const line = potionLine(app, drinker, recipient, item, result.total);
+  app.actions.logEvent('combat', line);
+  app.toasts.show(line);
   app.actions.markDirty();
   return true;
+}
+
+/**
+ * The result line of a potion, such as "Ser Aldric drinks a Potion of
+ * Healing: +5 HP (now 29/36)." It reads the recipient after the heal.
+ * @param {AppContext} app
+ * @param {Character} drinker
+ * @param {Character} recipient
+ * @param {InventoryItem} item
+ * @param {number} healed
+ * @returns {string}
+ */
+function potionLine(app, drinker, recipient, item, healed) {
+  const name = logName(app, drinker);
+  const action =
+    recipient.id === drinker.id
+      ? `${name} drinks a ${item.name}`
+      : `${name} gives a ${item.name} to ${logName(app, recipient)}`;
+  const live = app.state.characters.find((c) => c.id === recipient.id) ?? recipient;
+  const hp = getHP(live);
+  return hp
+    ? `${action}: +${healed} HP (now ${hp.current}/${hp.max}).`
+    : `${action}: +${healed} HP.`;
 }

@@ -2863,7 +2863,9 @@ A consumable with heal dice heals when a character uses it. **Use one** opens a
 dialog that asks who drinks it. The character who carries it is first,
 and any other party character can take it, so a character can pour a
 potion into a downed ally. The tray rolls the heal with no target, and a
-heal above 0 HP ends the dying state. A dead character cannot take a
+heal above 0 HP ends the dying state. The log and a toast show the heal and
+the new HP, so the result shows on the full sheet too, where the tray is
+hidden. A dead character cannot take a
 potion, and the potion stays on the stack. In a fight, on the turn of the
 character who carries it, a potion costs the action. The app does not
 check that the two characters stand on the same tile.

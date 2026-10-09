@@ -58,7 +58,20 @@ test('a character drinks a potion, heals the roll, and loses one from the stack'
   );
   assert.equal(hpOf(app, 'wren'), 12);
   assert.equal(stack(app), 1);
-  assert.ok(app.log.includes('Wren drinks a Potion of Healing (7 HP).'));
+  assert.ok(app.log.includes('Wren drinks a Potion of Healing: +7 HP (now 12/20).'));
+});
+
+test('a potion result shows as a toast with the new HP', async () => {
+  const { app, wren, store, toasts } = party();
+  assert.equal(await drinkPotion(app, wren, POTION, store, { prompt: pick('wren') }), true);
+  assert.deepEqual(toasts, ['Wren drinks a Potion of Healing: +7 HP (now 12/20).']);
+});
+
+test('a potion line leaves out the HP readout for a character with no HP pool', async () => {
+  const { app, wren, store, toasts } = party();
+  app.state.characters[1] = { ...app.state.characters[1], resources: [] };
+  assert.equal(await drinkPotion(app, wren, POTION, store, { prompt: pick('mirelle') }), true);
+  assert.deepEqual(toasts, ['Wren gives a Potion of Healing to Mirelle: +7 HP.']);
 });
 
 test('a potion given to a downed ally heals the ally', async () => {
@@ -66,7 +79,7 @@ test('a potion given to a downed ally heals the ally', async () => {
   assert.equal(await drinkPotion(app, wren, POTION, store, { prompt: pick('mirelle') }), true);
   assert.equal(hpOf(app, 'mirelle'), 7);
   assert.equal(hpOf(app, 'wren'), 5);
-  assert.ok(app.log.includes('Wren gives a Potion of Healing to Mirelle (7 HP).'));
+  assert.ok(app.log.includes('Wren gives a Potion of Healing to Mirelle: +7 HP (now 7/20).'));
 });
 
 test('a dead recipient keeps the potion on the stack', async () => {
@@ -120,7 +133,7 @@ test('on the drinker turn the potion costs the action', async () => {
   assert.equal(await drinkPotion(app, wren, POTION, store, { prompt: pick('wren') }), true);
   const again = app.state.characters[0];
   assert.equal(await drinkPotion(app, again, POTION, store, { prompt: pick('wren') }), false);
-  assert.deepEqual(toasts, ['Wren has no action left this turn.']);
+  assert.equal(toasts.at(-1), 'Wren has no action left this turn.');
   assert.equal(stack(app), 1);
 });
 
@@ -136,5 +149,5 @@ test('a custom consumable with heal dice drinks under any name', async () => {
   };
   assert.equal(await drinkPotion(app, wren, draught, store, { prompt: pick('wren') }), true);
   assert.deepEqual(rolled, [{ counts: { d6: 3 }, modifier: 0 }]);
-  assert.ok(app.log.includes('Wren drinks a Troll Draught (9 HP).'));
+  assert.ok(app.log.includes('Wren drinks a Troll Draught: +9 HP (now 14/20).'));
 });
