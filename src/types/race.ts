@@ -44,6 +44,9 @@ export interface RaceDef {
   /** The damage types a player picks one resistance from (the Dragonborn's
    * Draconic Ancestry). */
   resistanceChoice?: string[];
+  /** The tools a player picks one proficiency from (the Dwarf's Tool
+   * Proficiency). */
+  toolChoice?: string[];
   /** Race trait names. `entities/RaceTraits.js` gives a few of them an effect
    * on d20 rolls (Lucky, Brave, Fey Ancestry, Dwarven Resilience, Gnome
    * Cunning). The rest are display names only. */
@@ -61,6 +64,8 @@ export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'> & {
   /** The resistance picked through `resistanceChoice`, also listed in
    * `resistances`. */
   chosenResistance?: string;
+  /** The tool picked through `toolChoice`, also listed in `tools`. */
+  chosenTool?: string;
 };
 
 /** The player's picks for a race's choices. */
@@ -68,4 +73,5 @@ export interface RacePicks {
   abilities?: string[];
   skills?: string[];
   resistance?: string;
+  tool?: string;
 }

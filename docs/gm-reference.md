@@ -2607,7 +2607,8 @@ Creation picks a class, a race, and a background, and offers the skill
 choices of the class. A Half-Elf also picks two abilities other than CHA
 that gain +1 each, and two skills of any kind (Skill Versatility). A
 Dragonborn picks the damage type of its Draconic Ancestry and resists that
-type. From these choices, the sheet assembles the proficiencies: saving
+type. A Dwarf picks its tool proficiency from smith's tools, brewer's
+supplies, and mason's tools. From these choices, the sheet assembles the proficiencies: saving
 throws, skills, weapons, armor, tools, and languages. Every list stays
 editable afterward.
 
@@ -2629,7 +2630,7 @@ A creature action, such as a breath weapon, is not magic, so Gnome Cunning
 does not help against it. A save that the GM calls at the table from the
 sheet still needs the advantage set by hand. The remaining race traits are text on the sheet,
 and the GM applies them: the Dragonborn Breath Weapon, Stonecunning, the
-High Elf cantrip, the Dwarf tool pick, Trance, Naturally Stealthy, Halfling
+High Elf cantrip, Trance, Naturally Stealthy, Halfling
 Nimbleness, Artificer's Lore, Tinker, Relentless Endurance,
 Savage Attacks, Hellish Resistance, Infernal Legacy, and Extra Language.
 

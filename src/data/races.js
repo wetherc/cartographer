@@ -23,6 +23,7 @@ export const DEFAULT_RACES = [
     skills: [],
     weapons: ['battleaxe', 'handaxe', 'light hammer', 'warhammer'],
     tools: [],
+    toolChoice: ["smith's tools", "brewer's supplies", "mason's tools"],
     languages: ['Common', 'Dwarvish'],
     traits: [
       'Dwarven Resilience',

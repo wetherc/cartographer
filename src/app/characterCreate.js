@@ -64,6 +64,9 @@ const CLASSLESS_MAX_HP = 10;
 /** The damage types that any race offers as a resistance pick. */
 const RESISTANCE_PICKS = [...new Set(RACE_LIST.flatMap((r) => r.resistanceChoice ?? []))];
 
+/** The tools that any race offers as a proficiency pick. */
+const TOOL_PICKS = [...new Set(RACE_LIST.flatMap((r) => r.toolChoice ?? []))];
+
 /**
  * The options, pick count, and caption of the race ability multiselect for
  * a race id. A race with no ability choice gets no options.
@@ -139,6 +142,14 @@ export function characterFields() {
       type: 'select',
       value: RESISTANCE_PICKS[0],
       options: RESISTANCE_PICKS.map((type) => ({ value: type, label: capitalize(type) })),
+      hidden: true,
+    },
+    {
+      name: 'raceTool',
+      label: 'Race tool proficiency',
+      type: 'select',
+      value: TOOL_PICKS[0],
+      options: TOOL_PICKS.map((tool) => ({ value: tool, label: capitalize(tool) })),
       hidden: true,
     },
     {
@@ -301,6 +312,7 @@ export function characterFormChange(name, form, rng = Math.random) {
       form.setHidden(field, choice.count === 0);
     }
     form.setHidden('raceResistance', !getRace(raceId)?.resistanceChoice?.length);
+    form.setHidden('raceTool', !getRace(raceId)?.toolChoice?.length);
   }
   if (name === 'class') {
     const choice = getClass(form.get('class'))?.skillChoice;
@@ -362,6 +374,7 @@ export function buildCharacter(values, existingIds) {
       abilities: splitList(values.raceAbilities ?? ''),
       skills: splitList(values.raceSkills ?? '').filter((id) => SKILL_IDS.includes(id)),
       resistance: values.raceResistance ?? '',
+      tool: values.raceTool ?? '',
     });
   } else if (values.customRace.trim()) {
     character = withCustomRace(character, values.customRace.trim());

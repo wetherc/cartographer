@@ -565,7 +565,8 @@ The chosen skills go to the snapshot's `chosenSkills`, which `resolveRace`
 keeps and `assembleProficiencies` merges with the fixed race skills.
 A `resistanceChoice` (the Dragonborn ancestry) lists damage types, and the
 picked one joins the snapshot's `resistances` as `chosenResistance`, where
-`defensesOf` reads it.
+`defensesOf` reads it. A `toolChoice` (the Dwarf) works the same way, and the
+picked tool joins `tools` as `chosenTool`.
 
 `entities/RaceTraits.js` turns some trait names into roll effects.
 `isLucky` makes `resolveD20` in Checks.js roll a natural 1 again on a

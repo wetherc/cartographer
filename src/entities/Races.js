@@ -53,6 +53,7 @@ function snapshotRace(def) {
       : {}),
     ...(def.skillChoice ? { skillChoice: { ...def.skillChoice } } : {}),
     ...(def.resistanceChoice ? { resistanceChoice: [...def.resistanceChoice] } : {}),
+    ...(def.toolChoice ? { toolChoice: [...def.toolChoice] } : {}),
   };
 }
 
@@ -60,10 +61,11 @@ function snapshotRace(def) {
  * The valid picks for a race's choices. Ability picks must be distinct and
  * outside the race's exclude list, and skill picks must be distinct. Each
  * list stops at the race's count, so extra or invalid picks drop out. The
- * resistance pick must be one of the race's `resistanceChoice` types.
+ * resistance pick must be one of the race's `resistanceChoice` types, and
+ * the tool pick one of its `toolChoice` tools.
  * @param {RaceDef} def
  * @param {RacePicks} picks
- * @returns {{ abilities: string[], skills: string[], resistance: string | null }}
+ * @returns {{ abilities: string[], skills: string[], resistance: string | null, tool: string | null }}
  */
 export function validRacePicks(def, picks) {
   const choice = def.abilityChoice;
@@ -79,6 +81,7 @@ export function validRacePicks(def, picks) {
       picks.resistance && def.resistanceChoice?.includes(picks.resistance)
         ? picks.resistance
         : null,
+    tool: picks.tool && def.toolChoice?.includes(picks.tool) ? picks.tool : null,
   };
 }
 
@@ -116,7 +119,7 @@ export function withRace(character, raceId, picks = {}) {
   const def = getRace(raceId);
   if (!def) return character;
   const stats = statsWithoutRace(character);
-  const { abilities, skills, resistance } = validRacePicks(def, picks);
+  const { abilities, skills, resistance, tool } = validRacePicks(def, picks);
   /** @type {Record<string, number>} */
   const gains = { ...def.abilityIncreases };
   const amount = def.abilityChoice?.amount ?? 0;
@@ -130,6 +133,7 @@ export function withRace(character, raceId, picks = {}) {
     ...(resistance
       ? { resistances: [...snapshot.resistances, resistance], chosenResistance: resistance }
       : {}),
+    ...(tool ? { tools: [...snapshot.tools, tool], chosenTool: tool } : {}),
     abilityIncreases: gains,
     ...(skills.length ? { chosenSkills: skills } : {}),
   };
@@ -174,10 +178,12 @@ export function resolveRace(character) {
   const applied = character.raceTraits?.abilityIncreases;
   const chosen = character.raceTraits?.chosenSkills ?? [];
   const picked = character.raceTraits?.chosenResistance;
+  const tool = character.raceTraits?.chosenTool;
   return {
     ...snapshot,
     ...(applied ? { abilityIncreases: { ...applied } } : {}),
     ...(chosen.length ? { chosenSkills: [...chosen] } : {}),
     ...(picked ? { resistances: [...snapshot.resistances, picked], chosenResistance: picked } : {}),
+    ...(tool ? { tools: [...snapshot.tools, tool], chosenTool: tool } : {}),
   };
 }

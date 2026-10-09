@@ -171,11 +171,27 @@ test('validRacePicks drops picks for a race with no choice and caps the counts',
     abilities: [],
     skills: [],
     resistance: null,
+    tool: null,
   });
   const half = /** @type {any} */ (getRace('half-elf'));
   assert.deepEqual(
     validRacePicks(half, { abilities: ['CHA', 'STR', 'DEX', 'CON'], skills: ['a', 'b', 'c'] }),
-    { abilities: ['STR', 'DEX'], skills: ['a', 'b'], resistance: null },
+    { abilities: ['STR', 'DEX'], skills: ['a', 'b'], resistance: null, tool: null },
   );
-  assert.deepEqual(validRacePicks(half, {}), { abilities: [], skills: [], resistance: null });
+  assert.deepEqual(validRacePicks(half, {}), {
+    abilities: [],
+    skills: [],
+    resistance: null,
+    tool: null,
+  });
+});
+
+test('a Dwarf tool pick joins the tools and outlasts a resolve', () => {
+  const dwarf = withRace(createCharacter('d', 'D'), 'dwarf', { tool: "brewer's supplies" });
+  assert.deepEqual(dwarf.raceTraits?.tools, ["brewer's supplies"]);
+  assert.equal(resolveRace(dwarf)?.chosenTool, "brewer's supplies");
+  assert.deepEqual(resolveRace(dwarf)?.tools, ["brewer's supplies"]);
+  const none = withRace(createCharacter('d', 'D'), 'dwarf', { tool: 'lute' });
+  assert.equal(none.raceTraits?.chosenTool, undefined);
+  assert.deepEqual(none.raceTraits?.tools, []);
 });

@@ -457,3 +457,16 @@ test('a Dragonborn pick shows the ancestry resistance and buildCharacter applies
   const c = buildCharacter(values({ race: 'dragonborn', raceResistance: 'cold' }), []);
   assert.deepEqual(c.raceTraits?.resistances, ['cold']);
 });
+
+test('a Dwarf pick shows the tool pick and buildCharacter adds the tool', () => {
+  const form = fakeForm({ race: 'dwarf' });
+  characterFormChange('race', form);
+  assert.equal(form.hidden.raceTool, false);
+  assert.equal(form.hidden.raceResistance, true);
+  const c = buildCharacter(values({ race: 'dwarf', raceTool: "mason's tools" }), []);
+  assert.equal(c.raceTraits?.chosenTool, "mason's tools");
+  assert.deepEqual(getProficiencies(c).tools, ["mason's tools"]);
+  const elf = fakeForm({ race: 'elf' });
+  characterFormChange('race', elf);
+  assert.equal(elf.hidden.raceTool, true);
+});
