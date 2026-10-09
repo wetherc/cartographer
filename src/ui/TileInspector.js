@@ -1,5 +1,6 @@
 import { emptyState, textButton } from './buttons.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { labeled, select, setOptions, textareaField } from './formFields.js';
 import { describeTile } from '../map/TileCoords.js';
 import { capitalize } from '../util/text.js';
@@ -28,6 +29,7 @@ let hintCount = 0;
  *     getOptions: () => { id: string, name: string }[],
  *     onChange: (childNodeId: string | null) => void,
  *     onCreateNew: () => void,
+ *     lockText?: (childNodeId: string) => string | null,
  *   },
  *   onSetSpawn?: (tileId: string) => void,
  *   onAddHandout?: (tileId: string) => void,
@@ -102,6 +104,12 @@ export function mountTileInspector(container, opts) {
   // example in Build mode.
   const linkSelect = select([], '');
   const linkField = labeled('Zooms into', linkSelect, { className: 'tile-inspector__field' });
+  // A locked map shows its lock under the link, so the GM sees in Build
+  // mode which way in stops the party.
+  const lockNote = el('p', 'tile-inspector__lock u-row u-g1');
+  const lockText = el('span', '');
+  lockNote.append(icon('lock'), lockText);
+  lockNote.hidden = true;
   const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });
@@ -110,7 +118,7 @@ export function mountTileInspector(container, opts) {
     linkSelect.addEventListener('change', () => {
       linking.onChange(linkSelect.value === '' ? null : linkSelect.value);
     });
-    form.append(linkField, newRegionBtn);
+    form.append(linkField, lockNote, newRegionBtn);
   }
 
   // Set-spawn is optional, for Build mode. It makes the selected tile the
@@ -148,6 +156,9 @@ export function mountTileInspector(container, opts) {
       ],
       tile.childNodeId ?? '',
     );
+    const lock = tile.childNodeId ? (opts.linking.lockText?.(tile.childNodeId) ?? null) : null;
+    lockText.textContent = lock ?? '';
+    lockNote.hidden = !lock;
     linkSelect.disabled = !editable;
     newRegionBtn.disabled = !editable;
   }

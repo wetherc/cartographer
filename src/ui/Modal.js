@@ -12,7 +12,7 @@
  */
 
 import { sectionLabel, textButton } from './buttons.js';
-import { classNames, el } from './dom.js';
+import { classNames, el, uniqueId } from './dom.js';
 import {
   captioned,
   checkboxInput,
@@ -359,6 +359,15 @@ export function promptModal(title, fields, options = {}) {
             });
           input = plain;
           getters[field.name] = () => plain.value;
+          if (field.type !== 'number' && field.suggestions?.length) {
+            const list = el('datalist', '');
+            list.id = uniqueId('modal-suggest');
+            list.append(
+              ...field.suggestions.map((value) => Object.assign(el('option', ''), { value })),
+            );
+            plain.setAttribute('list', list.id);
+            extras[field.name] = list;
+          }
         }
         if (field.disabled) input.disabled = true;
         const label = captioned(

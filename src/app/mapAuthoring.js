@@ -15,6 +15,7 @@ import { tileBindingsLost, unbindTiles } from '../handout/Handouts.js';
 import { refreshLocationPanels } from './locationPanels.js';
 import { nodeSnapshot } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
+import { lockBadge } from '../map/NodeLock.js';
 import { effectiveBrush } from '../view/BuildTool.js';
 import { createStrokeHistory } from './strokeHistory.js';
 
@@ -288,6 +289,7 @@ export function createMapAuthoring(app, env, options) {
         getOptions: () =>
           grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
         onChange: (childNodeId) => linkSelectedTile(childNodeId),
+        lockText: (childNodeId) => lockBadge(grid.getNode(childNodeId)),
         onCreateNew: async () => {
           const id = await env.nodeActions.addChildNode(navigator.currentNodeId);
           if (id) linkSelectedTile(id);

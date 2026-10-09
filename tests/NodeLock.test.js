@@ -1,6 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isLocked, keyHolder, lockMessage, readLock, unlockNode } from '../src/map/NodeLock.js';
+import {
+  isLocked,
+  keyHolder,
+  keyItemNames,
+  lockBadge,
+  lockFields,
+  lockMessage,
+  plateName,
+  readLock,
+  unknownKeyWarning,
+  unlockNode,
+} from '../src/map/NodeLock.js';
 
 const item = (/** @type {string} */ name) => ({
   id: name,
@@ -59,7 +70,7 @@ test('unlockNode opens the lock and leaves a node with no lock alone', () => {
 });
 
 test('lockFields and readLockFields turn a lock into dialog fields and back', async () => {
-  const { lockFields, readLockFields } = await import('../src/map/NodeLock.js');
+  const { readLockFields } = await import('../src/map/NodeLock.js');
   assert.deepEqual(
     lockFields({ requires: 'key', open: false }).map((f) => f.value),
     ['locked', 'key'],
@@ -78,4 +89,45 @@ test('lockFields and readLockFields turn a lock into dialog fields and back', as
     open: false,
   });
   assert.equal(readLockFields({ lockState: '', lockRequires: 'key' }), null);
+});
+
+test('keyItemNames lists library and inventory names once each, sorted', () => {
+  const party = /** @type {any[]} */ ([
+    { name: 'A', inventory: [item('Silver Key'), item(' rope ')] },
+    { name: 'B', inventory: [item('silver key'), { ...item(''), name: null }] },
+    { name: 'C' },
+  ]);
+  assert.deepEqual(keyItemNames(party, ['Rope', 'Dagger']), ['Dagger', 'Rope', 'Silver Key']);
+});
+
+test('unknownKeyWarning warns only for a key that no known item matches', () => {
+  const names = ['Silver Key'];
+  assert.equal(unknownKeyWarning(null, names), null);
+  assert.equal(unknownKeyWarning({ requires: null, open: false }, names), null);
+  assert.equal(unknownKeyWarning({ requires: 'silver key', open: false }, names), null);
+  assert.match(
+    unknownKeyWarning({ requires: 'Silverkey', open: false }, names) ?? '',
+    /named "Silverkey", so no item opens this lock yet\./,
+  );
+});
+
+test('lockBadge and plateName mark a closed lock only', () => {
+  const node = /** @type {any} */ ({ id: 'c', name: 'Crypt' });
+  assert.equal(lockBadge(node), null);
+  assert.equal(lockBadge(null), null);
+  assert.equal(
+    lockBadge({ ...node, lock: { requires: 'Silver Key', open: false } }),
+    'Locked (needs Silver Key)',
+  );
+  assert.equal(lockBadge({ ...node, lock: { requires: null, open: false } }), 'Locked');
+  assert.equal(lockBadge({ ...node, lock: { requires: 'Silver Key', open: true } }), null);
+  assert.equal(plateName(node), 'Crypt');
+  assert.equal(plateName(undefined), undefined);
+  assert.equal(plateName({ ...node, lock: { requires: null, open: false } }), '\u{1F512} Crypt');
+});
+
+test('lockFields offers item names as key suggestions', () => {
+  const fields = lockFields(undefined, ['Silver Key']);
+  assert.deepEqual(/** @type {any} */ (fields[1]).suggestions, ['Silver Key']);
+  assert.deepEqual(/** @type {any} */ (lockFields(undefined)[1]).suggestions, []);
 });

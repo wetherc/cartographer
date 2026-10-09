@@ -6,6 +6,7 @@ import { discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens, followedPosition } from '../party/CharacterTokens.js';
 import { ancestorMarkerTile } from '../map/AncestorMarker.js';
 import { authoringWarning } from '../map/MapExits.js';
+import { lockBadge, plateName } from '../map/NodeLock.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
@@ -362,6 +363,7 @@ export function wireMapView(app) {
     // Play-mode party step.
     getWarning: (node) =>
       state.mode === 'build' ? authoringWarning(node, grid.getParent(node)) : null,
+    getLock: lockBadge,
   });
   env.worldTree = worldTree;
 
@@ -392,7 +394,10 @@ export function wireMapView(app) {
     // fog reveal radius around the party, and around any split-off
     // character, and no further.
     markerRange: partyTracker.revealRadius * 2,
-    getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
+    // Build mode marks a locked map on its region plate. Play mode shows
+    // the plain name, because a Player tab sees the same plates.
+    getNodeName: (nodeId) =>
+      state.mode === 'build' ? plateName(grid.getNode(nodeId)) : grid.getNode(nodeId)?.name,
     onViewChange: () => {
       mapControls?.update();
       syncEmptyMap();

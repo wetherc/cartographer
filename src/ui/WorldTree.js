@@ -43,7 +43,8 @@ let mountCount = 0;
  * these. If getWarning is set, a row whose node has something wrong gets a
  * warning badge that gives the message, and a collapsed row counts the
  * warnings in the branch it hides. This lets a GM see an unreachable or
- * sealed node at the moment it breaks, not the next time they view it. Call
+ * sealed node at the moment it breaks, not the next time they view it. If
+ * getLock is set, a locked node gets a lock icon that names its key. Call
  * update() after any structural change to the tree.
  * @param {HTMLElement} container
  * @param {{
@@ -54,6 +55,7 @@ let mountCount = 0;
  *   onEdit?: (nodeId: string) => void,
  *   onDelete?: (nodeId: string) => void,
  *   getWarning?: (node: MapNode) => string | null,
+ *   getLock?: (node: MapNode) => string | null,
  * }} opts
  * @returns {{ update: () => void }}
  */
@@ -165,8 +167,19 @@ export function mountWorldTree(container, opts) {
    * @param {string} [count] text after the icon
    */
   function warningBadge(message, count) {
-    const badge = el('span', 'world-tree__warning', icon('warning', { size: 14 }), count);
-    badge.id = `${idPrefix}-warning-${++warningCount}`;
+    return iconBadge('warning', 'world-tree__warning', message, count);
+  }
+
+  /**
+   * An icon with its message as tooltip and accessible name.
+   * @param {'warning' | 'lock'} name
+   * @param {string} className
+   * @param {string} message
+   * @param {string} [count] text after the icon
+   */
+  function iconBadge(name, className, message, count) {
+    const badge = el('span', className, icon(name, { size: 14 }), count);
+    badge.id = `${idPrefix}-badge-${++warningCount}`;
     badge.setAttribute('role', 'img');
     badge.setAttribute('aria-label', message);
     setTip(badge, message);
@@ -226,6 +239,8 @@ export function mountWorldTree(container, opts) {
 
     const warning = opts.getWarning?.(node) ?? null;
     const ownBadge = warning ? warningBadge(warning) : null;
+    const lock = opts.getLock?.(node) ?? null;
+    const lockBadge = lock ? iconBadge('lock', 'world-tree__lock', lock) : null;
     const hiddenBadge =
       below > 0
         ? warningBadge(
@@ -237,7 +252,9 @@ export function mountWorldTree(container, opts) {
     // The badges sit in the hidden row, so the tree item names the ones on
     // screen as its description.
     const describe = () => {
-      const ids = [ownBadge, hiddenBadge].filter((b) => b && !b.hidden).map((b) => b?.id);
+      const ids = [lockBadge, ownBadge, hiddenBadge]
+        .filter((b) => b && !b.hidden)
+        .map((b) => b?.id);
       if (ids.length) item.setAttribute('aria-describedby', ids.join(' '));
       else item.removeAttribute('aria-describedby');
     };
@@ -256,6 +273,7 @@ export function mountWorldTree(container, opts) {
         ? collapseToggle(treeNode, childList, hiddenBadge, item, describe)
         : el('span', 'world-tree__toggle world-tree__toggle--leaf'),
       select,
+      lockBadge,
       ownBadge,
       hiddenBadge,
       hasActions && actionsButton(node, item),

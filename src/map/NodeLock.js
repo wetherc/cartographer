@@ -68,11 +68,69 @@ export function unlockNode(node) {
 }
 
 /**
- * The lock fields of the node dialog: a state select and the key item.
+ * The item names a key field offers: every library item and every item a
+ * character carries, without duplicates in any case, sorted by name.
+ * @param {Character[]} characters
+ * @param {string[]} libraryNames
+ * @returns {string[]}
+ */
+export function keyItemNames(characters, libraryNames) {
+  const byKey = new Map();
+  const add = (/** @type {unknown} */ name) => {
+    const text = typeof name === 'string' ? name.trim() : '';
+    if (text && !byKey.has(text.toLowerCase())) byKey.set(text.toLowerCase(), text);
+  };
+  libraryNames.forEach(add);
+  for (const c of characters) for (const item of c.inventory ?? []) add(item.name);
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * The warning for a lock whose key item matches no known item name, or null
+ * when the lock has no key or a known item opens it. The lock still saves,
+ * so the GM can name an item that does not exist yet.
+ * @param {NodeLock | null} lock
+ * @param {string[]} names from `keyItemNames`
+ * @returns {string | null}
+ */
+export function unknownKeyWarning(lock, names) {
+  const want = lock?.requires?.toLowerCase();
+  if (!want || names.some((n) => n.toLowerCase() === want)) return null;
+  return `No item in the library or in an inventory is named "${lock?.requires}", so no item opens this lock yet.`;
+}
+
+/**
+ * The text the Build tile inspector shows for a locked map, such as "Locked
+ * (needs Silver Key)", or null when the map has no closed lock.
+ * @param {MapNode | null | undefined} node
+ * @returns {string | null}
+ */
+export function lockBadge(node) {
+  if (!isLocked(node)) return null;
+  const key = node?.lock?.requires;
+  return key ? `Locked (needs ${key})` : 'Locked';
+}
+
+/**
+ * The name a Build-mode region plate shows for a child map. A locked map
+ * gets a lock glyph before its name, so the GM sees on the parent map which
+ * way in stops the party.
+ * @param {MapNode | null | undefined} node
+ * @returns {string | undefined}
+ */
+export function plateName(node) {
+  if (!node) return undefined;
+  return isLocked(node) ? `\u{1F512} ${node.name}` : node.name;
+}
+
+/**
+ * The lock fields of the node dialog: a state select and the key item. The
+ * key field offers `names` as suggestions.
  * @param {NodeLock | undefined} lock
+ * @param {string[]} [names] item names from `keyItemNames`
  * @returns {import('../types/modal.js').ModalField[]}
  */
-export function lockFields(lock) {
+export function lockFields(lock, names = []) {
   return [
     {
       name: 'lockState',
@@ -89,6 +147,7 @@ export function lockFields(lock) {
       name: 'lockRequires',
       label: 'Key item (name)',
       value: lock?.requires ?? '',
+      suggestions: names,
       // A key item means nothing without a lock. The node dialog enables
       // the field when Lock changes to Locked or Unlocked.
       disabled: !lock,

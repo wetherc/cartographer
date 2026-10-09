@@ -10,7 +10,8 @@ import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
 import { resyncMapViews } from './mapResync.js';
 import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
-import { lockFields, readLockFields } from '../map/NodeLock.js';
+import { keyItemNames, lockFields, readLockFields, unknownKeyWarning } from '../map/NodeLock.js';
+import { activeEquipment } from '../library/Library.js';
 import { linksIn } from '../quest/QuestLinks.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
 
@@ -289,6 +290,10 @@ export function createNodeActions(app, env) {
       width: Math.max(MAX_MAP_EDGE, node.width),
       height: Math.max(MAX_MAP_EDGE, node.height),
     };
+    const keyNames = keyItemNames(
+      app.state.characters,
+      activeEquipment().map((e) => e.name),
+    );
     for (;;) {
       const lock = typed ? readLockFields(typed) : node.lock;
       values = await promptModal(
@@ -301,7 +306,7 @@ export function createNodeActions(app, env) {
             coerceNodeKind(typed?.kind, node.kind),
             typed ? typed.environ || null : node.environ,
           ),
-          ...lockFields(lock ?? undefined),
+          ...lockFields(lock ?? undefined, keyNames),
         ],
         {
           submitLabel: 'Save',
@@ -336,6 +341,8 @@ export function createNodeActions(app, env) {
       environ: values.environ || null,
     });
     app.actions.markDirty();
+    const keyWarning = unknownKeyWarning(lock, keyNames);
+    if (keyWarning) app.toasts.show(keyWarning);
 
     const before = currentLocations();
     applyLocations(before, locationsAfterShrink(before, nodeId, width, height));

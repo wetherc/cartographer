@@ -53,6 +53,9 @@ export interface TextModalField extends FieldBase {
   max?: number;
   /** Placeholder text for an empty field, for example 'Enemy name'. */
   placeholder?: string;
+  /** Text field only: values the browser offers as the GM types, through a
+   * `<datalist>`. The field still accepts any text. */
+  suggestions?: string[];
 }
 
 /** A multi-line text input, for a field whose value is prose. */

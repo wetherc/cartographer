@@ -332,7 +332,7 @@ fields.
 | Kind | Region | Region or Interior |
 | Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags. The list follows Kind, so a change of Kind refills it and clears a tag of the other kind |
 | Lock | No lock | No lock, Locked, or Unlocked |
-| Key item (name) | (blank) | The name of the item that opens the lock. The field is off while Lock is No lock |
+| Key item (name) | (blank) | The name of the item that opens the lock. The field suggests the names of the library items and of the items that characters carry. The field is off while Lock is No lock |
 
 A width or height outside that range keeps the dialog open, and a message
 above the buttons names the field. A map imported with an edge over 64 tiles
@@ -360,6 +360,16 @@ stops on the last tile before the link and spends the time of that walk.
 On a border crossing or a teleport, the party stays where it was. A
 Player tab shows the toast "The way into the Barrow is locked." and
 nobody moves.
+
+If the key item matches no library item and no item that a character
+carries, a message after **Save** says that no item opens the lock yet.
+The lock still saves, so you can name an item before you make it.
+
+In Build mode, the World tree row of a locked node shows a lock icon, and
+its tooltip names the key. The region name on the parent
+map starts with a lock. The Tile inspector shows "Locked (needs Silver
+Key)" under **Zooms into** for a tile that links to the node. An unlocked
+node shows no mark.
 
 ### World tree
 
