@@ -20,9 +20,11 @@ import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
 import {
+  asiChoicesOf,
   coerceHPBuffs,
   conditionList,
   recordList,
+  resourceList,
   spellbookOf,
   warlockPicks,
 } from './LoadCoercion.js';
@@ -235,8 +237,11 @@ export function withDefaults(character) {
   // the next award counts toward level 4.
   const level = clampInt(character.level, 1, MAX_LEVEL, 1);
   const classes = sanitizeClasses(
-    character.classes ??
-      (legacyClass ? [{ classId: legacyClass, level, subclass: legacySubclass }] : []),
+    character.classes == null
+      ? legacyClass
+        ? [{ classId: legacyClass, level, subclass: legacySubclass }]
+        : []
+      : recordList(character.classes),
     level,
   );
   return derive({
@@ -246,7 +251,7 @@ export function withDefaults(character) {
     race: character.race ?? '',
     classes,
     stats: { ...defaultStats(), ...character.stats },
-    resources: recordList(character.resources),
+    resources: resourceList(character.resources),
     ...exhaustionFields(character.exhaustion, conditionList(character.conditions)),
     concentration: character.concentration ?? null,
     deathSaves: character.deathSaves ?? null,
@@ -262,7 +267,7 @@ export function withDefaults(character) {
           expertise: character.proficiencies.expertise ?? legacyExpertise,
         })
       : emptyProficiencies(),
-    asiChoices: migrateASIChoices(character.asiChoices ?? {}, classes[0]?.classId ?? ''),
+    asiChoices: migrateASIChoices(asiChoicesOf(character.asiChoices), classes[0]?.classId ?? ''),
     ...warlockPicks(character),
   });
 }

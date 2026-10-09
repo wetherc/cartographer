@@ -321,3 +321,69 @@ test('a pre-merge save with many colliding ids gives each creature its own id', 
   assert.equal(ids[1], 'goblin-2');
   assert.equal(ids[299], 'goblin-300');
 });
+
+/**
+ * @param {Record<string, any>} fields
+ */
+function loadHero(fields) {
+  return loadFile({ characters: [{ id: 'c', name: 'Hero', ...fields }] }).characters[0];
+}
+
+/**
+ * @param {Record<string, any>} fields
+ */
+function loadFoe(fields) {
+  return loadFile({ creatures: [{ id: 'w', name: 'Wolf', ...fields }] }).creatures[0];
+}
+
+test('a character resource with no string id drops on load', () => {
+  for (const id of [null, {}, -1, '', undefined]) {
+    const hero = loadHero({ resources: [{ id, current: 1, max: 2 }] });
+    assert.ok(
+      hero.resources.every((/** @type {any} */ r) => typeof r.id === 'string' && r.id),
+      `id ${JSON.stringify(id)} drops`,
+    );
+  }
+  assert.ok(loadHero({ resources: [{}] }));
+});
+
+test('a class list that is not a list of records loads as the records it has', () => {
+  assert.deepEqual(loadHero({ classes: -1 }).classes, []);
+  assert.deepEqual(loadHero({ classes: [null] }).classes, []);
+  const mixed = loadHero({ level: 3, classes: [null, 'x', { classId: 'fighter', level: 3 }] });
+  assert.deepEqual(
+    mixed.classes.map((/** @type {any} */ c) => c.classId),
+    ['fighter'],
+  );
+});
+
+test('ASI choices keep only their record entries', () => {
+  assert.deepEqual(loadHero({ asiChoices: [null] }).asiChoices, {});
+  assert.deepEqual(loadHero({ asiChoices: 5 }).asiChoices, {});
+  assert.deepEqual(loadHero({ asiChoices: { slot: null } }).asiChoices, {});
+});
+
+test('a character level that is not a number loads as level 1', () => {
+  assert.equal(loadHero({ level: '__proto__' }).level, 1);
+  assert.equal(loadHero({ level: {} }).level, 1);
+});
+
+test('a creature level or caster level that is not a number loads as absent', () => {
+  for (const bad of ['__proto__', {}, [], true, '']) {
+    const foe = loadFoe({ class: 'wizard', level: bad, casterLevel: bad });
+    assert.equal(foe.level, undefined, `level ${JSON.stringify(bad)}`);
+    assert.equal(foe.casterLevel, 1, `caster level ${JSON.stringify(bad)} reads as 1`);
+  }
+  const numeric = loadFoe({ class: 'wizard', level: '5', casterLevel: 99 });
+  assert.equal(numeric.level, 5);
+  assert.equal(numeric.casterLevel, 20);
+  assert.equal(loadFoe({ class: 'wizard', level: 4 }).casterLevel, 4);
+});
+
+test('a creature resource with no string id drops on load', () => {
+  const foe = loadFoe({ resources: [{ id: null }, { id: 'rage', current: 1, max: 1 }] });
+  assert.deepEqual(
+    foe.resources.map((/** @type {any} */ r) => r.id),
+    ['rage'],
+  );
+});

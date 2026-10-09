@@ -13,7 +13,14 @@ import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js'
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
 import { capitalize } from '../util/text.js';
-import { coerceHPBuffs, conditionList, recordList, spellbookOf } from './LoadCoercion.js';
+import { MAX_LEVEL } from './Experience.js';
+import {
+  coerceHPBuffs,
+  conditionList,
+  levelOf,
+  resourceList,
+  spellbookOf,
+} from './LoadCoercion.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -202,13 +209,19 @@ export function withDefaults(creature) {
     legendaryResistance: _legendaryResistance,
     resources,
     spellbook,
+    level: rawLevel,
+    casterLevel: rawCasterLevel,
     ...stripped
   } = creature;
   const book = spellbookOf(spellbook);
+  const level = levelOf(rawLevel, 1, Infinity);
+  const casterLevel = levelOf(rawCasterLevel, 1, MAX_LEVEL);
   return ensureCasterFields(
     {
       ...coerceHPBuffs(stripped),
-      ...(resources !== undefined ? { resources: recordList(resources) } : {}),
+      ...(level !== undefined ? { level } : {}),
+      ...(casterLevel !== undefined ? { casterLevel } : {}),
+      ...(resources !== undefined ? { resources: resourceList(resources) } : {}),
       ...(book ? { spellbook: book } : {}),
       ...crFields(creature.cr),
       ...creatureProficiencyFields(creature.proficiencies),
@@ -225,7 +238,7 @@ export function withDefaults(creature) {
       weapon: creature.weapon ?? null,
       armor: coerceEnemyArmor(creature.armor),
     },
-    creature.casterLevel ?? creature.level ?? 1,
+    casterLevel ?? level ?? 1,
   );
 }
 

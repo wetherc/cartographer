@@ -34,6 +34,48 @@ export function recordList(value) {
 }
 
 /**
+ * A stored resource list. An entry needs an id that is a string that is not
+ * empty, because the slot, hit dice, and class pool code calls string methods
+ * on it.
+ * @param {unknown} value
+ * @returns {any[]}
+ */
+export function resourceList(value) {
+  return recordList(value).filter((entry) => typeof entry.id === 'string' && entry.id !== '');
+}
+
+/**
+ * Stored ASI choices: either the record keyed by slot, or the older array.
+ * Both keep only their record entries, and any other value reads as an
+ * empty record. `migrateASIChoices` reads each array entry with `in`, which
+ * throws on null.
+ * @param {unknown} value
+ * @returns {Record<string, any> | any[]}
+ */
+export function asiChoicesOf(value) {
+  if (Array.isArray(value)) return value.filter(isRecord);
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([, choice]) => isRecord(choice)));
+}
+
+/**
+ * A stored level as a whole number from `min` to `max`, or undefined when the
+ * value does not read as a finite number. The caster slot tables index by
+ * this number, so a level such as `"__proto__"` or `{}` finds no row and
+ * throws.
+ * @param {unknown} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number | undefined}
+ */
+export function levelOf(value, min, max) {
+  if (typeof value !== 'number' && typeof value !== 'string') return undefined;
+  const n = Math.floor(Number(value));
+  if (value === '' || !Number.isFinite(n)) return undefined;
+  return Math.min(max, Math.max(min, n));
+}
+
+/**
  * A stored condition list. An entry needs a string name, because the
  * condition chips and the exhaustion migration read it as one. A chip's mods
  * go through `normalizeChipMods`, so a stored `ac: "5"` reads as 5. As a

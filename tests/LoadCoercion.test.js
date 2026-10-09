@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  asiChoicesOf,
   coerceHPBuffs,
   conditionList,
+  levelOf,
   recordList,
+  resourceList,
   spellbookOf,
   stringList,
   warlockPicks,
@@ -185,4 +188,26 @@ test('coerceHPBuffs keeps a whole raise from 0 up and a named grant', () => {
     /** @type {any} */ ({ id: 'o', name: 'Orc', maxHP: 10, hpBoost: 'x' }),
   );
   assert.equal('hpBoost' in orc, false);
+});
+
+test('resourceList keeps records with a string id that is not empty', () => {
+  assert.deepEqual(resourceList([{ id: 'hp' }, { id: '' }, { id: 3 }, {}, null]), [{ id: 'hp' }]);
+  assert.deepEqual(resourceList('hp'), []);
+});
+
+test('asiChoicesOf keeps the record entries of either stored form', () => {
+  assert.deepEqual(asiChoicesOf([null, { level: 4 }]), [{ level: 4 }]);
+  assert.deepEqual(asiChoicesOf({ a: { type: 'asi' }, b: 3 }), { a: { type: 'asi' } });
+  assert.deepEqual(asiChoicesOf(null), {});
+  assert.deepEqual(asiChoicesOf('x'), {});
+});
+
+test('levelOf reads a whole number in range, or undefined', () => {
+  assert.equal(levelOf(4.7, 1, 20), 4);
+  assert.equal(levelOf('6', 1, 20), 6);
+  assert.equal(levelOf(-3, 1, 20), 1);
+  assert.equal(levelOf(99, 1, 20), 20);
+  for (const bad of ['__proto__', '', {}, [], null, undefined, true, Infinity, NaN]) {
+    assert.equal(levelOf(bad, 1, 20), undefined, JSON.stringify(bad));
+  }
 });

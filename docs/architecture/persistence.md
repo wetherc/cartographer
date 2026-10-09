@@ -175,8 +175,13 @@ cycle, and a cycle in a save would freeze the tab at startup.
 
 The character and creature `withDefaults` functions use
 `entities/LoadCoercion.js` for their list fields (resources, inventory,
-conditions) and for the spellbook. A scalar in one of those fields then reads
-as empty. The mods of each loaded chip go through `ChipMods.normalizeChipMods`,
+conditions, classes, ASI choices) and for the spellbook. A scalar in one of
+those fields then reads as empty. A resource stays only when its `id` is a
+string that is not empty, because the slot, hit dice, and class pool code
+calls string methods on the id. A creature `level` or `casterLevel` that does
+not read as a finite number drops (`LoadCoercion.levelOf`), and the caster
+level stops at 20. The slot tables index by these numbers, so a level such as
+`"__proto__"` would find no row and throw while the save loads. The mods of each loaded chip go through `ChipMods.normalizeChipMods`,
 so a stored `ac: "5"` adds 5 to the AC instead of joining the string onto it.
 `LoadCoercion.coerceHPBuffs` keeps `hpBoost` only as a whole number above 0
 and `bonusHPFrom` only as a string that is not empty.
