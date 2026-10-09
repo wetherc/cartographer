@@ -83,7 +83,7 @@ export function scanDirectories(root) {
   for (const name of readdirSync(src).sort()) {
     const full = join(src, name);
     if (statSync(full).isDirectory()) {
-      dirs.push({ id: name, name: name + '/', ...counts(walk(full)) });
+      dirs.push({ id: name, name: `${name}/`, ...counts(walk(full)) });
     } else if (name === 'main.js') {
       dirs.push({ id: 'main', name: 'main.js', ...counts([full]) });
     }

@@ -74,7 +74,7 @@ function highlight(code) {
  */
 function block(snip, note) {
   const range = snip.endLine > snip.line ? `${snip.line}-${snip.endLine}` : String(snip.line);
-  const name = snip.symbol ? '  |  ' + snip.symbol : '';
+  const name = snip.symbol ? `  |  ${snip.symbol}` : '';
   const digits = String(snip.endLine).length;
   const body = highlight(snip.code)
     .split('\n')

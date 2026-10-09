@@ -60,7 +60,9 @@ tested change.
 
 UI widgets and wiring modules call *down* into the pure modules. The pure
 modules do not import from `ui/` or `app/`, so `node --test` covers most of
-the codebase with no browser. A few files in the pure directories use a
+the codebase with no browser. A `no-restricted-imports` rule in
+`eslint.config.js` fails the lint on such an import, except in
+`view/CharacterClaim.js` (see below). A few files in the pure directories use a
 browser API directly, and the browser checks cover them:
 
 - `map/TileRaster.js` and `map/MapExport.js` draw to an offscreen canvas.

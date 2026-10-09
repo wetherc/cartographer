@@ -19,7 +19,7 @@ async function build() {
     bundle: true,
     minify: !watch,
     sourcemap: true,
-    outdir: outdir,
+    outdir,
     entryNames: watch ? '[name].bundle' : '[name]-[hash].bundle',
     metafile: !watch,
     loader: {

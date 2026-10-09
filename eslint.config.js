@@ -14,7 +14,7 @@ export default [
       'tests/**/*.js',
       'bench/**/*.js',
       'docs/gallery/**/*.js',
-      'scripts/docs-site.js',
+      'scripts/**/*.{js,mjs,cjs}',
       'site/**/*.js',
     ],
     languageOptions: {
@@ -44,6 +44,31 @@ export default [
       'no-throw-literal': 'error',
       'default-case-last': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+  // The build scripts report their progress on standard output. build.cjs is
+  // CommonJS, so `require` and `module` are its imports.
+  { files: ['scripts/**/*.{js,mjs,cjs}'], rules: { 'no-console': 'off' } },
+  { files: ['scripts/**/*.cjs'], languageOptions: { sourceType: 'commonjs' } },
+  // The pure directories do not import the DOM widgets in ui/ or the wiring
+  // modules in app/. A pure module that did would need a browser to load, and
+  // its unit tests under `node --test` would fail. view/CharacterClaim.js
+  // builds the character picker of a Player tab with the ui/ helpers, so it
+  // is the one exception.
+  {
+    files: [
+      'src/{map,entities,combat,data,campaign,party,quest,handout,time,log,dice,library,view,storage,util}/**/*.js',
+    ],
+    ignores: ['src/view/CharacterClaim.js'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { regex: '(^|/)(ui|app)/', message: 'A pure module does not import from ui/ or app/.' },
+          ],
+        },
+      ],
     },
   },
 ];

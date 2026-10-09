@@ -132,14 +132,14 @@ function main() {
   } catch (error) {
     if (error instanceof MissingReference) {
       console.error('dev guide: the page refers to something the repository no longer has.');
-      console.error('  ' + error.message);
+      console.error(`  ${error.message}`);
       console.error('  Fix the reference in scripts/dev-guide/content.mjs, then rebuild.');
       process.exit(1);
     }
     throw error;
   }
 
-  data.generatedAt = 'source fingerprint ' + fingerprint(data);
+  data.generatedAt = `source fingerprint ${fingerprint(data)}`;
   const html = renderGuide(data);
 
   if (check) {
