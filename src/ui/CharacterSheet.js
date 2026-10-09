@@ -24,7 +24,7 @@ import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
-import { numberField } from './formFields.js';
+import { buildHpAmountField, takeHpAmount } from './HpAmountField.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -283,22 +283,9 @@ export function mountCharacterSheet(
       let controls = null;
       if (perms.hp) {
         // The amount field sets how many HP each step button moves, so a big
-        // hit or heal is one click. An empty or bad entry counts as 1. A press
-        // sets the field back to 1, so a second click does not repeat a big
-        // hit, and a focused field selects its text, so typing replaces it.
-        const amountInput = numberField(hpAmount, { min: 1 });
-        amountInput.classList.add('character-sheet__hp-amount');
-        amountInput.setAttribute('aria-label', `HP amount for ${character.name}`);
-        amountInput.addEventListener('focus', () => amountInput.select());
-        amountInput.addEventListener('input', () => {
-          hpAmount = Math.max(1, Math.floor(Number(amountInput.value)) || 1);
-        });
-        const amount = () => {
-          const value = Math.max(1, Math.floor(Number(amountInput.value)) || 1);
-          hpAmount = 1;
-          amountInput.value = '1';
-          return value;
-        };
+        // hit or heal is one click. A press sets the field back to 1, and an
+        // unusable entry disables both buttons (see `HpAmountField.js`).
+        const amount = () => takeHpAmount(amountInput) ?? 1;
         // Bonus HP absorbs the hit before the pool does.
         const damageButton = textButton(
           'Damage',
@@ -324,6 +311,16 @@ export function mountCharacterSheet(
             ariaLabel: `Heal ${character.name}`,
           },
         );
+        const amountInput = buildHpAmountField({
+          value: hpAmount,
+          className: 'character-sheet__hp-amount',
+          ariaLabel: `HP amount for ${character.name}`,
+          onInput: (value) => {
+            if (value !== null) hpAmount = value;
+            damageButton.disabled = value === null;
+            healButton.disabled = value === null;
+          },
+        });
         controls = el(
           'div',
           'character-sheet__hp-controls u-row u-g2',

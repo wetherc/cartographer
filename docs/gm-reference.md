@@ -1154,7 +1154,7 @@ shows each line as text, with the HP band instead of the bar.
 
 A full row shows the name, the HP, and the column and row on its first line.
 The **Amount** field and the buttons of the row go on the line below. The
-Amount field sets how much the damage and heal buttons of that row apply.
+Amount field sets how much the damage and heal buttons of that row apply. An empty field, or a number below 1, disables both buttons.
 
 A GM tab also shows these controls:
 
@@ -1334,7 +1334,8 @@ target. A selection lasts for one turn, and **Next turn** clears it. A
 dying ally can be selected, so you can heal it on a foe's turn. The
 **Amount** starts at 1, and each **Damage** or **Heal** press sets it back
 to 1, so a second click does not repeat a big hit. A click in the field
-selects its number, so you can type the next amount over it.
+selects its number, so you can type the next amount over it. An empty
+field, or a number below 1, disables both buttons.
 
 | Viewer | Loadout shown on a card |
 | --- | --- |
@@ -2418,7 +2419,8 @@ The top of the sheet shows the name, the race, and a tall HP bar the width
 of the card, with the current and maximum HP above it. Under the bar, the
 GM gets a **Damage** button, an amount field, and a **Heal** button. The
 amount field sets how many HP each click moves. It starts at 1, and each
-**Damage** or **Heal** press sets it back to 1. The level
+**Damage** or **Heal** press sets it back to 1. An empty field, or a number
+below 1, disables both buttons. The level
 line gives AC, initiative (**Init**), speed, passive Perception (**PP**),
 the proficiency bonus (**Prof**), and XP. Init includes the exhaustion
 penalty, as the initiative roll of a fight does.

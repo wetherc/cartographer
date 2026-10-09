@@ -905,6 +905,15 @@ range correction on `change` for both. It reads `min` and `max` from the
 element, so a dialog that changes a field's range through `setRange` still
 gets the correction.
 
+The HP amount field beside a Damage and a Heal button is a `numberField`
+with one more rule. The character sheet, the creature rows of the Encounters
+panel, and the combat screen build it through `buildHpAmountField` in
+`src/ui/HpAmountField.js`. The field reads its text through the pure
+`hpAmount` of `src/view/HpAmount.js`, which returns a whole number of 1 or
+more, or null. Each caller disables its two buttons while the amount is
+null. `takeHpAmount` reads the amount for one press and sets the field back
+to 1, so a second click does not repeat a big hit.
+
 `buildInlineForm` is the frame that the item, spell, feat, and spec forms
 share. It wraps the form, puts the name field first with the shared
 `form__wide` sizing, appends `rows` in order, and ends with the button row

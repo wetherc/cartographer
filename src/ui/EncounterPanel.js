@@ -7,11 +7,11 @@ import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
 import { el } from './dom.js';
-import { numberField } from './formFields.js';
+import { buildHpAmountField } from './HpAmountField.js';
 import { mountNearbyList } from './NearbyList.js';
 import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
-import { clampInt } from '../util/num.js';
+import { hpAmount } from '../view/HpAmount.js';
 import { describeTile } from '../map/TileCoords.js';
 
 /** @typedef {import('../types/creature.js').Creature} Encounter */
@@ -97,8 +97,21 @@ export function mountEncounterPanel(container, callbacks) {
    * @param {Encounter} encounter */
   const nameOf = (encounter) => callbacks.getLabel?.(encounter) ?? encounter.name;
 
-  /** @param {Encounter} encounter @returns {number} */
-  const amountOf = (encounter) => clampInt(amounts.get(encounter)?.value, 0);
+  /** @param {Encounter} encounter @returns {number | null} */
+  const amountOf = (encounter) => hpAmount(amounts.get(encounter)?.value);
+
+  /**
+   * Apply a damage or heal write with the row's amount. An unusable amount
+   * changes nothing, and its buttons are disabled anyway.
+   * @param {Encounter} encounter
+   * @param {(encounter: Encounter, amount: number) => Encounter} fn
+   */
+  function stepHP(encounter, fn) {
+    const amount = amountOf(encounter);
+    if (amount === null) return false;
+    updateOne(encounter, (e) => fn(e, amount));
+    return true;
+  }
 
   /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(encounter, fn) {
@@ -145,10 +158,17 @@ export function mountEncounterPanel(container, callbacks) {
     // editing, and no add button.
     if (!ctx.gm) return [label];
 
-    const amountInput = numberField(1, {
-      min: 0,
+    // An unusable amount disables the row's Damage and Heal buttons, the
+    // same rule as the character sheet and the combat screen.
+    const amountInput = buildHpAmountField({
       className: 'encounter-panel__amount',
       ariaLabel: `Damage or heal amount for ${nameOf(encounter)}`,
+      onInput: (value) => {
+        const row = amountInput.closest('.encounter-panel__row');
+        for (const button of row?.querySelectorAll('.encounter-panel__hp-step') ?? []) {
+          /** @type {HTMLButtonElement} */ (button).disabled = value === null;
+        }
+      },
     });
     amounts.set(encounter, amountInput);
     // The visible caption says what the number is for. The input keeps its
@@ -176,13 +196,15 @@ export function mountEncounterPanel(container, callbacks) {
         icon: 'minus',
         label: `Damage ${nameOf(encounter)}`,
         variant: 'danger',
-        onClick: () => updateOne(encounter, (e) => applyDamage(e, amountOf(encounter))),
+        className: 'encounter-panel__hp-step',
+        onClick: () => stepHP(encounter, applyDamage),
       },
       {
         icon: 'heal',
         label: `Heal ${nameOf(encounter)}`,
         variant: 'success',
-        onClick: () => updateOne(encounter, (e) => heal(e, amountOf(encounter))),
+        className: 'encounter-panel__hp-step',
+        onClick: () => stepHP(encounter, heal),
       },
       callbacks.onEdit
         ? {

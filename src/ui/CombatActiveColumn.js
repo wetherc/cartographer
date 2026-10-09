@@ -7,6 +7,7 @@ import { deathSaveBlock } from './DeathSaveBlock.js';
 import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { numberField, select } from './formFields.js';
+import { buildHpAmountField, takeHpAmount } from './HpAmountField.js';
 import { hpTargetId } from '../view/CombatHpTarget.js';
 import { viewTurnKey } from '../view/CombatSelection.js';
 
@@ -224,21 +225,11 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
       render(view, gm);
     });
     const row = rows.find((r) => r.id === targetId);
-    const amount = /** @type {HTMLInputElement} */ (el('input', 'field combat-screen__hp-amount'));
-    amount.type = 'number';
-    amount.min = '1';
-    amount.value = String(hpAmount);
-    amount.setAttribute('aria-label', 'Damage or heal amount');
-    // A focused field selects its text, so typing replaces the number.
-    amount.addEventListener('focus', () => amount.select());
     const name = row ? (row.name ?? 'Unknown combatant') : null;
     /** @param {boolean} isHeal */
     const apply = (isHeal) => {
-      if (!targetId) return;
-      const value = hpAmount;
-      hpAmount = 1;
-      amount.value = '1';
-      callbacks.onApplyHP(targetId, value, isHeal);
+      const value = takeHpAmount(amount);
+      if (targetId && value !== null) callbacks.onApplyHP(targetId, value, isHeal);
     };
     const damage = textButton(name ? `Damage ${name}` : 'Damage', () => apply(false), {
       icon: 'minus',
@@ -252,16 +243,18 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
     });
     damage.disabled = !name;
     heal.disabled = !name;
-    // The buttons apply the tracked amount, not the field text. When the
-    // field holds an unusable value, for example empty, zero, or negative,
-    // the buttons disable. This stops the buttons from applying an old valid
-    // number.
-    amount.addEventListener('input', () => {
-      const parsed = Number.parseInt(amount.value, 10);
-      const valid = Number.isFinite(parsed) && parsed > 0;
-      if (valid) hpAmount = parsed;
-      damage.disabled = !valid || !name;
-      heal.disabled = !valid || !name;
+    // An unusable amount, for example empty, zero, or negative, disables
+    // both buttons. The last usable amount stays in `hpAmount`, so a
+    // rebuild of the column shows it again.
+    const amount = buildHpAmountField({
+      value: hpAmount,
+      className: 'combat-screen__hp-amount',
+      ariaLabel: 'Damage or heal amount',
+      onInput: (value) => {
+        if (value !== null) hpAmount = value;
+        damage.disabled = value === null || !name;
+        heal.disabled = value === null || !name;
+      },
     });
     // The amount sits on its own line above both buttons, with a caption, so
     // it is clear that it feeds either button.

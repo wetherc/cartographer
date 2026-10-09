@@ -53,6 +53,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  *   variant?: import('./buttons.js').ButtonVariant,
  *   pressed?: boolean,
  *   focusKey?: string,
+ *   className?: string,
  *   onClick: (entry: T) => unknown,
  * }} RowAction
  */
@@ -181,7 +182,7 @@ export function mountListPanel(container, options) {
         const result = await spec.onClick(entry);
         if (result !== false && result !== null) render();
       },
-      { variant: spec.variant, title: spec.title },
+      { variant: spec.variant, title: spec.title, className: spec.className },
     );
     if (spec.pressed !== undefined) button.setAttribute('aria-pressed', String(spec.pressed));
     if (spec.focusKey) button.dataset.focusKey = spec.focusKey;
