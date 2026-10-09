@@ -67,6 +67,7 @@ export function wireSessionControls(app) {
         queueMicrotask(() => modeSwitch.sync('play'));
       }
       const leftCombat = app.state.mode === 'combat' && mode !== 'combat';
+      const enteredCombat = app.state.mode !== 'combat' && mode === 'combat';
       app.state.mode = mode;
       document.body.classList.toggle('mode-play', mode === 'play');
       document.body.classList.toggle('mode-build', mode === 'build');
@@ -83,6 +84,10 @@ export function wireSessionControls(app) {
       // exit, so every mode change must reach it, not only the fight's own
       // refresh paths.
       app.views.combatScreen.update();
+      // On a phone the page itself scrolls, and the Play view can leave it
+      // far down. The fight screen opens at the top, with the ribbon and
+      // Next turn in view.
+      if (enteredCombat) window.scrollTo(0, 0);
     },
   });
   mustGetElement('mode-switch-container').appendChild(modeSwitch.element);
