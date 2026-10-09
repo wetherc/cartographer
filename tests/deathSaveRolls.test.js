@@ -210,3 +210,14 @@ test('a character outside the fight order rolls at any time', () => {
   rollDeathSaveFor(app, 'hero');
   assert.equal(app.rolls.length, 1);
 });
+
+test('a Lucky halfling rerolls a natural 1 on a death save and the log says so', () => {
+  const app = stubApp({
+    characters: [dying({}, { raceId: 'halfling' })],
+    rng: scripted([face(20, 1), face(20, 12)]),
+  });
+  rollDeathSaveFor(app, 'hero');
+  assert.equal(app.rolls.length, 2);
+  assert.deepEqual(stored(app).deathSaves, { successes: 1, failures: 0, stable: false });
+  assert.match(app.log[0], /\(12, Lucky reroll vs DC 10\)/);
+});

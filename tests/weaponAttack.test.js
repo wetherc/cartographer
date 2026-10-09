@@ -284,6 +284,29 @@ test('a natural 1 misses however high the total', () => {
   assert.equal(app.state.creatures[0].currentHP, 20);
 });
 
+test('a Lucky halfling rerolls a natural 1 on an attack and the log says so', () => {
+  const hero = { ...makeHero({ STR: 20 }), raceId: 'halfling' };
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 2 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({
+    characters: [hero],
+    creatures: [goblin],
+    rng: scripted([d20(1), d20(15), 0.5]),
+  });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 2 },
+    weapon: /** @type {any} */ (SWORD),
+  });
+  assert.match(app.log[0], /, hit after a Lucky reroll\.$/);
+  assert.ok(app.state.creatures[0].currentHP < 20);
+});
+
 test('bonus attack dice join the d20 in the tray and are named in the log', () => {
   const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {

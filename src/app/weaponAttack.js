@@ -35,6 +35,7 @@ import { offerDamageWard, pendingDamageWard } from './damageWard.js';
 import { offerRedirect, pendingRedirect } from './redirectWard.js';
 import { resolveCast } from './spellCastResolve.js';
 import { attackDialog } from './attackFields.js';
+import { rollD20InTray } from './luckyRoll.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
@@ -201,7 +202,9 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
   const defenderName = logName(app, defender);
   const setup = prepareSwing({ attacker, defender, weapon, tweaks, rng });
   const { ac, autoCrit, critOn, rider } = setup;
-  const { result } = app.actions.rollDice(
+  const { result, lucky } = rollD20InTray(
+    app,
+    attacker,
     {
       counts: { d20: 1, ...setup.tweak.counts },
       modifier: setup.modifier,
@@ -239,7 +242,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
         defenderName,
         raised,
         wardName: ward ? ward.spell.name : null,
-        outcome,
+        outcome: lucky ? `${outcome} after a Lucky reroll` : outcome,
       }),
     );
     spendRollRiders(app, attacker.id, rider);

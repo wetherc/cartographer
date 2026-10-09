@@ -570,7 +570,9 @@ picked one joins the snapshot's `resistances` as `chosenResistance`, where
 `entities/RaceTraits.js` turns some trait names into roll effects.
 `isLucky` makes `resolveD20` in Checks.js roll a natural 1 again on a
 character's save or check, and on a spell target save through the `lucky`
-flag of `CastTarget`. `raceSaveSlant` returns advantage for Brave, Fey
+flag of `CastTarget`. A weapon attack and a death save roll in the dice tray,
+so `app/luckyRoll.js` rolls the tray selection again when a Lucky roller
+shows a natural 1 on the kept d20. `raceSaveSlant` returns advantage for Brave, Fey
 Ancestry, Dwarven Resilience, and Gnome Cunning, and `spellCastResolve`
 folds it into each spell target's save mode with the context from
 `spellRaceSave`. A creature has no race, so these functions return no

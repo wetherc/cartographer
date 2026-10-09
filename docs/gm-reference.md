@@ -2615,14 +2615,15 @@ These race traits change rolls by themselves:
 
 | Trait | Race | Effect |
 | --- | --- | --- |
-| Lucky | Halfling | A natural 1 on an ability check or a saving throw rolls again, and the new roll stands |
+| Lucky | Halfling | A natural 1 on an attack roll, an ability check, a saving throw, or a death save rolls again, and the new roll stands |
 | Brave | Halfling | Advantage on a spell save against Frightened |
 | Fey Ancestry | Elf, Half-Elf | Advantage on a spell save against Charmed |
 | Dwarven Resilience | Dwarf | Resistance to poison damage, and advantage on a spell save that poisons or deals poison damage |
 | Gnome Cunning | Gnome | Advantage on every INT, WIS, and CHA save against a spell |
 
-The app applies Lucky to the saves and checks that it rolls, not to attack
-rolls. The save traits apply to the saves that a spell asks for. A save
+The app applies Lucky to the weapon attacks, death saves, saves, and checks
+that it rolls. A spell attack and a roll in the dice tray by hand still need
+the reroll by hand. The save traits apply to the saves that a spell asks for. A save
 from a creature action or one that the GM calls at the table still needs
 the advantage set by hand. The remaining race traits are text on the sheet,
 and the GM applies them: the Dragonborn Breath Weapon, Stonecunning, the

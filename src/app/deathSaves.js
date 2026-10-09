@@ -24,6 +24,7 @@ import { rollRiders, spendRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { currentParticipant } from '../combat/Initiative.js';
 import { findCombatant, logName } from './combatants.js';
+import { rollD20InTray } from './luckyRoll.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -88,7 +89,7 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   // Exhaustion of level 3 or higher rolls the save at disadvantage, and the
   // log names it below.
   const tired = deathSaveMode(character);
-  const { result } = app.actions.rollDice({
+  const { result, lucky } = rollD20InTray(app, character, {
     counts: { d20: 1 },
     modifier: rider.modifier,
     ...(tired ? { mode: tired } : {}),
@@ -103,10 +104,11 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   app.actions.markDirty();
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} disadvantage` : '';
   const rode = rider.note ? `, ${rider.note}` : '';
+  const luckyNote = lucky ? ', Lucky reroll' : '';
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
   app.actions.logEvent(
     'combat',
-    `${logName(app, character)} rolls a death save (${result.total}${tiredNote}${rode} vs DC ${DEATH_SAVE_DC}): ` +
+    `${logName(app, character)} rolls a death save (${result.total}${tiredNote}${rode}${luckyNote} vs DC ${DEATH_SAVE_DC}): ` +
       `${OUTCOME_LINES[judged.outcome](logName(app, character))}${naturalNote}`,
   );
   app.toasts.show(OUTCOME_LINES[judged.outcome](logName(app, character)));
