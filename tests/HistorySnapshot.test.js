@@ -8,8 +8,9 @@ import {
   redoCampaign,
   saveCampaign,
   undoCampaign,
+  undoRestoresSave,
 } from '../src/storage/HistoryLog.js';
-import { buildState, loadFromLocalStorage } from '../src/storage/SaveManager.js';
+import { buildState, loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';
 
@@ -242,4 +243,18 @@ test('a follower falls back to a full read across a snapshot', () => {
   const held = historyPosition();
   saveCampaign(world('new', ['X', 'Y', 'Z']));
   assert.deepEqual(planAdoption(held), { kind: 'full' });
+});
+
+test('Undo restores an unreadable save only when the newest step is a snapshot', () => {
+  assert.equal(undoRestoresSave(), false, 'an empty log');
+  replaceOnce();
+  localStorage.setItem(SAVE_KEY, 'not json');
+  assert.equal(undoRestoresSave(), true, 'a snapshot step');
+  installLocalStorage();
+  saveCampaign(world('old', ['A']));
+  saveCampaign(world('old', ['A', 'B']));
+  localStorage.setItem(SAVE_KEY, 'not json');
+  localStorage.removeItem(SAVE_MARK_KEY);
+  assert.equal(undoRestoresSave(), false, 'a delta step');
+  assert.equal(undoCampaign(), null, 'and Undo has nothing to apply it to');
 });

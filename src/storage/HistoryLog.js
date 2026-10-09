@@ -635,7 +635,9 @@ function dropForSave() {
  *
  * Nothing is recorded when nothing readable is stored to diff against: a
  * first save, or a stored save that this app cannot read. Either way, the
- * campaign is now the oldest state there is.
+ * campaign is now the oldest state there is. A write over an unreadable save
+ * also clears the log, because its deltas record steps from that save and
+ * would apply to the new campaign on the next Undo.
  *
  * `mark` is the save mark written after the save, or null when the save or
  * the mark write failed. A tab keeps it to tell a later write from another
@@ -649,6 +651,10 @@ function dropForSave() {
  */
 export function saveCampaign(state) {
   const before = lastPersisted();
+  // A stored string that `lastPersisted` cannot read is an unreadable save.
+  // The deltas in the log describe steps from it, and after this write they
+  // would apply to a campaign they were never recorded against.
+  const unreadable = before === null && localStorage.getItem(STORAGE_KEY) !== null;
   // `lastPersisted` leaves the cache on the string it parsed.
   const record = before && cached ? stepRecord(before, cached.raw, state) : null;
   // A second read of the mark proves that the cached string is the save
@@ -668,6 +674,7 @@ export function saveCampaign(state) {
   };
   const save = writeCampaign(state, { keepPrevious, makeRoom });
   if (!save.ok) return { ...save, history: { ok: !dropped, evictedAll: dropped }, mark: null };
+  if (unreadable) clearHistoryLog();
   const history = record ? recordStep(record, baseMark) : { ok: true, evictedAll: false };
   const mark = markSave();
   return { ...save, history: dropped ? { ...history, evictedAll: true } : history, mark };
@@ -904,4 +911,21 @@ export function redoCampaign() {
 export function historyDepth() {
   const index = readIndex();
   return { undo: index.cursor, redo: index.deltas.length - index.cursor };
+}
+
+/**
+ * Whether Undo can restore a stored save that this app cannot read. Only a
+ * snapshot step can, because `swapSnapshot` reads the stored save as a
+ * string. A delta step applies its ops to the parsed save, and with no
+ * parsed save `applyDelta` returns null.
+ * @returns {boolean}
+ */
+export function undoRestoresSave() {
+  const index = readIndex();
+  if (index.cursor < 1) return false;
+  const seq = index.deltas[index.cursor - 1];
+  return (
+    index.snapshots.includes(seq) &&
+    (localStorage.getItem(deltaKey(seq))?.startsWith(SNAPSHOT_PREFIX) ?? false)
+  );
 }

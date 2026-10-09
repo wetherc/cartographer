@@ -12,7 +12,7 @@ import { mountToasts, flushQueuedToast } from './ui/Toast.js';
 import { mountTooltips } from './ui/Tooltip.js';
 import { alertModal } from './ui/Modal.js';
 import { loadFailedMessage } from './storage/SaveNotices.js';
-import { historyDepth } from './storage/HistoryLog.js';
+import { undoRestoresSave } from './storage/HistoryLog.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
@@ -156,9 +156,9 @@ function start() {
 
   // A save the loader cannot read leaves the app running on a blank
   // campaign, and the GM who is not told takes the blank map for data loss.
-  // When the history has a step, Undo restores the previous save.
+  // When the newest step is a snapshot, Undo restores the previous save.
   if (loadFailed) {
-    void alertModal(loadFailedMessage(historyDepth().undo), {
+    void alertModal(loadFailedMessage(undoRestoresSave()), {
       title: 'Could not load the saved campaign',
     });
   }

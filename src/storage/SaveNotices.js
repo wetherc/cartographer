@@ -128,16 +128,18 @@ function megabytes(bytes) {
 /**
  * The boot notice for a stored save that the app cannot read. The session
  * starts blank, and the stored string stays in place until the next save.
- * Undo is named only when the history has a step to undo, because with no
- * step the button does nothing.
- * @param {number} undoSteps
+ * Undo is named only when the newest step to undo is a snapshot
+ * (`HistoryLog.undoRestoresSave`). A delta step applies its ops to the
+ * stored save, and an unreadable save gives it nothing to apply them to, so
+ * Undo would answer "Nothing to undo."
+ * @param {boolean} undoRestores
  * @returns {string}
  */
-export function loadFailedMessage(undoSteps) {
+export function loadFailedMessage(undoRestores) {
   const lead = 'The saved campaign could not be read, so this session started blank.';
-  return undoSteps > 0
+  return undoRestores
     ? `${lead} Nothing has been overwritten: press Undo to restore the previous save, and export a backup before making changes.`
-    : `${lead} The stored save stays in this browser until the next save overwrites it.`;
+    : `${lead} Undo cannot restore it. The stored save stays in this browser until the next save overwrites it, so make no changes if you want to keep it.`;
 }
 
 /**

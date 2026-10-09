@@ -106,10 +106,11 @@ test('a footprint that has grown materially warns again', () => {
   assert.equal(warning.warnedAt, grown);
 });
 
-test('the load-failure notice names Undo only when a step exists to undo', () => {
-  assert.match(loadFailedMessage(1), /press Undo/);
-  assert.doesNotMatch(loadFailedMessage(0), /Undo/);
-  assert.match(loadFailedMessage(0), /next save overwrites it/);
+test('the load-failure notice promises Undo only when Undo can restore the save', () => {
+  assert.match(loadFailedMessage(true), /press Undo to restore/);
+  assert.doesNotMatch(loadFailedMessage(false), /press Undo/);
+  assert.match(loadFailedMessage(false), /Undo cannot restore it/);
+  assert.match(loadFailedMessage(false), /next save overwrites it/);
 });
 
 test('a shortened load names what it left out, and each limit', () => {

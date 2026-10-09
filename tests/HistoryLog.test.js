@@ -8,6 +8,7 @@ import {
   redoCampaign,
   saveCampaign,
   undoCampaign,
+  undoRestoresSave,
 } from '../src/storage/HistoryLog.js';
 import { loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
@@ -446,4 +447,26 @@ test('a step with nothing to undo writes no mark', () => {
   const keys = recordWrites();
   assert.equal(undoCampaign(), null);
   assert.deepEqual(keys, []);
+});
+
+test('a save over an unreadable campaign clears the log, so no old delta applies to it', () => {
+  saveCampaign(state([quest('q1', 'One')]));
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  assert.deepEqual(historyDepth(), { undo: 1, redo: 0 });
+  localStorage.setItem('campaign-builder:save', 'not json');
+  // A boot that could not read the save has no cached state to match the mark.
+  localStorage.removeItem(SAVE_MARK_KEY);
+  const result = saveCampaign(state([quest('q9', 'Blank boot')]));
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.history, { ok: true, evictedAll: false });
+  assert.deepEqual(historyDepth(), { undo: 0, redo: 0 });
+  assert.equal(storedIndex(), null);
+  assert.equal(undoCampaign(), null);
+  assert.deepEqual(persistedTitles(), ['Blank boot']);
+});
+
+test('a first save into empty storage leaves no log behind', () => {
+  saveCampaign(state());
+  assert.deepEqual(historyDepth(), { undo: 0, redo: 0 });
+  assert.equal(undoRestoresSave(), false);
 });

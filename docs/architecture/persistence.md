@@ -204,7 +204,13 @@ As a backstop, `main.js` starts through `Campaigns.loadInitialCampaignSafe`,
 which also builds the map navigator and the party tracker. When a save still
 cannot be read, or either object refuses its map, the function returns a
 blank campaign plus a notice. The stored save and the history log stay as
-they are, so Undo can still step back to the save before the broken one.
+they are until the next save. Undo can step back from the broken save only
+when the newest step is a snapshot, because `swapSnapshot` reads the stored
+save as a string. A delta step needs the parsed save to apply its ops to, so
+`applyDelta` returns null. The notice names Undo only in the snapshot case
+(`HistoryLog.undoRestoresSave`). The first save over the broken one clears
+the log, because its deltas record steps from the broken save and Undo would
+apply them to the blank campaign.
 
 ### Shortened loads
 
