@@ -43,6 +43,13 @@ export function mountFullSheet(container, opts) {
   const body = el('div', 'full-sheet__body');
   body.id = 'full-sheet-body';
   container.append(el('div', 'full-sheet__layout u-col u-g3', bar, body));
+  // The sheet tab row sticks under the bar (full-sheet.css). The bar wraps
+  // to two lines on a narrow page, so its height comes from a measure.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => {
+      container.style.setProperty('--full-sheet-bar-height', `${bar.offsetHeight}px`);
+    }).observe(bar);
+  }
 
   switcher.addEventListener('keydown', (event) => {
     const tabs = /** @type {HTMLButtonElement[]} */ ([...switcher.querySelectorAll('[role=tab]')]);

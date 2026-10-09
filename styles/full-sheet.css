@@ -45,6 +45,17 @@ body.sheet-full.mode-play .app-buildrail {
   border-bottom: 1px solid var(--border);
 }
 
+/* The Character, Equipment, Inventory, and Spellbook tab row sticks under
+   the bar. Without the offset the bar slides over the row as the sheet
+   scrolls and cuts the tabs in half. src/ui/FullSheet.js measures the bar
+   into --full-sheet-bar-height. */
+body.sheet-full.mode-play #full-sheet #sheet-tabs {
+  position: sticky;
+  top: var(--full-sheet-bar-height, 3rem);
+  z-index: 1;
+  background: var(--bg);
+}
+
 .full-sheet__switcher {
   /* Below about 18rem beside the button, the switcher takes its own line. */
   flex: 1 1 18rem;
