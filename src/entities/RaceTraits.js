@@ -55,18 +55,22 @@ export function raceSaveSlant(entity, { ability, condition, damageTypes = [], ma
 }
 
 /**
- * The save that a spell asks for, in the form `raceSaveSlant` reads. The
- * condition comes from a save effect or from an attack's hit rider, and the
- * damage types from a save effect. Every spell save is a save against magic.
- * @param {import('../types/spell.js').SpellEffect} effect
+ * The save that a spell or a creature action asks for, in the form
+ * `raceSaveSlant` reads. The condition comes from a save effect or from an
+ * attack's hit rider, and the damage types from a save effect. A spell save
+ * is a save against magic. A creature action (a breath weapon) is not, so
+ * Gnome Cunning does not help against it, while Dwarven Resilience still
+ * helps against its poison damage.
+ * @param {{ effect: import('../types/spell.js').SpellEffect, creatureAction?: unknown }} spell
  * @param {string} ability
  * @returns {{ ability: string, condition?: string, damageTypes: string[], magic: boolean }}
  */
-export function spellRaceSave(effect, ability) {
+export function spellRaceSave({ effect, creatureAction }, ability) {
+  const magic = !creatureAction;
   if (effect.kind === 'save') {
     const damageTypes = effect.damage.map((part) => part.damageType);
-    return { ability, condition: effect.condition, damageTypes, magic: true };
+    return { ability, condition: effect.condition, damageTypes, magic };
   }
   const condition = effect.kind === 'attack' ? effect.onHit?.condition : undefined;
-  return { ability, condition, damageTypes: [], magic: true };
+  return { ability, condition, damageTypes: [], magic };
 }

@@ -19,6 +19,7 @@ import { isImmuneToCondition } from '../entities/CreatureType.js';
 import { healingBlockedBy } from '../entities/HealTarget.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
+import { isLucky, raceSaveSlant } from '../entities/RaceTraits.js';
 import { settleChips } from './lethargy.js';
 import { combatantSaveBonus, commitCreatures, findCombatant, hpOf, logName } from './combatants.js';
 
@@ -330,12 +331,22 @@ function spellNameOf(creature) {
 export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) {
   const found = findCombatant(app, combatantId);
   if (!found) return [];
+  const character = found.kind === 'character' ? found.entity : null;
   const { conditions, results } = repeatSaves(found.entity.conditions, {
     tired: exhaustionLevel(found.entity),
     rng,
     bonusOf: (source) =>
       source.saveAbility ? combatantSaveBonus(found, source.saveAbility) : (source.saveBonus ?? 0),
     riders: featRiders(/** @type {import('../types/entities.js').Character} */ (found.entity)),
+    // A repeated save always ends a spell's effect, so it is a save against
+    // magic. A creature has no race, so both race terms do nothing for it.
+    slantOf: (condition) =>
+      raceSaveSlant(character, {
+        ability: condition.source?.saveAbility ?? '',
+        condition: condition.name,
+        magic: true,
+      }),
+    lucky: isLucky(character),
   });
   if (results.length === 0) return results;
   if (conditions !== found.entity.conditions) {

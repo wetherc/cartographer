@@ -191,7 +191,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     // brings rolls with only the target's own slant.
     const savePick = resolved.effect.kind === 'save' ? picked : null;
     if (saveAbility) {
-      const raceSave = spellRaceSave(resolved.effect, saveAbility);
+      const raceSave = spellRaceSave(resolved, saveAbility);
       castTargets = chosen.map((t) => {
         // A target's untrained armor slants its STR or DEX save. The slant
         // folds in with the target's chips, so an advantage chip cancels it.

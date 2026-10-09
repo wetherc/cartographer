@@ -1010,3 +1010,17 @@ test('a chip that stops a creature caster acting ends its spell', () => {
   assert.deepEqual(app.state.characters[0].conditions, []);
   assert.equal(app.dirty >= 1, true);
 });
+
+test('retryImposedSaves gives a halfling advantage against Frightened', () => {
+  const source = heldBy({ saveEnds: true, saveDC: 15 });
+  const hero = {
+    ...fixtures().hero,
+    raceId: 'halfling',
+    conditions: addCondition([], 'Frightened', 10, { source }),
+  };
+  const app = stubApp({ characters: [hero] });
+  // The first d20 shows 2 and the second 19; advantage keeps the 19.
+  const faces = [0.05, 0.9];
+  retryImposedSaves(app, 'hero', { rng: () => faces.shift() ?? 0 });
+  assert.deepEqual(app.state.characters[0].conditions, []);
+});

@@ -222,3 +222,21 @@ test('a retried save reads the slant of the chips for its ability', () => {
   const up = repeatSaves([slowed, swift], { rng: seq([face(20, 5), face(20, 18)]) });
   assert.equal(up.results[0].save.total, 20, 'advantage keeps the 18');
 });
+
+test('repeatSaves folds a race slant into the save against its chip', () => {
+  const list = [createCondition('Frightened', 10, { source: source() })];
+  // Advantage keeps the 16 over the 3: 16 + 2 beats DC 15.
+  const { results } = repeatSaves(list, {
+    rng: seq([face(20, 3), face(20, 16)]),
+    slantOf: (condition) => (condition.name === 'Frightened' ? 'advantage' : null),
+  });
+  assert.equal(results[0].save.total, 18);
+  assert.equal(results[0].ended, true);
+});
+
+test('repeatSaves rerolls a natural 1 for a Lucky roller', () => {
+  const list = [createCondition('Paralyzed', 10, { source: source() })];
+  const { results } = repeatSaves(list, { rng: seq([face(20, 1), face(20, 14)]), lucky: true });
+  assert.equal(results[0].save.total, 16);
+  assert.equal(results[0].ended, true);
+});

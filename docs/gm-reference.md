@@ -2623,9 +2623,11 @@ These race traits change rolls by themselves:
 
 The app applies Lucky to the weapon attacks, death saves, saves, and checks
 that it rolls. A spell attack and a roll in the dice tray by hand still need
-the reroll by hand. The save traits apply to the saves that a spell asks for. A save
-from a creature action or one that the GM calls at the table still needs
-the advantage set by hand. The remaining race traits are text on the sheet,
+the reroll by hand. The save traits apply to the saves that a spell or a creature action asks
+for, and to the save at the end of a turn that can end a spell's condition.
+A creature action, such as a breath weapon, is not magic, so Gnome Cunning
+does not help against it. A save that the GM calls at the table from the
+sheet still needs the advantage set by hand. The remaining race traits are text on the sheet,
 and the GM applies them: the Dragonborn Breath Weapon, Stonecunning, the
 High Elf cantrip, the Dwarf tool pick, Trance, Naturally Stealthy, Halfling
 Nimbleness, Artificer's Lore, Tinker, Relentless Endurance,

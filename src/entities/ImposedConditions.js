@@ -74,13 +74,17 @@ function recordedBonus(source) {
  * extra rider sources beyond the chips, the feat riders of a character, and
  * they join the retry roll without joining the returned condition list.
  * `tired` is the exhaustion level of the roller, which slants the save from
- * level 3.
+ * level 3. `slantOf` gives the advantage a race trait adds to the save
+ * against one chip (Brave against Frightened), and `lucky` rerolls a natural 1
+ * for a Halfling.
  * @param {Condition[]} list
  * @param {{
  *   bonusOf?: (source: ConditionSource) => number,
  *   rng?: RandomFn,
  *   riders?: import('./Riders.js').RiderSource[],
  *   tired?: number,
+ *   slantOf?: (condition: Condition) => 'advantage' | null,
+ *   lucky?: boolean,
  * }} [opts]
  * @returns {{
  *   conditions: Condition[],
@@ -89,7 +93,14 @@ function recordedBonus(source) {
  */
 export function repeatSaves(
   list,
-  { bonusOf = recordedBonus, rng = Math.random, riders = [], tired = 0 } = {},
+  {
+    bonusOf = recordedBonus,
+    rng = Math.random,
+    riders = [],
+    tired = 0,
+    slantOf = () => null,
+    lucky = false,
+  } = {},
 ) {
   /** @type {{ condition: Condition, save: import('./Checks.js').SaveResult, ended: boolean }[]} */
   const results = [];
@@ -109,6 +120,8 @@ export function repeatSaves(
       conditions: [...list, ...riders],
       ability: source.saveAbility,
       tired,
+      slants: [slantOf(condition)],
+      lucky,
     });
     results.push({ condition, save, ended: save.success });
     return !save.success;

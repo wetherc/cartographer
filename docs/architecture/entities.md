@@ -575,7 +575,10 @@ so `app/luckyRoll.js` rolls the tray selection again when a Lucky roller
 shows a natural 1 on the kept d20. `raceSaveSlant` returns advantage for Brave, Fey
 Ancestry, Dwarven Resilience, and Gnome Cunning, and `spellCastResolve`
 folds it into each spell target's save mode with the context from
-`spellRaceSave`. A creature has no race, so these functions return no
+`spellRaceSave`, which treats a creature action as a save that is not
+magic. `repeatSaves` takes a `slantOf` callback and a `lucky` flag, so the
+end-of-turn retry in `retryImposedSaves` gets the same race effects. A
+creature has no race, so these functions return no
 effect for it.
 
 ### Subclass casting

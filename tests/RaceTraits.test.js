@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { hasRaceTrait, isLucky, raceSaveSlant, spellRaceSave } from '../src/entities/RaceTraits.js';
+import { actionSpell } from '../src/entities/CreatureActions.js';
 import { withRace, resolveRace } from '../src/entities/Races.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { savingThrow, abilityCheck } from '../src/entities/Checks.js';
@@ -55,15 +56,18 @@ test('spellRaceSave reads the condition and damage types of a spell effect', () 
     halfOnSave: false,
     condition: 'Poisoned',
   });
-  assert.deepEqual(spellRaceSave(save, 'CON'), {
+  assert.deepEqual(spellRaceSave({ effect: save }, 'CON'), {
     ability: 'CON',
     condition: 'Poisoned',
     damageTypes: ['poison'],
     magic: true,
   });
   const attack = /** @type {any} */ ({ kind: 'attack', onHit: { condition: 'Frightened' } });
-  assert.equal(spellRaceSave(attack, 'WIS').condition, 'Frightened');
-  assert.equal(spellRaceSave(/** @type {any} */ ({ kind: 'utility' }), 'WIS').condition, undefined);
+  assert.equal(spellRaceSave({ effect: attack }, 'WIS').condition, 'Frightened');
+  assert.equal(
+    spellRaceSave({ effect: /** @type {any} */ ({ kind: 'utility' }) }, 'WIS').condition,
+    undefined,
+  );
 });
 
 test('Lucky rolls a natural 1 again on a save, a check, and a spell target save', () => {
@@ -90,4 +94,31 @@ test('a Dragonborn ancestry pick adds one resistance that defensesOf reads', () 
   assert.deepEqual(withRace(base, 'dwarf', { resistance: 'fire' }).raceTraits?.resistances, [
     'poison',
   ]);
+});
+
+test('a creature action save is not a save against magic', () => {
+  const breath = actionSpell(
+    /** @type {any} */ ({
+      id: 'breath',
+      name: 'Poison Breath',
+      saveAbility: 'CON',
+      dc: 13,
+      damage: [{ count: 4, sides: 6, damageType: 'poison' }],
+      halfOnSave: true,
+    }),
+  );
+  const save = spellRaceSave(breath, 'CON');
+  assert.equal(save.magic, false);
+  assert.deepEqual(save.damageTypes, ['poison']);
+  assert.equal(raceSaveSlant({ raceId: 'dwarf' }, save), 'advantage');
+  const gaze = {
+    id: 'gaze',
+    name: 'Gaze',
+    saveAbility: 'WIS',
+    dc: 12,
+    damage: [],
+    halfOnSave: false,
+  };
+  const mental = spellRaceSave(actionSpell(/** @type {any} */ (gaze)), 'WIS');
+  assert.equal(raceSaveSlant({ raceId: 'gnome' }, mental), null);
 });
