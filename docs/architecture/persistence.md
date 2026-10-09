@@ -345,8 +345,9 @@ store the same Shortsword twenty times.
 `tabulateGear` in `storage/GearTable.js` runs on the packed entities. It
 moves every piece used two or more times into a `gear` list at the top of the
 save, and the record keeps a reference such as `{"@": 0}` in its place. The
-sites are `weapon` and `armor` on `creatures` and `bestiary`, and each entry
-of a character's `inventory`. A piece used once stays inline, because a
+sites are each entry of `weapons` and the `armor` on `creatures` and
+`bestiary`, and each entry of a character's `inventory`. The single `weapon`
+field of an older save is a site too, so its references restore on load. A piece used once stays inline, because a
 reference plus a table entry costs more than the piece.
 
 An inventory item has two fields that belong to the one copy a character

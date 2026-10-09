@@ -229,11 +229,12 @@ test('bestiary templates coerce the fields the spawn dialog reads', () => {
       name: 'Goblin',
       maxHP: 7,
       stats: { AC: 13 },
-      weapon: null,
+      weapons: [],
       armor: { name: 'Hide' },
     },
   ]);
   assert.equal('weapon' in state.bestiary[0], false, 'a gear slot of the wrong type is dropped');
+  assert.equal('weapons' in state.bestiary[0], false, 'an absent list stays absent');
 });
 
 test('a character with a level or XP outside the range loads clamped and levels in one step', () => {
@@ -295,7 +296,7 @@ test('a weapon with a properties record loads with a list the attack path can re
       ],
     }),
   );
-  const weapon = state.creatures[0].weapon;
+  const weapon = state.creatures[0].weapons[0];
   assert.ok(weapon);
   assert.deepEqual(weapon.properties, []);
   assert.equal(hasWeaponProperty(weapon, 'finesse'), false);
@@ -386,4 +387,17 @@ test('a creature resource with no string id drops on load', () => {
     foe.resources.map((/** @type {any} */ r) => r.id),
     ['rage'],
   );
+});
+
+test('a bestiary weapon list keeps its records, and a single weapon reads as a list of one', () => {
+  const bite = { name: 'Bite', kind: 'melee', damage: [] };
+  const state = loadFile({
+    bestiary: [
+      { id: 't1', name: 'Wolf', maxHP: 11, stats: {}, weapons: [bite, 'claw', null] },
+      { id: 't2', name: 'Dog', maxHP: 5, stats: {}, weapon: bite },
+    ],
+  });
+  assert.deepEqual(state.bestiary[0].weapons, [bite]);
+  assert.deepEqual(state.bestiary[1].weapons, [bite]);
+  assert.equal('weapon' in state.bestiary[1], false);
 });

@@ -28,7 +28,7 @@ const wolf = createCreature('wolf', 'Wolf', {
   disposition: 'hostile',
   maxHP: 11,
   location: HERE,
-  weapon: BITE,
+  weapons: [BITE],
   packTactics: true,
 });
 
@@ -186,12 +186,12 @@ test('the creature form fills and reads the Pack Tactics box and the on-hit save
   };
   const read = readCreatureFields(values, gear);
   assert.equal(read.packTactics, true);
-  assert.deepEqual(read.weapon?.onHitSave, { ability: 'DEX', dc: 12, condition: 'Restrained' });
+  assert.deepEqual(read.weapons[0]?.onHitSave, { ability: 'DEX', dc: 12, condition: 'Restrained' });
   const cleared = readCreatureFields({ ...values, hitSaveAbility: '', packTactics: '' }, gear);
-  assert.equal('onHitSave' in (cleared.weapon ?? {}), false);
+  assert.equal('onHitSave' in (cleared.weapons[0] ?? {}), false);
   assert.equal('packTactics' in cleared, false);
   const unarmed = readCreatureFields({ ...values, weapon: '' }, gear);
-  assert.equal(unarmed.weapon, null);
+  assert.deepEqual(unarmed.weapons, []);
 });
 
 test('a hero with no rider weapon still reads as a plain target', () => {
@@ -217,6 +217,6 @@ test('the library normalizer cleans an on-hit save and drops a broken one', asyn
     ],
   });
   const byName = Object.fromEntries(lib.creatures.map((c) => [c.name, c]));
-  assert.deepEqual(byName['Good Wolf'].weapon?.onHitSave, RIDER);
-  assert.equal('onHitSave' in (byName['Bad Wolf'].weapon ?? {}), false);
+  assert.deepEqual(byName['Good Wolf'].weapons[0]?.onHitSave, RIDER);
+  assert.equal('onHitSave' in (byName['Bad Wolf'].weapons[0] ?? {}), false);
 });

@@ -469,14 +469,23 @@ export function normalizeLibrary(parsed) {
     // A null value survives, for a deliberately unarmed entry. An absent or
     // malformed value takes the level default on a leveled entry, and null
     // on an unleveled one. That is what absence meant in each older shape.
-    /** @param {'weapon' | 'armor'} slot @returns {object | null} */
-    const gear = (slot) => {
-      const value =
-        e[slot] === null || (e[slot] && typeof e[slot] === 'object')
-          ? e[slot]
-          : (stamp?.[slot] ?? null);
-      if (!value) return value;
-      if (slot === 'armor') return coerceEnemyArmor(value);
+    const armorValue =
+      e.armor === null || (e.armor && typeof e.armor === 'object')
+        ? e.armor
+        : (stamp?.armor ?? null);
+    // A list of weapons keeps its record entries. A single `weapon` field, from
+    // an older library file, reads as a list of one, and its null as none.
+    const rawWeapons = Array.isArray(e.weapons)
+      ? e.weapons
+      : e.weapon === null
+        ? []
+        : e.weapon && typeof e.weapon === 'object'
+          ? [e.weapon]
+          : stamp
+            ? [stamp.weapon]
+            : [];
+    /** @param {unknown} value @returns {object} */
+    const weaponOf = (value) => {
       // A creature's weapon coerces the same way an equipment entry does. An
       // on-hit save that names no known ability, DC, or condition drops out.
       const { onHitSave, ...weapon } = withCoercedWeapon(
@@ -495,8 +504,10 @@ export function normalizeLibrary(parsed) {
       disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
       maxHP: clampInt(e.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
       stats: normalizeStatBlock(stats && typeof stats === 'object' ? stats : {}),
-      weapon: gear('weapon'),
-      armor: gear('armor'),
+      weapons: rawWeapons
+        .filter((w) => w && typeof w === 'object' && !Array.isArray(w))
+        .map(weaponOf),
+      armor: armorValue ? coerceEnemyArmor(armorValue) : null,
       ...(hasLevel ? { level: clampInt(level, 1), tier } : {}),
       ...(cr === undefined ? {} : { cr }),
       // An entry trained in nothing carries no list, and an entry that names an

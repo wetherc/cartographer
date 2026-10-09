@@ -143,11 +143,11 @@ test('a null or written-as-text creature level reads as no level', () => {
   const [nul, text, real] = lib.creatures;
   assert.equal('level' in nul, false);
   assert.equal('tier' in nul, false);
-  assert.equal(nul.weapon, null, 'no level means no stamped gear');
+  assert.deepEqual(nul.weapons, [], 'no level means no stamped gear');
   assert.equal('level' in text, false);
   assert.equal(real.level, 3);
   assert.equal(real.tier, 'mob');
-  assert.ok(real.weapon, 'a leveled entry takes the level default gear');
+  assert.ok(real.weapons[0], 'a leveled entry takes the level default gear');
 });
 
 test('a null caster level is left for the default to fill', () => {
@@ -195,7 +195,7 @@ test('a rejected weapon field cannot survive beside the coerced one', () => {
   assert.equal(blade.range, null);
   assert.equal(blade.kind, 'melee');
   assert.equal(hasWeaponProperty(blade, 'finesse'), false, 'the attack path does not throw');
-  const held = lib.creatures[0].weapon;
+  const held = lib.creatures[0].weapons[0];
   assert.ok(held);
   assert.deepEqual(held.properties, []);
   assert.deepEqual(held.versatileDamage, []);

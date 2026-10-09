@@ -69,8 +69,8 @@ export interface DamageDefenses {
  * full combatant, with hit points, an AC in its stat block, and optional
  * gear.
  *
- * The gear fields are always explicit. A null weapon means the creature is
- * unarmed on purpose. A null armor means the creature is unarmored on
+ * The gear fields are always explicit. An empty weapon list means the
+ * creature is unarmed on purpose. A null armor means the creature is unarmored on
  * purpose. The create and edit paths write the level or tier default into
  * the stored value, so no read path derives gear from the level.
  */
@@ -104,8 +104,9 @@ export interface Creature extends HPBuffFields {
   /** True for a companion NPC. It moves to the party tile each time the
    * party moves, in the GM tab. A template never copies it. */
   travelsWithParty?: boolean;
-  /** What the creature swings, or null for an unarmed creature. */
-  weapon: EnemyWeapon | null;
+  /** What the creature can swing, in the order the attack dialog lists them.
+   * An empty list means an unarmed creature. */
+  weapons: EnemyWeapon[];
   /** What the creature wears, or null for an unarmored creature. Its
    * AC follows the rule in `EnemyArmor.js`. */
   armor: EnemyArmor | null;
@@ -131,7 +132,7 @@ export interface Creature extends HPBuffFields {
   /** Conditions that do not land on this creature, by name from
    * `Conditions.CONDITIONS`. Absent means none. */
   conditionImmunities?: string[];
-  /** How many times the creature swings its weapon for one Attack action,
+  /** How many times the creature swings one of its weapons for one Attack action,
    * from 2 up. Absent means one swing. See `entities/CreatureAttacks.js`. */
   multiattack?: number;
   /** True for a creature with Pack Tactics: the attack dialog offers
@@ -201,7 +202,7 @@ export interface CreatureTemplate {
   disposition: Disposition;
   maxHP: number;
   stats: Record<string, number>;
-  weapon: EnemyWeapon | null;
+  weapons: EnemyWeapon[];
   armor: EnemyArmor | null;
   level?: number;
   tier?: EnemyTier;

@@ -48,3 +48,13 @@ export const DAGGER = {
   category: /** @type {'simple'} */ ('simple'),
   damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
 };
+
+// A goblin carries a shortbow beside its scimitar.
+export const SHORTBOW = {
+  name: 'Shortbow',
+  kind: /** @type {'ranged'} */ ('ranged'),
+  category: /** @type {'simple'} */ ('simple'),
+  properties: /** @type {['ammunition', 'two-handed']} */ (['ammunition', 'two-handed']),
+  range: { normal: 80, long: 320 },
+  damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+};

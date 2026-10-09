@@ -35,7 +35,7 @@ const king = createCreature('king', 'King', {
   location: HERE,
   level: 5,
   legendaryActions: 3,
-  weapon: { name: 'Greatsword', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] },
+  weapons: [{ name: 'Greatsword', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] }],
 });
 
 test('legendaryLeft counts down from the creature count and never below zero', () => {
@@ -144,7 +144,7 @@ test('a legendary swing spends one legendary action and logs its number', () => 
   rollWeaponAttack(app, {
     attacker: king,
     defender: { id: 'hero', name: 'Hero', ac: 10 },
-    weapon: /** @type {any} */ (king.weapon),
+    weapon: /** @type {any} */ (king.weapons[0]),
     tweaks: { legendary: true },
     rng: () => 0.5,
   });
@@ -157,7 +157,7 @@ test('a legendary swing with none left rolls nothing and says so', () => {
   rollWeaponAttack(app, {
     attacker: king,
     defender: { id: 'hero', name: 'Hero', ac: 10 },
-    weapon: /** @type {any} */ (king.weapon),
+    weapon: /** @type {any} */ (king.weapons[0]),
     tweaks: { legendary: true },
   });
   assert.deepEqual(app.log, []);
@@ -169,7 +169,7 @@ test('the legendary dialog has its own title and offers no Multiattack volley', 
     attacker: { ...king, multiattack: 2 },
     defenders: [{ id: 'hero', name: 'Hero', ac: 10 }],
     participant: at(),
-    weapon: /** @type {any} */ (king.weapon),
+    weapon: /** @type {any} */ (king.weapons[0]),
     defenderId: 'hero',
     offhand: false,
     reaction: false,

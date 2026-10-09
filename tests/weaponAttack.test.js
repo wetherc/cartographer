@@ -393,18 +393,20 @@ test("a foe attacks with its own weapon and its stat block's ability", () => {
     stats: { STR: 14 },
     location: HERE,
     level: 1,
-    weapon: /** @type {any} */ ({
-      name: 'Club',
-      kind: 'melee',
-      damage: [{ count: 1, sides: 4 }],
-    }),
+    weapons: [
+      /** @type {any} */ ({
+        name: 'Club',
+        kind: 'melee',
+        damage: [{ count: 1, sides: 4 }],
+      }),
+    ],
   });
   const hero = withHP(createCharacter('hero', 'Hero'), 20);
   const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(18)]) });
   rollWeaponAttack(app, {
     attacker: goblin,
     defender: { id: 'hero', name: 'Hero', ac: 10 },
-    weapon: /** @type {any} */ (goblin.weapon),
+    weapon: /** @type {any} */ (goblin.weapons[0]),
     rng: scripted([3 / 4]),
   });
   assert.match(app.log[0], /^Goblin attacks Hero with Club \(STR \+2/);

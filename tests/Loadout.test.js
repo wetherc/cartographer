@@ -118,11 +118,13 @@ test('a foe loadout reads its authored armor and single weapon', () => {
       level: 1,
     }),
     armor: { name: 'Hide Armor', acBonus: 2 },
-    weapon: {
-      name: 'Scimitar',
-      kind: /** @type {const} */ ('melee'),
-      damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('slashing') }],
-    },
+    weapons: [
+      {
+        name: 'Scimitar',
+        kind: /** @type {const} */ ('melee'),
+        damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('slashing') }],
+      },
+    ],
   };
   const loadout = buildLoadout({ kind: 'creature', entity: goblin });
   assert.deepEqual(loadout.armor, ['Hide Armor']);
@@ -138,11 +140,13 @@ test('an unarmed NPC carries nothing, and neither does an unresolved id', () => 
 test('an armed NPC reads its gear the way a foe does', () => {
   const guard = createCreature('guard', 'Guard', {
     location: HERE,
-    weapon: {
-      name: 'Spear',
-      kind: /** @type {const} */ ('melee'),
-      damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('piercing') }],
-    },
+    weapons: [
+      {
+        name: 'Spear',
+        kind: /** @type {const} */ ('melee'),
+        damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('piercing') }],
+      },
+    ],
     armor: { name: 'Chain Shirt', acBonus: 3 },
   });
   const loadout = buildLoadout({ kind: 'creature', entity: guard });
@@ -214,7 +218,7 @@ test('a foe with no authored armor reports none', () => {
       location: HERE,
     }),
     armor: null,
-    weapon: null,
+    weapons: [],
   };
   const loadout = buildLoadout({ kind: 'creature', entity: ooze });
   assert.deepEqual(loadout.armor, []);

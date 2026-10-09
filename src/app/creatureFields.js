@@ -33,7 +33,7 @@ import { normalizeHitSave } from '../combat/HitSave.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
-import { readGear } from './gearFields.js';
+import { readGear, readOtherWeapons } from './gearFields.js';
 import { acLabelFromForm, readStats, statFields } from './statFields.js';
 import { arrangeFields, syncDependents } from './creatureLayout.js';
 
@@ -69,7 +69,7 @@ import { arrangeFields, syncDependents } from './creatureLayout.js';
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
- *   weapon?: import('../types/entities.js').EnemyWeapon | null,
+ *   weapons?: import('../types/entities.js').EnemyWeapon[],
  *   armor?: import('../types/entities.js').EnemyArmor | null,
  *   class?: string,
  *   casterLevel?: number,
@@ -248,8 +248,17 @@ function blueprintFields(seed, gear, stats) {
       type: 'select',
       newRow: true,
       value:
-        seed?.weapon !== undefined ? (gear.currentWeapon?.name ?? '') : (stamp?.weapon.name ?? ''),
+        seed?.weapons !== undefined ? (gear.currentWeapon?.name ?? '') : (stamp?.weapon.name ?? ''),
       options: gear.weaponOptions,
+    },
+    {
+      name: 'otherWeapons',
+      label: 'Other weapons',
+      type: 'multiselect',
+      full: true,
+      fixedHeight: true,
+      value: gear.currentOthers,
+      options: gear.otherWeaponOptions,
     },
     {
       name: 'armor',
@@ -339,7 +348,7 @@ function blueprintFields(seed, gear, stats) {
       label: 'On hit: save',
       type: 'select',
       newRow: true,
-      value: seed?.weapon?.onHitSave?.ability ?? '',
+      value: seed?.weapons?.[0]?.onHitSave?.ability ?? '',
       options: [
         { value: '', label: 'None' },
         ...ABILITY_SCORES.map((ability) => ({ value: ability, label: ability })),
@@ -349,14 +358,14 @@ function blueprintFields(seed, gear, stats) {
       name: 'hitSaveDC',
       label: 'On hit: DC',
       type: 'number',
-      value: seed?.weapon?.onHitSave?.dc ?? 10,
+      value: seed?.weapons?.[0]?.onHitSave?.dc ?? 10,
       min: 1,
     },
     {
       name: 'hitSaveCondition',
       label: 'On hit: condition on a fail',
       type: 'select',
-      value: seed?.weapon?.onHitSave?.condition ?? 'Prone',
+      value: seed?.weapons?.[0]?.onHitSave?.condition ?? 'Prone',
       options: CONDITIONS.filter((c) => c !== CONCENTRATING).map((c) => ({ value: c, label: c })),
     },
     ...(stats
@@ -471,7 +480,7 @@ function readLevel(raw) {
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
- *   weapon: import('../types/entities.js').EnemyWeapon | null,
+ *   weapons: import('../types/entities.js').EnemyWeapon[],
  *   armor: import('../types/entities.js').EnemyArmor | null,
  *   class?: string,
  *   casterLevel?: number,
@@ -513,7 +522,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
     ...(level === undefined ? {} : { level, tier: /** @type {EnemyTier} */ (values.tier) }),
     ...(stats ? { stats: readStats(STAT_KEYS, values) } : {}),
-    ...withHitSave(readGear(values.weapon, values.armor, gear), values),
+    ...readWeapons(values, gear),
     ...readCasterOptions(values),
   };
 }
@@ -533,4 +542,15 @@ function withHitSave({ weapon, armor }, values) {
     condition: values.hitSaveCondition,
   });
   return { weapon: onHitSave ? { ...plain, onHitSave } : plain, armor };
+}
+
+/**
+ * Read the weapon list and the armor of the form. The on-hit save applies to
+ * the main weapon, the first in the list.
+ * @param {Record<string, string>} values
+ * @param {GearOptions} gear
+ */
+function readWeapons(values, gear) {
+  const { weapon, armor } = withHitSave(readGear(values.weapon, values.armor, gear), values);
+  return { weapons: readOtherWeapons(weapon, values.otherWeapons ?? '', gear), armor };
 }

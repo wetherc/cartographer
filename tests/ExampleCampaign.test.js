@@ -314,11 +314,11 @@ test('example enemies reach their stat block AC, and beasts fight unarmored with
   for (const id of ['gray-wolf-1', 'hill-harpy', 'giant-scorpion', 'skalvyr', 'crypt-shade']) {
     const beast = creature(id);
     assert.equal(beast.armor, null, `${id} wears no armor`);
-    assert.equal(beast.weapon?.category, null, `${id} attacks with a natural weapon`);
+    assert.equal(beast.weapons[0]?.category, null, `${id} attacks with a natural weapon`);
   }
   const wolf = campaign.bestiary.find((t) => t.id === 'gray-wolf');
   assert.equal(wolf?.armor, null);
-  assert.equal(wolf?.weapon?.name, 'Bite');
+  assert.equal(wolf?.weapons[0]?.name, 'Bite');
 });
 
 test('the world build refuses a region table that does not match the generated regions', () => {
@@ -394,15 +394,15 @@ test('every example caster knows only spells of a level it has slots for', () =>
 test('the wolves bite with DEX at the SRD +4, and the camp around Snagtooth rates Medium', () => {
   const wolves = [creature('gray-wolf-1'), campaign.bestiary.find((t) => t.id === 'gray-wolf')];
   for (const wolf of wolves) {
-    assert.ok(wolf?.weapon);
+    assert.ok(wolf?.weapons[0]);
     assert.equal(wolf.packTactics, true, wolf.name);
-    assert.deepEqual(wolf.weapon.onHitSave, { ability: 'STR', dc: 11, condition: 'Prone' });
-    assert.equal(attackAbility(wolf.weapon, wolf.stats), 'DEX', wolf.name);
+    assert.deepEqual(wolf.weapons[0].onHitSave, { ability: 'STR', dc: 11, condition: 'Prone' });
+    assert.equal(attackAbility(wolf.weapons[0], wolf.stats), 'DEX', wolf.name);
     assert.equal(abilityModifier(wolf.stats.DEX) + creatureProficiencyBonus(wolf), 4, wolf.name);
   }
   const library = DEFAULT_CREATURES.find((t) => t.id === 'wolf');
-  assert.ok(library?.weapon);
-  assert.equal(attackAbility(library.weapon, library.stats), 'DEX');
+  assert.ok(library?.weapons[0]);
+  assert.equal(attackAbility(library.weapons[0], library.stats), 'DEX');
 
   assert.deepEqual(creature('camp-bugbear').surpriseAttack, { count: 2, sides: 6 });
   const boss = creature('snagtooth');

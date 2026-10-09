@@ -72,7 +72,7 @@ export function creatureSummary(entry) {
     const rank = cr ? `CR ${cr}, ` : entry.level != null ? `${tier}, level ${entry.level}, ` : '';
     return [
       `${rank}${entry.maxHP} HP`,
-      entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
+      ...(entry.weapons ?? []).map((w) => `${w.name} ${formatDamage(w.damage)}`),
     ]
       .filter(Boolean)
       .join(' | ');

@@ -88,8 +88,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
       // button opens the same form for the rating and both pieces of gear.
       const parts = [];
       if (encounter.cr !== undefined) parts.push(`CR ${crLabel(encounter.cr)}`);
-      if (encounter.weapon)
-        parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
+      for (const weapon of encounter.weapons)
+        parts.push(`${weapon.name} ${formatDamage(weapon.damage)}`);
       if (encounter.armor) parts.push(enemyArmorLabel(encounter.armor));
       if (parts.length) row.appendChild(el('div', 'u-muted', parts.join(' | ')));
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { gearOptions, readGear } from '../src/app/gearFields.js';
+import { gearOptions, readGear, readOtherWeapons } from '../src/app/gearFields.js';
 
 test('readGear defaults a preset missing kind and damage', () => {
   const options = {
@@ -28,11 +28,13 @@ test('gearOptions leads both pickers with None and lists the library gear', () =
 
 test('gearOptions keeps a hand-tuned non-library entry offered, labelled with its numbers', () => {
   const current = {
-    weapon: {
-      name: 'Rusty Cleaver',
-      kind: 'melee',
-      damage: [{ count: 2, sides: 4, type: 'slashing' }],
-    },
+    weapons: [
+      {
+        name: 'Rusty Cleaver',
+        kind: 'melee',
+        damage: [{ count: 2, sides: 4, type: 'slashing' }],
+      },
+    ],
     armor: { name: 'Bone Plate', baseAC: 15, armorWeight: 'heavy' },
   };
   const { weaponOptions, armorOptions } = gearOptions(current);
@@ -46,7 +48,7 @@ test('gearOptions keeps a hand-tuned non-library entry offered, labelled with it
 
 test('gearOptions omits the custom rows when the current gear is a library entry', () => {
   const options = gearOptions({
-    weapon: { name: 'Shortsword', kind: 'melee', damage: [] },
+    weapons: [{ name: 'Shortsword', kind: 'melee', damage: [] }],
     armor: null,
   });
   const matches = options.weaponOptions.filter((o) => o.value === 'Shortsword');
@@ -71,15 +73,46 @@ test('readGear copies a library preset with its damage cloned', () => {
 
 test('readGear falls back to the current hand-tuned entry', () => {
   const current = {
-    weapon: { name: 'Rusty Cleaver', kind: 'melee', damage: [] },
+    weapons: [{ name: 'Rusty Cleaver', kind: 'melee', damage: [] }],
     armor: { name: 'Bone Plate', baseAC: 15, armorWeight: 'heavy' },
   };
   const options = gearOptions(current);
   const kept = readGear('Rusty Cleaver', 'Bone Plate', options);
-  assert.equal(kept.weapon, current.weapon);
+  assert.equal(kept.weapon, current.weapons[0]);
   assert.equal(kept.armor, current.armor);
 
   const bare = readGear('Unknown Blade', 'Unknown Mail', gearOptions(null));
   assert.equal(bare.weapon, null, 'no current entry reads as unarmed');
   assert.equal(bare.armor, null);
+});
+
+test('the other weapons picker lists hand-tuned extras and the library, and reads back a list', () => {
+  const claw = {
+    name: 'Claw',
+    kind: 'melee',
+    damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+  };
+  const beak = { name: 'Beak', kind: 'melee', damage: [] };
+  const current = { weapons: [beak, claw], armor: null };
+  const options = gearOptions(current);
+  assert.equal(options.currentWeapon, beak, 'the first weapon fills the main picker');
+  assert.equal(options.otherWeaponOptions[0].label, 'Claw (1d6 slashing)');
+  assert.equal(options.currentOthers, 'w0', 'the carried extra starts picked');
+  const bowAt = options.otherChoices.findIndex((w) => w.name === 'Shortbow');
+  const read = readOtherWeapons(beak, `w0,w${bowAt}`, options);
+  assert.deepEqual(
+    read.map((w) => w.name),
+    ['Beak', 'Claw', 'Shortbow'],
+  );
+  assert.equal(read[1], claw, 'a hand-tuned extra is kept as is');
+  assert.notEqual(read[2], options.otherChoices[bowAt], 'a library extra is a copy');
+  assert.deepEqual(readOtherWeapons(null, '', options), [], 'no weapon at all is unarmed');
+  const dup = options.otherChoices.findIndex((w) => w.name === 'Shortsword');
+  const sword = readGear('Shortsword', '', options).weapon;
+  assert.deepEqual(
+    readOtherWeapons(sword, `w${dup}`, options).map((w) => w.name),
+    ['Shortsword'],
+    'an extra that repeats the main weapon is dropped',
+  );
+  assert.equal(gearOptions(null).currentWeapon, undefined, 'a new creature has no current weapon');
 });

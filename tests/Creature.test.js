@@ -58,25 +58,25 @@ test('createCreature defaults to a neutral, unplaced, unmet, unarmed commoner', 
     conditions: [],
     exhaustion: 0,
     met: false,
-    weapon: null,
+    weapons: [],
     armor: null,
   });
 });
 
 test('createCreature with a level stamps the default gear into the stored value', () => {
   const low = createCreature('c1', 'Bandit', { disposition: 'hostile', level: 1 });
-  assert.equal(low.weapon.name, 'Shortsword');
+  assert.equal(low.weapons[0].name, 'Shortsword');
   assert.equal(low.armor.name, 'Leather Armor');
   assert.equal(low.level, 1);
   assert.equal(low.tier, 'mob');
   const legend = createCreature('c2', 'Warlord', { level: 6, tier: 'legend' });
-  assert.equal(legend.weapon.name, 'Greatsword');
+  assert.equal(legend.weapons[0].name, 'Greatsword');
   assert.equal(legend.armor.name, 'Plate');
 });
 
 test('createCreature keeps an explicit null through a level', () => {
-  const beast = createCreature('c1', 'Wolf', { level: 2, weapon: null, armor: null });
-  assert.equal(beast.weapon, null);
+  const beast = createCreature('c1', 'Wolf', { level: 2, weapons: [], armor: null });
+  assert.deepEqual(beast.weapons, []);
   assert.equal(beast.armor, null);
 });
 
@@ -84,7 +84,7 @@ test('createCreature without a level stores no level, no tier, and no gear', () 
   const creature = createCreature('c1', 'Innkeeper', { tier: 'legend' });
   assert.equal('level' in creature, false);
   assert.equal('tier' in creature, false, 'a tier without a level is dropped');
-  assert.equal(creature.weapon, null);
+  assert.deepEqual(creature.weapons, []);
   assert.equal(creature.armor, null);
 });
 
@@ -94,11 +94,15 @@ test('createCreature takes hit points and gear, deriving AC from DEX when none i
     kind: 'melee',
     damage: [{ dice: 1, die: 'd4', type: 'bludgeoning' }],
   };
-  const creature = createCreature('c1', 'Guard', { maxHP: 11, stats: { DEX: 14 }, weapon });
+  const creature = createCreature('c1', 'Guard', {
+    maxHP: 11,
+    stats: { DEX: 14 },
+    weapons: [weapon],
+  });
   assert.equal(creature.maxHP, 11);
   assert.equal(creature.currentHP, 11);
   assert.equal(creature.stats.AC, 12);
-  assert.deepEqual(creature.weapon, weapon);
+  assert.deepEqual(creature.weapons, [weapon]);
   assert.equal(creature.armor, null, 'an explicit weapon does not pull in a default armor');
 });
 
@@ -137,7 +141,7 @@ test('withDefaults backfills a sparse creature without rebuilding gear', () => {
   assert.deepEqual(filled.conditions, []);
   assert.equal(filled.exhaustion, 0);
   assert.equal(filled.met, false);
-  assert.equal(filled.weapon, null, 'absent gear reads as none, not as the level default');
+  assert.deepEqual(filled.weapons, [], 'absent gear reads as none, not as the level default');
   assert.equal(filled.armor, null);
 });
 
@@ -250,7 +254,7 @@ test('editCreature removes the level and the tier when the edit has no level', (
   });
   assert.equal('level' in retired, false);
   assert.equal('tier' in retired, false);
-  assert.equal(retired.weapon.name, 'Longsword', 'the stored gear stays');
+  assert.equal(retired.weapons[0].name, 'Longsword', 'the stored gear stays');
 });
 
 test('editCreature keeps spent slots when the caster class and level are unchanged', () => {
@@ -355,7 +359,7 @@ test('toTemplate captures the blueprint, not the live state', () => {
     stats: fullBlock(),
     level: 2,
     tier: 'mob',
-    weapon: foe.weapon,
+    weapons: foe.weapons,
     armor: foe.armor,
   });
 });
@@ -374,29 +378,29 @@ test('fromTemplate spawns at full health and copies gear and spellbook', () => {
   const spawn = fromTemplate(template, 'e9', { nodeId: 'n1', tileId: '0,0' });
   assert.equal(spawn.currentHP, 9);
   assert.deepEqual(spawn.location, { nodeId: 'n1', tileId: '0,0' });
-  assert.notEqual(spawn.weapon, template.weapon, 'the weapon is a copy, not an alias');
-  assert.deepEqual(spawn.weapon, template.weapon);
+  assert.notEqual(spawn.weapons[0], template.weapons[0], 'the weapon is a copy, not an alias');
+  assert.deepEqual(spawn.weapons[0], template.weapons[0]);
   assert.notEqual(spawn.spellbook, template.spellbook);
   assert.deepEqual(spawn.spellbook.known, ['bless']);
 });
 
 test('fromTemplate keeps an explicit null and stamps a default only with a level', () => {
   const unarmed = fromTemplate(
-    /** @type {any} */ ({ id: 't1', name: 'Wolf', maxHP: 11, level: 1, weapon: null, armor: null }),
+    /** @type {any} */ ({ id: 't1', name: 'Wolf', maxHP: 11, level: 1, weapons: [], armor: null }),
     'c1',
   );
-  assert.equal(unarmed.weapon, null);
+  assert.deepEqual(unarmed.weapons, []);
   assert.equal(unarmed.armor, null);
   const leveled = fromTemplate(
     /** @type {any} */ ({ id: 't2', name: 'Bandit', maxHP: 11, level: 1 }),
     'c2',
   );
-  assert.equal(leveled.weapon.name, 'Shortsword');
+  assert.equal(leveled.weapons[0].name, 'Shortsword');
   const townsfolk = fromTemplate(
     /** @type {any} */ ({ id: 't3', name: 'Innkeeper', maxHP: 4, disposition: 'neutral' }),
     'c3',
   );
-  assert.equal(townsfolk.weapon, null);
+  assert.deepEqual(townsfolk.weapons, []);
 });
 
 test('fromTemplate reads the older template shapes', () => {
@@ -421,7 +425,7 @@ test('fromTemplate reads the older template shapes', () => {
   assert.equal(person.disposition, 'friendly');
   assert.equal(person.maxHP, DEFAULT_CREATURE_HP);
   assert.equal(person.role, 'Innkeeper');
-  assert.equal(person.weapon, null);
+  assert.deepEqual(person.weapons, []);
 });
 
 test('a challenge rating survives create, edit, and the template round trip', () => {
@@ -567,4 +571,15 @@ test('temporary HP absorb damage before current HP, and a slay takes them', () =
   assert.deepEqual([hurt.bonusHP, hurt.currentHP], [0, 5]);
   assert.equal(slay(goblin).bonusHP, 0);
   assert.equal('bonusHP' in slay(createCreature('c', 'Cultist', { maxHP: 9 })), false);
+});
+
+test('withDefaults reads the single weapon of an older save as a list of one', () => {
+  const club = { name: 'Club', kind: 'melee', damage: [] };
+  const old = /** @type {any} */ ({ id: 'c1', name: 'Guard', weapon: club });
+  const filled = withDefaults(old);
+  assert.deepEqual(filled.weapons, [club]);
+  assert.equal('weapon' in filled, false, 'the single field is dropped');
+  const both = withDefaults(/** @type {any} */ ({ ...old, weapons: [club, 7, null] }));
+  assert.deepEqual(both.weapons, [club], 'a list wins and keeps only records');
+  assert.deepEqual(withDefaults(/** @type {any} */ ({ ...old, weapon: 'x' })).weapons, []);
 });

@@ -79,7 +79,7 @@ test('a leveled seed pre-fills the loadout and the stat defaults for its level',
 });
 
 test('a seed with explicit null gear shows None even when leveled', () => {
-  const seed = { disposition: 'hostile', level: 3, weapon: null, armor: null };
+  const seed = { disposition: 'hostile', level: 3, weapons: [], armor: null };
   const fields = creatureFields(seed, gearOptions(seed));
   assert.equal(field(fields, 'weapon').value, '');
   assert.equal(field(fields, 'armor').value, '');
@@ -95,7 +95,7 @@ test('the AC input pre-fills from a seed DEX until the GM types over it', () => 
 test('an edit shows the hit points and gear the creature already carries', () => {
   const seed = {
     maxHP: 22,
-    weapon: { name: 'Rusty Cleaver', kind: 'melee', damage: [] },
+    weapons: [{ name: 'Rusty Cleaver', kind: 'melee', damage: [] }],
     armor: { name: 'Bone Plate', acBonus: 3 },
   };
   const fields = creatureFields(seed, gearOptions(seed));
@@ -123,7 +123,7 @@ test('readCreatureFields reads identity, disposition, stats, and gear back', () 
   assert.equal(read.notes, 'Forges blades.');
   assert.equal(read.maxHP, 11);
   assert.equal(read.stats.AC, 12, 'AC is read, not re-derived from DEX');
-  assert.equal(read.weapon.name, 'Shortsword');
+  assert.equal(read.weapons[0].name, 'Shortsword');
   assert.equal(read.armor, null, 'the empty picker is the explicit None');
 });
 
@@ -303,7 +303,7 @@ test('creatureFields disables a dependent field while its parent is blank', () =
       multiattack: 2,
       surpriseAttack: { count: 2, sides: 6 },
       class: 'wizard',
-      weapon: { name: 'Bite', onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } },
+      weapons: [{ name: 'Bite', onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } }],
     },
     gearOptions(null),
   );

@@ -12,7 +12,7 @@ test('creatureSummary leads a rated foe with its challenge rating', () => {
     level: 1,
     tier: 'mob',
     cr: 0.25,
-    weapon: bite,
+    weapons: [bite],
   };
   assert.equal(creatureSummary(/** @type {any} */ (wolf)), 'CR 1/4, 11 HP | Bite 2d4 piercing');
 });

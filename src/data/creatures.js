@@ -38,13 +38,23 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     cr: 0.25,
     proficiencies: { saves: [], skills: ['stealth'] },
-    weapon: {
-      name: 'Scimitar',
-      kind: 'melee',
-      category: 'martial',
-      properties: ['finesse', 'light'],
-      damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
-    },
+    weapons: [
+      {
+        name: 'Scimitar',
+        kind: 'melee',
+        category: 'martial',
+        properties: ['finesse', 'light'],
+        damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+      },
+      {
+        name: 'Shortbow',
+        kind: 'ranged',
+        category: 'simple',
+        properties: ['ammunition', 'two-handed'],
+        range: { normal: 80, long: 320 },
+        damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+      },
+    ],
     armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
@@ -62,13 +72,15 @@ export const DEFAULT_CREATURES = deepFreeze([
     // martial. Finesse makes the bite roll with DEX, which gives the SRD
     // +4 to hit and 2d4+2 damage. A target that the bite hits and that fails
     // a DC 11 Strength save falls prone.
-    weapon: {
-      name: 'Bite',
-      kind: 'melee',
-      properties: ['finesse'],
-      damage: [{ count: 2, sides: 4, damageType: 'piercing' }],
-      onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' },
-    },
+    weapons: [
+      {
+        name: 'Bite',
+        kind: 'melee',
+        properties: ['finesse'],
+        damage: [{ count: 2, sides: 4, damageType: 'piercing' }],
+        onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' },
+      },
+    ],
     armor: null,
     packTactics: true,
   },
@@ -82,13 +94,15 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 1,
     tier: 'mob',
     cr: 0.125,
-    weapon: {
-      name: 'Shortsword',
-      kind: 'melee',
-      category: 'martial',
-      properties: ['finesse', 'light'],
-      damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
-    },
+    weapons: [
+      {
+        name: 'Shortsword',
+        kind: 'melee',
+        category: 'martial',
+        properties: ['finesse', 'light'],
+        damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+      },
+    ],
     armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
@@ -103,13 +117,15 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 1,
     tier: 'mob',
     cr: 0.25,
-    weapon: {
-      name: 'Shortsword',
-      kind: 'melee',
-      category: 'martial',
-      properties: ['finesse', 'light'],
-      damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
-    },
+    weapons: [
+      {
+        name: 'Shortsword',
+        kind: 'melee',
+        category: 'martial',
+        properties: ['finesse', 'light'],
+        damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+      },
+    ],
     armor: { name: 'Armor Scraps', baseAC: 11, armorWeight: 'light' },
   },
   {
@@ -123,13 +139,15 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     cr: 0.5,
     proficiencies: { saves: [], skills: ['intimidation'] },
-    weapon: {
-      name: 'Greataxe',
-      kind: 'melee',
-      category: 'martial',
-      properties: ['heavy', 'two-handed'],
-      damage: [{ count: 1, sides: 12, damageType: 'slashing' }],
-    },
+    weapons: [
+      {
+        name: 'Greataxe',
+        kind: 'melee',
+        category: 'martial',
+        properties: ['heavy', 'two-handed'],
+        damage: [{ count: 1, sides: 12, damageType: 'slashing' }],
+      },
+    ],
     armor: { name: 'Hide', baseAC: 12, armorWeight: 'medium' },
   },
   {
@@ -142,13 +160,15 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 4,
     tier: 'legend',
     cr: 2,
-    weapon: {
-      name: 'Greatclub',
-      kind: 'melee',
-      category: 'simple',
-      properties: ['two-handed'],
-      damage: [{ count: 2, sides: 8, damageType: 'bludgeoning' }],
-    },
+    weapons: [
+      {
+        name: 'Greatclub',
+        kind: 'melee',
+        category: 'simple',
+        properties: ['two-handed'],
+        damage: [{ count: 2, sides: 8, damageType: 'bludgeoning' }],
+      },
+    ],
     armor: { name: 'Hide', baseAC: 12, armorWeight: 'medium' },
   },
   {
@@ -170,13 +190,15 @@ export const DEFAULT_CREATURES = deepFreeze([
       known: ['bless', 'cure-wounds'],
       prepared: ['bless', 'cure-wounds'],
     },
-    weapon: {
-      name: 'Club',
-      kind: 'melee',
-      category: 'simple',
-      properties: ['light'],
-      damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
-    },
+    weapons: [
+      {
+        name: 'Club',
+        kind: 'melee',
+        category: 'simple',
+        properties: ['light'],
+        damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
+      },
+    ],
     armor: null,
   },
   {
@@ -199,13 +221,15 @@ export const DEFAULT_CREATURES = deepFreeze([
       known: ['bane', 'healing-word', 'hold-person'],
       prepared: ['bane', 'healing-word', 'hold-person'],
     },
-    weapon: {
-      name: 'Dagger',
-      kind: 'melee',
-      category: 'simple',
-      properties: ['finesse', 'light'],
-      damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
-    },
+    weapons: [
+      {
+        name: 'Dagger',
+        kind: 'melee',
+        category: 'simple',
+        properties: ['finesse', 'light'],
+        damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+      },
+    ],
     armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
@@ -248,13 +272,15 @@ export const DEFAULT_CREATURES = deepFreeze([
         'cone-of-cold',
       ],
     },
-    weapon: {
-      name: 'Dagger',
-      kind: 'melee',
-      category: 'simple',
-      properties: ['finesse', 'light'],
-      damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
-    },
+    weapons: [
+      {
+        name: 'Dagger',
+        kind: 'melee',
+        category: 'simple',
+        properties: ['finesse', 'light'],
+        damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+      },
+    ],
     armor: null,
   },
   {
@@ -266,7 +292,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     notes: 'Keeps the local inn and hears every rumor worth a mug of ale.',
     maxHP: 4,
     stats: { STR: 10, DEX: 10, CON: 11, INT: 10, WIS: 11, CHA: 12, AC: 10 },
-    weapon: null,
+    weapons: [],
     armor: null,
   },
   {
@@ -278,7 +304,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     notes: 'Watches the gate and asks pointed questions after dark.',
     maxHP: 4,
     stats: { STR: 13, DEX: 11, CON: 12, INT: 10, WIS: 10, CHA: 10, AC: 10 },
-    weapon: null,
+    weapons: [],
     armor: null,
   },
   {
@@ -290,7 +316,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     notes: "Buys and sells oddities; prices drift with the buyer's desperation.",
     maxHP: 4,
     stats: { STR: 9, DEX: 10, CON: 10, INT: 12, WIS: 11, CHA: 13, AC: 10 },
-    weapon: null,
+    weapons: [],
     armor: null,
   },
   {
@@ -302,7 +328,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     notes: "Holds the settlement's history and the favors owed within it.",
     maxHP: 4,
     stats: { STR: 8, DEX: 8, CON: 10, INT: 12, WIS: 14, CHA: 11, AC: 9 },
-    weapon: null,
+    weapons: [],
     armor: null,
   },
   {
@@ -317,7 +343,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     cr: 0.125,
     proficiencies: { saves: [], skills: ['deception', 'religion'] },
     stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 12 },
-    weapon: null,
+    weapons: [],
     armor: null,
   },
 ]);

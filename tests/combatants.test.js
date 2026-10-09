@@ -536,13 +536,13 @@ test('weaponsOf lists what each kind of combatant can swing', () => {
     disposition: 'hostile',
     maxHP: 20,
     location: HERE,
-    weapon: /** @type {any} */ (club),
+    weapons: [/** @type {any} */ (club)],
   });
   const barehanded = createCreature('slime', 'Slime', {
     disposition: 'hostile',
     maxHP: 8,
     location: HERE,
-    weapon: null,
+    weapons: [],
   });
   const { sage } = fixtures();
   const app = stubApp({
@@ -566,7 +566,7 @@ test('weaponsOf lists the weapon an armed NPC was given', () => {
   const club = { name: 'Club', kind: 'melee', damage: [{ count: 1, sides: 4 }] };
   const guard = createCreature('guard', 'Guard', {
     location: HERE,
-    weapon: /** @type {any} */ (club),
+    weapons: [/** @type {any} */ (club)],
   });
   const app = stubApp({ creatures: [guard] });
   assert.deepEqual(

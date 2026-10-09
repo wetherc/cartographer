@@ -1240,9 +1240,10 @@ needs a caster class.
 | Challenge rating | Unrated | The 5e rating, from 0 to 30. It sets the proficiency bonus that the creature rolls with, and its XP |
 | Save proficiencies | None | The saving throws that the creature is trained in |
 | Skill proficiencies | None | The skills that the creature is trained in |
-| Weapon | None (unarmed) | A weapon from the library |
+| Weapon | None (unarmed) | The main weapon, from the library. The attack dialog lists it first, and the on-hit save applies to it |
+| Other weapons | None | More weapons from the library, such as the shortbow of a goblin. Each one gets its own button in the attack row |
 | Armor | None (unarmored) | Armor from the library |
-| Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
+| Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings one of its weapons for one Attack action, from 2 to 6 |
 | Multiattack: attack with disadvantage | Blank (none) | The swing of the Multiattack that rolls with disadvantage, such as 2 for the second attack. Blank, or a number past the last swing, stores none |
 | Redirect Attack (reaction: an ally becomes the target) | Off | When an attack targets the creature, the app offers to make an ally the target instead. See [Redirect Attack](#redirect-attack) |
 | Turn Resistance (advantage on saves against Turn Undead) | Off | The creature rolls its WIS save against Turn Undead with advantage. Use it for Turn Resistance and for Turn Defiance |
@@ -1382,7 +1383,7 @@ To make a captive a foe again, set its disposition back to hostile in the
 creature dialog. To keep a foe that fled in the story, pick **Still
 hostile** and move it to its new tile in the creature dialog.
 
-The same dialog hands out loot. **Loot** lists the weapon and the armor of
+The same dialog hands out loot. **Loot** lists the weapons and the armor of
 each defeated foe, such as "Scimitar (Goblin 2)". A natural weapon, such
 as a bite, drops nothing. Tick the items to keep, and pick the character
 who takes them in **Loot goes to**. The items join that character's

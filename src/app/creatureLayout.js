@@ -110,6 +110,7 @@ const FIELD_SECTIONS = [
       ...STAT_KEYS.map((key) => `stat-${key}`),
       'weapon',
       'armor',
+      'otherWeapons',
       'multiattack',
       'multiattackDisadvantage',
       'hitSaveAbility',

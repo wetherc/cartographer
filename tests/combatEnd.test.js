@@ -265,16 +265,22 @@ test('a defeated foe drops its weapon and armor, and the loot lands with the car
     i === 0
       ? {
           ...c,
-          weapon: {
-            name: 'Scimitar',
-            kind: 'melee',
-            category: 'martial',
-            damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
-            properties: ['finesse', 'light'],
-          },
+          weapons: [
+            {
+              name: 'Scimitar',
+              kind: 'melee',
+              category: 'martial',
+              damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+              properties: ['finesse', 'light'],
+            },
+          ],
           armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
         }
-      : { ...c, weapon: { name: 'Bite', kind: 'melee', category: null, damage: [] }, armor: null },
+      : {
+          ...c,
+          weapons: [{ name: 'Bite', kind: 'melee', category: null, damage: [] }],
+          armor: null,
+        },
   );
   app.state.combat.order.push({ id: 'dorn', initiative: 9, modifier: 0 });
   const end = /** @type {any} */ (fightSummary(app));

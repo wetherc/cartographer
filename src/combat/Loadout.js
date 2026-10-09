@@ -144,7 +144,7 @@ function weaponLines(found) {
   /** @type {{ name: string, damage?: import('../types/entities.js').DamagePart[] }[]} */
   let weapons = [];
   if (found.kind === 'character') weapons = equippedWeapons(found.entity);
-  else if (found.entity.weapon) weapons = [found.entity.weapon];
+  else weapons = found.entity.weapons;
   return weapons.map((weapon) => ({
     name: weapon.name,
     damage: formatDamage(weapon.damage ?? []),

@@ -38,10 +38,17 @@ const REF = '@';
  * @typedef {{ collection: string, field: string, list?: boolean, instance: string[] }} GearSite
  */
 
-/** @type {GearSite[]} */
+/**
+ * The single `weapon` sites restore the references of an older save, which
+ * keeps one weapon per creature. A current save writes no `weapon` field, so
+ * these sites find nothing to pack.
+ * @type {GearSite[]}
+ */
 const SITES = [
+  { collection: 'creatures', field: 'weapons', list: true, instance: [] },
   { collection: 'creatures', field: 'weapon', instance: [] },
   { collection: 'creatures', field: 'armor', instance: [] },
+  { collection: 'bestiary', field: 'weapons', list: true, instance: [] },
   { collection: 'bestiary', field: 'weapon', instance: [] },
   { collection: 'bestiary', field: 'armor', instance: [] },
   { collection: 'characters', field: 'inventory', list: true, instance: ['quantity', 'notes'] },

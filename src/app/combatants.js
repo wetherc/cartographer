@@ -326,7 +326,7 @@ export function weaponsOf(app, id) {
   const found = findCombatant(app, id);
   if (!found) return [];
   if (found.kind === 'character') return equippedWeapons(found.entity);
-  return found.entity.weapon ? [found.entity.weapon] : [];
+  return found.entity.weapons;
 }
 
 /**

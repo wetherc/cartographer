@@ -38,7 +38,7 @@ export function toTemplate(id, creature) {
     disposition: creature.disposition ?? 'neutral',
     maxHP: creature.maxHP,
     stats: normalizeStatBlock(creature.stats ?? {}),
-    weapon: creature.weapon ?? null,
+    weapons: creature.weapons ?? [],
     armor: creature.armor ?? null,
     ...(creature.level != null ? { level: creature.level, tier: creature.tier ?? 'mob' } : {}),
     ...(cr === undefined ? {} : { cr }),
@@ -93,9 +93,7 @@ export function fromTemplate(template, id, location = null) {
     turnResistance: template.turnResistance,
     legendaryActions: template.legendaryActions,
     legendaryResistance: template.legendaryResistance,
-    ...(template.weapon !== undefined
-      ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
-      : {}),
+    ...(template.weapons !== undefined ? { weapons: template.weapons.map(copyEnemyWeapon) } : {}),
     ...(template.armor !== undefined
       ? { armor: template.armor ? { ...template.armor } : template.armor }
       : {}),

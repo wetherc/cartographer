@@ -32,7 +32,7 @@ import { isDead } from '../entities/DeathSaves.js';
 /** @typedef {import('../types/creature.js').Creature} Creature */
 
 /**
- * The weapon and the armor of a defeated foe, as inventory items. A natural
+ * The weapons and the armor of a defeated foe, as inventory items. A natural
  * weapon, such as a bite, has no category and drops nothing.
  * @param {Creature} foe
  * @returns {Omit<InventoryItem, 'id'>[]}
@@ -40,8 +40,8 @@ import { isDead } from '../entities/DeathSaves.js';
 export function foeGear(foe) {
   /** @type {Omit<InventoryItem, 'id'>[]} */
   const gear = [];
-  const w = foe.weapon;
-  if (w && w.category) {
+  for (const w of foe.weapons ?? []) {
+    if (!w.category) continue;
     gear.push({
       name: w.name,
       quantity: 1,

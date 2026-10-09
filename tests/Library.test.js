@@ -303,7 +303,7 @@ test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is
   assert.equal(wyvern.disposition, 'hostile', 'a bestiary entry reads as hostile');
   assert.equal(wyvern.stats.STR, 19, 'statBlock reads as stats');
   assert.equal(wyvern.stats.AC, 13);
-  assert.equal(wyvern.weapon, null, 'explicit null gear survives');
+  assert.deepEqual(wyvern.weapons, [], 'explicit null gear survives');
   assert.ok(wyvern.armor, 'absent gear on a leveled entry takes the level default');
   assert.equal(smith.id, 'smith', 'an old NPC entry gains an id');
   assert.equal(smith.disposition, 'friendly');
@@ -311,7 +311,7 @@ test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is
   assert.equal(smith.maxHP, 11);
   assert.equal(smith.stats.STR, 15);
   assert.deepEqual(
-    smith.weapon,
+    smith.weapons[0],
     {
       name: 'Hammer',
       kind: 'melee',
@@ -347,15 +347,15 @@ test('normalizeLibrary repairs hit points and gear it cannot use', () => {
   });
   const [cooper, ooze, dregs, sturdy, brute] = lib.creatures;
   assert.equal(cooper.maxHP, 4, 'an absent maximum takes the commoner default');
-  assert.equal(cooper.weapon, null, 'absent gear on an unleveled entry reads as none');
+  assert.deepEqual(cooper.weapons, [], 'absent gear on an unleveled entry reads as none');
   assert.equal(cooper.armor, null);
   assert.equal(ooze.maxHP, 4, 'text is not a maximum');
-  assert.equal(ooze.weapon, null, 'a null weapon means deliberately unarmed');
+  assert.deepEqual(ooze.weapons, [], 'a null weapon means deliberately unarmed');
   assert.equal(ooze.armor, null);
   assert.equal(dregs.maxHP, 1, 'a negative maximum clamps to one');
-  assert.equal(dregs.weapon, null, 'non-object gear drops to none');
+  assert.deepEqual(dregs.weapons, [], 'non-object gear drops to none');
   assert.equal(sturdy.maxHP, 9, 'a numeric string floors to an integer');
-  assert.equal(brute.weapon?.name, 'Shortsword', 'a leveled entry takes the level default');
+  assert.equal(brute.weapons[0]?.name, 'Shortsword', 'a leveled entry takes the level default');
   assert.equal(brute.armor?.name, 'Leather Armor');
 });
 
@@ -452,13 +452,17 @@ test('normalizeLibrary keeps explicit null gear and resolves absent gear by leve
       { name: 'Broken', weapon: 'sword' },
     ],
   });
-  assert.equal(lib.creatures[0].weapon, null, 'null gear survives on a leveled entry');
+  assert.deepEqual(lib.creatures[0].weapons, [], 'null gear survives on a leveled entry');
   assert.equal(lib.creatures[0].armor, null);
-  assert.equal(lib.creatures[1].weapon?.name, 'Longsword', 'a level-6 mob takes the high loadout');
-  assert.equal(lib.creatures[1].armor?.name, 'Chain Shirt');
   assert.equal(
-    lib.creatures[2].weapon,
-    null,
+    lib.creatures[1].weapons[0]?.name,
+    'Longsword',
+    'a level-6 mob takes the high loadout',
+  );
+  assert.equal(lib.creatures[1].armor?.name, 'Chain Shirt');
+  assert.deepEqual(
+    lib.creatures[2].weapons,
+    [],
     'non-object gear on an unleveled entry drops to none',
   );
 });
@@ -1239,4 +1243,31 @@ test('normalizeLibrary keeps only a true magical flag on a weapon template', () 
   const byName = Object.fromEntries(lib.equipment.map((e) => [e.name, e]));
   assert.equal(byName['Frost Brand'].magical, true);
   assert.equal('magical' in byName['Fake Brand'], false);
+});
+
+test('normalizeLibrary reads a weapon list and coerces each entry', () => {
+  const lib = normalizeLibrary({
+    creatures: [
+      {
+        name: 'Owlbear',
+        weapons: [
+          {
+            name: 'Beak',
+            kind: 'melee',
+            damage: [{ count: 1, sides: 10, damageType: 'piercing' }],
+          },
+          'claw',
+          {
+            name: 'Claws',
+            kind: 'melee',
+            damage: [{ count: 2, sides: 8, damageType: 'slashing' }],
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(
+    lib.creatures[0].weapons.map((w) => w.name),
+    ['Beak', 'Claws'],
+  );
 });

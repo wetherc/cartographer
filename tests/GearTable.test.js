@@ -123,3 +123,17 @@ test('a stored save with a gear table loads back from localStorage', () => {
   assert.ok(localStorage.getItem('campaign-builder:save')?.includes('"gear":['));
   assert.deepEqual(loadFromLocalStorage(), deserialize(serialize(base)));
 });
+
+test('a weapon list stores each repeated piece once', () => {
+  const bow = { name: 'Shortbow', kind: 'ranged', damage: [{ count: 1, sides: 6 }] };
+  const save = {
+    creatures: [
+      { id: 'g1', weapons: [sword(), bow] },
+      { id: 'g2', weapons: [sword(), bow] },
+    ],
+  };
+  const packed = tabulateGear(save);
+  assert.deepEqual(packed.gear, [sword(), bow]);
+  assert.deepEqual(packed.creatures[1].weapons, [{ '@': 0 }, { '@': 1 }]);
+  assert.equal(JSON.stringify(roundTrip(packed)), JSON.stringify(save));
+});

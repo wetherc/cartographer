@@ -99,19 +99,22 @@ creature fights the party, and every other creature stands with the party.
 The state has one `creatures` list, which every combat, map, and story panel
 reads.
 
-A creature has `maxHP`, `currentHP`, a `stats` block, a `weapon`, an
+A creature has `maxHP`, `currentHP`, a `stats` block, a `weapons` list, an
 `armor`, `conditions`, a `location`, and a `met` flag. Optional fields add a
 `role` and `notes`, a challenge rating, saves and skills, damage defenses, and
 spellcasting, which the subsections below describe. `level` and `tier` are
 optional authoring inputs that pick the default stats and gear for a new foe.
 A townsperson has no level.
 
-`createCreature` resolves the weapon and the armor once, at creation. An
-absent value takes the level default when the creature has a level, and null
-when it has none. A stored null therefore means unarmed or unarmored on
-purpose. `withDefaults` fills absent gear with null only, and no read path
-derives gear from the level again, so an absent field has one meaning
-everywhere.
+`createCreature` resolves the weapons and the armor once, at creation. An
+absent value takes the level default when the creature has a level, and an
+empty list or null when it has none. A stored empty list therefore means
+unarmed on purpose, and a stored null armor means unarmored on purpose. The
+first weapon is the main weapon, which the on-hit save of the creature form
+applies to. `withDefaults` fills absent gear with an empty list or null only,
+and it reads the single `weapon` field of an older save as a list of one.
+No read path derives gear from the level again, so an absent field has one
+meaning everywhere.
 
 `isCreature(entity)` tells a creature from a character. A creature always has
 a `disposition`, and a character never has one. Every caller that tells the

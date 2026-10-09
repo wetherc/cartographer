@@ -337,6 +337,22 @@ function gearSlot(template, slot) {
 }
 
 /**
+ * A stored weapon list as the spawn path reads it. A list keeps its record
+ * entries. An older template with a single `weapon` field reads it as a list
+ * of one, and its explicit null as an empty list. Absent stays absent, so
+ * the template takes the level default when it is spawned.
+ * @param {Record<string, any>} template
+ * @returns {Record<string, any>}
+ */
+function weaponsSlot(template) {
+  if (Array.isArray(template.weapons))
+    return { weapons: template.weapons.filter((w) => record(w) !== null) };
+  const legacy = gearSlot(template, 'weapon');
+  if (!('weapon' in legacy)) return {};
+  return { weapons: legacy.weapon === null ? [] : [legacy.weapon] };
+}
+
+/**
  * The bestiary as templates the spawn dialog can list and spawn from. The
  * dialog prints the name and hit points of each entry, and `fromTemplate`
  * spreads the stat block and copies the gear, so those fields are the ones
@@ -348,7 +364,7 @@ export function creatureTemplates(value) {
   return records(value).flatMap((template) => {
     const templateId = id(template.id);
     if (templateId === null) return [];
-    const { weapon: _weapon, armor: _armor, ...rest } = template;
+    const { weapon: _weapon, weapons: _weapons, armor: _armor, ...rest } = template;
     return [
       {
         ...rest,
@@ -356,7 +372,7 @@ export function creatureTemplates(value) {
         name: string(template.name, 'Creature'),
         maxHP: number(template.maxHP, 1),
         stats: record(template.stats) ?? {},
-        ...gearSlot(template, 'weapon'),
+        ...weaponsSlot(template),
         ...gearSlot(template, 'armor'),
       },
     ];

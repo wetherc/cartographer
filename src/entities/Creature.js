@@ -135,13 +135,13 @@ function clampMaxHP(maxHP) {
  * stat set (six abilities plus AC), and AC defaults to 10 plus the DEX
  * modifier.
  *
- * The gear rule is resolved here, once: an explicit weapon or armor is
- * kept, null included. An absent one takes the level or tier default when
+ * The gear rule is resolved here, once: an explicit weapon list or armor is
+ * kept, an empty list or null included. An absent one takes the level or tier default when
  * the creature has a level, and null when it has none. The stored value is
  * always explicit, so no read path derives gear again.
  * @param {string} id
  * @param {string} name
- * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
+ * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapons?: EnemyWeapon[], armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
  * @returns {Creature}
  */
 export function createCreature(id, name, options = {}) {
@@ -160,7 +160,7 @@ export function createCreature(id, name, options = {}) {
     conditions: [],
     exhaustion: 0,
     met: options.met ?? false,
-    weapon: options.weapon !== undefined ? options.weapon : (stamp?.weapon ?? null),
+    weapons: options.weapons !== undefined ? options.weapons : stamp ? [stamp.weapon] : [],
     armor: options.armor !== undefined ? coerceEnemyArmor(options.armor) : (stamp?.armor ?? null),
     ...(hasLevel ? { level: options.level, tier } : {}),
     ...crFields(options.cr),
@@ -211,8 +211,10 @@ export function withDefaults(creature) {
     spellbook,
     level: rawLevel,
     casterLevel: rawCasterLevel,
+    weapon: legacyWeapon,
+    weapons: rawWeapons,
     ...stripped
-  } = creature;
+  } = /** @type {Creature & { weapon?: unknown }} */ (creature);
   const book = spellbookOf(spellbook);
   const level = levelOf(rawLevel, 1, Infinity);
   const casterLevel = levelOf(rawCasterLevel, 1, MAX_LEVEL);
@@ -235,7 +237,7 @@ export function withDefaults(creature) {
       location: creature.location ?? null,
       ...exhaustionFields(creature.exhaustion, conditionList(creature.conditions)),
       met: creature.met ?? false,
-      weapon: creature.weapon ?? null,
+      weapons: weaponList(rawWeapons, legacyWeapon),
       armor: coerceEnemyArmor(creature.armor),
     },
     casterLevel ?? level ?? 1,
@@ -301,7 +303,7 @@ export function addStatModifier(creature, stat, delta, rounds) {
  * removes the level. Clearing both proficiency pickers removes the whole
  * proficiency record.
  * @param {Creature} creature
- * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, role?: string, notes?: string, weapons?: EnemyWeapon[], armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
  * @returns {Creature}
  */
 export function editCreature(creature, edits) {
@@ -334,7 +336,7 @@ export function editCreature(creature, edits) {
     maxHP,
     currentHP: Math.min(creature.currentHP, maxHP),
     location: edits.location,
-    weapon: edits.weapon === undefined ? creature.weapon : edits.weapon,
+    weapons: edits.weapons === undefined ? creature.weapons : edits.weapons,
     armor: edits.armor === undefined ? creature.armor : edits.armor,
     met: moved ? false : creature.met,
     ...(edits.stats !== undefined ? { stats: normalizeStatBlock(edits.stats) } : {}),
@@ -455,4 +457,19 @@ export function heal(creature, amount) {
  */
 export function isDefeated(creature) {
   return creature.currentHP <= 0;
+}
+
+/**
+ * The stored weapon list of a loaded creature or template. A list keeps its
+ * record entries. A record without a list reads its single `weapon` field,
+ * which an older save writes, as a list of one. Anything else is no weapon.
+ * @param {unknown} weapons
+ * @param {unknown} [legacy]
+ * @returns {EnemyWeapon[]}
+ */
+export function weaponList(weapons, legacy) {
+  /** @param {unknown} w @returns {w is EnemyWeapon} */
+  const usable = (w) => typeof w === 'object' && w !== null && !Array.isArray(w);
+  if (Array.isArray(weapons)) return weapons.filter(usable);
+  return usable(legacy) ? [legacy] : [];
 }

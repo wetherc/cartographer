@@ -120,7 +120,7 @@ export function people(at) {
       cr: 2,
       maxHP: 44,
       stats: { STR: 10, DEX: 14, CON: 14, INT: 13, WIS: 12, CHA: 17 },
-      weapon: DAGGER,
+      weapons: [DAGGER],
       armor: enemyArmor('Leather Armor'),
       ...trained(['WIS', 'CHA'], ['deception', 'insight', 'persuasion']),
       class: 'warlock',

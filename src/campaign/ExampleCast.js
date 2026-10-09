@@ -8,6 +8,7 @@ import {
   BUGBEAR,
   CULTIST,
   DAGGER,
+  SHORTBOW,
   DIRE_WOLF,
   DROWNED,
   GOBLIN,
@@ -48,16 +49,18 @@ import { people } from './ExamplePeople.js';
  * @param {string} name @param {number} count @param {number} sides
  * @param {string} damageType
  * @param {EnemyWeapon['properties']} [properties] a finesse bite rolls with DEX
- * @returns {{ weapon: EnemyWeapon, armor: null }}
+ * @returns {{ weapons: EnemyWeapon[], armor: null }}
  */
 const natural = (name, count, sides, damageType, properties) => ({
-  weapon: {
-    name,
-    kind: 'melee',
-    category: null,
-    ...(properties ? { properties } : {}),
-    damage: [{ count, sides, damageType }],
-  },
+  weapons: [
+    {
+      name,
+      kind: 'melee',
+      category: null,
+      ...(properties ? { properties } : {}),
+      damage: [{ count, sides, damageType }],
+    },
+  ],
   armor: null,
 });
 
@@ -87,7 +90,7 @@ const BRUTE_MORNINGSTAR = {
 // placed creatures and the bestiary.
 // Leather Armor and a shield give a goblin AC 15.
 const SNEAK = {
-  weapon: SCIMITAR,
+  weapons: [SCIMITAR, SHORTBOW],
   armor: enemyArmor('Leather Armor'),
   ...trained([], ['stealth']),
 };
@@ -96,7 +99,7 @@ const SNEAK = {
 const BITE = natural('Bite', 2, 4, 'piercing', ['finesse']);
 const PACK = {
   creatureType: /** @type {const} */ ('beast'),
-  weapon: { ...BITE.weapon, onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } },
+  weapons: [{ ...BITE.weapons[0], onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } }],
   armor: null,
   packTactics: true,
   ...trained([], ['perception', 'stealth']),
@@ -105,19 +108,23 @@ const PACK = {
 // Strength save prone.
 const DIRE_PACK = {
   ...PACK,
-  weapon: {
-    ...natural('Bite', 2, 6, 'piercing').weapon,
-    onHitSave: { ability: 'STR', dc: 13, condition: 'Prone' },
-  },
+  weapons: [
+    {
+      ...natural('Bite', 2, 6, 'piercing').weapons[0],
+      onHitSave: { ability: 'STR', dc: 13, condition: 'Prone' },
+    },
+  ],
 };
 // A Thornhold guard fights with a longsword in Chain Mail, which gives AC 16.
 const HOUSE = {
-  weapon: {
-    name: 'Longsword',
-    kind: /** @type {'melee'} */ ('melee'),
-    category: /** @type {'martial'} */ ('martial'),
-    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
-  },
+  weapons: [
+    {
+      name: 'Longsword',
+      kind: /** @type {'melee'} */ ('melee'),
+      category: /** @type {'martial'} */ ('martial'),
+      damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+    },
+  ],
   multiattack: 2,
   armor: enemyArmor('Chain Mail'),
   ...trained([], ['athletics', 'perception']),
@@ -208,9 +215,15 @@ const template = (id, name, hp, level, cr, extras, kit = {}) => ({
   tier: /** @type {EnemyTier} */ ('mob'),
   cr,
   creatureType: /** @type {const} */ ('humanoid'),
-  ...defaultEnemyGear(level, 'mob'),
+  ...gearOf(defaultEnemyGear(level, 'mob')),
   ...kit,
 });
+
+/**
+ * A default loadout as template gear: its one weapon as a list.
+ * @param {{ weapon: EnemyWeapon, armor: import('../types/entities.js').EnemyArmor }} gear
+ */
+const gearOf = ({ weapon, armor }) => ({ weapons: [weapon], armor });
 
 // The spells of King Ostrand, a wizard of caster level 8.
 const KING_SPELLS = [
@@ -243,7 +256,7 @@ function enemies(at) {
     mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, at('bandit1'), BANDIT),
     // The captain makes the watchtower band a Medium fight for the party.
     legend('bandit-captain', 'Bandit Captain', 65, 4, 2, at('bandit1'), BANDIT_CAPTAIN, {
-      weapon: SCIMITAR,
+      weapons: [SCIMITAR, DAGGER],
       multiattack: 2,
       armor: enemyArmor('Studded Leather'),
       ...trained(['STR', 'DEX', 'WIS'], ['athletics', 'deception']),
@@ -284,7 +297,7 @@ function enemies(at) {
     // is two scimitar swings, and the second rolls with disadvantage. Redirect
     // Attack lets him make a goblin beside him the target of an attack.
     legend('snagtooth', 'Chieftain Snagtooth', 21, 3, 1, at('snagtooth'), GOBLIN_BOSS, {
-      weapon: SCIMITAR,
+      weapons: [SCIMITAR],
       multiattack: 2,
       multiattackDisadvantage: 2,
       redirectAttack: true,
@@ -297,7 +310,7 @@ function enemies(at) {
     // rate Medium for the level-4 party. Hide and a shield give the
     // bugbear AC 16.
     mob('camp-bugbear', 'Bugbear', 27, 3, 1, at('snagtooth'), BUGBEAR, {
-      weapon: BRUTE_MORNINGSTAR,
+      weapons: [BRUTE_MORNINGSTAR],
       surpriseAttack: { count: 2, sides: 6 },
       armor: enemyArmor('Hide'),
       ...trained([], ['stealth', 'survival']),
@@ -337,7 +350,7 @@ function enemies(at) {
     }),
     mob('pale-sworn-1', 'Pale-sworn Cultist', 9, 1, 0.125, at('cultist1'), CULTIST, {
       ...CULTIST_KIT,
-      weapon: DAGGER,
+      weapons: [DAGGER],
       role: 'Pale-sworn',
       notes: 'A Thornhold servant who hears the crown through the Castellan. Guards her ledger.',
     }),
@@ -430,7 +443,7 @@ export function exampleBestiary() {
     template('drowned-sailor', 'Drowned Sailor', 22, 2, 0.5, DROWNED, DROWNING),
     template('pale-sworn', 'Pale-sworn Cultist', 9, 1, 0.125, CULTIST, {
       ...CULTIST_KIT,
-      weapon: DAGGER,
+      weapons: [DAGGER],
       role: 'Pale-sworn',
     }),
   ];
