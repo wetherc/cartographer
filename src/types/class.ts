@@ -44,13 +44,18 @@ export interface MulticlassGrant {
   skillChoice?: SkillChoice;
 }
 
-/** A class's unarmored defense formula: 10 plus the DEX modifier plus the
- * modifier of `ability`, used in place of the ordinary unarmored AC when the
- * character wears no body armor. `shield` says whether the formula survives a
- * worn shield. The Barbarian keeps it (CON, shield true); the Monk loses it
- * (WIS, shield false), though the shield still adds its own bonus. */
+/** An unarmored defense formula: `base` (10 unless set) plus the DEX
+ * modifier plus the modifier of `ability` when it names one. It replaces the
+ * ordinary unarmored AC when the character wears no body armor. `shield` says
+ * whether the formula still applies with a worn shield. The Barbarian keeps
+ * it (CON, shield true). The Monk loses it (WIS, shield false), though the
+ * shield still adds its own bonus. */
 export interface UnarmoredDefense {
-  ability: Ability;
+  /** The ability whose modifier adds to the formula. Absent for a flat
+   * formula that adds DEX alone (Draconic Resilience). */
+  ability?: Ability;
+  /** The number the formula starts from. Absent means 10. */
+  base?: number;
   shield: boolean;
 }
 
@@ -138,6 +143,12 @@ export interface SubclassDef {
   /** Features the subclass adds, keyed by class level, in the same format as
    * `ClassDef.featuresByLevel`. Absent means the subclass adds none. */
   features?: Record<number, (string | ClassFeatureDef)[]>;
+  /** An unarmored defense formula the subclass grants from the class's
+   * `subclassLevel` on, beside any the class grants. */
+  unarmoredDefense?: UnarmoredDefense;
+  /** Extra maximum HP for each level in this class, from the class's
+   * `subclassLevel` on (Draconic Resilience). */
+  hpPerLevel?: number;
 }
 
 /** One effect of a class feature: a feat effect, or the pick of one fighting

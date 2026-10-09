@@ -87,9 +87,9 @@ export function withHP(character, maxHP) {
  * character without an HP pool is returned unchanged.
  *
  * A hand-typed maximum also sets `hpOverride`. This takes the character off
- * the derived HP rule for good. From here on, `Progression.derive` leaves
- * the pool alone, rather than pulling it back to what the class list and
- * CON imply.
+ * the derived HP rule until `clearMaxHPOverride` runs. Until then,
+ * `Progression.derive` leaves the pool alone, rather than pulling it back to
+ * what the class list and CON imply.
  * @param {Character} character
  * @param {number} max
  * @returns {Character}
@@ -101,6 +101,20 @@ export function setMaxHP(character, max) {
     hpOverride: true,
     resources: updateById(character.resources, HP_RESOURCE_ID, (r) => setMax(r, clamped)),
   };
+}
+
+/**
+ * Clear the hand-typed maximum HP, so the class list, level, CON, and the
+ * per-level grants govern the pool again. `Progression.derive` then moves
+ * the maximum to the derived value and moves current HP by the same delta.
+ * A character without `hpOverride` returns unchanged.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function clearMaxHPOverride(character) {
+  if (!character.hpOverride) return character;
+  const { hpOverride: _dropped, ...rest } = character;
+  return derive(rest);
 }
 
 /**

@@ -3,7 +3,7 @@ import { abilityModifier } from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
 import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
 import { characterProficiency, getClasses } from './Multiclass.js';
-import { casterDefFor, isCasterRef } from './ClassCasting.js';
+import { casterDefFor, isCasterRef, subclassDef } from './ClassCasting.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
@@ -131,7 +131,9 @@ export function cantripsKnownForClass(classId, characterLevel, subclass) {
 
 /**
  * The unarmored defense formulas the character's classes grant, in class-list
- * order. Empty for a character with no granting class. A build that stacked
+ * order. A subclass that grants one (Draconic Bloodline) adds it after its
+ * class's own, once the class reaches its `subclassLevel`. Empty for a
+ * character with no granting class. A build that stacked
  * two granting classes returns both, because this function reports what the
  * classes say and leaves the choice between them to `Armor.armorClass`.
  * An unknown class id contributes nothing.
@@ -139,9 +141,12 @@ export function cantripsKnownForClass(classId, characterLevel, subclass) {
  * @returns {import('../types/class.js').UnarmoredDefense[]}
  */
 export function unarmoredDefenses(character) {
-  return getClasses(character)
-    .map((ref) => getClass(ref.classId)?.unarmoredDefense)
-    .filter((def) => !!def);
+  return getClasses(character).flatMap((ref) => {
+    const def = getClass(ref.classId);
+    if (!def) return [];
+    const sub = ref.level >= def.subclassLevel ? subclassDef(ref.classId, ref.subclass) : null;
+    return [def.unarmoredDefense, sub?.unarmoredDefense].filter((grant) => !!grant);
+  });
 }
 
 /**

@@ -614,7 +614,17 @@ with no proficiency lists.
 ### Hit points and hit dice
 
 `entities/HitDice.js` derives max HP from the class hit die plus the CON
-modifier per level (`classMaxHP`, the 5e average rule). It also models hit
+modifier per level (`classMaxHP`, the 5e average rule). `traitHPBonus` adds
+the per-level grants on top. A race snapshot and a taken feat record each
+keep an `hpPerLevel` value that counts once per assigned class level (the
+Hill Dwarf's Dwarven Toughness, the Tough feat). A subclass `hpPerLevel`
+counts once per level of its own class from the class's `subclassLevel` on
+(Draconic Resilience). A GM who types a maximum in the HP and AC dialog sets
+`hpOverride`, and `reconcileMaxHP` then leaves the pool alone.
+`Character.clearMaxHPOverride` drops the flag and derives the pool again,
+which is what "Use class HP" in the dialog does. The dialog
+(`app/characterEdit.js`) sets the override only when the typed maximum
+differs from the one it showed, so an AC-only edit does not pin HP. It also models hit
 dice as resource pools sized to the assigned class levels. `withHitDice`
 creates the pools, and `syncHitDice` derives them again and keeps the spent
 count. `spendHitDie` spends one die and heals through `restoreResource`, so a
@@ -1049,8 +1059,11 @@ as absent. A shield then adds `SHIELD_AC`, and any other piece adds nothing.
 A Barbarian or a Monk also gets an unarmored defense formula: 10, plus the DEX
 modifier, plus the modifier of one more ability. The class definition stores
 the ability, and whether a shield cancels the formula, as `unarmoredDefense`.
+A subclass can store its own `unarmoredDefense`, which applies from the
+class's `subclassLevel` on. The Draconic Bloodline formula has a `base` of 13
+and no second ability, so it reads 13 plus the DEX modifier.
 `Classes.unarmoredDefenses(character)` collects the grants of the whole class
-list. `armorClass` takes the higher of the plain unarmored AC and the formula,
+list and its subclasses. `armorClass` takes the higher of the plain unarmored AC and the formula,
 so a higher `baseAC` or Mage Armor base wins.
 
 The formula has two conditions. The chest slot has to be empty, because a

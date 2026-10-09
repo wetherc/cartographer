@@ -123,13 +123,17 @@ test('setStat re-derives, so a CON edit moves the pool', () => {
   assert.equal(getHP(setStat(fighter, 'STR', 20)).max, 20, 'an unrelated stat changes nothing');
 });
 
-test('withRace re-derives, so a racial CON increase moves the pool', () => {
+test('withRace re-derives, so a race CON increase moves the pool', () => {
   const fighter = classed([{ classId: 'fighter', level: 2 }]);
   assert.equal(getHP(fighter).max, 20);
   const dwarf = withRace(fighter, 'dwarf');
   assert.equal(dwarf.raceId, 'dwarf');
   assert.equal(dwarf.stats.CON, 16);
-  assert.equal(getHP(dwarf).max, 22, '+2 CON is one more modifier point at both levels');
+  assert.equal(
+    getHP(dwarf).max,
+    24,
+    '+2 CON is one more point at both levels, and Dwarven Toughness adds 1 per level',
+  );
   // Dropping the race takes the increase, and the HP it was worth, back off.
   assert.equal(getHP(withCustomRace(dwarf, 'Githzerai')).max, 20);
 });

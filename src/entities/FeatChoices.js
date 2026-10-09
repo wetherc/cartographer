@@ -104,7 +104,8 @@ export function riderSources(entity) {
  * Assemble the stamp that `takeFeat` applies, from the feat and the picks
  * the dialog gathered. The fixed grants (armor, tools, languages) come from
  * the feat itself; the picked ones come from the picks. Two asi picks of the
- * same ability stack into one +2 entry. The rider copies as written.
+ * same ability stack into one +2 entry. The rider and the per-level HP gain
+ * copy as written.
  * @param {Feat} feat
  * @param {{ abilities?: string[], skills?: string[], saves?: string[], expertise?: string[] }} picks
  * @returns {FeatStamp}
@@ -115,6 +116,7 @@ export function buildStamp(feat, picks) {
   for (const key of picks.abilities ?? []) increases[key] = (increases[key] ?? 0) + 1;
   const proficiency = feat.effects.filter((e) => e.kind === 'proficiency');
   const rider = feat.effects.find((e) => e.kind === 'rider')?.rider;
+  const hpPerLevel = feat.effects.reduce((sum, e) => sum + (e.kind === 'hp' ? e.perLevel : 0), 0);
   return {
     name: feat.name,
     featId: feat.id,
@@ -128,5 +130,6 @@ export function buildStamp(feat, picks) {
       languages: proficiency.flatMap((e) => e.languages ?? []),
     },
     ...(rider ? { rider } : {}),
+    ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
   };
 }

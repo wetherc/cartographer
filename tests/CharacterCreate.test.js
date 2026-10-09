@@ -114,7 +114,11 @@ test('max HP derives from the class hit die and CON', () => {
 
 test('max HP folds in the race CON increase; classless reads 10', () => {
   const dwarf = buildCharacter(values({ class: 'fighter', race: 'dwarf' }), []);
-  assert.equal(getHP(dwarf)?.max, 13, "the dwarf's +2 CON takes 14 to 16");
+  assert.equal(
+    getHP(dwarf)?.max,
+    14,
+    "the dwarf's +2 CON takes 14 to 16, and Dwarven Toughness adds 1",
+  );
   const classless = buildCharacter(values({ class: '' }), []);
   assert.equal(getHP(classless)?.max, 10);
   const frail = buildCharacter(values({ class: 'sorcerer', 'stat-CON': '1' }), []);

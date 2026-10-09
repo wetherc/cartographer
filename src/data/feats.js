@@ -12,7 +12,7 @@
 import { deepFreeze } from '../util/deepFreeze.js';
 
 /** The effect kinds a feat can carry. @type {import('../types/feat.js').FeatEffect['kind'][]} */
-export const FEAT_EFFECT_KINDS = ['asi', 'proficiency', 'rider'];
+export const FEAT_EFFECT_KINDS = ['asi', 'proficiency', 'rider', 'hp'];
 
 /** @type {Feat[]} */
 export const DEFAULT_FEATS = deepFreeze([
@@ -161,9 +161,8 @@ export const DEFAULT_FEATS = deepFreeze([
     name: 'Tough',
     description:
       'Your hit point maximum rises by 2 for each level you have, and by 2 more ' +
-      'at each later level. The app does not apply this: set the maximum by ' +
-      'hand on the sheet, which holds it from then on.',
-    effects: [],
+      'at each later level.',
+    effects: [{ kind: 'hp', perLevel: 2 }],
   },
   {
     id: 'war-caster',

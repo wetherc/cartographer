@@ -46,6 +46,7 @@ function snapshotRace(def) {
     languages: [...def.languages],
     traits: [...def.traits],
     ...(def.keepsSpeedInArmor ? { keepsSpeedInArmor: true } : {}),
+    ...(def.hpPerLevel ? { hpPerLevel: def.hpPerLevel } : {}),
   };
 }
 

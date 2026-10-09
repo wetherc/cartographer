@@ -595,7 +595,10 @@ that.
 1. In the **Party** panel, click the pencil button on the row of the
    character (**Edit HP and AC**).
 2. Set **Max HP**. If the new maximum is lower than the current HP, the
-   current HP goes down to match.
+   current HP goes down to match. A typed maximum stops the maximum from
+   growing with level and CON. To go back to the calculated maximum, tick
+   **Use class HP**. If you leave **Max HP** as it is, the maximum stays
+   calculated.
 3. Set **Bonus HP (temporary)**. These points sit on top of the HP pool,
    and damage removes them first.
 4. Set **Unarmored base AC**. It applies only while the character wears no

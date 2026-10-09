@@ -19,6 +19,7 @@ export const DEFAULT_RACES = [
     keepsSpeedInArmor: true,
     darkvision: 60,
     resistances: ['poison'],
+    hpPerLevel: 1,
     skills: [],
     weapons: ['battleaxe', 'handaxe', 'light hammer', 'warhammer'],
     tools: [],

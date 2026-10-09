@@ -529,6 +529,9 @@ export type AsiChoice =
       granted?: import('./feat.js').FeatGrants;
       /** The standing roll rider the feat carries. */
       rider?: RollRider;
+      /** The extra hit points per class level the feat grants, which
+       * `HitDice.classMaxHP` adds to the maximum. */
+      hpPerLevel?: number;
     };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).

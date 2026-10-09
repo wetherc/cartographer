@@ -28,9 +28,9 @@ import {
  * weight class. Light armor adds the full DEX modifier. Medium armor caps
  * the DEX modifier at +2. Heavy armor ignores DEX. Unarmored AC is the base
  * AC, which is 10 by default or the base the GM set on the sheet, plus
- * the full DEX modifier. A Barbarian or a Monk with an empty chest slot also
- * gets the unarmored defense formula of its class, and takes whichever result
- * is higher. A shield adds its own bonus, which is +2 unless the item says
+ * the full DEX modifier. A Barbarian, a Monk, or a Draconic Bloodline
+ * sorcerer with an empty chest slot also gets the unarmored defense formula
+ * of its class or subclass, and takes whichever result is higher. A shield adds its own bonus, which is +2 unless the item says
  * otherwise. Every other equipped item adds its own flat acBonus. DEX here
  * includes equipped stat buffs. The chips on the character also count (see
  * `ChipMods.js`): a Mage Armor chip raises the unarmored base, a Shield chip
@@ -68,7 +68,8 @@ export function armorClass(character) {
       const shielded = !!off && itemType(off) === 'shield';
       for (const grant of unarmoredDefenses(character)) {
         if (shielded && !grant.shield) continue;
-        ac = Math.max(ac, 10 + dexMod + abilityModifier(stats[grant.ability] ?? 10));
+        const extra = grant.ability ? abilityModifier(stats[grant.ability] ?? 10) : 0;
+        ac = Math.max(ac, (grant.base ?? 10) + dexMod + extra);
       }
     }
   }

@@ -33,6 +33,9 @@ export interface RaceDef {
   /** True when armor too heavy for the character's Strength does not cost
    * the character speed (the Dwarf). Absent means the usual 10 ft penalty. */
   keepsSpeedInArmor?: boolean;
+  /** Extra maximum HP for each class level the character has (the Hill
+   * Dwarf's Dwarven Toughness). Absent means none. */
+  hpPerLevel?: number;
   /** Race trait names. These are display names only, not yet given a
    * mechanical effect (the same status as ClassDef.featuresByLevel). */
   traits: string[];

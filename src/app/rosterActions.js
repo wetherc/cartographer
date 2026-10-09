@@ -1,7 +1,8 @@
 import { promptModal, confirmDelete } from '../ui/Modal.js';
-import { addXP, getHP, setMaxHP, setBonusHP, setBaseAC } from '../entities/Character.js';
+import { addXP } from '../entities/Character.js';
 import { isDead } from '../entities/DeathSaves.js';
 import { payReward } from '../quest/QuestReward.js';
+import { baseMaxHP, vitalsFields, applyVitals } from './characterEdit.js';
 import { applyFresh, removeById } from '../entities/Roster.js';
 import { moveCharacter } from '../party/CharacterTokens.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -66,59 +67,25 @@ export function rosterActions(app, { scope, selectCharacter }) {
       }
     },
     // The numbers a GM sets rather than a character earns: the maximum HP
-    // The numbers a GM sets rather than a character earns: the maximum HP
     // override, bonus HP from an item or a boon, and the unarmored base AC
     // that an effect such as Mage Armor raises. Inline fields on the sheet
     // put three edit boxes in the middle of the numbers a player reads, so
     // one dialog per character keeps them together and keeps the sheet
-    // read-only.
+    // read-only. `characterEdit.js` defines the fields and their rules.
     onEditVitals: async (id) => {
       const character = state.characters.find((c) => c.id === id);
       if (!character) return;
-      const hp = getHP(character);
-      // A character with no HP pool authored yet gets the AC field alone.
-      // Max HP is the pool's own number, so there is nothing to override.
-      /** @type {import('../types/modal.js').ModalField[]} */
-      const fields = [];
-      if (hp) {
-        fields.push(
-          { name: 'maxHP', label: 'Max HP', type: 'number', value: hp.max, min: 1 },
-          {
-            name: 'bonusHP',
-            label: 'Bonus HP (temporary)',
-            type: 'number',
-            value: character.bonusHP ?? 0,
-            min: 0,
-          },
-        );
-      }
-      fields.push({
-        name: 'baseAC',
-        label: 'Unarmored base AC',
-        type: 'number',
-        value: character.baseAC ?? 10,
-        min: 1,
-      });
-      const values = await promptModal(`${character.name}: HP and AC`, fields, {
+      const shownMax = baseMaxHP(character);
+      const values = await promptModal(`${character.name}: HP and AC`, vitalsFields(character), {
         submitLabel: 'Save',
       });
       if (!values) return;
       // The edit applies to the character as it is now, not to the copy the
       // dialog opened with. A heal or a cross-tab save while the dialog was
       // open must survive the write-back.
-      const fresh = applyFresh(state.characters, id, (current) => {
-        let next = current;
-        const liveHP = getHP(current);
-        if (hp && liveHP) {
-          // Cutting the maximum takes current HP down with it, and bonus HP
-          // is a separate pool that damage drains before the intrinsic one.
-          next = setMaxHP(next, clampInt(values.maxHP, liveHP.max));
-          next = setBonusHP(next, clampInt(values.bonusHP, 0));
-        }
-        // Base AC applies only while no body armor is worn. The sheet's AC
-        // badge shows the derived result either way.
-        return setBaseAC(next, clampInt(values.baseAC, 10));
-      });
+      const fresh = applyFresh(state.characters, id, (current) =>
+        applyVitals(current, values, shownMax),
+      );
       if (!fresh.entity) {
         app.toasts.show(`${character.name} was removed while the dialog was open.`);
         return;

@@ -1885,6 +1885,7 @@ afterward.
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
 | Unarmored Barbarian | 10 plus DEX plus CON, if that is higher than the line above |
 | Unarmored Monk | 10 plus DEX plus WIS, if that is higher than the line above |
+| Unarmored Draconic Bloodline sorcerer | 13 plus DEX, if that is higher than the line above. A shield still adds its bonus |
 
 A Barbarian keeps its unarmored defense while it carries a shield. A Monk
 loses it, but the shield still adds its bonus. Both lose the formula when
@@ -2243,7 +2244,8 @@ always opens a new browser tab, and it has no link menu.
 
 | HP and AC field | Meaning |
 | --- | --- |
-| Max HP | Overrides the calculated maximum, and lowers current HP to fit |
+| Max HP | The maximum without the raise of a spell such as Aid. A changed value overrides the calculated maximum, and lowers current HP to fit. An unchanged value leaves the maximum calculated, so it still grows with level and CON |
+| Use class HP | Shows only after a typed maximum. Drops the typed value and goes back to the calculated maximum |
 | Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them. A typed amount stays after the spell that granted the old amount ends |
 | Unarmored base AC | The unarmored baseline, normally 10 |
 
@@ -2387,7 +2389,9 @@ proficiencies: saving throws, skills, weapons, armor, tools, and languages.
 Every list stays editable afterward.
 
 The class sets the hit die, and the class with its subclass sets the caster
-type. Max HP comes from the hit die plus the CON modifier per level.
+type. Max HP comes from the hit die plus the CON modifier per level. The Hill
+Dwarf (Dwarven Toughness) and the Tough feat add 1 and 2 HP per character
+level. A Draconic Bloodline sorcerer adds 1 HP per sorcerer level.
 
 Spell slots follow the 5e table. A multiclass character combines its
 casting classes on the combined-caster-level table.

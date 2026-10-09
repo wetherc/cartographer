@@ -91,6 +91,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   const asiEffect = feat?.effects.find((e) => e.kind === 'asi');
   const profEffect = feat?.effects.find((e) => e.kind === 'proficiency');
   const riderEffect = feat?.effects.find((e) => e.kind === 'rider');
+  const hpEffect = feat?.effects.find((e) => e.kind === 'hp');
 
   // --- Ability increase ------------------------------------------------------
   const asi = checkbox('Ability increase (+1)', !!asiEffect);
@@ -161,6 +162,15 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
     labeled('Applies to', el('div', 'u-row u-wrap u-g2', ...riderRollChecks.map((c) => c.label))),
   );
 
+  // --- Hit points ---------------------------------------------------------------
+  const hpInput = numberField(hpEffect?.perLevel ?? 0, {
+    className: 'form__number',
+    min: 0,
+    max: 10,
+  });
+  setTip(hpInput, 'Extra maximum HP for each class level the taker has. 0 for none.');
+  const hpRow = fieldRow(labeled('HP per level', hpInput));
+
   // A grid of options means nothing while its count is 0, and the rider and
   // ability controls mean nothing while their sections are off.
   function syncSections() {
@@ -215,6 +225,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
           tools: splitList(toolsInput.value),
           languages: splitList(languagesInput.value),
         },
+        { kind: 'hp', perLevel: hpInput.value },
         ...(rider.input.checked
           ? [
               {
@@ -250,6 +261,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       expertiseFromRow,
       armorRow,
       toolsRow,
+      hpRow,
       fieldRow(rider.label),
       riderRow,
       riderRollsRow,

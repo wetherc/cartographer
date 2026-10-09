@@ -485,7 +485,17 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 1,
       subclassLabel: 'Sorcerous Origin',
-      subclasses: [{ id: 'draconic', name: 'Draconic Bloodline' }],
+      subclasses: [
+        {
+          id: 'draconic',
+          name: 'Draconic Bloodline',
+          features: { 1: ['Draconic Resilience'] },
+          // Draconic Resilience: +1 max HP per sorcerer level, and 13 + DEX
+          // while unarmored. A shield adds its own bonus on top.
+          unarmoredDefense: { base: 13, shield: true },
+          hpPerLevel: 1,
+        },
+      ],
       asiLevels: ASI,
       multiclassPrereq: [{ CHA: 13 }],
       multiclassGrant: multiclassGrant(),

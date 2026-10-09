@@ -10,6 +10,8 @@ import { HP_RESOURCE_ID, HIT_DICE_ID_PREFIX, LEGACY_HIT_DICE_ID } from './PoolId
 import { updateById } from './Roster.js';
 import { isCasterPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
+import { subclassDef } from './ClassCasting.js';
+import { resolveRace } from './Races.js';
 import { getClasses, primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
 import { effectiveStats } from './Equipment.js';
@@ -101,12 +103,52 @@ export function hpGainPerLevel(hitDie, conModifier) {
 }
 
 /**
+ * A whole, non-negative per-level HP value from a stored record. A missing
+ * or malformed value (a hand-edited save) counts as 0.
+ * @param {unknown} value
+ * @returns {number}
+ */
+function perLevel(value) {
+  return Math.max(0, Math.floor(Number(value)) || 0);
+}
+
+/**
+ * The extra maximum HP that traits grant per class level. The race (the Hill
+ * Dwarf's Dwarven Toughness) and each taken feat (Tough) add their value for
+ * every assigned class level. A subclass (Draconic Bloodline) adds its value
+ * for each level in its own class, once that class reaches its
+ * `subclassLevel`. An unknown class contributes nothing, the same as in
+ * `classMaxHP`.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function traitHPBonus(character) {
+  let levels = 0;
+  let subclassHP = 0;
+  for (const ref of getClasses(character)) {
+    const def = getClass(ref.classId);
+    if (!def) continue;
+    const level = Math.max(1, Math.floor(ref.level) || 1);
+    levels += level;
+    if (level >= def.subclassLevel) {
+      subclassHP += perLevel(subclassDef(ref.classId, ref.subclass)?.hpPerLevel) * level;
+    }
+  }
+  const feats = Object.values(character.asiChoices ?? {}).reduce(
+    (sum, choice) => sum + (choice?.type === 'feat' ? perLevel(choice.hpPerLevel) : 0),
+    0,
+  );
+  return (perLevel(resolveRace(character)?.hpPerLevel) + feats) * levels + subclassHP;
+}
+
+/**
  * The class-derived maximum HP across the class list. The first class grants
  * a full hit die plus the CON modifier at its first level, with a minimum of
  * 1. Every other assigned level adds that class's average-rule gain. This
  * includes the first class's remaining levels and every other class's levels
- * in full. A pending, unassigned level contributes nothing. The result is
- * null for a classless character or one whose classes are all unknown.
+ * in full. A pending, unassigned level contributes nothing. The per-level
+ * grants of `traitHPBonus` add on top. The result is null for a classless
+ * character or one whose classes are all unknown.
  * @param {Character} character
  * @returns {number | null}
  */
@@ -123,7 +165,7 @@ export function classMaxHP(character) {
       total += level * hpGainPerLevel(die, con);
     }
   }
-  return total;
+  return total === null ? null : total + traitHPBonus(character);
 }
 
 /**

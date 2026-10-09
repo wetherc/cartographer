@@ -39,6 +39,7 @@ export function featSummary(feat) {
       return `+1 ${effect.abilities.length > 0 ? effect.abilities.join('/') : 'any'}`;
     }
     if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
+    if (effect.kind === 'hp') return `+${effect.perLevel} HP per level`;
     return [
       effect.skills ? `${effect.skills.choose} skill${effect.skills.choose > 1 ? 's' : ''}` : '',
       effect.saves ? `${effect.saves.choose} save${effect.saves.choose > 1 ? 's' : ''}` : '',

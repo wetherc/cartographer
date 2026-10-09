@@ -36,7 +36,10 @@ export type FeatEffect =
     }
   /** A standing bonus or penalty on the taker's d20 rolls, in the same shape
    * a condition chip carries. */
-  | { kind: 'rider'; rider: RollRider };
+  | { kind: 'rider'; rider: RollRider }
+  /** Raise the hit point maximum by `perLevel` for each class level the
+   * taker has, now and at every later level (the Tough feat). */
+  | { kind: 'hp'; perLevel: number };
 
 /**
  * Proficiency lists, one per kind, as a feat or class-feature record stores
@@ -68,6 +71,8 @@ export interface FeatStamp {
   granted?: FeatGrants;
   /** The standing roll rider the feat carries, copied as picked. */
   rider?: RollRider;
+  /** The extra hit points per class level that the feat grants. */
+  hpPerLevel?: number;
 }
 
 /** The checked part of a feat prerequisite. Every named part has to hold. */
