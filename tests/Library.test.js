@@ -27,7 +27,6 @@ import {
   resolveSpellIds,
   activeFeats,
   activeFeatEntries,
-  activeFeatByName,
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { DEFAULT_FEATS } from '../src/data/feats.js';
@@ -1168,8 +1167,6 @@ test('the feat registry merges customs and memoizes until the library changes', 
     const added = activeFeatEntries().find((e) => e.entry.name === 'Iron Will');
     assert.equal(added?.source, 'custom');
     assert.equal(activeFeatEntries().length, DEFAULT_FEATS.length + 1);
-    assert.equal(activeFeatByName(' skilled ')?.description, 'override');
-    assert.equal(activeFeatByName('Nonesuch'), null);
   } finally {
     setActiveLibrary(emptyLibrary());
   }

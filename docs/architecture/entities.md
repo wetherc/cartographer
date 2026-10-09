@@ -536,7 +536,7 @@ next `derive` would write its size and recharge again.
 `Progression.js` also exports the writers that app and UI code call:
 `withClasses`, `withRace`, `withCustomRace`, `withProficiencies`, `withExpertise`, `applyASI`,
 `takeFeat`, `undoLastChoice`, `applyFeatureGrant`, `undoFeatureGrant`,
-`setStat`, and `withEquipped`. Each is the writer of a lower module followed
+and `withEquipped`. Each is the writer of a lower module followed
 by `derive`. The lower modules keep the raw writers so that they can stay
 plain list arithmetic. A call to a raw writer from app code skips the
 reconcile and leaves the pools out of date.
@@ -1641,7 +1641,7 @@ The level is one number, `exhaustion`, on the character or the creature.
 zero. `exhaustionSlant` gives the slant of a level on one kind of roll, and
 `tiredSpeed` gives the walking speed. `atDeathLevel` reports the fatal level,
 and `exhaustionNote` is the sentence for a badge or a log line.
-`setExhaustion`, `gainExhaustion`, and `easeExhaustion` are the writers, and
+`setExhaustion` and `easeExhaustion` are the writers, and
 each limits its result to the same range.
 
 The halved HP maximum is the one effect that the app stores. Every HP reader
@@ -1667,8 +1667,8 @@ the log line. `saveOutcome`, `Checks.resolveSave`, and
 `ImposedConditions.repeatSaves` pass the level on in the same way. Each roll
 path reads the level of its roller:
 
-- `app/checkRolls.js`, `Checks.abilityCheck`, `Checks.savingThrow`, and
-  `combat/Stealth.js` for checks and saves.
+- `app/checkRolls.js`, `Checks.savingThrow`, and `combat/Stealth.js` for
+  checks and saves.
 - `combat/WeaponSwing.js` and `app/spellCastResolve.js` for weapon and spell
   attacks, for a character or a creature.
 - `app/spellCastResolve.js`, `app/weaponAttack.js`, `app/channelDivinity.js`,
@@ -1796,8 +1796,9 @@ succeed or three fail. `entities/DeathSaves.js` models this with a
 `deathSaves` field on the character, which records `successes`, `failures`,
 and `stable`. The field is null for a character who is not dying.
 
-- `isDying`, `isStable`, and `isDead` tell the four states apart: standing,
-  rolling, out of danger at 0 HP, and killed by three failures.
+- `isDying` and `isDead` tell a rolling character and one killed by three
+  failures apart. A character at 0 HP with `deathSaves.stable` set is out of
+  danger.
 - `dropToDying(character)` starts the tracker. A second call on a character
   who already has one changes nothing, so the failures already rolled stay.
 - `clearDying(character)` removes the tracker, which a heal above 0 HP and a
@@ -1808,8 +1809,6 @@ and `stable`. The field is null for a character who is not dying.
   and names the outcome: `revive`, `success`, `stable`, `failure`, or `dead`.
 - `applyJudged(character, state)` writes a judged tracker back. A revive
   restores 1 HP and then calls `clearDying`.
-- `rollDeathSave(character, opts)` rolls the save and applies the outcome. It
-  is the path for tests and for callers with no dice tray.
 - `recordDamage(character, { crit })` applies damage to a character already at
   0 HP.
 
@@ -1820,11 +1819,11 @@ counters say. A natural 1 counts as two failures, and it fails even when a
 rider raises the total past the DC. Otherwise, a total equal to the DC
 succeeds, as on every other save.
 
-The roll goes through `Checks.resolveSave` with a bonus of 0, because a death
-save adds no ability modifier and no proficiency. Going through that function
-lets a rider such as Bless reach the roll. The call passes no ability key, so
-the automatic failure that unconsciousness imposes on Strength and Dexterity
-saves does not apply to a death save.
+A death save adds no ability modifier and no proficiency, so its bonus is 0.
+`app/deathSaves.js` rolls the riders of the character, such as Bless, and puts
+them in the modifier of the tray. The roll names no ability, so the automatic
+failure that unconsciousness imposes on Strength and Dexterity saves does not
+apply to a death save.
 
 ### Damage and healing at 0 HP
 
@@ -1886,8 +1885,8 @@ screen and on the character sheet, and not from the turn advance.
 the player's roll, and the dice tray shows only throws that someone asked for.
 `app/deathSaves.js` owns both buttons. It follows the same split as
 `app/checkRolls.js`: the riders roll in the app, the tray throws the only d20,
-and `judgeDeathSave` reads the result. This path does not call
-`rollDeathSave`, because that function would throw a second d20.
+and `judgeDeathSave` reads the result. The entities module has no roll
+function of its own, so the tray throws the only d20.
 
 `view/DeathSaveView.js` turns one tracker into the words and pip counts that a
 panel draws, and `ui/DeathSaveBlock.js` builds the line from them. The combat

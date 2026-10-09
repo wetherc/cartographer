@@ -7,9 +7,6 @@ Use these steps to add built-in tile art that ships with the app. You draw
 an SVG file, register it in the tile catalog, update the palette test, and
 check the art in the tile preview page.
 
-A GM who loads an image at runtime does not need these steps.
-`TilePalette.addCustom` registers that image without a code change.
-
 ## Prerequisites
 
 - A clone with `pnpm install` done.

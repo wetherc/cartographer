@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   artStamp,
-  fogStamp,
   linkStamp,
   tileAt,
   withTileAppended,
@@ -86,19 +85,6 @@ test('an append keeps the link stamp only for a tile with no link', () => {
   assert.notEqual(plain.art, before.art);
   const linked = withTileAppended(node, createTile('4,4', 'grass.png', { childNodeId: 'c' }));
   assert.notEqual(linkStamp(linked), before.links);
-});
-
-test('the fog stamp changes with a revealed flag and nothing else', () => {
-  const node = nodeWith('0,0', '1,0');
-  const before = fogStamp(node);
-  assert.equal(fogStamp(setTile(node, createTile('0,0', 'water.png'))), before);
-  assert.notEqual(fogStamp(setTileRevealed(node, '0,0', true)), before);
-  const tiles = Array.from({ length: 16 }, (_, i) => createTile(`${i % 4},${i >> 2}`, 'g.png'));
-  const whole = withNodeTiles(createMapNode('n', 'Node', null, 8, 8), tiles);
-  const fog = fogStamp(whole);
-  assert.equal(fogStamp(withTileAppended(whole, createTile('4,4', 'g.png'))), fog);
-  const shown = createTile('4,4', 'g.png', { revealed: true });
-  assert.notEqual(fogStamp(withTileAppended(whole, shown)), fog);
 });
 
 test('a new span with the same image makes a new art stamp', () => {

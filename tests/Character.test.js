@@ -22,7 +22,7 @@ import {
   damageCharacter,
   restAll,
 } from '../src/entities/Character.js';
-import { setStat } from '../src/entities/Progression.js';
+
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
 import { createCondition } from '../src/entities/Conditions.js';
@@ -122,12 +122,6 @@ test('addXP leaves a pool-less character unchanged but for level/xp', () => {
   const hero = addXP(createCharacter('c1', 'Hero'), 300);
   assert.equal(hero.level, 2);
   assert.deepEqual(hero.resources, []);
-});
-
-test('setStat updates one stat without touching others', () => {
-  const hero = setStat(createCharacter('c1', 'Hero', { STR: 14, DEX: 12 }), 'STR', 16);
-  assert.equal(hero.stats.STR, 16);
-  assert.equal(hero.stats.DEX, 12);
 });
 
 test('addResource, spendResource, and restoreResource operate on the matching pool by id', () => {

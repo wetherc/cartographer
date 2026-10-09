@@ -725,11 +725,6 @@ export function activeFeats() {
  * spaces, the same way the merge does.
  * @param {string} name
  * @returns {Feat | null} */
-export function activeFeatByName(name) {
-  const key = nameKey({ name });
-  return activeFeats().find((f) => nameKey(f) === key) ?? null;
-}
-
 /**
  * Resolve stored spell ids to Spell objects through the memoized index. This
  * function removes duplicate ids and drops any id the library no longer

@@ -165,21 +165,6 @@ export function addTomeRituals(character, spells) {
 }
 
 /**
- * The character with a ritual taken out of the book.
- * @param {Character} character
- * @param {string} id
- * @returns {Character}
- */
-export function removeTomeRitual(character, id) {
-  const book = character.bookOfShadows;
-  if (!book?.rituals.includes(id)) return character;
-  return {
-    ...character,
-    bookOfShadows: { ...book, rituals: book.rituals.filter((r) => r !== id) },
-  };
-}
-
-/**
  * The character with the grants of a lost tome taken back. Without the Pact
  * of the Tome, the Book of Shadows cantrips leave the spellbook and the book
  * goes. Otherwise they would stay as class cantrips and count against the

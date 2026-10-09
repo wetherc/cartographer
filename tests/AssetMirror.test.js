@@ -12,7 +12,7 @@ import {
   useAssetBackend,
   withStoredAssets,
 } from '../src/storage/AssetMirror.js';
-import { createMemoryBackend } from '../src/storage/AssetBackend.js';
+import { createMemoryBackend } from './helpers/memoryAssets.js';
 import { ASSETS_KEY } from '../src/storage/AssetStore.js';
 import { installLocalStorage } from './helpers/env.js';
 

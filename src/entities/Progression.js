@@ -121,19 +121,6 @@ export const applyFeatureGrant = deriving(recordFeatureGrant);
  * @type {(character: Character, key: string) => Character} */
 export const undoFeatureGrant = deriving(dropFeatureGrant);
 
-/**
- * Set one ability score, then re-derive. This function lives here instead of
- * in Character.js, because the reconcile that it needs reads the class
- * catalog, and Character.js sits below that catalog.
- * @param {Character} character
- * @param {string} key
- * @param {number} value
- * @returns {Character}
- */
-export function setStat(character, key, value) {
-  return derive({ ...character, stats: { ...character.stats, [key]: value } });
-}
-
 /** Equip an item or clear a slot, then re-derive. A worn CON bonus moves max
  * HP. See Equipment.equip.
  * @type {(character: Character, slot: import('../types/entities.js').EquipmentSlot, itemId: string | null) => Character} */

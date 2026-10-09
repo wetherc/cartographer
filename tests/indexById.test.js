@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { indexById, indexBy } from '../src/util/indexById.js';
+import { indexById } from '../src/util/indexById.js';
 
 test('indexById maps each item by its id', () => {
   const items = [
@@ -26,26 +26,4 @@ test('indexById keeps the last item on a duplicate id', () => {
   ]);
   assert.equal(map.size, 1);
   assert.equal(map.get('a').v, 2);
-});
-
-test('indexBy keys by an arbitrary derived key', () => {
-  const items = [
-    { name: 'Fireball', v: 1 },
-    { name: 'Bless', v: 2 },
-  ];
-  const map = indexBy(items, (s) => s.name.toLowerCase());
-  assert.equal(map.get('fireball').v, 1);
-  assert.equal(map.get('bless').v, 2);
-});
-
-test('indexBy keeps the last item on a duplicate key', () => {
-  const map = indexBy(
-    [
-      { name: 'X', v: 1 },
-      { name: 'x', v: 2 },
-    ],
-    (s) => s.name.toLowerCase(),
-  );
-  assert.equal(map.size, 1);
-  assert.equal(map.get('x').v, 2);
 });

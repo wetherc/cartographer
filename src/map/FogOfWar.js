@@ -89,6 +89,8 @@ export function withinRadius(tileId, centerId, radius) {
 
 /**
  * Reset every tile in a node back to unrevealed.
+ *
+ * The tests call this function, and no app code does.
  * @param {MapNode} node
  * @returns {MapNode}
  */
@@ -129,6 +131,7 @@ export function setTileRevealed(node, tileId, revealed) {
 }
 
 /**
+ * The tests and the benchmarks call this function, and no app code does.
  * @param {MapNode} node
  * @returns {number} count of currently-revealed tiles
  */

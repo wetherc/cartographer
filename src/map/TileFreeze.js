@@ -7,8 +7,7 @@
  * throw reaching a GM mid-session is worse than the stale draw it replaces.
  * Detection covers the two places the code runs before release: Node (the
  * test suite and any tooling) and the documented HTTP dev server.
- * `setTileFreezing` overrides it for a benchmark or a test that needs the
- * other behavior.
+ * `setTileFreezing` overrides it for a test that needs the other behavior.
  */
 let enabled = detectDevelopment();
 
@@ -30,6 +29,8 @@ function detectDevelopment() {
 /**
  * Turn tile freezing on or off, returning the previous setting so a caller can
  * restore it.
+ *
+ * The tests call this function, and no app code does.
  * @param {boolean} value
  * @returns {boolean}
  */
@@ -40,6 +41,7 @@ export function setTileFreezing(value) {
 }
 
 /**
+ * The tests call this function, and no app code does.
  * @returns {boolean}
  */
 export function isTileFreezingEnabled() {

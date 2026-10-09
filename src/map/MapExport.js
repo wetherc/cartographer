@@ -141,16 +141,6 @@ export function exportTileSize(node, requested = EXPORT_TILE_SIZE) {
 }
 
 /**
- * True when no export of this node fits the browser's canvas limits. The
- * caller tells the GM instead of drawing. This is a pure function.
- * @param {MapNode} node
- * @returns {boolean}
- */
-export function exceedsExportCap(node) {
-  return exportTileSize(node) === 0;
-}
-
-/**
  * The refs an export still must decode, given the images a live renderer
  * already holds. An entry that is present but not `complete` is still
  * loading, so the export loads its own copy instead of drawing a blank tile.

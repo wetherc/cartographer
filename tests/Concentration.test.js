@@ -6,7 +6,6 @@ import {
   concentrationDC,
   drop,
   dropIfHelpless,
-  isConcentrating,
   tick,
 } from '../src/entities/Concentration.js';
 import { createCharacter } from '../src/entities/Character.js';
@@ -77,7 +76,6 @@ test('begin records the spell and adds the chip with the duration', () => {
     remaining: 10,
   });
   assert.deepEqual(chip(character), { name: 'Concentrating', rounds: 10 });
-  assert.equal(isConcentrating(character), true);
 });
 
 test('an open-ended duration concentrates with no round counter', () => {

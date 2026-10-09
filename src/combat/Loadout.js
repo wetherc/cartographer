@@ -97,23 +97,6 @@ export function buildLoadout(found, spells = [], access = 'full') {
 }
 
 /**
- * Whether a loadout has nothing to draw, so a card can leave the block out
- * instead of drawing an empty one.
- * @param {Loadout} loadout
- * @returns {boolean}
- */
-export function isEmptyLoadout(loadout) {
-  return (
-    loadout.armor.length === 0 &&
-    loadout.weapons.length === 0 &&
-    loadout.slots.length === 0 &&
-    loadout.spellStats === null &&
-    loadout.spells.cantrips === 0 &&
-    loadout.spells.leveled === 0
-  );
-}
-
-/**
  * The protective pieces worn, named: a character's body armor and shield, or
  * the authored armor of a creature.
  * @param {ResolvedCombatant} found

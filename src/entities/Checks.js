@@ -328,6 +328,8 @@ export function resolveCheck(bonus, dc, opts = {}) {
  * The character's own chips ride along without the caller asking, as they do
  * on a save. A caller can still pass its own `conditions` to override the
  * list.
+ *
+ * The tests call this function, and no app code does.
  * @param {Character} character
  * @param {string} key a skill id or one of the six ability keys
  * @param {number | null} [dc]

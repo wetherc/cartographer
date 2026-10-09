@@ -1,46 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DEATH_SAVE_DC,
   clearDying,
   dropToDying,
   isDead,
   isDying,
-  isStable,
   judgeDeathSave,
   killOutright,
   recordDamage,
   deathSaveMode,
-  rollDeathSave,
   stabilize,
 } from '../src/entities/DeathSaves.js';
-import {
-  HP_RESOURCE_ID,
-  createCharacter,
-  getHP,
-  spendResource,
-  withDefaults,
-  withHP,
-} from '../src/entities/Character.js';
+import { createCharacter, withDefaults } from '../src/entities/Character.js';
 import { addCondition } from '../src/entities/Conditions.js';
 import { packEntity } from '../src/storage/EntityPack.js';
-
-/**
- * A deterministic RNG replaying a queue of unit values, one per call, matching
- * the dice suites: `roll` computes `floor(rng() * sides) + 1`.
- * @param {number[]} values
- * @returns {() => number}
- */
-function seq(values) {
-  const queue = [...values];
-  return () => (queue.length ? /** @type {number} */ (queue.shift()) : 0);
-}
-
-/** rng() value that makes a d`sides` roll come up `face`.
- * @param {number} sides @param {number} value */
-function face(sides, value) {
-  return (value - 1) / sides + 1e-9;
-}
 
 /** A character at 0 HP with the tracker in the given position.
  * @param {Partial<import('../src/types/entities.js').DeathSaveState>} [state] */
@@ -55,12 +28,10 @@ function dying(state = {}) {
 test('the predicates separate not dying, dying, stable, and dead', () => {
   const standing = createCharacter('hero', 'Hero');
   assert.equal(isDying(standing), false);
-  assert.equal(isStable(standing), false);
   assert.equal(isDead(standing), false);
   assert.equal(isDying(dying()), true);
   const stable = dying({ stable: true });
   assert.equal(isDying(stable), false, 'a stable character rolls no more saves');
-  assert.equal(isStable(stable), true);
   const dead = dying({ failures: 3 });
   assert.equal(isDying(dead), false);
   assert.equal(isDead(dead), true);
@@ -183,61 +154,6 @@ test('a natural 1 counts two failures and beats the total', () => {
   assert.equal(fatal.outcome, 'dead');
 });
 
-test('rollDeathSave rolls a bare d20 against DC 10 and applies the outcome', () => {
-  assert.equal(DEATH_SAVE_DC, 10);
-  // A CON of 20 would add +5 to a CON save. A death save adds nothing.
-  const strong = /** @type {any} */ ({ ...dying(), stats: { ...dying().stats, CON: 20 } });
-  const { character, save, outcome } = rollDeathSave(strong, { rng: seq([face(20, 9)]) });
-  assert.equal(save?.total, 9, 'no ability modifier and no proficiency');
-  assert.equal(save?.dc, 10);
-  assert.equal(outcome, 'failure');
-  assert.deepEqual(character.deathSaves, { successes: 0, failures: 1, stable: false });
-});
-
-test('rollDeathSave clears the tracker and the chip and restores 1 HP on a natural 20', () => {
-  const atZero = spendResource(withHP(dying({ failures: 2 }), 8), HP_RESOURCE_ID, 8);
-  const { character, outcome } = rollDeathSave(atZero, { rng: seq([face(20, 20)]) });
-  assert.equal(outcome, 'revive');
-  assert.equal(character.deathSaves, null);
-  assert.deepEqual(character.conditions, []);
-  assert.equal(getHP(character)?.current, 1);
-});
-
-test('a Bless rider turns a 9 into a success', () => {
-  const blessed = /** @type {any} */ ({
-    ...dying(),
-    conditions: [
-      ...dying().conditions,
-      { name: 'Blessed', rounds: 10, rider: { rolls: ['save'], dice: 1, die: 'd4' } },
-    ],
-  });
-  // Riders draw before the d20 in resolveD20, so the d4 comes first.
-  const { save, outcome } = rollDeathSave(blessed, {
-    rng: seq([face(4, 3), face(20, 9)]),
-  });
-  assert.equal(save?.total, 12);
-  assert.equal(outcome, 'success');
-});
-
-test('an unconscious character still rolls a death save, with no ability auto-fail', () => {
-  const { save, outcome } = rollDeathSave(dying(), { rng: seq([face(20, 18)]) });
-  assert.equal(save?.roll.results[0].rolls[0], 18, 'the chip does not stop the roll');
-  assert.equal(outcome, 'success');
-});
-
-test('rollDeathSave is a no-op while stable, while dead, and while standing', () => {
-  for (const character of [
-    dying({ stable: true }),
-    dying({ failures: 3 }),
-    createCharacter('h', 'H'),
-  ]) {
-    const result = rollDeathSave(character, { rng: seq([face(20, 20)]) });
-    assert.equal(result.character, character);
-    assert.equal(result.save, null);
-    assert.equal(result.outcome, null);
-  }
-});
-
 test('damage while down is an automatic failure, and a crit counts two', () => {
   const one = recordDamage(dying());
   assert.deepEqual(one, {
@@ -279,12 +195,9 @@ test('a dying character keeps its tracker through a pack round trip', () => {
   assert.deepEqual(packed.deathSaves, { successes: 1, failures: 2, stable: false });
 });
 
-test('exhaustion 3 rolls a death save at disadvantage, because it is a saving throw', () => {
+test('exhaustion 3 gives a death save the disadvantage mode of a saving throw', () => {
   assert.equal(deathSaveMode(dying()), null, 'a rested character rolls straight');
   assert.equal(deathSaveMode(/** @type {any} */ ({ ...dying(), exhaustion: 2 })), null);
   const tired = /** @type {any} */ ({ ...dying(), exhaustion: 3 });
   assert.equal(deathSaveMode(tired), 'disadvantage');
-  const { save, outcome } = rollDeathSave(tired, { rng: seq([face(20, 12), face(20, 8)]) });
-  assert.equal(save?.total, 8, 'disadvantage keeps the 8');
-  assert.equal(outcome, 'failure', 'the 12 alone succeeds when rested');
 });

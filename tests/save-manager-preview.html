@@ -18,7 +18,8 @@
     import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
     import { createCharacter, addXP } from '../src/entities/Character.js';
     import { createCreature } from '../src/entities/Creature.js';
-    import { buildState, trySaveToLocalStorage, loadFromLocalStorage, downloadState, toTileGrid } from '../src/storage/SaveManager.js';
+    import { buildState, trySaveToLocalStorage, loadFromLocalStorage, toTileGrid } from '../src/storage/SaveManager.js';
+    import { downloadCampaignFile } from '../src/storage/CampaignFile.js';
 
     let world = createMapNode('world', 'World', null, 1, 1);
     world = setTile(world, createTile('0,0', 'grass.svg', { revealed: true }));
@@ -46,7 +47,7 @@
     });
 
     document.getElementById('download').addEventListener('click', () => {
-      downloadState(state);
+      downloadCampaignFile(state, null);
     });
   </script>
 </body>

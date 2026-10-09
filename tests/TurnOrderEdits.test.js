@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   advanceTurn,
   canDelay,
-  canRetreat,
   createParticipant,
   delayTurn,
   retreatTurn,
@@ -33,10 +32,8 @@ test('retreatTurn wraps to the last row of the round before', () => {
 test('retreatTurn does nothing on the first turn or an empty order', () => {
   const s = fight();
   assert.equal(retreatTurn(s), s);
-  assert.equal(canRetreat(s), false);
   const empty = { round: 1, index: 0, order: [], startedAt: 0 };
   assert.equal(retreatTurn(empty), empty);
-  assert.equal(canRetreat(empty), false);
 });
 
 test('retreatTurn passes over defeated rows', () => {
@@ -44,7 +41,6 @@ test('retreatTurn passes over defeated rows', () => {
   s = advanceTurn(advanceTurn(s).state).state;
   const back = retreatTurn(s, (p) => p.id === 'b');
   assert.equal(back.index, 0);
-  assert.equal(canRetreat(s), true);
 });
 
 test('retreatTurn stops at round 1 when every earlier row is defeated', () => {

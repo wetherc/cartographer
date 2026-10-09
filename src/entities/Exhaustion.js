@@ -64,14 +64,6 @@ export const HALVED_HP_LEVEL = 4;
 export const STILL_LEVEL = 5;
 
 /**
- * The name exhaustion went by while it was a hand-added condition chip, before
- * it had a level behind it. `exhaustionFields` folds such a chip into a level
- * and drops it, and the name is gone from the `CONDITIONS` pick-list, so there
- * is only ever one way to say a character is exhausted.
- */
-export const LEGACY_CHIP = 'Exhaustion';
-
-/**
  * What counts as a legacy exhaustion chip. A condition is a free string, so a
  * GM may have typed "Exhausted" or "Exhaustion 3" instead of the pick-list
  * name. The optional trailing number is the level the GM meant. Anything
@@ -175,19 +167,6 @@ export function settleExhaustionHP(entity) {
  */
 export function setExhaustion(entity, level) {
   return settleExhaustionHP({ ...entity, exhaustion: exhaustionLevel({ exhaustion: level }) });
-}
-
-/**
- * Add levels, clamped at death. No effect exhausts its target yet, so the
- * GM's stepper is the only write today. An effect that does will call this
- * rather than reading the level and setting it back.
- * @template {Exhaustible} T
- * @param {T} entity
- * @param {number} [count]
- * @returns {T}
- */
-export function gainExhaustion(entity, count = 1) {
-  return setExhaustion(entity, exhaustionLevel(entity) + Math.max(0, Math.floor(count)));
 }
 
 /**

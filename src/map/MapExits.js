@@ -305,20 +305,6 @@ export function exitForSide(exits, side) {
 }
 
 /**
- * Whether an interior has no authored way out, so Build mode can report it.
- * A GM can still leave through the fallback exit in Play mode, findExits
- * returns one. A sealed interior nearly always means an unfinished map, not
- * an intent.
- * @param {MapNode | null} node
- * @param {MapNode | null} parent
- * @returns {boolean}
- */
-export function isSealedInterior(node, parent) {
-  if (!node || !parent || node.kind !== 'interior') return false;
-  return findExits(node, parent).every((e) => e.kind === 'fallback');
-}
-
-/**
  * What Build mode tells a GM about the node in view, or null when there is
  * nothing to say. The problems are listed in the order a GM must solve them.
  *

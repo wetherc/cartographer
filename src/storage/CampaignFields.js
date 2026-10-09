@@ -36,7 +36,7 @@ import {
  * A record coercion followed by the entity defaults. This is the unpack half
  * of the omission in `packState`, so it runs on every load. A stored
  * character can have no `spellbook` key, and `undoHistory` and
- * `readStateFromFile` pass their result to callers that apply no defaults.
+ * `readCampaignFromFile` pass their result to callers that apply no defaults.
  * @param {(entry: any) => unknown} withDefaults
  * @returns {(value: unknown) => unknown[]}
  */

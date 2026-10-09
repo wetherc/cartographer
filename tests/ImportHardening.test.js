@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { deserialize } from '../src/storage/SaveManager.js';
 import { overlayList } from '../src/map/TileGrid.js';
 import { imageSrcForRef } from '../src/map/MapRenderer.js';
-import { exceedsExportCap } from '../src/map/MapExport.js';
+import { exportTileSize } from '../src/map/MapExport.js';
 import { isoTimestamp } from '../src/log/Travelogue.js';
 import { addXP, MAX_LEVEL } from '../src/entities/Character.js';
 import { XP_THRESHOLDS } from '../src/entities/Experience.js';
@@ -103,8 +103,8 @@ test('an oversized node is refused by the PNG export instead of drawn', () => {
       { id: 'b', name: 'B', parentId: null, width: 513, height: 512, tiles: [] },
     ],
   }).nodes;
-  assert.equal(exceedsExportCap(largest), false);
-  assert.equal(exceedsExportCap(huge), true);
+  assert.equal(exportTileSize(largest) === 0, false);
+  assert.equal(exportTileSize(huge) === 0, true);
 });
 
 test('a travelog entry with an unreadable timestamp loads with a date the panels can format', () => {

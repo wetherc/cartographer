@@ -282,16 +282,16 @@ pnpm bench -- --only=rehydrate-focus
 ## Check a browser-only wrapper
 
 Some modules wrap browser APIs that Node does not have. In
-`src/storage/SaveManager.js`, these are `trySaveToLocalStorage`,
-`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. The unit
-tests run the two `localStorage` wrappers over the in-memory stub in
+`src/storage/SaveManager.js`, these are `trySaveToLocalStorage` and
+`loadFromLocalStorage`, and in `src/storage/CampaignFile.js`, these are
+`downloadCampaignFile` and `readCampaignFromFile`. The unit tests run the two `localStorage` wrappers over the in-memory stub in
 `tests/helpers/env.js`, and the other two have no unit tests. Check all
 four in a real browser. Chromium has a working `localStorage` with a real
 quota, so a save followed by a load is an end-to-end check.
 
 `src/storage/IndexedDbAssets.js` is also a browser-only wrapper. The unit
 tests of `AssetMirror.js` run over the in-memory store in
-`src/storage/AssetBackend.js`, so check the IndexedDB path by hand:
+`tests/helpers/memoryAssets.js`, so check the IndexedDB path by hand:
 
 1. Attach an image to a handout, reveal the handout, and click **Save**.
    In the Application panel of the developer tools, the image payload is

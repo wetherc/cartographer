@@ -559,8 +559,8 @@ function writeOrder(container, segment, pattern, op, context) {
 
 /**
  * The byte cost of a serialized op list in localStorage (UTF-16 uses two
- * bytes per code unit). This sizes the delta log against the origin quota.
- * The function is pure.
+ * bytes per code unit). The function is pure. The tests use it to compare a
+ * delta log with the full state, and no app code calls it.
  * @param {DiffOp[]} ops
  * @returns {number}
  */

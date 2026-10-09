@@ -1,14 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  MAX_EDGE,
-  QUALITY_STEPS,
-  encodeAttempts,
-  encodeSizes,
-  fitDimensions,
-  pickFit,
-} from '../src/ui/imageField.js';
+import { MAX_EDGE, encodeSizes, fitDimensions, pickFit } from '../src/ui/imageField.js';
 
 test('an image already inside the cap keeps its dimensions', () => {
   assert.deepEqual(fitDimensions(800, 600, 1280), { width: 800, height: 600 });
@@ -42,41 +35,6 @@ test('an unusable source size falls back to one pixel rather than zero', () => {
     [100, Infinity],
   ]) {
     assert.deepEqual(fitDimensions(width, height, 1280), { width: 1, height: 1 });
-  }
-});
-
-test('the attempt list is finite and never grows', () => {
-  const attempts = encodeAttempts(4000, 3000);
-  assert.equal(attempts.length, QUALITY_STEPS.length * 2);
-  for (let i = 1; i < attempts.length; i += 1) {
-    const previous = attempts[i - 1];
-    const current = attempts[i];
-    const shrank =
-      current.width < previous.width ||
-      current.height < previous.height ||
-      current.quality < previous.quality;
-    assert.ok(shrank, `attempt ${i} did not reduce anything`);
-  }
-});
-
-test('the attempt list starts at the full permitted edge and halves it', () => {
-  const attempts = encodeAttempts(4000, 3000);
-  assert.deepEqual(
-    { width: attempts[0].width, quality: attempts[0].quality },
-    { width: MAX_EDGE, quality: QUALITY_STEPS[0] },
-  );
-  const halved = attempts[QUALITY_STEPS.length];
-  assert.deepEqual(halved, {
-    ...fitDimensions(4000, 3000, MAX_EDGE / 2),
-    quality: QUALITY_STEPS[0],
-  });
-});
-
-test('a small source is not upscaled by the reduced-edge attempts either', () => {
-  const attempts = encodeAttempts(320, 200);
-  for (const attempt of attempts) {
-    assert.ok(attempt.width <= 320, 'width grew');
-    assert.ok(attempt.height <= 200, 'height grew');
   }
 });
 

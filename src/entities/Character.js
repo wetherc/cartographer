@@ -178,7 +178,6 @@ export { getClasses } from './Multiclass.js';
  * this file. */
 export {
   emptySpellbook,
-  copySpellbook,
   getSpellbook,
   spellSource,
   learnCantrip,
@@ -364,6 +363,7 @@ export function addXP(character, amount, opts = {}) {
 }
 
 /**
+ * The tests call this function, and no app code does.
  * @param {Character} character
  * @param {ResourcePool} pool
  * @returns {Character}

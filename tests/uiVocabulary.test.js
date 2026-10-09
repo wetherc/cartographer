@@ -163,8 +163,8 @@ test('innerHTML is only ever cleared, never assigned markup', () => {
 });
 
 // A link typed by hand misses the button look, the tooltip, and the
-// new-tab rel that iconLink and textLink apply. A file download builds its
-// own detached anchor through createElement, which this scan does not read.
+// new-tab rel that iconLink applies. A file download builds its own
+// detached anchor through createElement, which this scan does not read.
 test('a link is only ever built through buttons.js', () => {
   /** @type {string[]} */
   const offenders = [];
@@ -174,7 +174,7 @@ test('a link is only ever built through buttons.js', () => {
       if (/\bel\(\s*'a'/.test(text)) offenders.push(`src/${file.path}:${index + 1}`);
     });
   }
-  assert.deepEqual(offenders, [], `Call iconLink or textLink instead:\n${offenders.join('\n')}`);
+  assert.deepEqual(offenders, [], `Call iconLink instead:\n${offenders.join('\n')}`);
 });
 
 test('a builder-owned class is never typed by hand elsewhere', () => {

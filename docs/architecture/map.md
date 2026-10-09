@@ -428,10 +428,6 @@ terrain variants apart from connector pieces:
 - Road pieces are named connector pieces (a straight, a corner, a tee), not
   random variants. `getRoadPiece(kind)` looks one up by name.
 
-Callers can register custom tiles with `addCustom` and `removeCustom`. A
-custom tile cannot override a built-in tile, so custom tiles only extend the
-catalog.
-
 ### Tile kinds
 
 Some art has a meaning for the rules. The party cannot stand on a wall or on
@@ -1208,7 +1204,8 @@ move. `onCellClick` in `app/mapTravel.js` calls `walkPath`, which asks
 `MapPath.findPath(node, from, to)` for the walk from the tile of the mover
 to the clicked tile. The mover is whoever the click moves. `findPath`
 returns the tile ids of the walk, start and target included, or null when
-no walk leads there. `hasOpenPath` is the boolean form.
+no walk leads there. `hasOpenPath` is the boolean form, which only the tests
+call.
 
 `findPath` is a breadth-first search over the four side neighbors of each
 cell. A step onto a tile that `TileKinds.isBlocked` rejects (a wall or an

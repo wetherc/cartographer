@@ -113,6 +113,8 @@ function trace(cameFrom, goal, width) {
 /**
  * Whether a walk leads from one tile of a node to another. See `findPath`
  * for the rules of a walk.
+ *
+ * The tests call this function, and no app code does.
  * @param {MapNode} node
  * @param {string} fromId
  * @param {string} toId

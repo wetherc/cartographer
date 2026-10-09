@@ -1,12 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  assembleEffect,
-  assembleScaling,
-  assembleSpell,
-  effectDamageOf,
-} from '../src/entities/SpellDraft.js';
+import { assembleEffect, assembleSpell, effectDamageOf } from '../src/entities/SpellDraft.js';
+import { normalizeSpellScaling } from '../src/entities/SpellEntry.js';
 
 /** @param {number} count @param {number} sides @param {string} damageType */
 function part(count, sides, damageType) {
@@ -130,25 +126,21 @@ test('a utility effect carries nothing at all, whatever the other controls hold'
   assert.deepEqual(effect, { kind: 'utility' });
 });
 
-test('an unticked scaling box scales nothing', () => {
-  assert.equal(assembleScaling(null), undefined);
-});
-
 test('a ticked scaling box with neither half filled in is the same as unticked', () => {
-  assert.equal(assembleScaling({ damagePerLevel: [], targetsPerLevel: 0 }), undefined);
+  assert.equal(normalizeSpellScaling({ damagePerLevel: [], targetsPerLevel: 0 }), undefined);
 });
 
 test('scaling keeps whichever half was filled in', () => {
-  assert.deepEqual(assembleScaling({ damagePerLevel: fire, targetsPerLevel: 0 }), {
+  assert.deepEqual(normalizeSpellScaling({ damagePerLevel: fire, targetsPerLevel: 0 }), {
     damagePerLevel: fire,
   });
-  assert.deepEqual(assembleScaling({ damagePerLevel: [], targetsPerLevel: '2' }), {
+  assert.deepEqual(normalizeSpellScaling({ damagePerLevel: [], targetsPerLevel: '2' }), {
     targetsPerLevel: 2,
   });
 });
 
 test('a negative extra-targets figure is not scaling', () => {
-  assert.equal(assembleScaling({ damagePerLevel: [], targetsPerLevel: -4 }), undefined);
+  assert.equal(normalizeSpellScaling({ damagePerLevel: [], targetsPerLevel: -4 }), undefined);
 });
 
 test('a submitted form trims its text and reads its level as a number', () => {
@@ -342,7 +334,7 @@ test('a repeat and slot levels per step come through the whole form', () => {
   assert.deepEqual(spell.scaling, { damagePerLevel: fire, levelsPerStep: 2 });
   assert.equal(assembleSpell(draft()).repeat, undefined);
   assert.equal(
-    assembleScaling({ damagePerLevel: fire, targetsPerLevel: 0 })?.levelsPerStep,
+    normalizeSpellScaling({ damagePerLevel: fire, targetsPerLevel: 0 })?.levelsPerStep,
     undefined,
   );
 });

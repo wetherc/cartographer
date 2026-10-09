@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   collectImageRefs,
-  exceedsExportCap,
   exportCanvasSize,
   exportFilename,
   exportLead,
@@ -66,7 +65,7 @@ test('a node that fits keeps the full tile resolution', () => {
   assert.equal(exportTileSize(extent(1, 1)), EXPORT_TILE_SIZE);
   // 63 tiles of 64 pixels plus the label margin is a 4,096 pixel side.
   assert.equal(exportTileSize(extent(63, 63)), EXPORT_TILE_SIZE);
-  assert.equal(exceedsExportCap(extent(64, 64)), false);
+  assert.notEqual(exportTileSize(extent(64, 64)), 0);
 });
 
 test('a node past the area budget scales down instead of failing', () => {
@@ -86,7 +85,6 @@ test('a long thin node is held to the longest side, not the area alone', () => {
 
 test('a node too large to draw readably is refused', () => {
   assert.equal(exportTileSize(extent(3000, 3000)), 0);
-  assert.equal(exceedsExportCap(extent(3000, 3000)), true);
 });
 
 test('exportTileSize never asks for more than the caller wanted', () => {

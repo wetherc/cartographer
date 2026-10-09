@@ -4,7 +4,6 @@ import {
   withRepairedLinks,
   withRepairedParents,
 } from '../map/TileGrid.js';
-import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, nodeHoldsPayload, restoreAssets } from './Assets.js';
 import { detachAssets, persistAssets, storeAssets } from './AssetStore.js';
@@ -636,21 +635,13 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options 
 }
 
 /**
+ * The tests call this function, and no app code does.
  * @param {string} [key]
  * @returns {CampaignState | null}
  */
 export function loadFromLocalStorage(key = DEFAULT_STORAGE_KEY) {
   const json = localStorage.getItem(key);
   return json ? deserialize(json, storedAssetTable()) : null;
-}
-
-/**
- * Start a browser download of the campaign as a .json file.
- * @param {CampaignState} state
- * @param {string} [filename]
- */
-export function downloadState(state, filename = 'campaign.json') {
-  downloadJSON(serialize(state), filename);
 }
 
 /**
@@ -681,14 +672,4 @@ export function onExternalSave(callback, key = DEFAULT_STORAGE_KEY) {
   };
   window.addEventListener('storage', handler);
   return () => window.removeEventListener('storage', handler);
-}
-
-/**
- * Read a campaign from a File. The File can come, for example, from a file
- * input's change event.
- * @param {File} file
- * @returns {Promise<CampaignState>}
- */
-export function readStateFromFile(file) {
-  return readFileText(file).then(deserialize);
 }

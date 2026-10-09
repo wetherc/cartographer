@@ -8,13 +8,12 @@ import {
   exitLabel,
   exitsInReach,
   findExits,
-  isSealedInterior,
   needsLink,
   nearestSide,
   paintedDistance,
   stairwayTo,
 } from '../src/map/MapExits.js';
-import { edgeExitBand, exitBandGeometry, hitExitBand } from '../src/map/ExitBands.js';
+import { edgeExitBand, exitBandGeometry } from '../src/map/ExitBands.js';
 import { createTile } from '../src/map/TileGrid.js';
 import { gridTiles } from './helpers/grid.js';
 
@@ -400,33 +399,6 @@ test('exits are ordered by tile id whatever order the tiles came in', () => {
   );
 });
 
-test('isSealedInterior flags only an interior with nothing authored', () => {
-  const parent = parentWithBlock(() => true);
-  const sealed = node({
-    id: 'child',
-    kind: 'interior',
-    tiles: [createTile('1,1', `${INTERIOR}-floor-1.svg`)],
-  });
-  const open = node({
-    id: 'child',
-    kind: 'interior',
-    tiles: [createTile('0,1', `${INTERIOR}-door-v.svg`)],
-  });
-  assert.equal(isSealedInterior(sealed, parent), true);
-  assert.equal(isSealedInterior(open, parent), false);
-  // An outdoor child with no terrain beside its block gets a fallback too, but
-  // it is not a sealed interior and Build mode has nothing to warn about.
-  assert.equal(
-    isSealedInterior(
-      child,
-      parentWithBlock(() => false),
-    ),
-    false,
-  );
-  assert.equal(isSealedInterior(null, parent), false);
-  assert.equal(isSealedInterior(sealed, null), false);
-});
-
 test('a node nothing in the parent links to is warned about before anything else', () => {
   // A parent full of terrain, none of it linking here. The node is unreachable:
   // the party cannot walk in and players never see it.
@@ -701,20 +673,6 @@ test('the band centre clamps to the map extent for an out-of-range party cell', 
   assert.equal(Math.round(far.x + far.w / 2), geom.offsetX + 7.5 * 48);
   const before = band('north', { ...geom, alongCell: -4 });
   assert.equal(Math.round(before.x + before.w / 2), geom.offsetX + 0.5 * 48);
-});
-
-test('hitExitBand answers only for points inside the band', () => {
-  const exit = /** @type {const} */ ({
-    kind: 'edge',
-    side: 'north',
-    targetNodeId: 'region',
-    targetName: 'Saltmere Coast',
-  });
-  const b = edgeExitBand(exit, geom);
-  assert.equal(hitExitBand(exit, geom, b.x + 2, b.y + 2), true);
-  assert.equal(hitExitBand(exit, geom, b.x + b.w / 2, b.y + b.h / 2), true);
-  assert.equal(hitExitBand(exit, geom, b.x - 4, b.y + b.h / 2), false);
-  assert.equal(hitExitBand(exit, geom, b.x + b.w / 2, b.y + b.h + 4), false);
 });
 
 test('a band never grows past the canvas, however long the region name', () => {

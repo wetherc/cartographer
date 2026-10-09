@@ -76,14 +76,6 @@ export function growMax(pool, max) {
 }
 
 /**
- * @param {ResourcePool} pool
- * @returns {boolean}
- */
-export function isEmpty(pool) {
-  return pool.current <= 0;
-}
-
-/**
  * Swap a family of reserved pools (the slot pools, the hit-dice pools) for a
  * freshly derived set, keeping the rest of the list in order. `owns` picks
  * the family. The replacements land where the first pool of the family sat,

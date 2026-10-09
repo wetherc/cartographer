@@ -1,14 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LEGACY_CHIP,
   MAX_EXHAUSTION,
   atDeathLevel,
   easeExhaustion,
   exhaustionFields,
   exhaustionLevel,
   exhaustionNote,
-  gainExhaustion,
   setExhaustion,
   exhaustionSlant,
   tiredSpeed,
@@ -68,13 +66,6 @@ test('setExhaustion writes a clamped level and leaves the rest of the entity alo
   assert.equal(hero.exhaustion, 1, 'the original is untouched');
 });
 
-test('gainExhaustion adds levels and stops at death', () => {
-  assert.equal(gainExhaustion({}).exhaustion, 1, 'one level by default');
-  assert.equal(gainExhaustion({ exhaustion: 2 }, 3).exhaustion, 5);
-  assert.equal(gainExhaustion({ exhaustion: 5 }, 4).exhaustion, MAX_EXHAUSTION);
-  assert.equal(gainExhaustion({ exhaustion: 2 }, -3).exhaustion, 2, 'a negative gain adds nothing');
-});
-
 test('easeExhaustion takes levels off and stops at zero', () => {
   assert.equal(easeExhaustion({ exhaustion: 3 }).exhaustion, 2, 'one level by default');
   assert.equal(easeExhaustion({ exhaustion: 3 }, 2).exhaustion, 1);
@@ -111,7 +102,7 @@ test('exhaustionFields keeps a stored level and the condition list it came with'
 test('exhaustionFields folds a legacy chip into level 1 and drops it', () => {
   const fields = exhaustionFields(undefined, [
     createCondition('Poisoned', 3),
-    createCondition(LEGACY_CHIP),
+    createCondition('Exhaustion'),
   ]);
   assert.equal(fields.exhaustion, 1);
   assert.deepEqual(

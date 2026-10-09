@@ -8,7 +8,6 @@ import {
   adjustMax,
   growMax,
   spliceReservedPools,
-  isEmpty,
 } from '../src/entities/Resource.js';
 
 /** @param {string} id @param {number} max @param {number} [current] */
@@ -108,10 +107,4 @@ test('spliceReservedPools with no replacements just drops the family', () => {
     spliceReservedPools(resources, [], (r) => r.id.startsWith('slots-')).map((r) => r.id),
     ['hp'],
   );
-});
-
-test('isEmpty reflects current <= 0', () => {
-  const arrows = createResource('r1', 'Arrows', 'item-count', 3);
-  assert.equal(isEmpty(arrows), false);
-  assert.equal(isEmpty(spend(arrows, 3)), true);
 });

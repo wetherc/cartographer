@@ -10,43 +10,13 @@ import { buildBuiltins, isVariantType, titleCase, variantIndexAt } from './TileC
 const ANY_PREFIX = 'any:';
 
 /**
- * Holds the built-in tile catalog plus any user-supplied custom tile images,
- * keyed by id so callers can look up an imageRef when placing a tile.
+ * Keeps the built-in tile catalog, keyed by id so callers can look up an
+ * imageRef when placing a tile.
  */
 export class TilePalette {
   constructor() {
     /** @type {Map<string, PaletteEntry>} */
     this.entries = new Map(buildBuiltins().map((entry) => [entry.id, entry]));
-  }
-
-  /**
-   * Register a custom tile image, for example a data: URL read from a file
-   * input. Throws if the id collides with an existing built-in entry.
-   * @param {string} id
-   * @param {string} label
-   * @param {string} imageRef
-   * @param {string} [type]
-   * @returns {PaletteEntry}
-   */
-  addCustom(id, label, imageRef, type = 'custom') {
-    const existing = this.entries.get(id);
-    if (existing && !existing.custom) {
-      throw new Error(`Cannot override built-in tile "${id}"`);
-    }
-    const entry = { id, type, label, imageRef, custom: true };
-    this.entries.set(id, entry);
-    return entry;
-  }
-
-  /**
-   * Remove a custom tile entry. The function does nothing, and refuses, for
-   * built-in entries.
-   * @param {string} id
-   */
-  removeCustom(id) {
-    const existing = this.entries.get(id);
-    if (!existing || !existing.custom) return;
-    this.entries.delete(id);
   }
 
   /**
@@ -58,7 +28,7 @@ export class TilePalette {
   }
 
   /**
-   * All entries, built-in and custom, that belong to a given type.
+   * All entries that belong to a given type.
    * @param {string} type
    * @returns {PaletteEntry[]}
    */
@@ -82,9 +52,8 @@ export class TilePalette {
   /**
    * The variant of a terrain type for the cell at (x, y). A type with
    * built-in variants gets a pick from a hash of the position
-   * (`variantIndexAt`). With no custom tile of the type, this is the pick of
-   * `variantIdAt`, which the tile codec stores as the type alone. Any other
-   * type gets a random variant from `rng`. The function draws from `rng`
+   * (`variantIndexAt`), the same pick as `variantIdAt`, which the tile codec
+   * stores as the type alone. Any other type gets a random variant from `rng`. The function draws from `rng`
    * once in both cases, so the draws after it, and the rest of a seeded
    * world with them, do not depend on which rule picked the variant.
    * @param {string} type
@@ -147,7 +116,7 @@ export class TilePalette {
    * variants gets the name of its type ("Grass"), the same name as its
    * palette swatch, because the variant number means nothing to the GM. Any
    * other image gets the label of its entry. An image with no entry, such as
-   * a custom image that the GM removed, gets null.
+   * a data URL in an imported save, gets null.
    * @param {string} imageRef
    * @returns {string | null}
    */
@@ -238,11 +207,6 @@ export class TilePalette {
   /** @returns {PaletteEntry[]} */
   listBuiltins() {
     return [...this.entries.values()].filter((e) => !e.custom);
-  }
-
-  /** @returns {PaletteEntry[]} */
-  listCustom() {
-    return [...this.entries.values()].filter((e) => e.custom);
   }
 
   /** @returns {PaletteEntry[]} */

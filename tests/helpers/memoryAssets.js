@@ -8,8 +8,8 @@
  * store.
  */
 
-/** @typedef {import('../types/storage.js').AssetBackend} AssetBackend */
-/** @typedef {import('../types/storage.js').AssetTable} AssetTable */
+/** @typedef {import('../../src/types/storage.js').AssetBackend} AssetBackend */
+/** @typedef {import('../../src/types/storage.js').AssetTable} AssetTable */
 
 /**
  * @param {AssetTable} [initial]

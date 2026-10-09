@@ -244,15 +244,6 @@ export function retreatTurn(state, isDefeated = () => false) {
 }
 
 /**
- * True when `retreatTurn` has a turn to go back to.
- * @param {CombatState} state
- * @returns {boolean}
- */
-export function canRetreat(state) {
-  return state.order.length > 0 && (state.round > 1 || state.index > 0);
-}
-
-/**
  * Give one participant a new initiative value and sort the order again. The
  * GM uses this to fix a roll typed wrong. The turn pointer stays on the
  * combatant who holds the turn, wherever the order puts them, as in

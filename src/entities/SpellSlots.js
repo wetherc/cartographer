@@ -331,20 +331,6 @@ export function characterPactSlots(character) {
 }
 
 /**
- * The highest slot level that a character can cast from, across leveled and
- * pact pools. The result is 0 for a non-caster.
- * @param {PoolHolder} character
- * @returns {number}
- */
-export function highestSlotLevel(character) {
-  const pact = getPactPool(character);
-  return getSlotPools(character).reduce(
-    (m, p) => Math.max(m, slotLevelOf(p)),
-    pact ? slotLevelOf(pact) : 0,
-  );
-}
-
-/**
  * The slot levels that a caster can currently cast a spell of `minLevel` at.
  * The result lists each leveled or pact pool at or above that level with a
  * charge left, deduplicated and in ascending order. This backs the cast

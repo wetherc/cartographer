@@ -370,7 +370,7 @@ The gesture layers live beside `mapWiring.js`, each in its own file:
 
 - A click that pulls the party out of another node, such as a GM click on an
   ancestor opened through the breadcrumb, asks first, as a teleport does.
-- A click on a tile that walls cut off (`MapPath.hasOpenPath`) asks the GM
+- A click on a tile that walls cut off (`MapPath.findPath` returns null) asks the GM
   first. A player tab refuses it with a toast.
 - A bound character's move does not move the party that the location panels
   filter on.

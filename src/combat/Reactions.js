@@ -11,22 +11,11 @@
 
 import { weaponKind } from '../entities/Weapons.js';
 import { castingCost, parseCastingTime } from '../entities/SpellTiming.js';
-import { canSpend } from './ActionBudget.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/combat.js').Participant} Participant */
-
-/**
- * Whether the combatant still holds its reaction. The reaction comes back at
- * the start of its owner's turn, which `ActionBudget.refresh` is where.
- * @param {Participant} participant
- * @returns {boolean}
- */
-export function canReact(participant) {
-  return canSpend(participant, 'reaction');
-}
 
 /**
  * The weapons an opportunity attack can swing: the melee ones. A bow shoots at

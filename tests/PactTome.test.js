@@ -6,7 +6,6 @@ import {
   maxRitualLevel,
   pendingTomeCantrips,
   pendingTomeRituals,
-  removeTomeRitual,
   setTomeCantrips,
   settleTome,
   tomeCantrips,
@@ -109,8 +108,6 @@ test('rituals copy in up to half the warlock level, rituals only, no repeats', (
   const both = addTomeRituals(c, [spell('speak-with-animals')]);
   assert.deepEqual(tomeRituals(both), ['detect-magic', 'speak-with-animals']);
   assert.equal(pendingTomeRituals(both), 0);
-  assert.deepEqual(tomeRituals(removeTomeRitual(both, 'detect-magic')), ['speak-with-animals']);
-  assert.equal(removeTomeRitual(both, 'fireball'), both);
 });
 
 test('a book ritual casts as a ritual only, and the warlock gains ritual casting for it', () => {

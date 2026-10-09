@@ -82,6 +82,8 @@ export function casterDefOf(character, classId) {
  * class's caster type. A non-caster, pact caster, or unknown class gets no
  * leveled slots here. A different function handles pact magic. `subclass`
  * applies a casting subclass such as the Eldritch Knight.
+ *
+ * The tests call this function, and no app code does.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
  * @param {string} [subclass]

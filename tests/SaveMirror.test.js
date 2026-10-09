@@ -2,7 +2,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { storedAssetTable, useAssetBackend } from '../src/storage/AssetMirror.js';
-import { createMemoryBackend } from '../src/storage/AssetBackend.js';
+import { createMemoryBackend } from './helpers/memoryAssets.js';
 import { ASSETS_KEY } from '../src/storage/AssetStore.js';
 import {
   SAVE_MARK_KEY,

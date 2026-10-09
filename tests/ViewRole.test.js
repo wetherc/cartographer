@@ -1,10 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isGM, hpBand, seesThroughFog, VIEW_ROLES } from '../src/view/ViewRole.js';
-
-test('VIEW_ROLES lists gm and player', () => {
-  assert.deepEqual(VIEW_ROLES, ['gm', 'player']);
-});
+import { isGM, hpBand, seesThroughFog } from '../src/view/ViewRole.js';
 
 test('isGM is true only for the gm role', () => {
   assert.equal(isGM('gm'), true);

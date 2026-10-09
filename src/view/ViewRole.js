@@ -11,8 +11,6 @@ import { CRITICAL_RATIO, WOUNDED_RATIO } from './StatBars.js';
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /** @type {ViewRole[]} */
-export const VIEW_ROLES = ['gm', 'player'];
-
 /**
  * @param {ViewRole} role
  * @returns {boolean}

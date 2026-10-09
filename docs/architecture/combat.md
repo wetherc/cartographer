@@ -466,7 +466,7 @@ tested.
 ### Reactions
 
 `src/combat/Reactions.js` decides what a reaction can spend itself on.
-`canReact` reads the reaction pip. `opportunityWeapons` keeps the melee
+`ActionBudget.canSpend` reads the reaction pip. `opportunityWeapons` keeps the melee
 weapons of a list, because a bow cannot hit a creature that walks past.
 `reactionSpells` keeps the spells whose casting time reads as a reaction,
 through `SpellTiming.castingCost`.

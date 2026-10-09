@@ -17,7 +17,7 @@
  * it did not change.
  *
  * Only the localStorage path splits the table out. An exported file still
- * carries its own table, because `downloadState` serializes the whole save.
+ * keeps its own table, because `serializeCampaignFile` packs the whole save.
  * A shared campaign stays one self-contained document.
  */
 

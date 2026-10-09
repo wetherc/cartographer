@@ -15,8 +15,6 @@
  */
 
 import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
-import { resolveSave } from './Checks.js';
-import { riderSources } from './FeatChoices.js';
 import { atDeathLevel, easeExhaustion, exhaustionLevel, exhaustionSlant } from './Exhaustion.js';
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { restore as restorePool } from './Resource.js';
@@ -41,14 +39,6 @@ export function isDying(character) {
   const state = character.deathSaves;
   if (!state) return false;
   return !state.stable && state.failures < DEATH_SAVE_LIMIT;
-}
-
-/**
- * @param {Character} character
- * @returns {boolean} whether this character is at 0 HP and out of danger.
- */
-export function isStable(character) {
-  return Boolean(character.deathSaves?.stable);
 }
 
 /**
@@ -190,48 +180,12 @@ function countFailures(state, count) {
  * level 3 or higher rolls it at disadvantage. A death save takes no ability
  * modifier and no proficiency, so it has no bonus of its own.
  *
- * Both death-save paths read this one function. The headless
- * {@link rollDeathSave} below hands it to `resolveSave`, and `app/deathSaves.js`
- * hands it to the dice tray. Neither can drift from the other.
+ * `app/deathSaves.js` hands this mode to the dice tray.
  * @param {Character} character
  * @returns {'disadvantage' | null}
  */
 export function deathSaveMode(character) {
   return exhaustionSlant(exhaustionLevel(character), 'save');
-}
-
-/**
- * Roll one death save for a character and apply the outcome. This is the
- * headless path, for tests and for callers with no dice tray. The UI path
- * rolls through the tray and calls {@link judgeDeathSave} with the same
- * numbers.
- *
- * The save goes through `Checks.resolveSave` with the mode of
- * {@link deathSaveMode}. Going through that function is what lets a rider such as Bless join the
- * roll. No ability key is passed, so the automatic failure that unconsciousness
- * imposes on Strength and Dexterity saves does not catch a death save.
- *
- * A character who is not dying rolls nothing, which covers a stable character
- * and a dead one.
- * @param {Character} character
- * @param {{ mode?: RollMode, rng?: RandomFn }} [opts]
- * @returns {{
- *   character: Character,
- *   save: import('./Checks.js').SaveResult | null,
- *   outcome: DeathSaveOutcome | null,
- * }}
- */
-export function rollDeathSave(character, opts = {}) {
-  const state = character.deathSaves;
-  if (!state || !isDying(character)) return { character, save: null, outcome: null };
-  const tiredMode = deathSaveMode(character);
-  const save = resolveSave(0, DEATH_SAVE_DC, {
-    conditions: riderSources(character),
-    ...(tiredMode ? { mode: tiredMode } : {}),
-    ...opts,
-  });
-  const judged = judgeDeathSave(state, save);
-  return { character: applyJudged(character, judged.state), save, outcome: judged.outcome };
 }
 
 /**

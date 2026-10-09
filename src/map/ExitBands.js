@@ -345,18 +345,6 @@ function nearestClear(band, alongX, geom) {
 }
 
 /**
- * Whether a buffer-space point falls inside an exit's band.
- * @param {MapExit} exit
- * @param {ExitBandGeometry} geom
- * @param {number} bufferX
- * @param {number} bufferY
- * @returns {boolean}
- */
-export function hitExitBand(exit, geom, bufferX, bufferY) {
-  return insideBand(edgeExitBand(exit, geom), bufferX, bufferY);
-}
-
-/**
  * Whether a buffer-space point falls inside a band rect.
  * @param {Rect} band
  * @param {number} bufferX

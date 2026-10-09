@@ -101,7 +101,7 @@ Tile freezing is on under Node (unless `NODE_ENV` is `production`) and on a
 page served over `http:` from `localhost` or `127.0.0.1`. It is off
 everywhere else. A throw that reaches a GM in the middle of a session stops
 the session, and the stale render that the freeze replaces does not.
-`setTileFreezing` overrides the detection for a benchmark or a test.
+`setTileFreezing` overrides the detection for a test.
 
 ### WeakMap caches per node
 
@@ -113,14 +113,13 @@ returned arrays and sets are shared, so treat them as read-only.
 The region caches, the span blocks, and the map description use keys that
 are narrower than the node. A fog reveal or a painted cell makes a new node,
 but the fields that these caches read stay the same. The TileIndex layout
-keeps three stamps. A stamp is an empty object that stands for one state of
+keeps two stamps. A stamp is an empty object that stands for one state of
 some tile fields:
 
 | Stamp | Fields it covers |
 | --- | --- |
 | `linkStamp` | The tile ids and their `childNodeId` values |
 | `artStamp` | The tile ids, their `imageRef` and `span` values, and their point-of-interest types |
-| `fogStamp` | The tile ids and their `revealed` flags |
 
 The replace helpers give the stamp to the new node when no replaced tile
 changes a field that the stamp covers. The caches key on these stamps:

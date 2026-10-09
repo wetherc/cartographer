@@ -41,14 +41,14 @@ export function saveOutcome({ ok, assetsOk }, imagesApart = false) {
       landed: false,
       message: imagesApart
         ? 'Save failed: browser storage is full. Export the campaign to keep a copy of it.'
-        : 'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',
+        : 'Save failed: browser storage is full. Export the campaign, then remove large handout images.',
     };
   }
   if (!assetsOk) {
     return {
       landed: true,
       message: imagesApart
-        ? 'Saved, but the browser did not store the images: handout pictures and custom tiles were not stored.'
+        ? 'Saved, but the browser did not store the images: handout pictures were not stored.'
         : 'Saved, but browser storage is too full for the images: handout pictures were not stored.',
     };
   }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canReact, opportunityWeapons, reactionSpells } from '../src/combat/Reactions.js';
+import { opportunityWeapons, reactionSpells } from '../src/combat/Reactions.js';
 
 /**
  * A weapon in the shape both a character's inventory and a creature's assigned
@@ -20,18 +20,6 @@ function weapon(name, kind = 'melee') {
 function spell(name, castingTime) {
   return /** @type {any} */ ({ id: name.toLowerCase(), name, level: 1, castingTime });
 }
-
-test('canReact reads the reaction pip of the turn', () => {
-  const fresh = /** @type {any} */ ({ id: 'hero', used: {} });
-  const used = /** @type {any} */ ({ id: 'hero', used: { reaction: true } });
-  assert.equal(canReact(fresh), true);
-  assert.equal(canReact(used), false);
-  assert.equal(
-    canReact(/** @type {any} */ ({ id: 'hero' })),
-    true,
-    'a save written before the budget existed holds every reaction',
-  );
-});
 
 test('opportunityWeapons keeps the melee weapons and drops the ranged ones', () => {
   const swung = opportunityWeapons([

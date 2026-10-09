@@ -378,6 +378,3 @@ A tile exists for the app only when its family table names it.
 | `TOWN_WALL_KINDS` | `TileKinds.js` | The ten town wall, gate, and water gate pieces, each with its rule meaning |
 | `INTERIOR_KINDS` | `TileKinds.js` | The 23 interior pieces, each with its rule meaning |
 | `FURNISHING_KINDS` | `TileKinds.js` | The 17 furnishings, each with its rule meaning |
-
-`TilePalette.addCustom` registers a tile that a GM loads at runtime. A
-runtime tile is not in these tables, and it cannot replace a built-in tile.

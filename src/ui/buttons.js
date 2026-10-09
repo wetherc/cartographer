@@ -13,7 +13,7 @@ import { setTip } from './Tooltip.js';
  * tag, with or without an x to remove it. segSwitch is a fifth primitive: a
  * segmented group of buttons where only one choice is active. bareButton is
  * a sixth: a control that is a button for the keyboard and the screen reader
- * but wears no button chrome. iconLink and textLink build a real link that
+ * but wears no button chrome. iconLink builds a real link that
  * wears the button look, for a control that opens a URL. badge and
  * sectionLabel round the set out.
  */
@@ -77,23 +77,6 @@ export function iconLink(name, ariaLabel, href, opts = {}) {
   const link = el('a', classNames(classes), icon(name));
   link.setAttribute('aria-label', ariaLabel);
   setTip(link, opts.title ?? ariaLabel);
-  return linkTo(link, href, opts);
-}
-
-/**
- * A text `btn` link, with an optional leading icon: the link form of
- * `textButton`. `ariaLabel` overrides the accessible name when the visible
- * label alone is ambiguous.
- * @param {string} label
- * @param {string} href
- * @param {LinkOptions & { icon?: import('./icons.js').IconName, ariaLabel?: string }} [opts]
- * @returns {HTMLAnchorElement}
- */
-export function textLink(label, href, opts = {}) {
-  const classes = ['btn', opts.variant ? `btn--${opts.variant}` : '', opts.className];
-  const link = el('a', classNames(classes), opts.icon && icon(opts.icon), label);
-  if (opts.ariaLabel) link.setAttribute('aria-label', opts.ariaLabel);
-  if (opts.title) setTip(link, opts.title);
   return linkTo(link, href, opts);
 }
 

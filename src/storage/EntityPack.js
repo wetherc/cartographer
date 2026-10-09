@@ -170,6 +170,8 @@ export function createEntityPacker(withDefaults) {
  * `packEntity` applied over a collection, with no cache. This is the
  * one-off form; the save path holds one `createEntityPacker` per
  * collection so repeat saves reuse their results.
+ *
+ * The tests and the developer guide script call this function, and no app code does.
  * @param {any[]} list
  * @param {(entity: any) => any} withDefaults
  * @returns {any[]}

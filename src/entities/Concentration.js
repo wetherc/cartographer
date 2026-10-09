@@ -42,15 +42,6 @@ export function concentrationDC(damage) {
 }
 
 /**
- * @template {Holder} T
- * @param {T} character
- * @returns {boolean} whether this character is holding a spell open.
- */
-export function isConcentrating(character) {
-  return Boolean(character.concentration);
-}
-
-/**
  * Start concentrating on a spell, replacing whatever the character held. A
  * caster gets one effect at a time, and beginning a second ends the first.
  * The countdown comes from the spell's own duration in rounds. An

@@ -1,11 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLoadout, isEmptyLoadout, loadoutAccess } from '../src/combat/Loadout.js';
+import { buildLoadout, loadoutAccess } from '../src/combat/Loadout.js';
 import { createCharacter, addItem, withHP } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { createResource, spend } from '../src/entities/Resource.js';
 import { item } from './helpers/fixtures.js';
+
+/** What a loadout block draws, and the value of it when it draws nothing. */
+const NOTHING = { armor: [], weapons: [], slots: [], spellStats: null, cantrips: 0, leveled: 0 };
+/** @param {import('../src/combat/Loadout.js').Loadout} l */
+const shown = (l) => ({
+  armor: l.armor,
+  weapons: l.weapons,
+  slots: l.slots,
+  spellStats: l.spellStats,
+  cantrips: l.spells.cantrips,
+  leveled: l.spells.leveled,
+});
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
@@ -101,7 +113,6 @@ test('spellStats state the caster DC and attack, and stay null otherwise', () =>
   });
   const loadout = buildLoadout({ kind: 'creature', entity: witch });
   assert.deepEqual(loadout.spellStats, { dc: 14, attack: 6 }, 'the rating ladder gives prof +3');
-  assert.equal(isEmptyLoadout(loadout), false);
   const brute = createCreature('b1', 'Brute', { disposition: 'hostile', maxHP: 20 });
   assert.equal(buildLoadout({ kind: 'creature', entity: brute }).spellStats, null);
   const seen = buildLoadout({ kind: 'creature', entity: witch }, [], 'public');
@@ -133,8 +144,8 @@ test('a foe loadout reads its authored armor and single weapon', () => {
 
 test('an unarmed NPC carries nothing, and neither does an unresolved id', () => {
   const sage = createCreature('sage', 'Sage', { location: HERE });
-  assert.equal(isEmptyLoadout(buildLoadout({ kind: 'creature', entity: sage })), true);
-  assert.equal(isEmptyLoadout(buildLoadout(null)), true);
+  assert.deepEqual(shown(buildLoadout({ kind: 'creature', entity: sage })), NOTHING);
+  assert.deepEqual(shown(buildLoadout(null)), NOTHING);
 });
 
 test('an armed NPC reads its gear the way a foe does', () => {
@@ -152,12 +163,6 @@ test('an armed NPC reads its gear the way a foe does', () => {
   const loadout = buildLoadout({ kind: 'creature', entity: guard });
   assert.deepEqual(loadout.armor, ['Chain Shirt']);
   assert.deepEqual(loadout.weapons, [{ name: 'Spear', damage: '1d6 piercing' }]);
-});
-
-test('isEmptyLoadout is false as soon as anything shows', () => {
-  assert.equal(isEmptyLoadout(buildLoadout({ kind: 'character', entity: armedHero() })), false);
-  const bare = createCharacter('bare', 'Bare');
-  assert.equal(isEmptyLoadout(buildLoadout({ kind: 'character', entity: bare }, [CANTRIP])), false);
 });
 
 test('the GM sees every combatant whole', () => {
@@ -206,7 +211,7 @@ test('public access keeps armor and weapons and drops spells and slots', () => {
 
 test('no access draws nothing at all', () => {
   const loadout = buildLoadout({ kind: 'character', entity: armedHero() }, [CANTRIP], 'none');
-  assert.equal(isEmptyLoadout(loadout), true);
+  assert.deepEqual(shown(loadout), NOTHING);
 });
 
 test('a foe with no authored armor reports none', () => {

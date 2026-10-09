@@ -105,8 +105,9 @@ above the real score of the app code.
 ## Browser-only wrappers
 
 Some modules wrap browser APIs that Node does not have. In
-`src/storage/SaveManager.js`, these are `trySaveToLocalStorage`,
-`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`.
+`src/storage/SaveManager.js`, these are `trySaveToLocalStorage` and
+`loadFromLocalStorage`. In `src/storage/CampaignFile.js`, these are
+`downloadCampaignFile` and `readCampaignFromFile`.
 
 The two `localStorage` wrappers have unit tests. `tests/SaveManager.test.js`
 installs the in-memory `localStorage` from `tests/helpers/env.js`, saves a
@@ -114,13 +115,14 @@ campaign, loads it back, and simulates a failed write. The stub does not
 know the real quota of a browser, so a person also checks a save and a load
 in a real browser.
 
-`downloadState` and `readStateFromFile` need a file download and a
+`downloadCampaignFile` and `readCampaignFromFile` need a file download and a
 `File` object, and no helper stubs those. Each of them stays thin, and it
-calls the pure functions `serialize` and `deserialize`, which have tests.
+calls the pure functions `serializeCampaignFile` and `parseCampaignFile`,
+which have tests.
 A person checks an export and an import in a real browser.
 
 The same rule applies inside `src/ui/`. The tests cover each pure helper in
-that directory where it lives: `fitDimensions` and `encodeAttempts` in
+that directory where it lives: `fitDimensions` and `encodeSizes` in
 `tests/imageField.test.js`, and `clampToViewport` in
 `tests/context-menu.test.js`. These helpers do arithmetic only, so they
 need no DOM.

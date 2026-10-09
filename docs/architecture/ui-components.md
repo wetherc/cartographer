@@ -451,7 +451,6 @@ iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
 textButton(label, onClick, opts?)           -> HTMLButtonElement
 bareButton(children, onClick?, opts?)       -> HTMLButtonElement
 iconLink(name, ariaLabel, href, opts?)      -> HTMLAnchorElement
-textLink(label, href, opts?)                -> HTMLAnchorElement
 segSwitch({ ariaLabel, options, value, onChange, className? })
                                             -> { element, getValue, setValue, sync }
 emptyState(message)                         -> HTMLParagraphElement
@@ -496,15 +495,14 @@ button's content, so an icon and a label can nest with no second builder.
 `buildDisclosure` builds its header this way. A control whose visible
 content is not its accessible name passes `opts.ariaLabel`.
 
-`iconLink` and `textLink` build the same `btn` look on an `<a href>`, for a
+`iconLink` builds the same `btn` look on an `<a href>`, for a
 control that opens a URL. A real link keeps the browser's middle-click,
 modifier-click, and "Open in new tab" menu, and a `<button>` that sets
-`location` has none of them. The label and tooltip rules match `iconButton`
-and `textButton`. `opts.newTab` adds `target="_blank"` with `rel="noopener"`,
+`location` has none of them. The label and tooltip rules match `iconButton`. `opts.newTab` adds `target="_blank"` with `rel="noopener"`,
 so the new page gets no handle on the app. `.btn` sets
-`text-decoration: none`, so the link has no underline. The Party roster uses
-both builders: an `iconLink` on each row opens a player tab for that
-character, and a `textLink` below the list opens a spectator tab.
+`text-decoration: none`, so the link has no underline. In the Party roster, an `iconLink` on each row opens a player tab for that
+character. The Spectator tab control below the list is a `textButton` that
+calls `window.open`.
 
 Both `btn` builders take `opts.variant`, which maps to a `btn--*` CSS
 modifier:
@@ -1175,7 +1173,6 @@ lifecycle.
 readImageFile(file)                       -> Promise<string>  // a data: URL
 fitDimensions(width, height, maxEdge)     -> { width, height } // pure
 encodeSizes(width, height, maxEdge?)      -> { width, height }[] // pure
-encodeAttempts(width, height, maxEdge?)   -> { width, height, quality }[] // pure
 pickFit(candidates, limit)                -> string | null // pure
 ```
 
@@ -1202,7 +1199,7 @@ store" in [Persistence](persistence.md)). The caps still bound what one
 image adds to memory, to an exported campaign file, and to the localStorage
 fallback that keeps images when IndexedDB is not available.
 
-The arithmetic (`fitDimensions`, `encodeSizes`, `encodeAttempts`, `pickFit`)
+The arithmetic (`fitDimensions`, `encodeSizes`, `pickFit`)
 is pure and unit tested. Check the canvas encode path in a browser.
 
 ## The CSS layer
@@ -1543,7 +1540,7 @@ have unit tests where they sit:
 
 | Test file | Helpers under test |
 | --- | --- |
-| `tests/imageField.test.js` | `fitDimensions`, `encodeSizes`, `encodeAttempts`, `pickFit` |
+| `tests/imageField.test.js` | `fitDimensions`, `encodeSizes`, `pickFit` |
 | `tests/context-menu.test.js` | `clampToViewport` |
 | `tests/Tooltip.test.js` | `tipPlacement` |
 | `tests/dialogFocus.test.js` | `pickReturnFocus`, `dialogPartId`, `noteFocus`, and `repairFocus` |

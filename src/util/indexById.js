@@ -12,18 +12,3 @@ export function indexById(items) {
   for (const item of items) map.set(item.id, item);
   return map;
 }
-
-/**
- * Build a Map keyed by a derived key instead of a fixed `id` field. Use this
- * for collections keyed on something other than `id`, for example names.
- * This function is pure. When keys collide, the later entry wins.
- * @template T
- * @param {readonly T[]} items
- * @param {(item: T) => string} keyOf
- * @returns {Map<string, T>}
- */
-export function indexBy(items, keyOf) {
-  const map = new Map();
-  for (const item of items) map.set(keyOf(item), item);
-  return map;
-}

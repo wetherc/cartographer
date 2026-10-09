@@ -15,7 +15,6 @@ import {
   isSlotPool,
   isPactPool,
   slotLevelOf,
-  highestSlotLevel,
   castableSlotLevels,
   pactSlotLevels,
 } from '../src/entities/SpellSlots.js';
@@ -299,7 +298,7 @@ test('syncSlotsToLevel grows the pact count and syncs class-aware leveled slots'
   );
 });
 
-test('highestSlotLevel and castableSlotLevels cover leveled and pact pools', () => {
+test('castableSlotLevels covers leveled and pact pools', () => {
   const duo = withSpellSlots(
     classed([
       { classId: 'wizard', level: 3 },
@@ -307,17 +306,14 @@ test('highestSlotLevel and castableSlotLevels cover leveled and pact pools', () 
     ]),
   );
   // Wizard 3 leveled slots reach level 2; warlock 5 pact slots sit at level 3.
-  assert.equal(highestSlotLevel(duo), 3);
   assert.deepEqual(castableSlotLevels(duo, 1), [1, 2, 3]);
   assert.deepEqual(castableSlotLevels(duo, 3), [3]);
 
   // Draining a pool drops its level from the castable list.
   const drained = spendResource(duo, 'pact-3', 2);
   assert.deepEqual(castableSlotLevels(drained, 3), []);
-  assert.equal(highestSlotLevel(drained), 3, 'capacity, not charge, sets the ceiling');
 
   const martial = classed([{ classId: 'fighter', level: 5 }]);
-  assert.equal(highestSlotLevel(martial), 0);
   assert.deepEqual(castableSlotLevels(martial, 1), []);
 });
 

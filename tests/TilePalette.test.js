@@ -191,46 +191,10 @@ test('pickVariant throws for an unknown type', () => {
   assert.throws(() => palette.pickVariant('lava', () => 0), /No variants/);
 });
 
-test('addCustom registers a new tile entry', () => {
+test('listAll and listBuiltins both return the whole built-in catalog', () => {
   const palette = new TilePalette();
-  const entry = palette.addCustom('my-tile', 'My Tile', 'data:image/png;base64,abc');
-  assert.equal(entry.custom, true);
-  assert.equal(palette.get('my-tile'), entry);
-  assert.equal(palette.listCustom().length, 1);
-});
-
-test('addCustom refuses to override a built-in id', () => {
-  const palette = new TilePalette();
-  assert.throws(() => palette.addCustom('grass-1', 'Fake Grass', 'data:x'), /built-in/);
-});
-
-test('removeCustom deletes a custom entry but ignores built-ins', () => {
-  const palette = new TilePalette();
-  palette.addCustom('my-tile', 'My Tile', 'data:x');
-  palette.removeCustom('my-tile');
-  assert.equal(palette.get('my-tile'), undefined);
-
-  palette.removeCustom('grass-1');
-  assert.ok(palette.get('grass-1'));
-});
-
-test('listAll returns both built-in and custom entries', () => {
-  const palette = new TilePalette();
-  const before = palette.listAll().length;
-  palette.addCustom('my-tile', 'My Tile', 'data:x');
-  assert.equal(palette.listAll().length, before + 1);
-});
-
-test('listBuiltins excludes custom entries, and listCustom the built-ins', () => {
-  const palette = new TilePalette();
-  const builtins = palette.listBuiltins().length;
-  assert.ok(builtins > 0);
-  palette.addCustom('my-tile', 'My Tile', 'data:x');
-  assert.equal(palette.listBuiltins().length, builtins, 'custom tiles are not built-ins');
-  assert.deepEqual(
-    palette.listCustom().map((e) => e.id),
-    ['my-tile'],
-  );
+  assert.ok(palette.listAll().length > 0);
+  assert.equal(palette.listBuiltins().length, palette.listAll().length);
 });
 
 test('isOverlayType flags the terrain-crossing overlay types only', () => {
@@ -400,18 +364,6 @@ test('variantAt draws once and picks by position for a variant type', () => {
   assert.equal(draws, 2);
 });
 
-test('a custom tile of a variant type joins the position pick', () => {
-  const palette = new TilePalette();
-  palette.addCustom('my-grass', 'My Grass', 'data:image/png;base64,AA', 'grass');
-  const brush = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
-    palette.anyVariant('grass')
-  );
-  const painted = new Set();
-  for (let x = 0; x < 40; x += 1) painted.add(palette.imageFor(brush, x, 0));
-  assert.equal(painted.has('data:image/png;base64,AA'), true);
-  assert.equal(painted.size, 4);
-});
-
 test('artName names a variant by its type and any other image by its label', () => {
   const palette = new TilePalette();
   const grass = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
@@ -422,7 +374,5 @@ test('artName names a variant by its type and any other image by its label', () 
     palette.get('road-h')
   );
   assert.equal(palette.artName(road.imageRef), road.label);
-  palette.addCustom('my-tower', 'My tower', 'data:image/png;base64,AAAA');
-  assert.equal(palette.artName('data:image/png;base64,AAAA'), 'My tower');
   assert.equal(palette.artName('assets/tiles/none.svg'), null);
 });

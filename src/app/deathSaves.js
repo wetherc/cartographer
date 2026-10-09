@@ -2,12 +2,10 @@
  * Rolling a death save from the combat screen or the character sheet, and
  * stabilizing a character by hand.
  *
- * The rule layer lives in `entities/DeathSaves.js`, and it can roll a d20 on
- * its own. This module does not use that part of it, for the reason
- * `app/checkRolls.js` states: the dice tray also rolls, so going through
- * `rollDeathSave` would throw two d20s and show the wrong one. The riders roll
- * here, the tray throws the only d20, and `judgeDeathSave` reads the result.
- * Both paths therefore share one set of rules.
+ * The rule layer lives in `entities/DeathSaves.js`, and it has no roll of its
+ * own. This module follows the split that `app/checkRolls.js` states: the
+ * riders roll here, the dice tray throws the only d20, and `judgeDeathSave`
+ * reads the result.
  */
 
 import {

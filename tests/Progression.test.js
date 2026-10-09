@@ -12,7 +12,6 @@ import {
   undoLastChoice,
   applyFeatureGrant,
   undoFeatureGrant,
-  setStat,
 } from '../src/entities/Progression.js';
 import {
   createCharacter,
@@ -115,12 +114,6 @@ test('applyASI grants the retroactive HP a CON increase is worth, and undo takes
   const undone = undoLastChoice(improved);
   assert.equal(undone.stats.CON, 14);
   assert.equal(getHP(undone).max, 12 + 3 * 8);
-});
-
-test('setStat re-derives, so a CON edit moves the pool', () => {
-  const fighter = classed([{ classId: 'fighter', level: 2 }]);
-  assert.equal(getHP(setStat(fighter, 'CON', 8)).max, 9 + 1 * 5);
-  assert.equal(getHP(setStat(fighter, 'STR', 20)).max, 20, 'an unrelated stat changes nothing');
 });
 
 test('withRace re-derives, so a race CON increase moves the pool', () => {

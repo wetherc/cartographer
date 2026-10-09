@@ -106,7 +106,7 @@ export type AssetTable = Record<string, string>;
 /**
  * A key-value store for image payloads (`storage/AssetMirror.js`). The
  * browser uses IndexedDB (`storage/IndexedDbAssets.js`), and the unit tests
- * use the memory store of `storage/AssetBackend.js`. A promise resolves once
+ * use the memory store of `tests/helpers/memoryAssets.js`. A promise resolves once
  * the change is committed, so another tab can read it, and rejects when the
  * store refuses it.
  */

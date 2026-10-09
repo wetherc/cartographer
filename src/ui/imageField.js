@@ -74,26 +74,6 @@ export function encodeSizes(width, height, maxEdge = MAX_EDGE) {
 }
 
 /**
- * The (edge, quality) pairs to try, in order, for a source of the given
- * size: every quality step at the full permitted edge, then the same
- * steps at half that edge. The list is finite and monotonically smaller,
- * so the encode loop below reads as data, not control flow, and cannot
- * spin. This function is pure.
- * @param {number} width
- * @param {number} height
- * @param {number} [maxEdge]
- * @returns {{ width: number, height: number, quality: number }[]}
- */
-export function encodeAttempts(width, height, maxEdge = MAX_EDGE) {
-  /** @type {{ width: number, height: number, quality: number }[]} */
-  const attempts = [];
-  for (const size of encodeSizes(width, height, maxEdge)) {
-    for (const quality of QUALITY_STEPS) attempts.push({ ...size, quality });
-  }
-  return attempts;
-}
-
-/**
  * The encoding to store out of one attempt's candidates: the shortest
  * candidate, when it fits under `limit`, or null when none does. A null
  * candidate stands for a format that was not tried, such as PNG for a

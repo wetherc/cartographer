@@ -1,5 +1,5 @@
 import { normalizeTargetCount } from './SpellNormalize.js';
-import { normalizeSpellBody, normalizeSpellEffect, normalizeSpellScaling } from './SpellEntry.js';
+import { normalizeSpellBody, normalizeSpellEffect } from './SpellEntry.js';
 
 /**
  * This module turns the spell form's raw control values into a Spell. It is
@@ -128,23 +128,13 @@ function writtenEffect(draft) {
  * entries through the same `normalizeSpellEffect`, so switching kind before
  * submission cannot leave a save ability on an attack, and an unusable
  * projectile block drops out instead of becoming a spell that fires nothing.
+ *
+ * The tests call this function, and no app code does.
  * @param {EffectDraft} draft
  * @returns {SpellEffect}
  */
 export function assembleEffect(draft) {
   return normalizeSpellEffect(writtenEffect(draft));
-}
-
-/**
- * The scaling block a submitted form describes, or undefined when it describes
- * none. Ticking "Scales per level" without filling either field is the same as
- * not ticking it, since a block with neither half scales nothing.
- * @param {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown, levelsPerStep?: unknown } | null} draft
- * @param {SpellEffect['kind']} [kind] the effect kind the dice add to
- * @returns {Spell['scaling']}
- */
-export function assembleScaling(draft, kind = undefined) {
-  return draft ? normalizeSpellScaling(draft, kind) : undefined;
 }
 
 /**

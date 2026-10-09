@@ -109,9 +109,9 @@ The two live callers pass a whole object. The save and export path spreads
 `app.state` with the grid and the party position added. The campaign-replace
 path passes the `Campaign` as it stands.
 
-Thin wrappers surround these pure functions: `trySaveToLocalStorage`,
-`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. These
-wrappers and the image store (`AssetMirror.js` over `IndexedDbAssets.js`)
+Thin wrappers surround these pure functions: `trySaveToLocalStorage` and
+`loadFromLocalStorage` here, and `downloadCampaignFile` and
+`readCampaignFromFile` in `CampaignFile.js`. These wrappers and the image store (`AssetMirror.js` over `IndexedDbAssets.js`)
 are the only code that touches `localStorage`, `indexedDB`, `Blob`, and
 `FileReader`.
 
@@ -155,8 +155,8 @@ because it receives sessionStorage as a parameter.
 
 ### Campaign files
 
-The export and import buttons use `storage/CampaignFile.js`, not
-`downloadState` and `readStateFromFile`. `serializeCampaignFile` writes the
+The export and import buttons use `storage/CampaignFile.js`.
+`serializeCampaignFile` writes the
 packed state with the GM's custom library attached as a `library` field. When
 the custom library is empty, it omits the field, and the file equals the
 plain serialized save.
@@ -350,7 +350,7 @@ example campaign.
 
 `deserialize` runs the entity `withDefaults` functions itself, instead of
 leaving them to `Campaigns.loadInitialCampaign`. A stored character can have
-no `spellbook` key. `undoHistory` and `readStateFromFile` hand their results
+no `spellbook` key. `undoHistory` and `readCampaignFromFile` hand their results
 to callers that apply no defaults of their own.
 
 The omission works per field, on a flat structure. Recursion into a nested
@@ -479,7 +479,7 @@ and reports the two results separately as `ok` and `assetsOk`.
 
 Images are the only stored data that the app does not limit. One compressed
 handout is about 59,000 characters, which is 118 KB of the 5 MB that
-localStorage gives an origin. About twenty handouts or custom tiles then fill
+localStorage gives an origin. About twenty handouts then fill
 half of localStorage, while IndexedDB gets a share of the disk.
 
 The campaign string, the undo log, and the save mark stay in localStorage.
@@ -493,7 +493,7 @@ snapshot never includes a picture that it did not change.
 is an asynchronous key-value store with `getAll`, `getMany`, `putMany`, and
 `deleteMany`. The browser uses `storage/IndexedDbAssets.js`, a thin layer
 over one object store. The unit tests use the `Map` store of
-`storage/AssetBackend.js`, so no test needs a fake IndexedDB.
+`tests/helpers/memoryAssets.js`, so no test needs a fake IndexedDB.
 
 #### The in-memory copy
 
@@ -575,7 +575,7 @@ localStorage fallback.
 
 #### Reading the stored table
 
-Only the path to IndexedDB splits the table out. `downloadState` still
+Only the path to IndexedDB splits the table out. `downloadCampaignFile` still
 serializes the whole save, so an exported campaign is one self-contained
 document. Import needs no special handling, because the persist-then-reload
 path gives the inline payloads straight back to the same writer.
