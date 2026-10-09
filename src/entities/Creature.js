@@ -122,6 +122,79 @@ function crFields(value) {
 }
 
 /**
+ * The optional stat block traits of a creature or a template. A creature with
+ * no value for a trait stores no key for it. `withDefaults` and
+ * `editCreature` drop these keys before they write the coerced values back,
+ * and `fromTemplate` copies them from a template. A key missing from this list
+ * would pass a load uncoerced, stay on a creature after an edit cleared it, or
+ * be lost on a spawn.
+ */
+export const TRAIT_KEYS = Object.freeze(
+  /** @type {const} */ ([
+    'cr',
+    'proficiencies',
+    'defenses',
+    'creatureType',
+    'conditionImmunities',
+    'multiattack',
+    'packTactics',
+    'surpriseAttack',
+    'multiattackDisadvantage',
+    'redirectAttack',
+    'turnResistance',
+    'legendaryActions',
+    'legendaryResistance',
+    'actions',
+  ]),
+);
+
+/** @typedef {Pick<Creature, typeof TRAIT_KEYS[number]>} CreatureTraits */
+
+/**
+ * The coerced trait fields to spread into a creature or a template. A trait
+ * with no usable value adds no key.
+ * @param {{ [K in keyof CreatureTraits]?: unknown }} value
+ * @returns {CreatureTraits}
+ */
+export function creatureTraitFields(value) {
+  return {
+    ...crFields(value.cr),
+    ...creatureProficiencyFields(value.proficiencies),
+    ...defenseFields(value.defenses),
+    ...creatureTypeFields(value),
+    ...attackTraitFields(value),
+    ...actionFields(value.actions),
+  };
+}
+
+/**
+ * The trait keys that `value` has, with their values as given and not
+ * coerced.
+ * @template {object} T
+ * @param {T} value
+ * @returns {Partial<T>}
+ */
+export function pickTraits(value) {
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  const own = /** @type {Record<string, unknown>} */ (value);
+  for (const key of TRAIT_KEYS) if (key in own) out[key] = own[key];
+  return /** @type {Partial<T>} */ (out);
+}
+
+/**
+ * A copy of `value` with no trait key.
+ * @template {object} T
+ * @param {T} value
+ * @returns {T}
+ */
+export function omitTraits(value) {
+  const out = /** @type {Record<string, unknown>} */ ({ ...value });
+  for (const key of TRAIT_KEYS) delete out[key];
+  return /** @type {T} */ (out);
+}
+
+/**
  * Clamp a typed maximum to a live creature: at least 1, whole, with the
  * commoner default for a blank or nonsense value.
  * @param {number | undefined} maxHP
@@ -164,12 +237,7 @@ export function createCreature(id, name, options = {}) {
     weapons: options.weapons !== undefined ? options.weapons : stamp ? [stamp.weapon] : [],
     armor: options.armor !== undefined ? coerceEnemyArmor(options.armor) : (stamp?.armor ?? null),
     ...(hasLevel ? { level: options.level, tier } : {}),
-    ...crFields(options.cr),
-    ...creatureProficiencyFields(options.proficiencies),
-    ...defenseFields(options.defenses),
-    ...creatureTypeFields(options),
-    ...attackTraitFields(options),
-    ...actionFields(options.actions),
+    ...creatureTraitFields(options),
     ...(options.role !== undefined ? { role: options.role } : {}),
     ...(options.notes !== undefined ? { notes: options.notes } : {}),
     ...(options.subclass !== undefined ? { subclass: options.subclass } : {}),
@@ -196,20 +264,6 @@ export function createCreature(id, name, options = {}) {
 export function withDefaults(creature) {
   const maxHP = clampMaxHP(creature.maxHP);
   const {
-    cr: _cr,
-    proficiencies: _proficiencies,
-    defenses: _defenses,
-    creatureType: _creatureType,
-    conditionImmunities: _conditionImmunities,
-    multiattack: _multiattack,
-    packTactics: _packTactics,
-    surpriseAttack: _surpriseAttack,
-    multiattackDisadvantage: _multiattackDisadvantage,
-    redirectAttack: _redirectAttack,
-    turnResistance: _turnResistance,
-    legendaryActions: _legendaryActions,
-    legendaryResistance: _legendaryResistance,
-    actions: _actions,
     resources,
     spellbook,
     level: rawLevel,
@@ -217,7 +271,7 @@ export function withDefaults(creature) {
     weapon: legacyWeapon,
     weapons: rawWeapons,
     ...stripped
-  } = /** @type {Creature & { weapon?: unknown }} */ (creature);
+  } = /** @type {Creature & { weapon?: unknown }} */ (omitTraits(creature));
   const book = spellbookOf(spellbook);
   const level = levelOf(rawLevel, 1, Infinity);
   const casterLevel = levelOf(rawCasterLevel, 1, MAX_LEVEL);
@@ -228,12 +282,7 @@ export function withDefaults(creature) {
       ...(casterLevel !== undefined ? { casterLevel } : {}),
       ...(resources !== undefined ? { resources: resourceList(resources) } : {}),
       ...(book ? { spellbook: book } : {}),
-      ...crFields(creature.cr),
-      ...creatureProficiencyFields(creature.proficiencies),
-      ...defenseFields(creature.defenses),
-      ...creatureTypeFields(creature),
-      ...attackTraitFields(creature),
-      ...actionFields(creature.actions),
+      ...creatureTraitFields(creature),
       disposition: creature.disposition ?? 'neutral',
       maxHP,
       currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
@@ -315,25 +364,7 @@ export function editCreature(creature, edits) {
   const moved =
     (creature.location?.nodeId ?? null) !== (edits.location?.nodeId ?? null) ||
     (creature.location?.tileId ?? null) !== (edits.location?.tileId ?? null);
-  const {
-    level: _level,
-    tier: _tier,
-    cr: _cr,
-    proficiencies: _proficiencies,
-    defenses: _defenses,
-    creatureType: _creatureType,
-    conditionImmunities: _conditionImmunities,
-    multiattack: _multiattack,
-    packTactics: _packTactics,
-    surpriseAttack: _surpriseAttack,
-    multiattackDisadvantage: _multiattackDisadvantage,
-    redirectAttack: _redirectAttack,
-    turnResistance: _turnResistance,
-    legendaryActions: _legendaryActions,
-    legendaryResistance: _legendaryResistance,
-    actions: priorActions,
-    ...unleveled
-  } = creature;
+  const { level: _level, tier: _tier, ...unleveled } = omitTraits(creature);
   const base = {
     ...unleveled,
     name: edits.name,
@@ -346,12 +377,10 @@ export function editCreature(creature, edits) {
     met: moved ? false : creature.met,
     ...(edits.stats !== undefined ? { stats: normalizeStatBlock(edits.stats) } : {}),
     ...(edits.level != null ? { level: edits.level, tier: edits.tier ?? 'mob' } : {}),
-    ...crFields(edits.cr),
-    ...creatureProficiencyFields(edits.proficiencies),
-    ...defenseFields(edits.defenses),
-    ...creatureTypeFields(edits),
-    ...attackTraitFields(edits),
-    ...actionFields(edits.actions === undefined ? priorActions : edits.actions),
+    ...creatureTraitFields({
+      ...edits,
+      actions: edits.actions === undefined ? creature.actions : edits.actions,
+    }),
     ...(edits.role !== undefined ? { role: edits.role } : {}),
     ...(edits.notes !== undefined ? { notes: edits.notes } : {}),
   };

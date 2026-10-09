@@ -1,14 +1,9 @@
-import { coerceCR } from '../data/challenge.js';
 import { normalizeStatBlock } from './Modifiers.js';
 import { copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './CharacterSpellbook.js';
 import { casterTemplateFields } from './Caster.js';
-import { creatureProficiencyFields } from './Proficiencies.js';
-import { defenseFields } from './DamageDefenses.js';
-import { creatureTypeFields } from './CreatureType.js';
-import { attackTraitFields } from './CreatureAttacks.js';
-import { actionFields, refreshActions } from './CreatureActions.js';
-import { DISPOSITIONS, createCreature } from './Creature.js';
+import { refreshActions } from './CreatureActions.js';
+import { DISPOSITIONS, createCreature, creatureTraitFields, pickTraits } from './Creature.js';
 import { slugId } from './Roster.js';
 import { capitalize } from '../util/text.js';
 
@@ -32,7 +27,6 @@ import { capitalize } from '../util/text.js';
  * @returns {CreatureTemplate}
  */
 export function toTemplate(id, creature) {
-  const cr = coerceCR(creature.cr);
   return {
     id,
     name: creature.name,
@@ -42,12 +36,7 @@ export function toTemplate(id, creature) {
     weapons: creature.weapons ?? [],
     armor: creature.armor ?? null,
     ...(creature.level != null ? { level: creature.level, tier: creature.tier ?? 'mob' } : {}),
-    ...(cr === undefined ? {} : { cr }),
-    ...creatureProficiencyFields(creature.proficiencies),
-    ...defenseFields(creature.defenses),
-    ...creatureTypeFields(creature),
-    ...attackTraitFields(creature),
-    ...actionFields(refreshActions(creature).actions),
+    ...creatureTraitFields({ ...creature, actions: refreshActions(creature).actions }),
     ...(creature.role !== undefined ? { role: creature.role } : {}),
     ...(creature.notes !== undefined ? { notes: creature.notes } : {}),
     ...casterTemplateFields(creature),
@@ -80,22 +69,9 @@ export function fromTemplate(template, id, location = null) {
     stats: { ...(template.stats ?? template.statBlock ?? {}) },
     location,
     ...(Number.isFinite(level) ? { level, tier: template.tier ?? 'mob' } : {}),
-    cr: template.cr,
-    // The normalizer builds fresh lists, so a spawn never shares the arrays of
-    // the shared template entry.
-    proficiencies: template.proficiencies,
-    defenses: template.defenses,
-    creatureType: template.creatureType,
-    conditionImmunities: template.conditionImmunities,
-    multiattack: template.multiattack,
-    packTactics: template.packTactics,
-    surpriseAttack: template.surpriseAttack,
-    multiattackDisadvantage: template.multiattackDisadvantage,
-    redirectAttack: template.redirectAttack,
-    turnResistance: template.turnResistance,
-    legendaryActions: template.legendaryActions,
-    legendaryResistance: template.legendaryResistance,
-    actions: template.actions,
+    // createCreature coerces the traits into fresh lists, so a spawn never
+    // shares the arrays of the shared template entry.
+    ...pickTraits(template),
     ...(template.weapons !== undefined ? { weapons: template.weapons.map(copyEnemyWeapon) } : {}),
     ...(template.armor !== undefined
       ? { armor: template.armor ? { ...template.armor } : template.armor }

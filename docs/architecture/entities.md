@@ -152,6 +152,14 @@ field, so `fromTemplate` reads every template format that a file can contain.
 A `statBlock` field reads as `stats`, and a template with no disposition reads
 as hostile.
 
+`Creature.TRAIT_KEYS` lists the optional stat block traits, such as `cr`,
+`multiattack`, `legendaryActions`, and `actions`. `creatureTraitFields`
+coerces all of them in one call. `withDefaults` and `editCreature` drop the
+listed keys with `omitTraits` before they write the coerced values back, and
+`fromTemplate` copies them from a template with `pickTraits`. To add a trait,
+add its key to the list and its coercer to `creatureTraitFields`.
+`tests/CreatureTraits.test.js` fails when the list and the coercers disagree.
+
 ### Defeat and cleanup
 
 Every creature follows the same combat rules. `maxHP` defaults to 4, the HP of
