@@ -1593,10 +1593,13 @@ death save. `Creature.heal` does it for a creature that the heal brings above
 0 HP. This rule is not in `app/exhaustion.js`, because a revive happens in more
 places than that module can see.
 
-A long rest removes one level through `Character.longRest`, and a dead
-character keeps the level that killed it. The guard is in `longRest` and not
-at the call site, because the Time panel rests every character at once and
-does not check who is alive. A short rest removes no level.
+A long rest removes one level through `Character.longRest`. A character at
+0 HP gains nothing from a long rest (`gainsLongRest`, PHB p.186), so a dead
+character keeps the level that killed it, and a dying or stable character
+keeps its HP, death saves, and pools. The guard is in `longRest` and not at
+the call site, because the Time panel rests every character at once and does
+not check who is up. The Time panel logs one line for each character that
+gains nothing. A short rest removes no level.
 
 ### Exhaustion stored as a chip
 
@@ -1716,8 +1719,7 @@ function: the heal control of the combat screen, the HP stepper of the sheet,
 a healing spell, a rest, and a spent hit die. The function lives in
 `ResourceRestore.js`, and `Character.js` re-exports it. `HitDice.js` imports it
 from there, because `Character.js` imports `HitDice.js` and the reverse import
-would form a cycle. A character at 5 HP can therefore never
-read as dying.
+would form a cycle. A character at 5 HP can therefore never read as dying.
 
 The same function refuses HP to a dead character (three failures), and
 `Character.restAll` skips its HP pool. Without the guard, a Healing Word or a

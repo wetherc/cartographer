@@ -704,7 +704,7 @@ in-game clock forward.
 | Rest | What comes back |
 | --- | --- |
 | Short rest | All pact slots, and every use of a short-rest feature such as Second Wind, Action Surge, ki, or Channel Divinity. HP, spell slots, hit dice, and long-rest features such as Rage stay as they are. To heal, spend hit dice. |
-| Long rest | All HP, all spell slots, and each resource. Hit dice also come back, and exhaustion goes down by one level. |
+| Long rest | All HP, all spell slots, and each resource. Hit dice also come back, and exhaustion goes down by one level. A character at 0 HP gains nothing, and the log says so. Heal the character to at least 1 HP first. |
 
 ## Write the story
 

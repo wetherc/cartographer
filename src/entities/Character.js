@@ -404,17 +404,33 @@ export function restAll(character, kind) {
 }
 
 /**
+ * Whether a character gains the benefits of a long rest. 5e (PHB p.186)
+ * requires at least 1 HP at the start of the rest, so a dying, stable, or
+ * dead character at 0 HP gains nothing. A character with no HP pool rests as
+ * normal.
+ * @param {Character} character
+ * @returns {boolean}
+ */
+export function gainsLongRest(character) {
+  const hp = getHP(character);
+  return hp === null || hp.current > 0;
+}
+
+/**
  * A long rest: fully restore HP, spell slots, and every resource pool. It also
  * eases one level of exhaustion and gives back the once-per-rest invocations.
  *
- * A dead character keeps its level. The Time panel rests every character at
- * once and does not ask who is still alive, so the guard belongs here rather
- * than at the call site. `Exhaustion.easeExhaustion` cannot hold it, because it
- * cannot read a death-save tracker without an import cycle.
+ * A character at 0 HP comes back unchanged (see `gainsLongRest`). The Time
+ * panel rests every character at once and does not ask who is still up, so
+ * the guard belongs here rather than at the call site. The same guard keeps
+ * a dead character at the exhaustion level that killed it.
+ * `Exhaustion.easeExhaustion` cannot hold that guard, because it cannot read
+ * a death-save tracker without an import cycle.
  * @param {Character} character
  * @returns {Character}
  */
 export function longRest(character) {
+  if (!gainsLongRest(character)) return character;
   const { invocationUses: _uses, ...rest } = restAll(character, 'long');
   return isDead(rest) ? rest : easeExhaustion(rest);
 }

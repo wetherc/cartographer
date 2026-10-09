@@ -1,5 +1,5 @@
 import { mustGetElement } from '../ui/dom.js';
-import { shortRest, longRest, transferItem } from '../entities/Character.js';
+import { shortRest, longRest, gainsLongRest, transferItem } from '../entities/Character.js';
 import { restoreAllResistance } from '../combat/LegendaryResistance.js';
 import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
@@ -412,6 +412,7 @@ export function wireParty(app, reloadView = null) {
         if (choice === 'cancel') return;
         if (choice === 'dawn') after = dawn;
       }
+      const left = state.characters.filter((c) => !gainsLongRest(c));
       state.characters = state.characters.map(longRest);
       // A legendary creature gets its uses of Legendary Resistance back.
       state.creatures = restoreAllResistance(state.creatures);
@@ -420,6 +421,9 @@ export function wireParty(app, reloadView = null) {
       scope.reselect();
       timePanel.update();
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
+      for (const c of left) {
+        app.actions.logEvent('rest', `${c.name} is at 0 HP and gains nothing from the rest.`);
+      }
     },
   });
 

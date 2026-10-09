@@ -2788,7 +2788,7 @@ on, by the time that [Party movement](#party-movement) lists for each map.
 | --- | --- | --- |
 | Advance | One watch | None beyond the time |
 | Short rest | One hour | Refills pact slots and each short-rest pool (see [Class feature pools](#class-feature-pools) and [Custom pools](#custom-pools)). Sorcerous Restoration gives 4 sorcery points at sorcerer 20. Restores no HP, because in 5e only spent hit dice heal on a short rest |
-| Long rest | Eight hours, two watches. From Afternoon or Dusk, a dialog also offers to rest until the next Dawn | Restores HP and every resource except a No rest pool, refills the spell slots, and takes one level of exhaustion off each character |
+| Long rest | Eight hours, two watches. From Afternoon or Dusk, a dialog also offers to rest until the next Dawn | Restores HP and every resource except a No rest pool, refills the spell slots, and takes one level of exhaustion off each character. A character at 0 HP gains nothing |
 
 | Unit | Length |
 | --- | --- |

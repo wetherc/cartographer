@@ -28,6 +28,7 @@ import {
   getHP,
   shortRest,
   longRest,
+  gainsLongRest,
   createCharacter,
   spendResource,
   addResource,
@@ -95,20 +96,26 @@ test('longRest leaves a dead character at the level that killed it', () => {
   assert.equal(isDead(rested), true);
 });
 
-test('a long rest that heals a dying character clears the dying state', () => {
-  const hero = withHP(createCharacter('h', 'Hero'), 10);
-  const dying = dropToDying(spendResource(hero, 'hp', 10));
+test('a long rest gives a character at 0 HP nothing', () => {
+  const hero = withHP(createCharacter('h', 'Hero'), 12);
+  const dying = dropToDying(spendResource(hero, 'hp', 12));
   assert.equal(isDying(dying), true);
-  const rested = longRest(dying);
-  assert.equal(getHP(rested).current, 10);
-  assert.equal(rested.deathSaves, null);
-  assert.equal(isDying(rested), false);
-  assert.equal(
-    rested.conditions.some((c) => c.name === 'Unconscious'),
-    false,
-    'the Unconscious chip goes with the tracker',
-  );
+  assert.equal(gainsLongRest(dying), false);
+  assert.equal(longRest(dying), dying, 'HP, death saves, and pools stay as they are');
+  const stable = { ...dying, deathSaves: { successes: 0, failures: 0, stable: true } };
+  assert.equal(longRest(stable), stable);
   assert.equal(isDying(shortRest(dying)), true, 'a short rest heals nothing, so it stays');
+});
+
+test('a long rest heals a character at 1 HP to full', () => {
+  const hero = spendResource(withHP(createCharacter('h', 'Hero'), 12), 'hp', 11);
+  assert.equal(gainsLongRest(hero), true);
+  assert.equal(getHP(longRest(hero)).current, 12);
+});
+
+test('a character with no HP pool still gains a long rest', () => {
+  const blank = { ...createCharacter('h', 'Hero'), resources: [] };
+  assert.equal(gainsLongRest(blank), true);
 });
 
 test('formatMinutes reads a walk in hours and minutes', () => {
