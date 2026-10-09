@@ -15,3 +15,27 @@ export function levelUpCue({ levels, improvements, choices }) {
   ].filter(Boolean);
   return parts.length === 0 ? null : `Ready to level up: ${parts.join(', ')}.`;
 }
+
+/**
+ * The level on a roster row: the level the rules read, plus the levels
+ * earned by XP and not yet assigned. A Fighter 4 with XP for level 5 reads
+ * "Lv 4 (+1 to assign)", so the row does not claim a level the rules ignore.
+ * @param {number} level the effective level
+ * @param {number} pending levels left to assign
+ * @returns {string}
+ */
+export function rosterLevelText(level, pending) {
+  return pending > 0 ? `Lv ${level} (+${pending} to assign)` : `Lv ${level}`;
+}
+
+/**
+ * The level on the sheet header, in the same terms as `rosterLevelText`:
+ * "Level 4, 1 level to assign".
+ * @param {number} level the effective level
+ * @param {number} pending levels left to assign
+ * @returns {string}
+ */
+export function sheetLevelText(level, pending) {
+  if (pending <= 0) return `Level ${level}`;
+  return `Level ${level}, ${pending} level${pending === 1 ? '' : 's'} to assign`;
+}

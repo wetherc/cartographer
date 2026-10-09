@@ -2473,8 +2473,10 @@ Enough XP does not level a character with a class on its own. Each earned
 level waits as a pending level. The GM assigns it to a class, either the
 current class or a new one.
 
-The proficiency bonus follows the assigned class levels. So a pending level
-does not raise the bonus until the GM assigns it.
+The proficiency bonus, cantrip damage, and the encounter budget follow the
+assigned class levels. So a pending level does not raise any of them until the
+GM assigns it. The roster reads "Lv 4 (+1 to assign)" and the sheet header
+reads "Level 4, 1 level to assign" while that level waits.
 
 An assignment does these things:
 

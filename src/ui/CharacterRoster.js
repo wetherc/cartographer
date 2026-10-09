@@ -1,4 +1,6 @@
 import { levelUpText } from './CharacterLevelBanner.js';
+import { rosterLevelText } from '../view/LevelUpCue.js';
+import { effectiveLevel, pendingLevels } from '../entities/Multiclass.js';
 import { bareButton, iconButton, iconLink, textButton, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
@@ -168,7 +170,11 @@ export function mountCharacterRoster(container, options) {
             'span',
             'character-roster__label',
             `${character.name} `,
-            el('span', 'character-roster__level', `(Lv ${character.level})`),
+            el(
+              'span',
+              'character-roster__level',
+              `(${rosterLevelText(effectiveLevel(character), pendingLevels(character))})`,
+            ),
           ),
           levelUpBadge(character),
           hpMeter(character),

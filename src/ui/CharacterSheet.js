@@ -12,7 +12,8 @@ import { levelUpBanner } from './CharacterLevelBanner.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { initiativeReadout } from '../view/InitiativeBadge.js';
 import { passivePerception } from '../entities/Checks.js';
-import { characterProficiency } from '../entities/Multiclass.js';
+import { characterProficiency, effectiveLevel, pendingLevels } from '../entities/Multiclass.js';
+import { sheetLevelText } from '../view/LevelUpCue.js';
 import { buildConditionsSection } from './CharacterConditions.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildQuickRolls, buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
@@ -405,7 +406,7 @@ export function mountCharacterSheet(
     const banner = el(
       'div',
       'character-sheet__header',
-      el('span', '', `Level ${character.level}`),
+      el('span', '', sheetLevelText(effectiveLevel(character), pendingLevels(character))),
       el(
         'span',
         'character-sheet__header-meta u-muted',

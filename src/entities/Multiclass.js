@@ -77,6 +77,20 @@ export function pendingLevels(character) {
 }
 
 /**
+ * The level the rules read for a character. A classed character counts only
+ * its assigned class levels, so a level earned by XP but not yet assigned adds
+ * nothing to proficiency, HP, cantrip damage, or the encounter budget. A
+ * classless character has nothing to assign and reads its stored level.
+ * @param {SpellCaster} character
+ * @returns {number} at least 1
+ */
+export function effectiveLevel(character) {
+  return getClasses(character).length > 0
+    ? Math.max(1, assignedLevel(character))
+    : totalLevel(character);
+}
+
+/**
  * The proficiency bonus of a character. A classed character reads it at the
  * sum of its assigned class levels, so a level earned by XP but not yet
  * assigned adds nothing: a Wizard 5 with six pending levels rolls with +3,
@@ -86,8 +100,7 @@ export function pendingLevels(character) {
  * @returns {number}
  */
 export function characterProficiency(character) {
-  const classed = getClasses(character).length > 0;
-  return proficiencyBonus(classed ? Math.max(1, assignedLevel(character)) : totalLevel(character));
+  return proficiencyBonus(effectiveLevel(character));
 }
 
 /**

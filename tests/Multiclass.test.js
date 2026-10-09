@@ -8,6 +8,7 @@ import {
   pendingLevels,
   withClasses,
   characterProficiency,
+  effectiveLevel,
 } from '../src/entities/Multiclass.js';
 import { spellSaveDC } from '../src/entities/Classes.js';
 import { createCharacter, withDefaults, addXP, withHP, getHP } from '../src/entities/Character.js';
@@ -179,4 +180,15 @@ test('the proficiency bonus follows the assigned class levels, not pending ones'
   assert.equal(spellSaveDC(wizard, 'wizard'), 15);
   // A classless character has nothing to assign, so its stored level counts.
   assert.equal(characterProficiency({ ...createCharacter('c2', 'Nim'), level: 9 }), 4);
+});
+
+test('effectiveLevel reads the assigned class levels of a classed character', () => {
+  const fighter = { level: 5, classes: [{ classId: 'fighter', level: 4 }] };
+  assert.equal(effectiveLevel(fighter), 4, 'the level earned by XP waits to be assigned');
+  assert.equal(
+    effectiveLevel({ level: 3, classes: [] }),
+    3,
+    'a classless character reads its stored level',
+  );
+  assert.equal(effectiveLevel({ level: 2, classes: [{ classId: 'fighter', level: 0 }] }), 1);
 });

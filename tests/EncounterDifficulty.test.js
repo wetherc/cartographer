@@ -164,3 +164,8 @@ test('the thresholds phrase labels each number with its band', () => {
     'party thresholds easy 150, medium 300, hard 450, deadly 800',
   );
 });
+
+test('a level earned by XP but not yet assigned buys no budget', () => {
+  const pending = { ...hero('a', 5), classes: [{ classId: 'fighter', level: 4 }] };
+  assert.deepEqual(partyThresholds([pending]), XP_THRESHOLDS[3]);
+});

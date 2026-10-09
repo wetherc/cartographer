@@ -13,6 +13,7 @@
 
 import { crXP } from '../data/challenge.js';
 import { isDead } from './DeathSaves.js';
+import { effectiveLevel } from './Multiclass.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -75,7 +76,8 @@ function multiplierStep(count) {
 
 /**
  * The party's four thresholds: each character's thresholds for its level,
- * summed. A character above level 20 or below level 1 reads at the nearest
+ * summed. A character counts its assigned class levels, so a level earned by XP
+ * but not yet assigned buys no budget. A character above level 20 or below level 1 reads at the nearest
  * level the table holds. An empty party has all four at 0.
  * @param {Character[]} characters
  * @returns {number[]} easy, medium, hard, and deadly
@@ -83,7 +85,7 @@ function multiplierStep(count) {
 export function partyThresholds(characters) {
   const totals = [0, 0, 0, 0];
   for (const character of characters) {
-    const level = Math.min(20, Math.max(1, Math.floor(character.level ?? 1) || 1));
+    const level = Math.min(20, effectiveLevel(character));
     const row = XP_THRESHOLDS[level - 1];
     for (let i = 0; i < totals.length; i += 1) totals[i] += row[i];
   }

@@ -3,6 +3,7 @@ import { isCasterRef, casterName, castsAs } from './ClassCasting.js';
 import { crProficiencyBonus, formatModifier } from './Modifiers.js';
 import { emptySpellbook } from './Character.js';
 import { spliceReservedPools } from './Resource.js';
+import { effectiveLevel } from './Multiclass.js';
 import { isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -93,7 +94,11 @@ function casterClasses(e, level) {
  * @returns {CasterView}
  */
 export function toCaster(entity) {
-  const level = entity.casterLevel ?? entity.level ?? 1;
+  // A Character casts at its assigned class levels, so a level earned by XP
+  // but not yet assigned does not raise cantrip damage or the target cap.
+  const level = Array.isArray(entity.classes)
+    ? effectiveLevel(/** @type {Character} */ (entity))
+    : (entity.casterLevel ?? entity.level ?? 1);
   return {
     id: entity.id,
     name: entity.name,

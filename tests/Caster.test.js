@@ -390,3 +390,15 @@ test('a creature Warlock gets pact slots on create and on load, and spends them'
   assert.equal(cast.ok, true);
   if (cast.ok) assert.equal(getPactPool(cast.caster)?.current, 1);
 });
+
+test('toCaster reads a Character at its assigned class levels', () => {
+  const character = {
+    id: 'w',
+    name: 'Wizard 4',
+    classes: [{ classId: 'wizard', level: 4 }],
+    level: 5,
+    stats: { INT: 16 },
+    resources: [],
+  };
+  assert.equal(toCaster(character).level, 4, 'the pending level adds no cantrip die');
+});
