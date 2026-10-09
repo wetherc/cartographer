@@ -30,6 +30,17 @@ test('damage terms repair each term and drop what is not one', () => {
   assert.deepEqual(normalizeParts('2d4'), []);
 });
 
+test('damage terms keep to the allowed types when a caller names them', () => {
+  assert.equal(
+    normalizeParts([{ count: 2, sides: 8, damageType: 'fire' }], ['healing'])[0].damageType,
+    'healing',
+  );
+  assert.equal(
+    normalizeParts([{ count: 2, sides: 8, damageType: 'healing' }])[0].damageType,
+    'slashing',
+  );
+});
+
 test('later-turn damage needs dice, and keeps its growth and boundary', () => {
   assert.equal(normalizeOngoing(null), null);
   assert.equal(normalizeOngoing({ damage: [] }), null);

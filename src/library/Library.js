@@ -1,10 +1,7 @@
 import { withHeals } from '../entities/HealDice.js';
-import {
-  WEAPON_TYPES,
-  ITEM_TYPES,
-  HEALING_TYPES,
-  normalizeDamagePart,
-} from '../entities/Equipment.js';
+import { spellbookOf, stringList } from '../entities/LoadCoercion.js';
+import { emptySpellbook } from '../entities/CharacterSpellbook.js';
+import { WEAPON_TYPES, ITEM_TYPES, HEALING_TYPES } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
 import {
   MAX_TARGET_COUNT,
@@ -18,6 +15,7 @@ import {
   attackExtras,
   buffExtras,
   normalizeLevelsPerStep,
+  normalizeParts,
   normalizeRepeat,
   saveExtras,
 } from '../entities/SpellFields.js';
@@ -241,22 +239,6 @@ function withCoercedWeapon(raw) {
 }
 
 /**
- * Coerce an unknown value into a clean DamagePart array. This function drops
- * terms that are not well-formed dice, and clamps the rest onto the
- * supported die sizes and damage types. This function is pure.
- * @param {unknown} value
- * @param {string[]} [allowed] The types these terms can carry. Damage types
- *   by default, or `HEALING_TYPES` for restorative dice.
- * @returns {DamagePart[]}
- */
-function normalizeDamageParts(value, allowed = undefined) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((p) => p && typeof p === 'object')
-    .map((p) => normalizeDamagePart(p, allowed));
-}
-
-/**
  * Normalize one parsed spell into a valid Spell. This function defaults
  * descriptive fields and repairs the effect into one of the discriminated
  * shapes. An unrecognized effect kind falls back to a
@@ -281,7 +263,7 @@ function normalizeSpell(raw, id) {
     const projectiles = normalizeProjectiles(raw.effect.projectiles);
     effect = {
       kind: 'attack',
-      damage: normalizeDamageParts(raw.effect.damage),
+      damage: normalizeParts(raw.effect.damage),
       ...(projectiles ? { projectiles } : {}),
       ...attackExtras(raw.effect),
     };
@@ -297,7 +279,7 @@ function normalizeSpell(raw, id) {
       saveAbility: SPELL_ABILITIES.includes(raw.effect.saveAbility)
         ? raw.effect.saveAbility
         : 'DEX',
-      damage: normalizeDamageParts(raw.effect.damage),
+      damage: normalizeParts(raw.effect.damage),
       halfOnSave: !!raw.effect.halfOnSave,
       ...(condition ? { condition } : {}),
       // A repeated save only has meaning alongside a condition, so it stays
@@ -311,7 +293,7 @@ function normalizeSpell(raw, id) {
   } else if (kind === 'heal') {
     effect = {
       kind: 'heal',
-      healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES),
+      healing: normalizeParts(raw.effect.healing, HEALING_TYPES),
       ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
       ...(raw.effect.revives === true ? { revives: true } : {}),
       ...(raw.effect.stabilizes === true ? { stabilizes: true } : {}),
@@ -348,7 +330,7 @@ function normalizeSpell(raw, id) {
 
   // Scaling dice add to whatever the effect deals. A heal spell's per-level
   // dice are restorative too.
-  const scalingDamage = normalizeDamageParts(
+  const scalingDamage = normalizeParts(
     raw.scaling?.damagePerLevel,
     kind === 'heal' ? HEALING_TYPES : undefined,
   );
@@ -378,9 +360,7 @@ function normalizeSpell(raw, id) {
   // material the next time a GM edits it. The form only shows the material
   // fields when M is checked.
   const materials = normalizeMaterials(raw.materials);
-  const letters = Array.isArray(raw.components)
-    ? raw.components.filter((/** @type {unknown} */ c) => typeof c === 'string')
-    : [];
+  const letters = stringList(raw.components);
   if (materials && !letters.includes('M')) letters.push('M');
 
   return {
@@ -388,7 +368,7 @@ function normalizeSpell(raw, id) {
     name: raw.name.trim(),
     level: clampInt(raw.level, 0, 9),
     school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
-    classes: Array.isArray(raw.classes) ? raw.classes.filter((c) => typeof c === 'string') : [],
+    classes: stringList(raw.classes),
     // Timing is structured, but an entry can carry either the object or the
     // printed string that an older library wrote. The parsers read both
     // forms, and keep anything unclassified as plain text.
@@ -437,7 +417,7 @@ function normalizeChoice(value, vocabulary) {
 /** A trimmed, deduplicated string list, for the free-text proficiency grants.
  * @param {unknown} value
  * @returns {string[]} */
-function stringList(value) {
+function trimmedUniqueStrings(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim()))];
 }
@@ -495,10 +475,12 @@ export function normalizeFeat(raw, id) {
         const saves = normalizeChoice(e.saves, ABILITY_SCORES);
         const expertise = normalizeChoice(e.expertise, SKILL_IDS);
         const armor = /** @type {import('../types/class.js').ArmorProficiency[]} */ (
-          stringList(e.armor).filter((a) => ARMOR_PROFICIENCIES.includes(/** @type {never} */ (a)))
+          trimmedUniqueStrings(e.armor).filter((a) =>
+            ARMOR_PROFICIENCIES.includes(/** @type {never} */ (a)),
+          )
         );
-        const tools = stringList(e.tools);
-        const languages = stringList(e.languages);
+        const tools = trimmedUniqueStrings(e.tools);
+        const languages = trimmedUniqueStrings(e.languages);
         if (
           !skills &&
           !saves &&
@@ -534,20 +516,6 @@ export function normalizeFeat(raw, id) {
 }
 
 /**
- * Repair a parsed spellbook into `{ cantrips, known, prepared }` of string
- * ids. This function drops anything that is not a string. A missing or
- * invalid spellbook reads as empty.
- * @param {unknown} raw
- * @returns {import('../types/entities.js').Spellbook}
- */
-function normalizeSpellbook(raw) {
-  const list = (/** @type {unknown} */ v) =>
-    Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
-  const s = /** @type {Record<string, unknown>} */ (raw && typeof raw === 'object' ? raw : {});
-  return { cantrips: list(s.cantrips), known: list(s.known), prepared: list(s.prepared) };
-}
-
-/**
  * The caster fields to copy onto a creature template from parsed
  * JSON: the class, an optional caster level, and a repaired spellbook. The
  * function adds these fields only when the class is a real caster class, so
@@ -569,7 +537,7 @@ function casterTemplateFrom(e) {
     ...(typeof e.casterLevel === 'number' && Number.isFinite(e.casterLevel)
       ? { casterLevel: clampInt(e.casterLevel, 1) }
       : {}),
-    spellbook: normalizeSpellbook(e.spellbook),
+    spellbook: spellbookOf(e.spellbook) ?? emptySpellbook(),
   };
 }
 

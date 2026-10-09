@@ -61,11 +61,15 @@ export function normalizeUntil(value) {
  * A written list of damage terms, each one repaired. A value that is not a
  * list reads as no terms.
  * @param {unknown} value
+ * @param {string[]} [allowed] The types these terms can carry. Damage types
+ *   by default, or `HEALING_TYPES` for restorative dice.
  * @returns {DamagePart[]}
  */
-export function normalizeParts(value) {
+export function normalizeParts(value, allowed = undefined) {
   if (!Array.isArray(value)) return [];
-  return value.filter((p) => p && typeof p === 'object').map((p) => normalizeDamagePart(p));
+  return value
+    .filter((p) => p && typeof p === 'object')
+    .map((p) => normalizeDamagePart(p, allowed));
 }
 
 /**

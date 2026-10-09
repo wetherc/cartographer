@@ -841,6 +841,25 @@ test('normalizeLibrary carries caster fields (subclass, level, spellbook) onto a
   assert.deepEqual(priest.spellbook.prepared, [], 'a non-array list reads empty');
 });
 
+test('normalizeLibrary keeps the class sources of a template spellbook', () => {
+  const lib = normalizeLibrary({
+    creatures: [
+      {
+        name: 'Hexer',
+        disposition: 'hostile',
+        class: 'warlock',
+        spellbook: {
+          cantrips: [],
+          known: ['hex'],
+          prepared: [],
+          sources: { hex: 'warlock', bad: 3 },
+        },
+      },
+    ],
+  });
+  assert.deepEqual(lib.creatures[0].spellbook.sources, { hex: 'warlock' });
+});
+
 test('a custom spell shadows a built-in of the same name; new names append', () => {
   const firebolt = DEFAULT_SPELLS.find((s) => s.name === 'Fire Bolt');
   const override = { ...firebolt, description: 'Homebrewed hotter.' };

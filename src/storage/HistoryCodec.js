@@ -39,6 +39,7 @@
 
 import { decodeHistoryNode, encodeHistoryNode } from './SaveManager.js';
 import { jsonLengthWithin } from './StateDiff.js';
+import { stringList } from '../entities/LoadCoercion.js';
 import { ASSET_PREFIX, hoistAssets } from './Assets.js';
 
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
@@ -229,23 +230,15 @@ export function expandOps(ops) {
       out.push(plain);
     } else if (op?.k === FOG_OP) {
       const tiles = [...op.p, 'tiles'];
-      for (const id of listOf(op.t)) out.push({ p: [...tiles, id, 'revealed'], f: false, t: true });
-      for (const id of listOf(op.f)) out.push({ p: [...tiles, id, 'revealed'], f: true, t: false });
+      for (const id of stringList(op.t))
+        out.push({ p: [...tiles, id, 'revealed'], f: false, t: true });
+      for (const id of stringList(op.f))
+        out.push({ p: [...tiles, id, 'revealed'], f: true, t: false });
     } else {
       out.push(op);
     }
   }
   return out;
-}
-
-/**
- * The string entries of a fog op's list, or none when the value is not a
- * list. A hand-edited record degrades to a smaller reveal.
- * @param {unknown} value
- * @returns {string[]}
- */
-function listOf(value) {
-  return Array.isArray(value) ? value.filter((id) => typeof id === 'string') : [];
 }
 
 /**
