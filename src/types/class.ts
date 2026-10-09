@@ -88,6 +88,10 @@ export interface ClassDef {
    * a class that knows no cantrips. A level past the array's end uses the
    * last entry. */
   cantripsKnown: number[];
+  /** Leveled spells known by class level, where index 0 is level 1, for a
+   * class with the known rule (Bard, Sorcerer, Warlock, Ranger). Absent means
+   * the class has no fixed count. The sheet warns past it and never blocks. */
+  spellsKnown?: number[];
   /** The two abilities the class is proficient in saving with. */
   savingThrows: Ability[];
   armor: ArmorProficiency[];

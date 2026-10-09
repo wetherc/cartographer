@@ -6,6 +6,7 @@ import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { arcanumSpellIds, warlockCast } from '../entities/MysticArcanum.js';
 import { tomeRituals } from '../entities/PactTome.js';
 import { thirdCasterSpellIssues } from '../entities/ThirdCasterSpells.js';
+import { knownSpellIssues } from '../entities/KnownSpellLimit.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
@@ -58,9 +59,12 @@ export function buildSpellsSection(character, opts) {
     'character-sheet__spells u-col u-g2',
     sectionLabel(className ? `Spells (${className})` : 'Spells'),
   );
-  // The subclass spell rules warn and do not block, because the GM may
-  // allow a spell list that the rules do not.
-  const issues = thirdCasterSpellIssues(character, opts.resolveSpells);
+  // The spells-known limits and the subclass spell rules warn and do not
+  // block, because the GM may allow a spell list that the rules do not.
+  const issues = [
+    ...knownSpellIssues(character, opts.resolveSpells),
+    ...thirdCasterSpellIssues(character, opts.resolveSpells),
+  ];
   if (issues.length > 0) {
     section.appendChild(
       el(

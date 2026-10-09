@@ -2659,6 +2659,12 @@ subclass rule. The warning does not block the list, so a GM can allow it.
   Wizard do not.
 - Mage Hand as one of the Arcane Trickster cantrips.
 
+The same block warns when a Bard, Sorcerer, Warlock, or Ranger knows more
+leveled spells than its class table allows, for example 7 for a Bard 4 or 2
+for a Ranger 2. Only the spells learned under that class count. A
+warlock's Mystic Arcanum spells of 6th level and up do not count. The
+warning does not block the list either.
+
 ### Eldritch invocations
 
 A warlock picks its eldritch invocations and its pact boon when it gains
