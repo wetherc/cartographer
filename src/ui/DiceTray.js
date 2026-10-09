@@ -3,7 +3,7 @@ import { buildDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 import { iconButton, segSwitch, textButton } from './buttons.js';
 import { el } from './dom.js';
-import { numberField } from './formFields.js';
+import { checkbox, numberField } from './formFields.js';
 import { capitalize } from '../util/text.js';
 import { parseTarget, rollTarget } from '../dice/TrayTarget.js';
 import { resultSummary } from '../dice/ResultLine.js';
@@ -30,8 +30,12 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * the target that the GM typed. A save or a check from the character sheet
  * rolls this way, so the GM can type a DC once and roll several checks
  * against it.
+ *
+ * The **Hidden roll** box marks the tray's own rolls as secret, and `onRoll`
+ * passes its state on. The box stays ticked until the GM clears it. The
+ * stylesheet hides it in a Player tab, which has nothing to roll in secret.
  * @param {HTMLElement} container
- * @param {{ onRoll?: (text: string) => void }} [opts]
+ * @param {{ onRoll?: (text: string, flags: { hidden: boolean }) => void }} [opts]
  * @returns {{
  *   getSelection: () => import('../types/dice.js').DiceSelection,
  *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null, options?: import('../types/dice.js').TrayRollOptions) => import('../types/dice.js').TrayRoll,
@@ -150,9 +154,15 @@ export function mountDiceTray(container, opts = {}) {
     ariaLabel: 'Target number or DC to meet (optional)',
   });
 
+  const hiddenBox = checkbox('Hidden roll', false, { className: 'dice-tray__hidden' });
+  hiddenBox.label.title = 'Players see only that the GM rolled';
+
   const rollButton = textButton(
     'Roll',
-    () => opts.onRoll?.(performRoll(parseTarget(targetInput.value)).text),
+    () =>
+      opts.onRoll?.(performRoll(parseTarget(targetInput.value)).text, {
+        hidden: hiddenBox.input.checked,
+      }),
     {
       icon: 'dice',
       variant: 'primary',
@@ -195,7 +205,7 @@ export function mountDiceTray(container, opts = {}) {
     el('span', 'dice-tray__target-label', 'DC'),
     targetInput,
   );
-  root.appendChild(el('div', 'dice-tray__footer', targetField, rollButton));
+  root.appendChild(el('div', 'dice-tray__footer', targetField, hiddenBox.label, rollButton));
   container.appendChild(root);
 
   return {

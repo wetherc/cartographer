@@ -6,6 +6,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountDiceTray } from '../ui/DiceTray.js';
 import { isGM } from '../view/ViewRole.js';
+import { trayRollLine } from '../log/TrayRollLine.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -23,7 +24,10 @@ export function wireDiceTray(app) {
   }
 
   const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
-    onRoll: (text) => app.actions.logEvent('roll', `${rollerName()} rolls ${text}.`),
+    onRoll: (text, { hidden }) => {
+      const line = trayRollLine(rollerName(), text, { hidden, gm: isGM(app.state.role) });
+      app.actions.logEvent('roll', line.message, line.options);
+    },
   });
 
   // This lets a weapon attack load and roll the tray (d20 plus modifier

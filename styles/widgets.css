@@ -138,6 +138,7 @@
 .dice-tray__footer {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
@@ -157,6 +158,16 @@
 
 .dice-tray__roll {
   flex: 1;
+}
+
+.dice-tray__hidden {
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+/* A Player tab has no secret to keep from the other players. */
+body.role-player .dice-tray__hidden {
+  display: none;
 }
 
 .dice-tray__result {

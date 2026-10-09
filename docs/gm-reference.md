@@ -104,6 +104,7 @@ these items from the screen:
   save bonus of a creature, and the HP readout of a creature after you set
   its damage by hand. The Player view shows a version of each line without
   the number
+- the dice and the result of a hidden roll from the dice tray
 - the notes on a tile
 - the handouts and quests that you have not revealed
 - the notes, the links, and the GM-only objectives of every quest
@@ -3029,6 +3030,7 @@ steppers, and it does not read typed dice expressions.
 | Modifier | The **mod** cell after the dice: a flat number, set with plus and minus buttons |
 | d20 mode | A switch under the dice: Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
 | DC | The field beside the Roll button: an optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
+| Hidden roll | A box beside the Roll button, in a GM tab only. A ticked box makes each **Roll** secret. The box stays ticked until you clear it |
 | Roll | Rolls the selection |
 
 The tray shows the latest result at its top. The total is large, and the dice faces and
@@ -3037,6 +3039,12 @@ target ends with a line such as "vs 15: fail". Every roll
 also goes into the Travelogue under the name of the roller. The name is
 "The GM" for a GM tab, the character name for a bound tab, and "A player"
 for a spectator tab.
+
+A hidden roll goes into the Travelogue as a GM-only line, such as "The GM
+rolls in secret: d20[4]=4 + modifier=3 -> total: 7". A Player tab reads only "The GM rolls in
+secret." Use it for a Perception check that the players do not know about,
+or for the save of a foe. The box applies only to the **Roll** button. An
+attack, a save, or a check that the app rolls logs its own line, and the box does not change it.
 
 An attack or a death save from the app opens the tray and shows its roll
 there. The dice counts and the modifier keep what you set, so your next
