@@ -12,6 +12,7 @@ import {
   unknownKeyWarning,
   unlockNode,
 } from '../src/map/NodeLock.js';
+import { ruleEnables } from '../src/view/FieldRules.js';
 
 const item = (/** @type {string} */ name) => ({
   id: name,
@@ -130,4 +131,20 @@ test('lockFields offers item names as key suggestions', () => {
   const fields = lockFields(undefined, ['Silver Key']);
   assert.deepEqual(/** @type {any} */ (fields[1]).suggestions, ['Silver Key']);
   assert.deepEqual(/** @type {any} */ (lockFields(undefined)[1]).suggestions, []);
+});
+
+test('Key item is enabled only while Lock names a lock', () => {
+  const requires = lockFields(undefined)[1];
+  assert.equal(
+    ruleEnables(requires, () => ''),
+    false,
+  );
+  assert.equal(
+    ruleEnables(requires, () => 'locked'),
+    true,
+  );
+  assert.equal(
+    ruleEnables(requires, () => 'open'),
+    true,
+  );
 });

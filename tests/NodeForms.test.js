@@ -33,7 +33,7 @@ test('nodeKindFields lists every kind and the tags of the chosen kind', () => {
   assert.equal(nodeKindFields('interior', 'inn')[1].value, 'inn');
 });
 
-test('nodeFieldChange refills Environment on a kind change and gates Key item on a lock', () => {
+test('nodeFieldChange refills Environment on a kind change and leaves Key item to its rule', () => {
   /** @type {any[]} */
   const calls = [];
   const values = { kind: 'interior', lockState: '' };
@@ -48,11 +48,7 @@ test('nodeFieldChange refills Environment on a kind change and gates Key item on
   values.lockState = 'locked';
   nodeFieldChange('lockState', handle);
   nodeFieldChange('name', handle);
-  assert.deepEqual(calls, [
-    ['options', 'environ'],
-    ['disabled', 'lockRequires', true],
-    ['disabled', 'lockRequires', false],
-  ]);
+  assert.deepEqual(calls, [['options', 'environ']]);
 });
 
 test('sizeField states the range in its caption and sets no bounds', () => {

@@ -43,16 +43,13 @@ export function nodeKindFields(kind, environ) {
 
 /**
  * The onChange of the node dialogs. A Kind change refills Environment with
- * the tags of the new kind, and a Lock change enables Key item only for a
- * lock.
+ * the tags of the new kind.
  * @param {string} name
  * @param {import('../types/modal.js').ModalFormHandle} form
  */
 export function nodeFieldChange(name, form) {
   if (name === 'kind') {
     form.setOptions('environ', environFieldOptions(form.get('kind'), null));
-  } else if (name === 'lockState') {
-    form.setDisabled('lockRequires', form.get('lockState') === '');
   }
 }
 

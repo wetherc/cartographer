@@ -148,9 +148,9 @@ export function lockFields(lock, names = []) {
       label: 'Key item (name)',
       value: lock?.requires ?? '',
       suggestions: names,
-      // A key item means nothing without a lock. The node dialog enables
-      // the field when Lock changes to Locked or Unlocked.
-      disabled: !lock,
+      // A key item means nothing without a lock, so the field is enabled
+      // only while Lock reads Locked or Unlocked.
+      enabledWhen: { field: 'lockState' },
     },
   ];
 }

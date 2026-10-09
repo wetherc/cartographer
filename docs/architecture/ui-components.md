@@ -802,7 +802,7 @@ the widget:
 | `'note'` | A line of warning text with no input, a polite live region. `onChange` rewrites it with `setLabel` | `''` |
 
 Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
-`disabled`, `advanced`, and `section`. The text, number, and textarea fields take
+`disabled`, `enabledWhen`, `advanced`, and `section`. The text, number, and textarea fields take
 `placeholder`.
 
 - With `options.wide`, the form lays out two fields in each row. `full: true`
@@ -818,6 +818,13 @@ Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
 - `options.submitRequires` names checkbox and text fields. The submit
   button stays disabled until each named checkbox is ticked and each named
   text field has text, and a named text field gets `aria-required`.
+- `enabledWhen: { field, test }` enables a field only while the named field
+  passes `test`. With no `test`, the named field has to be non-blank. Both
+  `promptModal` and `buildSpecForm` apply the rule when the form opens and
+  each time the named field changes, before they call `onChange`. The Key
+  item of a map lock, the Custom race of a new character, and the dependent
+  fields of the creature form (`DEPENDS_ON` in `app/creatureLayout.js`) use
+  it. The pure part is in `view/FieldRules.js`.
 - A field marked `advanced` goes into one collapsed `<details>` block,
   captioned by `options.advancedLabel` (default "More options"). The block
   sits where the first advanced field appears, so a plain submit does not

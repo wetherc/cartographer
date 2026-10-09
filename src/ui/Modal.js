@@ -15,6 +15,7 @@ import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captioned } from './formFields.js';
 import { buildFieldControl } from './FieldControl.js';
+import { applyFieldRules, hasFieldRules } from '../view/FieldRules.js';
 import { dialogPartId, noteFocus, pickReturnFocus, repairFocus } from './dialogFocus.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
@@ -288,7 +289,7 @@ export function promptModal(title, fields, options = {}) {
       }
 
       const onChange = options.onChange;
-      if (onChange) {
+      if (onChange || hasFieldRules(fields)) {
         /** @type {ModalFormHandle} */
         const handle = {
           get: (name) => getters[name](),
@@ -322,8 +323,16 @@ export function promptModal(title, fields, options = {}) {
             }
           },
         };
+        /** @param {string} name */
+        const readRuled = (name) => getters[name]?.() ?? '';
+        // The enabledWhen rules run first, so an onChange can still override
+        // one of them for this edit.
+        applyFieldRules(fields, null, readRuled, handle.setDisabled);
         for (const [name, input] of Object.entries(inputs)) {
-          input.addEventListener('input', () => onChange(name, handle));
+          input.addEventListener('input', () => {
+            applyFieldRules(fields, name, readRuled, handle.setDisabled);
+            onChange?.(name, handle);
+          });
         }
       }
 

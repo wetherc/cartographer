@@ -40,6 +40,10 @@ interface FieldBase {
    * situational inputs that a plain submit must not have to read past. */
   advanced?: boolean;
   disabled?: boolean;
+  /** Enable the field only while the named field passes `test`, or, with no
+   * `test`, while that field is not blank. The form applies the rule when it
+   * opens and each time the named field changes (see `view/FieldRules.js`). */
+  enabledWhen?: { field: string; test?: (value: string) => boolean };
 }
 
 /**

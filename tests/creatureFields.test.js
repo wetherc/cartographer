@@ -7,6 +7,7 @@ import {
   readCreatureFields,
 } from '../src/app/creatureFields.js';
 import { gearOptions } from '../src/app/gearFields.js';
+import { applyFieldRules } from '../src/view/FieldRules.js';
 import { DEFAULT_CREATURE_HP, defaultEnemyGear } from '../src/entities/Creature.js';
 import { defaultEnemyStats, STAT_KEYS } from '../src/entities/Modifiers.js';
 
@@ -286,8 +287,26 @@ test('creatureFields opens Combat at the weapon when the stat block is left out'
   );
 });
 
+/**
+ * The disabled state of each ruled field as the form opens, read from the
+ * fields' starting values.
+ * @param {import('../src/types/modal.js').ModalField[]} fields
+ */
+function openedRules(fields) {
+  const values = new Map(fields.map((f) => [f.name, String(('value' in f ? f.value : '') ?? '')]));
+  /** @type {Map<string, boolean>} */
+  const off = new Map();
+  applyFieldRules(
+    fields,
+    null,
+    (n) => values.get(n) ?? '',
+    (n, d) => off.set(n, d),
+  );
+  return off;
+}
+
 test('creatureFields disables a dependent field while its parent is blank', () => {
-  const blank = creatureFields({ level: 2 }, gearOptions(null));
+  const blank = openedRules(creatureFields({ level: 2 }, gearOptions(null)));
   for (const name of [
     'hitSaveDC',
     'hitSaveCondition',
@@ -295,34 +314,38 @@ test('creatureFields disables a dependent field while its parent is blank', () =
     'multiattackDisadvantage',
     'casterLevel',
   ]) {
-    assert.equal(field(blank, name).disabled, true, `${name} starts disabled`);
+    assert.equal(blank.get(name), true, `${name} starts disabled`);
   }
-  const set = creatureFields(
-    {
-      level: 2,
-      multiattack: 2,
-      surpriseAttack: { count: 2, sides: 6 },
-      class: 'wizard',
-      weapons: [{ name: 'Bite', onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } }],
-    },
-    gearOptions(null),
+  const set = openedRules(
+    creatureFields(
+      {
+        level: 2,
+        multiattack: 2,
+        surpriseAttack: { count: 2, sides: 6 },
+        class: 'wizard',
+        weapons: [{ name: 'Bite', onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } }],
+      },
+      gearOptions(null),
+    ),
   );
   for (const name of ['hitSaveDC', 'surpriseDie', 'multiattackDisadvantage', 'casterLevel']) {
-    assert.equal(field(set, name).disabled, undefined, `${name} starts enabled`);
+    assert.equal(set.get(name), false, `${name} starts enabled`);
   }
 });
 
-test('creatureFieldsChange enables and disables the dependents of an edited field', () => {
-  const onChange = creatureFieldsChange({ restampStats: false });
+test('an edited parent enables and disables the creature fields that depend on it', () => {
+  const fields = creatureFields({ level: 2 }, gearOptions(null));
   const form = fakeForm({ hitSaveAbility: 'CON', multiattack: '1', surpriseCount: '' });
-  onChange('hitSaveAbility', form);
+  const edit = (/** @type {string} */ name) =>
+    applyFieldRules(fields, name, form.get, (n, d) => form.setDisabled(n, d));
+  edit('hitSaveAbility');
   assert.equal(form.disabled.get('hitSaveDC'), false);
   assert.equal(form.disabled.get('hitSaveCondition'), false);
-  onChange('multiattack', form);
+  edit('multiattack');
   assert.equal(form.disabled.get('multiattackDisadvantage'), true);
-  onChange('surpriseCount', form);
+  edit('surpriseCount');
   assert.equal(form.disabled.get('surpriseDie'), true);
-  onChange('maxHP', form);
+  edit('maxHP');
   assert.equal(form.disabled.has('maxHP'), false);
 });
 

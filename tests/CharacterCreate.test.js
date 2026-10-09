@@ -5,6 +5,7 @@ import {
   characterFormChange,
   buildCharacter,
 } from '../src/app/characterCreate.js';
+import { ruleEnables } from '../src/view/FieldRules.js';
 import { getHP, getSpellbook } from '../src/entities/Character.js';
 import { getClasses } from '../src/entities/Multiclass.js';
 import { getProficiencies } from '../src/entities/Proficiencies.js';
@@ -192,15 +193,16 @@ test('clearing the class empties the skill options and drops the caption count',
   assert.equal(form.labels.skills, 'Class skills');
 });
 
-test('a race pick locks the custom-race entry; clearing it unlocks', () => {
-  /** @type {Record<string, string>} */
-  const state = { class: '', 'stat-CON': '14', race: 'dwarf' };
-  const form = fakeForm(state);
-  characterFormChange('race', form);
-  assert.equal(form.disabled.customRace, true);
-  state.race = '';
-  characterFormChange('race', form);
-  assert.equal(form.disabled.customRace, false);
+test('Custom race is enabled only while Race reads Custom', () => {
+  const custom = /** @type {any} */ (characterFields().find((f) => f.name === 'customRace'));
+  assert.equal(
+    ruleEnables(custom, () => 'dwarf'),
+    false,
+  );
+  assert.equal(
+    ruleEnables(custom, () => ''),
+    true,
+  );
 });
 
 test('an empty skill-choice list means any skill (bard)', () => {

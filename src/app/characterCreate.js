@@ -104,7 +104,13 @@ export function characterFields() {
       value: '',
       options: catalogOptions(RACE_LIST, 'Custom (type below)'),
     },
-    { name: 'customRace', label: 'Custom race', value: '' },
+    // A custom race name applies only while Race reads Custom.
+    {
+      name: 'customRace',
+      label: 'Custom race',
+      value: '',
+      enabledWhen: { field: 'race', test: (race) => race === '' },
+    },
     // These two fields show only for a race with an ability or skill
     // choice (the Half-Elf). characterFormChange fills their options.
     {
@@ -274,11 +280,11 @@ function applyStatMethod(form, rng) {
 }
 
 /**
- * Keep the dependent fields in step as the GM edits the form. A race pick
- * locks the custom-race entry. A class pick refilters the skill multiselect
- * to that class's choices, capped and captioned at its pick count. The stat
- * method stamps its starting scores: the standard array through the pill
- * grid, and point buy under a hard budget.
+ * Keep the dependent fields in step as the GM edits the form. A class pick
+ * refilters the skill multiselect to that class's choices, capped and
+ * captioned at its pick count. The stat method stamps its starting scores:
+ * the standard array through the pill grid, and point buy under a hard
+ * budget. The form applies the `enabledWhen` rule of Custom race itself.
  * @param {string} name the changed field
  * @param {FormHandle} form
  * @param {() => number} [rng]
@@ -286,7 +292,6 @@ function applyStatMethod(form, rng) {
 export function characterFormChange(name, form, rng = Math.random) {
   if (name === 'race') {
     const raceId = form.get('race');
-    form.setDisabled('customRace', raceId !== '');
     for (const [field, choice] of /** @type {const} */ ([
       ['raceAbilities', raceAbilityChoice(raceId)],
       ['raceSkills', raceSkillChoice(raceId)],

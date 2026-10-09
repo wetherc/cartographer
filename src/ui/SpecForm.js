@@ -13,6 +13,7 @@
 
 import { buildInlineForm, fieldRow, labeled } from './formFields.js';
 import { buildFieldControl } from './FieldControl.js';
+import { applyFieldRules, hasFieldRules } from '../view/FieldRules.js';
 import { el } from './dom.js';
 import { sectionLabel } from './buttons.js';
 
@@ -136,7 +137,7 @@ export function buildSpecForm({
   }
   flush();
 
-  if (onChange) {
+  if (onChange || hasFieldRules(fields)) {
     /** @type {ModalFormHandle} */
     const handle = {
       get: (field) => rendered[field].get(),
@@ -159,8 +160,15 @@ export function buildSpecForm({
       },
       setTotal: (field, total) => rendered[field].setTotal?.(total),
     };
+    /** @param {string} field */
+    const readRuled = (field) => rendered[field]?.get() ?? '';
+    // The enabledWhen rules run first, the same as in the dialog.
+    applyFieldRules(fields, null, readRuled, handle.setDisabled);
     for (const [field, built] of Object.entries(rendered)) {
-      built.input.addEventListener('input', () => onChange(field, handle));
+      built.input.addEventListener('input', () => {
+        applyFieldRules(fields, field, readRuled, handle.setDisabled);
+        onChange?.(field, handle);
+      });
     }
   }
 

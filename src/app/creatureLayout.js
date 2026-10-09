@@ -8,12 +8,11 @@
 import { STAT_KEYS } from '../entities/Modifiers.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
-/** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
 
 /**
  * Put the blueprint fields under their section headings, then the caster
- * fields under "Spellcasting", and disable each dependent field whose
- * parent starts blank.
+ * fields under "Spellcasting", and give each dependent field an
+ * `enabledWhen` rule on its parent.
  * @param {ModalField[]} fields the blueprint fields, in any order
  * @param {ModalField[]} casters the caster fields
  * @returns {ModalField[]}
@@ -21,12 +20,6 @@ import { STAT_KEYS } from '../entities/Modifiers.js';
 export function arrangeFields(fields, casters) {
   const byName = new Map(fields.map((field) => [field.name, field]));
   const placed = new Set(FIELD_SECTIONS.flatMap(([, names]) => names));
-  const values = new Map(
-    [...fields, ...casters].map((field) => [
-      field.name,
-      String(('value' in field ? field.value : '') ?? ''),
-    ]),
-  );
   return [
     ...FIELD_SECTIONS.flatMap(([section, names, advanced]) =>
       names
@@ -44,7 +37,8 @@ export function arrangeFields(fields, casters) {
     ...casters.map((field, i) => (i === 0 ? { ...field, section: 'Spellcasting' } : field)),
   ].map((field) => {
     const parent = DEPENDS_ON[field.name];
-    return parent && !parentSet(parent, values.get(parent)) ? { ...field, disabled: true } : field;
+    if (!parent) return field;
+    return { ...field, enabledWhen: { field: parent, test: (value) => parentSet(parent, value) } };
   });
 }
 
@@ -75,19 +69,6 @@ export function parentSet(parent, value) {
   if (parent === 'multiattack') return Number(text) > 1;
   if (parent === 'surpriseCount') return Number(text) > 0;
   return text !== '';
-}
-
-/**
- * Enable or disable the fields that depend on `name`, from its value in the
- * form. Returns nothing, and does nothing for a field that no other field
- * depends on.
- * @param {string} name
- * @param {ModalFormHandle} form
- */
-export function syncDependents(name, form) {
-  for (const [child, parent] of Object.entries(DEPENDS_ON)) {
-    if (parent === name) form.setDisabled(child, !parentSet(parent, form.get(name)));
-  }
 }
 
 /**

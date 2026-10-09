@@ -35,7 +35,7 @@ import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear, readOtherWeapons } from './gearFields.js';
 import { acLabelFromForm, readStats, statFields } from './statFields.js';
-import { arrangeFields, syncDependents } from './creatureLayout.js';
+import { arrangeFields } from './creatureLayout.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -418,7 +418,6 @@ export function creatureFieldsChange({ restampStats, gear }) {
 function restampChange(restampStats) {
   let statsTouched = false;
   return (name, form) => {
-    syncDependents(name, form);
     if (refilterSpellsOnChange(name, form)) return;
     if (!restampStats) return;
     if (name.startsWith('stat-')) {
