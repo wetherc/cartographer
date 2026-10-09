@@ -2610,7 +2610,9 @@ Dragonborn picks the damage type of its Draconic Ancestry and resists that
 type. A Dwarf picks its tool proficiency from smith's tools, brewer's
 supplies, and mason's tools. From these choices, the sheet assembles the proficiencies: saving
 throws, skills, weapons, armor, tools, and languages. Every list stays
-editable afterward.
+editable afterward. The Edit dialog of the character also changes the two
+Half-Elf ability picks and the Dragonborn ancestry, and the scores move to
+match.
 
 These race traits change rolls by themselves:
 

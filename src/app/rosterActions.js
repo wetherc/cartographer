@@ -1,3 +1,4 @@
+import { applyRacePicks, racePickFields } from './raceEdit.js';
 import { promptModal, confirmDelete } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
 import { isDead } from '../entities/DeathSaves.js';
@@ -91,6 +92,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
         `Edit ${character.name}`,
         [
           ...basicsFields(character),
+          ...racePickFields(character),
           { ...firstVital, section: 'Hit points and AC' },
           ...restVitals,
         ],
@@ -102,7 +104,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
       // open must survive the write-back. The scores go first, so a CON
       // edit moves a class-derived maximum before the HP fields apply.
       const fresh = applyFresh(state.characters, id, (current) =>
-        applyVitals(applyBasics(current, values), values, shownMax),
+        applyVitals(applyRacePicks(applyBasics(current, values), values), values, shownMax),
       );
       if (!fresh.entity) {
         app.toasts.show(`${character.name} was removed while the dialog was open.`);
