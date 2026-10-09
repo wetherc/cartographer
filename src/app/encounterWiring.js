@@ -372,7 +372,9 @@ export function wireEncounters(app) {
     if (!end) return;
     // The XP dialog opens while the fight still runs, so its "Back to the
     // fight" button leaves the fight, the XP, and each foe as they are.
-    const award = await askFightXP(end);
+    const award = await askFightXP(end, {
+      nameOf: (id) => app.state.characters.find((c) => c.id === id)?.name ?? id,
+    });
     // The fight can end in another tab while the dialog is open.
     if (!award || !current()) return;
     // The fight kept running while the dialog was open, and a Player tab can

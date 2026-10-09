@@ -19,8 +19,58 @@ import { isDead } from '../entities/DeathSaves.js';
  *   xp: number,
  *   earners: string[],
  *   share: number,
+ *   loot: LootPick[],
  * }} FightEnd
  */
+
+/**
+ * One piece of gear that a defeated foe drops: the option value of the loot
+ * list, its caption, and the inventory item it becomes.
+ * @typedef {{ value: string, label: string, item: Omit<InventoryItem, 'id'> }} LootPick
+ */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+/** @typedef {import('../types/creature.js').Creature} Creature */
+
+/**
+ * The weapon and the armor of a defeated foe, as inventory items. A natural
+ * weapon, such as a bite, has no category and drops nothing.
+ * @param {Creature} foe
+ * @returns {Omit<InventoryItem, 'id'>[]}
+ */
+export function foeGear(foe) {
+  /** @type {Omit<InventoryItem, 'id'>[]} */
+  const gear = [];
+  const w = foe.weapon;
+  if (w && w.category) {
+    gear.push({
+      name: w.name,
+      quantity: 1,
+      notes: '',
+      type: w.kind === 'ranged' && !w.properties?.includes('thrown') ? 'bow' : 'weapon',
+      kind: w.kind,
+      category: w.category,
+      damage: w.damage.map((p) => ({ ...p })),
+      ...(w.properties?.length ? { properties: [...w.properties] } : {}),
+      ...(w.range ? { range: { ...w.range } } : {}),
+      ...(w.versatileDamage?.length
+        ? { versatileDamage: w.versatileDamage.map((p) => ({ ...p })) }
+        : {}),
+      ...(w.magical ? { magical: true } : {}),
+    });
+  }
+  const a = foe.armor;
+  if (a) {
+    gear.push({
+      name: a.name,
+      quantity: 1,
+      notes: '',
+      type: 'armor',
+      armorWeight: a.armorWeight,
+      baseAC: a.baseAC,
+    });
+  }
+  return gear;
+}
 
 /**
  * What the End combat control needs to know about a fight: its outcome, the
@@ -40,12 +90,19 @@ export function fightEnd(combat, resolve, labels) {
   let xp = 0;
   /** @type {StandingFoe[]} */
   const standingFoes = [];
+  /** @type {LootPick[]} */
+  const loot = [];
   for (const row of foes) {
     const found = resolve(row.id);
     if (found?.kind !== 'creature') continue;
     const worth = crXP(found.entity.cr ?? -1);
-    if (row.defeated) xp += worth;
-    else standingFoes.push({ id: row.id, name: row.name ?? found.entity.name, xp: worth });
+    if (row.defeated) {
+      xp += worth;
+      for (const item of foeGear(found.entity)) {
+        const from = row.name ?? found.entity.name;
+        loot.push({ value: `loot-${loot.length}`, label: `${item.name} (${from})`, item });
+      }
+    } else standingFoes.push({ id: row.id, name: row.name ?? found.entity.name, xp: worth });
   }
   const earners = view.rows.flatMap((row) => {
     const found = resolve(row.id);
@@ -58,6 +115,7 @@ export function fightEnd(combat, resolve, labels) {
     xp,
     earners,
     share: xpSplit(xp, earners.length).share,
+    loot,
   };
 }
 

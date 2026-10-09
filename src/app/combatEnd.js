@@ -1,6 +1,15 @@
 import { confirmModal, promptModal } from '../ui/Modal.js';
-import { addXP } from '../entities/Character.js';
-import { FOE_FATES, fightEnd, sortFates, splitCaption, xpSplit } from '../combat/FightEnd.js';
+import { addItem, addXP } from '../entities/Character.js';
+import { addGold } from '../entities/Purse.js';
+import { slugify } from '../util/text.js';
+import {
+  FOE_FATES,
+  fightEnd,
+  partyAward,
+  sortFates,
+  splitCaption,
+  xpSplit,
+} from '../combat/FightEnd.js';
 import { removeById } from '../entities/Roster.js';
 import { clampInt } from '../util/num.js';
 import { standDown } from '../entities/CreatureMap.js';
@@ -70,12 +79,17 @@ export function standDownFoes(app, ids) {
 
 /**
  * Whether askFightXP opens its dialog for this fight. It does when the party
- * did not lose, a character is alive to earn, and there is XP to share or a
- * standing foe whose fate the GM picks.
+ * did not lose, a character is alive to earn, and there is XP to share, a
+ * standing foe whose fate the GM picks, or gear that a defeated foe drops.
  * @param {FightEnd} end
  */
 export const opensXPDialog = (end) =>
-  end.outcome !== 'defeat' && end.earners.length > 0 && (end.xp > 0 || end.standingFoes.length > 0);
+  end.outcome !== 'defeat' &&
+  end.earners.length > 0 &&
+  (end.xp > 0 || end.standingFoes.length > 0 || end.loot.length > 0);
+
+/** The caption of the coin field. @param {number} gp @param {number} count */
+const coinCaption = (gp, count) => partyAward('total', gp, count).caption.replace(/XP/g, 'gp');
 
 /** The line above the fate selects. @param {number} n */
 const standingMessage = (n) =>
@@ -92,13 +106,20 @@ const fateField = (/** @type {string} */ id) => `fate:${id}`;
  * or fled. In 5e a foe that surrenders, flees, or is captured is worth its
  * points too, so each of the last two adds that foe's points and restates
  * the per-character amount. The GM can still change the amount.
+ *
+ * The loot fields follow. **Loot** lists the weapons and armor of the
+ * defeated foes, **Loot goes to** names the character who takes the ticked
+ * items, and **Coins found** is a total of gold pieces split evenly among
+ * the earners through `partyAward`.
  * @param {FightEnd} end
- * @param {{ prompt?: typeof promptModal }} [opts] `prompt` renders the dialog, and a test passes its own
+ * @param {{ prompt?: typeof promptModal, nameOf?: (id: string) => string }} [opts]
+ *   `prompt` renders the dialog, and a test passes its own. `nameOf` names
+ *   an earner in the loot select.
  * @returns {Promise<Record<string, string | number | boolean> | 'none' | null>}
  *   the answers, 'none' when the fight has nothing to award and no dialog
  *   opens, or null when the GM goes back to the fight
  */
-export async function askFightXP(end, { prompt = promptModal } = {}) {
+export async function askFightXP(end, { prompt = promptModal, nameOf = (id) => id } = {}) {
   if (!opensXPDialog(end)) return 'none';
   const count = end.earners.length;
   const foes = end.standingFoes;
@@ -123,13 +144,42 @@ export async function askFightXP(end, { prompt = promptModal } = {}) {
         value: end.share,
         min: 0,
       },
+      ...(end.loot.length
+        ? [
+            {
+              name: 'loot',
+              label: 'Loot',
+              type: /** @type {const} */ ('multiselect'),
+              options: end.loot.map(({ value, label }) => ({ value, label })),
+              value: '',
+            },
+            {
+              name: 'lootTo',
+              label: 'Loot goes to',
+              type: /** @type {const} */ ('select'),
+              options: end.earners.map((id) => ({ value: id, label: nameOf(id) })),
+              value: end.earners[0],
+            },
+          ]
+        : []),
+      {
+        name: 'gold',
+        label: coinCaption(0, count),
+        type: 'number',
+        value: 0,
+        min: 0,
+      },
     ],
     {
       message: foes.length ? standingMessage(foes.length) : undefined,
       submitLabel: 'End and award',
       cancelLabel: 'Back to the fight',
       onChange: (name, form) => {
-        if (name === 'amount') return;
+        if (name === 'gold') {
+          form.setLabel('gold', coinCaption(Number(form.get('gold')) || 0, count));
+          return;
+        }
+        if (name === 'amount' || name === 'loot' || name === 'lootTo') return;
         const total = totalOf(form.get);
         form.setLabel('amount', caption(total));
         form.set('amount', xpSplit(total, count).share);
@@ -155,6 +205,7 @@ export function applyFightXP(app, end, values) {
   const fates = sortFates(end.standingFoes, (id) => String(values[fateField(id)]));
   standDownFoes(app, fates.surrendered);
   removeFled(app, fates.fled);
+  applyLoot(app, end, values);
   const amount = clampInt(values.amount, 0);
   if (amount <= 0) return;
   const count = end.earners.length;
@@ -166,6 +217,47 @@ export function applyFightXP(app, end, values) {
   app.actions.markDirty();
   app.actions.logEvent('note', `The party is awarded ${amount} XP each for the fight.`);
   app.toasts.show(`Awarded ${amount} XP to ${count} character${count === 1 ? '' : 's'}.`);
+}
+
+/**
+ * Hand out the loot answers of askFightXP. The ticked items join the
+ * inventory of the chosen earner, stacking with a matching item, and the
+ * coins split evenly among the earners, rounded down. Each part logs one
+ * travelogue line.
+ * @param {AppContext} app
+ * @param {FightEnd} end
+ * @param {Record<string, string | number | boolean>} values
+ */
+export function applyLoot(app, end, values) {
+  const picked = new Set(
+    String(values.loot ?? '')
+      .split(',')
+      .filter(Boolean),
+  );
+  const items = end.loot.filter((l) => picked.has(l.value)).map((l) => l.item);
+  const carrierId = String(values.lootTo ?? end.earners[0] ?? '');
+  const earners = new Set(end.earners);
+  const gp = partyAward('total', clampInt(values.gold, 0), earners.size).each;
+  const carrier = app.state.characters.find((c) => c.id === carrierId && earners.has(c.id));
+  const giving = carrier && items.length > 0;
+  if (!giving && gp <= 0) return;
+  app.state.characters = app.state.characters.map((c) => {
+    let next = earners.has(c.id) ? addGold(c, gp) : c;
+    if (giving && c.id === carrier.id) {
+      next = items.reduce(
+        (ch, item) => addItem(ch, { ...item, id: slugify(item.name) || 'item' }),
+        next,
+      );
+    }
+    return next;
+  });
+  app.actions.refreshSelectedCharacter();
+  app.actions.markDirty();
+  if (giving) {
+    const names = items.map((i) => i.name).join(', ');
+    app.actions.logEvent('note', `${carrier.name} takes ${names} from the fallen foes.`);
+  }
+  if (gp > 0) app.actions.logEvent('note', `The party splits the coins found: ${gp} gp each.`);
 }
 
 /**

@@ -1359,7 +1359,7 @@ field, or a number below 1, disables both buttons.
 | Initiative field | GM only | Sits in the left column. Type a new value and press Enter, or leave the field, to fix a mistyped roll. The order sorts again, and the turn stays with the combatant who has it |
 | Delay turn | GM only | Shows in the left column on the current turn. The combatant moves to just after the next combatant in the order and takes that combatant's initiative, and the next combatant starts its turn. The delayed combatant keeps its unspent actions. The last combatant of a round cannot delay |
 | Condition | GM only | Sits in the left column with the chips of the combatant it shows. It opens the same dialog as the Condition button of a creature card, and the x on a chip removes it. Players see the chips only |
-| End combat | GM only | Opens the XP dialog when the party did not lose, a character is alive to earn XP, and the fight has XP to award or a standing foe. The dialog ends the fight. While foes stand and no character can earn XP, a confirm asks first. A lost fight, or a won fight with no XP to award, ends with no question |
+| End combat | GM only | Opens the XP dialog when the party did not lose, a character is alive to earn XP, and the fight has XP to award, a standing foe, or loot. The dialog ends the fight. While foes stand and no character can earn XP, a confirm asks first. A lost fight, or a won fight with no XP to award, ends with no question |
 
 Unless the party lost, End combat offers the XP of the defeated foes. The
 XP is split evenly among the living characters and rounded down, and the
@@ -1381,6 +1381,15 @@ Each hostile creature that still stands gets a select with three choices.
 To make a captive a foe again, set its disposition back to hostile in the
 creature dialog. To keep a foe that fled in the story, pick **Still
 hostile** and move it to its new tile in the creature dialog.
+
+The same dialog hands out loot. **Loot** lists the weapon and the armor of
+each defeated foe, such as "Scimitar (Goblin 2)". A natural weapon, such
+as a bite, drops nothing. Tick the items to keep, and pick the character
+who takes them in **Loot goes to**. The items join that character's
+inventory. **Total gp** takes the coins found on the foes, and splits
+them evenly among the living characters, rounded down, into the gold
+field of each character's Coins row. Each part logs one travelogue line.
+The dialog also opens for a fight with loot and no XP.
 
 A fight also ends when no creature of the fight is left on the tile of the
 party or on the eight tiles around it, and no hostile creature of the fight

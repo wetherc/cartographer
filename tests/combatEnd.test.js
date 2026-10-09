@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyFightXP,
+  applyLoot,
   askFightXP,
   confirmFightEnd,
   fightSummary,
@@ -38,6 +39,8 @@ function ended() {
     xp: 0,
     earners: ['wren'],
     share: 0,
+    loot: [],
+    loot: [],
   });
   return { app, end };
 }
@@ -58,7 +61,7 @@ test('the fate select offers each standing foe, and each fate lands', async () =
   const values = await askFightXP(end, { prompt });
   assert.deepEqual(
     asked.map((f) => f.name),
-    ['fate:w1', 'fate:w2', 'amount'],
+    ['fate:w1', 'fate:w2', 'amount', 'gold'],
   );
   assert.equal(asked[0].label, 'Gray Wolf 1, 50 XP if overcome');
   assert.equal(asked[0].value, 'hostile');
@@ -253,4 +256,66 @@ test('the award reaches only the earners, and the toast counts them', () => {
     [15, 5],
   );
   assert.deepEqual(toasts, ['Awarded 10 XP to 1 character.', 'Awarded 5 XP to 2 characters.']);
+});
+
+test('a defeated foe drops its weapon and armor, and the loot lands with the carrier', async () => {
+  const app = running(0);
+  app.state.characters = [...app.state.characters, createCharacter('dorn', 'Dorn')];
+  app.state.creatures = app.state.creatures.map((c, i) =>
+    i === 0
+      ? {
+          ...c,
+          weapon: {
+            name: 'Scimitar',
+            kind: 'melee',
+            category: 'martial',
+            damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+            properties: ['finesse', 'light'],
+          },
+          armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
+        }
+      : { ...c, weapon: { name: 'Bite', kind: 'melee', category: null, damage: [] }, armor: null },
+  );
+  app.state.combat.order.push({ id: 'dorn', initiative: 9, modifier: 0 });
+  const end = /** @type {any} */ (fightSummary(app));
+  assert.deepEqual(
+    end.loot.map((/** @type {any} */ l) => l.label),
+    ['Scimitar (Gray Wolf 1)', 'Leather Armor (Gray Wolf 1)'],
+    'a natural bite drops nothing',
+  );
+  assert.equal(end.loot[0].item.type, 'weapon');
+  /** @type {any[]} */
+  let seen = [];
+  const prompt = /** @type {any} */ (
+    async (/** @type {string} */ _t, /** @type {any[]} */ fields) => {
+      seen = fields;
+      return { amount: 0, loot: 'loot-0,loot-1', lootTo: 'dorn', gold: 9 };
+    }
+  );
+  const values = await askFightXP(end, { prompt, nameOf: (id) => id.toUpperCase() });
+  assert.deepEqual(seen.find((f) => f.name === 'lootTo').options, [
+    { value: 'wren', label: 'WREN' },
+    { value: 'dorn', label: 'DORN' },
+  ]);
+  /** @type {string[]} */
+  const lines = [];
+  app.actions.logEvent = (/** @type {string} */ _k, /** @type {string} */ text) => lines.push(text);
+  applyFightXP(app, end, /** @type {any} */ (values));
+  const [wren, dorn] = app.state.characters;
+  assert.equal(wren.purse?.gp, 4);
+  assert.equal(dorn.purse?.gp, 4);
+  assert.deepEqual(
+    dorn.inventory.map((i) => i.name),
+    ['Scimitar', 'Leather Armor'],
+  );
+  assert.equal(wren.inventory.length, 0);
+  assert.deepEqual(lines, [
+    'Dorn takes Scimitar, Leather Armor from the fallen foes.',
+    'The party splits the coins found: 4 gp each.',
+  ]);
+  const before = app.state.characters;
+  applyLoot(app, end, { loot: '', gold: 0 });
+  assert.equal(app.state.characters, before, 'nothing picked changes nothing');
+  applyLoot(app, end, { loot: 'loot-0', lootTo: 'ghost', gold: 0 });
+  assert.equal(app.state.characters, before, 'a carrier who is not an earner takes nothing');
 });
