@@ -2008,9 +2008,17 @@ against, stays apart from a chip of the same name from another caster or
 spell. A combatant can therefore show two Acid Arrow chips, and each one
 deals its own damage. Point at such a chip to read which caster and spell
 wrote it. The remove button of a chip removes only that chip, so the other
-cast keeps its chip. For other chips, a combatant keeps one chip of each name. A longer
-chip from another cast stays, and of two casts of one spell with different
-strength, such as Aid at 2nd and at 3rd level, the stronger one stays.
+cast keeps its chip.
+
+Two casters who put a chip of the same name on one combatant each leave their
+own chip. When two clerics cast Bless on one fighter and one cleric loses
+concentration, the fighter stays blessed by the other. The effect still
+counts once, through the stronger chip, so two Blesses add one d4 and two
+Shields of Faith add +2 AC. A once-only chip such as Guidance is used up one
+chip at a time. From one caster, a combatant keeps one chip of each name. A
+longer chip from another spell of that caster stays, and of two casts of one
+spell with different strength, such as Aid at 2nd and at 3rd level, the
+stronger one stays.
 
 A combatant that loses its turn keeps its place in the initiative order.
 **Next turn** steps past it without a message. A save that fails at once

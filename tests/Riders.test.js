@@ -11,6 +11,7 @@ import {
   rollRiders,
   spendRiders,
 } from '../src/entities/Riders.js';
+import { heldMods } from '../src/entities/ChipMods.js';
 import { createCondition } from '../src/entities/Conditions.js';
 
 /** A deterministic RNG replaying a queue of unit values, one per call. */
@@ -223,4 +224,46 @@ test('a once rider reports itself spent, and spendRiders removes only that chip'
     riderSummary({ rolls: ['check'], dice: 1, once: true }),
     '+1d4 to ability checks (one roll)',
   );
+});
+
+test('two Blesses from two casters roll one d4', () => {
+  const rider = { rolls: ['attack', 'save'], dice: 1, die: 'd4' };
+  const a = createCondition('Blessed', 10, { rider, source: { spellId: 'bless', casterId: 'A' } });
+  const b = createCondition('Blessed', 10, { rider, source: { spellId: 'bless', casterId: 'B' } });
+  assert.equal(activeRiders([a, b], 'attack').length, 1);
+  const roll = rollRiders([a, b], 'attack', seq([0.99, 0.99]));
+  assert.equal(roll.modifier, 4);
+});
+
+test('the stronger of two riders of one name is the one that rolls', () => {
+  const small = createCondition('Inspired', 10, {
+    rider: { rolls: ['check'], dice: 1, die: 'd6' },
+  });
+  const big = createCondition('Inspired', 10, { rider: { rolls: ['check'], dice: 1, die: 'd10' } });
+  const found = activeRiders([small, big], 'check');
+  assert.deepEqual(
+    found.map((f) => f.rider.die),
+    ['d10'],
+  );
+});
+
+test('spending a once rider takes one chip of that name, not both', () => {
+  const rider = { rolls: ['check'], dice: 1, die: 'd4', once: true };
+  const a = createCondition('Guidance', 10, { rider, source: { spellId: 'g', casterId: 'A' } });
+  const b = createCondition('Guidance', 10, { rider, source: { spellId: 'g', casterId: 'B' } });
+  assert.deepEqual(spendRiders([a, b], ['Guidance']), [b]);
+});
+
+test('two Shields of Faith from two casters add their AC once', () => {
+  const mods = { ac: 2 };
+  const a = createCondition('Shield of Faith', 100, {
+    mods,
+    source: { spellId: 's', casterId: 'A' },
+  });
+  const b = createCondition('Shield of Faith', 100, {
+    mods,
+    source: { spellId: 's', casterId: 'B' },
+  });
+  const shield = createCondition('Shield', 1, { mods: { ac: 5 } });
+  assert.equal(heldMods([a, b, shield]).ac, 7);
 });

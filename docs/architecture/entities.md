@@ -1900,17 +1900,27 @@ sweep runs on every turn of a fight, and a new object per entity per turn
 misses the pack cache of the save.
 
 A creature keeps one chip per place, and `Conditions.sameSlot` decides the
-place. Chips of one name share a place, except when a chip deals ongoing
-damage or allows a repeated save (`Conditions.tracksCast`). Such a chip
+place. Chips of one name share a place, except when two casters wrote them
+or a chip deals ongoing damage or allows a repeated save
+(`Conditions.tracksCast`). Two clerics who both cast Bless on one target
+each leave a chip, so the end of one cleric's concentration takes off only
+that cleric's chip, and the target stays blessed by the other. Two rangers
+who mark one foe each leave a Hunter's Mark chip, so each one adds its own
+d6. A chip that tracks its cast
 shares a place only with a chip from the same caster and spell, so two
 casters' Acid Arrow each roll their own damage, and Phantasmal Killer lands
 its own chip beside a longer Frightened from another spell. The condition
 that the name states still applies once, because the readers ask whether
-some chip has the name. Inside one place, `Conditions.outlasts` keeps a
-longer chip from another cast, so the one-round Blinded of Sunbeam does not
-replace the one-minute Blinded of Blindness/Deafness. Two casts of one spell
-with different mods keep the stronger chip whatever its length, so a
-2nd-level Aid does not replace a 3rd-level Aid. The weaker chip is dropped
+some chip has the name. The readers of riders and mods (`Riders.activeRiders`,
+`ChipMods.heldMods`, and the temporary HP of `startTurnEffects`) count one
+chip per name, the strongest (`Conditions.strongestPerName`), so two
+Blesses add one d4 and two Shields of Faith add +2 AC. `spendRiders` takes
+off one chip per spent name, so a second Guidance stays for the next check.
+Inside one place, `Conditions.outlasts` keeps a
+longer chip from another cast of the same caster, so the one-round Blinded of
+Sunbeam does not replace the one-minute Blinded of Blindness/Deafness. Two
+casts of one spell by one caster with different mods keep the stronger chip
+whatever its length, so a 2nd-level Aid does not replace a 3rd-level Aid. The weaker chip is dropped
 and not kept for later, so the +5 of the weaker Aid does not return when the
 stronger Aid ends first.
 

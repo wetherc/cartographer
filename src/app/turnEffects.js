@@ -4,7 +4,7 @@ import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnE
 import { isGone } from '../combat/CombatView.js';
 import { isDying } from '../entities/DeathSaves.js';
 import { settleChips } from './lethargy.js';
-import { endedLine } from '../entities/Conditions.js';
+import { endedLine, strongestPerName } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
 import { commitCreatures, defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, retryImposedSaves } from './combatantWrites.js';
@@ -64,7 +64,12 @@ export function endTurnEffects(app, id, { rng = Math.random } = {}) {
 export function startTurnEffects(app, id) {
   sweepChips(app, (list) => passBoundary(list, id, 'start'));
   const found = findCombatant(app, id);
-  for (const chip of found ? found.entity.conditions : []) {
+  // Two casts of one spell from two casters grant once, from the larger chip.
+  const chips = strongestPerName(
+    found ? found.entity.conditions : [],
+    (chip) => chip.mods?.tempHPEachTurn ?? 0,
+  );
+  for (const chip of chips) {
     const amount = chip.mods?.tempHPEachTurn ?? 0;
     if (amount > 0) grantTempTo(app, id, amount, chip.name, { quiet: true });
   }

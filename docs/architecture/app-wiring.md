@@ -765,8 +765,9 @@ resolves the id through `findCombatant` and stores through its `store`:
   the spell ends. A spell that names a turn boundary writes the chip with
   `expires` and no round count instead. Both kinds of combatant have
   condition chips, so the write branches only to use the store of the
-  target's collection. A chip of the same name from another cast that lasts
-  longer stays in place (`Conditions.outlasts`).
+  target's collection. A chip of the same name from another cast of the
+  same caster that lasts longer stays in place (`Conditions.outlasts`). A
+  chip from another caster sits beside it (`Conditions.sameSlot`).
 - `endSpellEffects` removes the chips and summons of a spell when the spell
   ends.
 - `endCasterEffects` runs `endSpellEffects` for every spell of a caster that

@@ -140,8 +140,9 @@ test('Haste ending on its target turn costs the next turn, which then ends the c
   assert.equal(chipNamed(app, 'fighter', 'Lethargic'), undefined);
 });
 
-test('a Haste from another caster replaces the first, and the first leaves lethargy', () => {
+test('a Haste from another caster sits beside the first and counts once', () => {
   const app = stubApp();
+  const before = armorClass(pc(app, 'fighter'));
   cast(app, 'fighter');
   const first = chipNamed(app, 'fighter', 'Haste');
   applyConditionToTarget(
@@ -153,7 +154,17 @@ test('a Haste from another caster replaces the first, and the first leaves letha
     null,
     { mods: first.mods },
   );
-  assert.ok(chipNamed(app, 'fighter', 'Lethargic'));
+  const hastes = pc(app, 'fighter').conditions.filter((c) => c.name === 'Haste');
+  assert.deepEqual(
+    hastes.map((c) => c.source?.casterId),
+    ['mage', 'other'],
+  );
+  assert.equal(armorClass(pc(app, 'fighter')), before + 2, 'the AC bonus counts once');
+  assert.equal(chipNamed(app, 'fighter', 'Lethargic'), undefined);
+  // The end of the first cast takes only its own chip.
+  endSpellEffects(app, 'mage', 'haste');
+  assert.equal(chipNamed(app, 'fighter', 'Haste')?.source?.casterId, 'other');
+  assert.equal(hasExtraAction(pc(app, 'fighter').conditions), true);
 });
 
 test('a hand edit that removes Haste adds the chip and logs it', () => {

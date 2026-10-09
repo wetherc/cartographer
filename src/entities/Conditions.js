@@ -113,19 +113,45 @@ export function tracksCast(chip) {
 
 /**
  * Whether two chips fill the same place on a creature, so that a new one
- * replaces the old one. Chips of the same name share a place. When either
- * chip tracks its cast (see `tracksCast`), they share a place only when the
- * same caster cast the same spell, and a hand-added chip shares none with it.
+ * replaces the old one. Chips of the same name share a place, except that
+ * chips from two different casters never do. When cleric A and cleric B both
+ * cast Bless on one target, each keeps its own chip, so the end of B's
+ * concentration takes only B's chip off. The readers count one chip per name
+ * (`strongestPerName`). When either chip tracks its cast (see `tracksCast`),
+ * the two share a place only when the same caster cast the same spell, and a
+ * hand-added chip shares none with it.
  * @param {Condition} a
  * @param {Condition} b
  * @returns {boolean}
  */
 export function sameSlot(a, b) {
   if (a.name.trim().toLowerCase() !== b.name.trim().toLowerCase()) return false;
-  if (!tracksCast(a) && !tracksCast(b)) return true;
   const x = a.source;
   const y = b.source;
+  if (x && y && x.casterId !== y.casterId) return false;
+  if (!tracksCast(a) && !tracksCast(b)) return true;
   return Boolean(x && y && x.spellId === y.spellId && x.casterId === y.casterId);
+}
+
+/**
+ * One chip per name, the one with the highest `score`, in the order each name
+ * first appears. Two casters can each put a chip of one name on a target
+ * (see `sameSlot`), and 5e applies the effects of one spell only once, so a
+ * reader of riders or mods counts only the strongest. A tie keeps the first.
+ * @template {{ name: string }} T
+ * @param {readonly T[]} list
+ * @param {(chip: T) => number} score
+ * @returns {T[]}
+ */
+export function strongestPerName(list, score) {
+  /** @type {Map<string, T>} */
+  const best = new Map();
+  for (const chip of list) {
+    const key = chip.name.trim().toLowerCase();
+    const held = best.get(key);
+    if (!held || score(chip) > score(held)) best.set(key, chip);
+  }
+  return [...best.values()];
 }
 
 /**

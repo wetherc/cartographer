@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { endCasterEffects } from '../src/app/combatantWrites.js';
+import { endCasterEffects, endSpellEffects } from '../src/app/combatantWrites.js';
 import { spellsHeldBy } from '../src/entities/ImposedConditions.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
@@ -64,4 +64,23 @@ test('a new creature that takes a deleted caster id inherits nothing', () => {
   const app = stubApp({ state: { characters: [ally], creatures: [goblin, wolf] } });
   endCasterEffects(app, druid);
   assert.deepEqual(spellsHeldBy(createCreature('druid', 'Druid'), app.state.creatures), []);
+});
+
+test('the end of one Bless leaves the Bless of another caster in place', () => {
+  const rider = { rolls: ['attack'], dice: 1, die: 'd4' };
+  let conditions = addCondition([], 'Blessed', 10, {
+    rider,
+    source: { casterId: 'a', spellId: 'bless' },
+  });
+  conditions = addCondition(conditions, 'Blessed', 10, {
+    rider,
+    source: { casterId: 'b', spellId: 'bless' },
+  });
+  const hero = { ...createCharacter('h', 'Hero'), conditions };
+  const app = stubApp({ state: { characters: [hero] } });
+  endSpellEffects(app, 'b', 'bless');
+  assert.deepEqual(
+    app.state.characters[0].conditions.map((c) => c.source?.casterId),
+    ['a'],
+  );
 });

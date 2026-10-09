@@ -1,6 +1,7 @@
 import { clampInt } from '../util/num.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { DAMAGE_TYPES } from './Equipment.js';
+import { strongestPerName } from './Conditions.js';
 
 /**
  * What a condition chip changes on its holder besides a d20 roll. A buff
@@ -168,16 +169,20 @@ export function hasExtraAction(conditions) {
 /**
  * The mods of every chip on a holder, combined. The flat bonuses add up,
  * because Shield and Shield of Faith stack. A base AC and a floor do not
- * stack, so the highest of each wins. A holder with no such chip reads as
- * all zeros.
+ * stack, so the highest of each wins. Two chips of one name from two casters
+ * (Shield of Faith twice) count once, through the chip with the larger mods.
+ * A holder with no such chip reads as all zeros.
  * @param {Condition[] | undefined} conditions
  * @returns {{ ac: number, acBase: number, acMin: number }}
  */
 export function heldMods(conditions) {
   const total = { ac: 0, acBase: 0, acMin: 0 };
-  for (const chip of conditions ?? []) {
-    const mods = chip.mods;
-    if (!mods) continue;
+  const chips = strongestPerName(
+    (conditions ?? []).filter((chip) => chip.mods),
+    (chip) => (chip.mods?.ac ?? 0) + (chip.mods?.acBase ?? 0) + (chip.mods?.acMin ?? 0),
+  );
+  for (const chip of chips) {
+    const mods = /** @type {import('../types/entities.js').ChipMods} */ (chip.mods);
     total.ac += mods.ac ?? 0;
     total.acBase = Math.max(total.acBase, mods.acBase ?? 0);
     total.acMin = Math.max(total.acMin, mods.acMin ?? 0);

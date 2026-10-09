@@ -8,6 +8,7 @@ import {
   endedLine,
   outlasts,
   sameSlot,
+  strongestPerName,
   tracksCast,
 } from '../src/entities/Conditions.js';
 
@@ -132,4 +133,30 @@ test('removeChip takes off a plain chip by name, and leaves a same-name chip tha
   });
   const list = [createCondition('burning'), acid, createCondition('Prone')];
   assert.deepEqual(removeChip(list, createCondition('Burning')), [acid, list[2]]);
+});
+
+test('two casters each keep their own chip of one name', () => {
+  let list = addCondition([], 'Blessed', 10, cast('bless', 'A'));
+  list = addCondition(list, 'Blessed', 10, cast('bless', 'B'));
+  assert.deepEqual(
+    list.map((c) => c.source?.casterId),
+    ['A', 'B'],
+  );
+  list = addCondition(list, 'Blessed', 10, cast('bless', 'B'));
+  assert.equal(list.length, 2, 'a recast by B refreshes only its own chip');
+  list = addCondition(list, 'Blessed', 5);
+  assert.deepEqual(
+    list.map((c) => c.source?.casterId ?? null),
+    [null],
+    'a hand-added chip still replaces every sourced one',
+  );
+});
+
+test('strongestPerName keeps one chip per name, the highest score, first on a tie', () => {
+  const a = createCondition('Shielded', 10, { mods: { ac: 2 } });
+  const b = createCondition('shielded', 10, { mods: { ac: 5 } });
+  const c = createCondition('Prone');
+  const d = createCondition('Shielded', 10, { mods: { ac: 5 } });
+  const score = (/** @type {any} */ chip) => chip.mods?.ac ?? 0;
+  assert.deepEqual(strongestPerName([a, c, b, d], score), [b, c]);
 });

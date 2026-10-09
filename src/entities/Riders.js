@@ -13,6 +13,7 @@
 
 import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { clamp } from '../util/num.js';
+import { strongestPerName } from './Conditions.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').RollRider} RollRider */
@@ -90,20 +91,33 @@ export function chipRider(condition) {
 /**
  * The sources on a creature that touch one kind of roll, each with its
  * cleaned rider. A source with no rider, such as a hand-added Poisoned chip,
- * is not one of them.
+ * is not one of them. Two chips of one name from two casters (two Blesses)
+ * count once, through the rider with the larger average.
  * @param {RiderSource[] | undefined} sources
  * @param {RiderRoll} kind
  * @returns {{ condition: RiderSource, rider: RollRider }[]}
  */
 export function activeRiders(sources, kind) {
   if (!Array.isArray(sources)) return [];
-  /** @type {{ condition: RiderSource, rider: RollRider }[]} */
-  const found = [];
-  for (const condition of sources) {
-    const rider = chipRider(condition);
-    if (rider?.rolls.includes(kind)) found.push({ condition, rider });
-  }
-  return found;
+  const touching = sources.filter((source) => chipRider(source)?.rolls.includes(kind));
+  const weight = (/** @type {RiderSource} */ source) =>
+    riderWeight(/** @type {RollRider} */ (chipRider(source)));
+  return strongestPerName(touching, weight).map((condition) => ({
+    condition,
+    rider: /** @type {RollRider} */ (chipRider(condition)),
+  }));
+}
+
+/**
+ * The size of a rider's average, for picking the stronger of two chips of
+ * one name. A penalty (Bane) counts by its size, so the larger penalty wins.
+ * @param {RollRider} rider
+ * @returns {number}
+ */
+function riderWeight(rider) {
+  const dice = rider.dice ?? 0;
+  const sides = DIE_SIDES[rider.die ?? DEFAULT_RIDER_DIE];
+  return Math.abs(dice * ((sides + 1) / 2) + (rider.flat ?? 0));
 }
 
 /**
@@ -192,7 +206,9 @@ export function rollRiders(sources, kind, rng = Math.random) {
 /**
  * The chip list with each chip named in `spent` removed, when its rider has
  * `once` set. A chip whose rider lasts its duration stays, even when it
- * shares the name. The same list comes back when nothing is spent.
+ * shares the name. Only one chip goes per spent name, the first, which is the
+ * one `activeRiders` rolled on a tie, so a second caster's Guidance stays for
+ * the next check. The same list comes back when nothing is spent.
  * @template {RiderSource} T
  * @param {T[]} conditions
  * @param {string[] | undefined} spent
@@ -201,5 +217,9 @@ export function rollRiders(sources, kind, rng = Math.random) {
 export function spendRiders(conditions, spent) {
   if (!spent || spent.length === 0) return conditions;
   const names = new Set(spent);
-  return conditions.filter((c) => !(names.has(c.name) && chipRider(c)?.once));
+  return conditions.filter((c) => {
+    if (!names.has(c.name) || !chipRider(c)?.once) return true;
+    names.delete(c.name);
+    return false;
+  });
 }
