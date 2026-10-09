@@ -13,7 +13,7 @@ import { fromTemplate } from '../entities/CreatureTemplate.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { createParticipant } from '../combat/Initiative.js';
 import { slugId } from '../entities/Roster.js';
-import { stampSummon } from '../entities/Summons.js';
+import { stampSummon, summonDisposition } from '../entities/Summons.js';
 import { activeCreatureByName } from '../library/Library.js';
 import { commitCreatures, rosterIds } from './combatants.js';
 
@@ -40,10 +40,10 @@ function joinRoll(creature, rng) {
  * the tile of the party, at full health, and each one carries the stamp of the
  * cast so the end of the spell takes them away again.
  *
- * The side they fight on is the disposition of the template. A hostile
- * template fights the party, which is what the built-in beasts are, and a
- * friendly or neutral one stands with it. Nothing here overrides that, so a GM
- * who wants a summon that fights beside the party writes a friendly template.
+ * The side they fight on comes from the caster (see `summonDisposition`), not
+ * from the template. A party character's summons stand with the party, so the
+ * built-in hostile Wolf answers a party druid as a friendly creature, and the
+ * same template still serves for wolves met in the wild.
  *
  * Each creature is appended before the next id is drawn, so a cast that brings
  * four wolves gets four distinct ids instead of four copies of one.
@@ -64,11 +64,18 @@ export function spawnSummons(app, spell, casterId, outcome, { rng = Math.random 
   const { state } = app;
   const location = app.partyTracker.getPosition();
   const source = { spellId: spell.id, spellName: spell.name, casterId };
+  const disposition = summonDisposition(
+    casterId,
+    state.characters ?? [],
+    state.creatures,
+    template.disposition,
+  );
   /** @type {Creature[]} */
   const spawned = [];
   for (let i = 0; i < outcome.count; i += 1) {
     const id = slugId(template.name, [...rosterIds(state), ...spawned.map((c) => c.id)]);
-    spawned.push(stampSummon(fromTemplate(template, id, { ...location }), source));
+    const creature = { ...fromTemplate(template, id, { ...location }), disposition };
+    spawned.push(stampSummon(creature, source));
   }
   state.creatures = [...state.creatures, ...spawned];
   // A fight already running takes the newcomers into its order. With no fight

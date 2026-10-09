@@ -12,7 +12,7 @@ import { stubApp as baseStubApp } from './helpers/app.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
-/** @param {{ creatures?: any[], combat?: any }} [state] */
+/** @param {{ characters?: any[], creatures?: any[], combat?: any }} [state] */
 function stubApp(state = {}) {
   return baseStubApp({
     state,
@@ -56,4 +56,14 @@ test('a summon out of combat joins no order', () => {
   const app = stubApp();
   spawnSummons(app, conjure, 'druid', { creature: 'Wolf', count: 1 });
   assert.equal(app.calls.includes('addCombatant'), false);
+});
+
+test('a summon takes its side from the caster, not the template', () => {
+  const app = stubApp({ characters: [{ id: 'druid' }] });
+  spawnSummons(app, conjure, 'druid', { creature: 'Wolf', count: 2 });
+  assert.deepEqual(
+    app.state.creatures.map((c) => c.disposition),
+    ['friendly', 'friendly'],
+    "a party druid's wolves stand with the party",
+  );
 });

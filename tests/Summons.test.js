@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { despawnSummons, isSummonedBy, stampSummon } from '../src/entities/Summons.js';
+import {
+  despawnSummons,
+  isSummonedBy,
+  stampSummon,
+  summonDisposition,
+} from '../src/entities/Summons.js';
 
 /** @param {string} id @param {object} [over] */
 function creature(id, over = {}) {
@@ -71,4 +76,14 @@ test('despawnSummons hands back the same list when nothing matched', () => {
   const { creatures, despawned } = despawnSummons(list, 'druid', 'conjure-animals');
   assert.equal(creatures, list, 'identity is preserved, so the caller can skip the write');
   assert.deepEqual(despawned, []);
+});
+
+test('summonDisposition reads the side of the caster', () => {
+  const hag = /** @type {any} */ ({ id: 'hag', disposition: 'hostile' });
+  const elder = /** @type {any} */ ({ id: 'elder', disposition: 'neutral' });
+  const characters = [{ id: 'druid' }];
+  assert.equal(summonDisposition('druid', characters, [hag], 'hostile'), 'friendly');
+  assert.equal(summonDisposition('hag', characters, [hag], 'friendly'), 'hostile');
+  assert.equal(summonDisposition('elder', characters, [elder], 'hostile'), 'neutral');
+  assert.equal(summonDisposition('gone', characters, [hag], 'hostile'), 'hostile');
 });

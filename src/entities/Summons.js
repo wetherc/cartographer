@@ -58,3 +58,20 @@ export function despawnSummons(list, casterId, spellId) {
   if (despawned.length === 0) return { creatures: list, despawned };
   return { creatures: list.filter((c) => !isSummonedBy(c, casterId, spellId)), despawned };
 }
+
+/**
+ * The side a summon fights on, read from its caster. A party character's
+ * summons stand with the party, and a creature's summons take the caster's
+ * own disposition, so a party druid's wolves are friendly and a hag's are
+ * hostile. A caster that is no longer on the roster leaves the template's
+ * disposition in place.
+ * @param {string} casterId
+ * @param {readonly { id: string }[]} characters
+ * @param {readonly Creature[]} creatures
+ * @param {Creature['disposition']} fallback the template's disposition
+ * @returns {Creature['disposition']}
+ */
+export function summonDisposition(casterId, characters, creatures, fallback) {
+  if (characters.some((c) => c.id === casterId)) return 'friendly';
+  return creatures.find((c) => c.id === casterId)?.disposition ?? fallback;
+}

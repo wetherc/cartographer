@@ -2053,9 +2053,10 @@ before a slot is spent.
 count through `CreatureTemplate.fromTemplate`, and puts all of them on the party's
 tile. That tile is the only place that a cast can reach, because the app
 cannot measure the distance between two tokens. Each creature gets its own id.
-Its side is the disposition of the template, so a hostile template fights the
-party. For a summon that stands with the party, the GM writes a friendly
-template.
+`Summons.summonDisposition` sets its side from the caster. A party
+character's summons are friendly, and a creature's summons take that
+creature's disposition. A caster missing from the roster leaves the template's
+disposition.
 
 `endSpellEffects` removes the summons in the same pass that sweeps the chips.
 The removal runs before the early return for an empty sweep, because a

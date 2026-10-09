@@ -1565,7 +1565,7 @@ test('a summons puts stamped creatures on the party tile and spends the slot', (
   assert.equal(app.state.creatures.length, 2);
   for (const wolf of app.state.creatures) {
     assert.equal(wolf.name, 'Wolf');
-    assert.equal(wolf.disposition, 'hostile', 'the side comes from the template');
+    assert.equal(wolf.disposition, 'friendly', "a party caster's summons stand with the party");
     assert.deepEqual(wolf.location, HERE);
     assert.equal(wolf.currentHP, wolf.maxHP, 'a summon arrives at full health');
     assert.deepEqual(wolf.summonedBy, {

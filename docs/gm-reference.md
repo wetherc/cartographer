@@ -2266,9 +2266,11 @@ brings eight Wolf creatures, sixteen with a 5th-level slot, twenty-four
 with a 7th-level slot, and thirty-two with a 9th-level slot. If the library has no template with the name
 that the spell gives, the cast dialog refuses the spell.
 
-The side that a summon fights on is the disposition of its template. A
-hostile template fights the party. To summon an ally, write a friendly
-template in the library.
+The side that a summon fights on comes from its caster. A party character's
+summons are friendly and stand with the party, so a party druid's wolves fight
+beside it. A creature's summons take the disposition of that creature, so a
+hostile caster's summons fight the party. The template keeps its own
+disposition for creatures that the GM places by hand.
 
 If a fight is running, the summons join the initiative order. See
 [Initiative](#initiative). The end of the spell removes the creatures
