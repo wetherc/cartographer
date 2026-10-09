@@ -400,7 +400,12 @@ each axis. A fit to the whole region frames mostly fog, so a small explored
 area shows at a few percent of the canvas. A map with no revealed tile fits
 whole. The map
 wiring skips a canvas resize while the map is hidden, so the combat screen
-leaves the pan and zoom as they were.
+leaves the pan and zoom as they were. The canvas buffer is the CSS size
+times `devicePixelRatio`. A ResizeObserver resizes it when the CSS size
+changes, and `watchPixelRatio` (`src/ui/pixelRatio.js`) resizes it when the
+window moves to a screen with another ratio. Without that watch, a map
+moved from a 2x screen to a 1x screen keeps the 2x buffer and draws its
+labels at half size.
 
 ## The tile catalog and generation
 

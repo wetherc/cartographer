@@ -24,6 +24,7 @@ import { PAINT_TAB, effectiveBrush, toolChipLabel } from '../view/BuildTool.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM, seesThroughFog } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
+import { watchPixelRatio } from '../ui/pixelRatio.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/mapEnv.js').MapEnv} MapEnv */
@@ -553,6 +554,9 @@ export function wireMapView(app) {
     syncMapOccluders();
   };
   new ResizeObserver(resizeMapToViewport).observe(canvasEl);
+  // A move to a screen with another pixel ratio keeps the CSS size, so the
+  // ResizeObserver stays quiet and the ratio needs its own watch.
+  watchPixelRatio(resizeMapToViewport);
 
   syncEmptyMap = wireMapBuildTools(app, env, authoring, buildTabs).syncEmptyMap;
 
