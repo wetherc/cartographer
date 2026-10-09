@@ -127,6 +127,13 @@ export interface AppActions {
   // these actions.
   advanceCombatTurn(): void;
   endCombat(): Promise<void>;
+  // turnOrder: the GM's corrections to a running order. Previous turn moves
+  // the pointer back one turn, setCombatInitiative gives one combatant a new
+  // initiative and sorts the order again, and Delay moves the combatant who
+  // holds the turn to just after the next row.
+  retreatCombatTurn(): void;
+  setCombatInitiative(id: string, initiative: number): void;
+  delayCombatTurn(): void;
   // encounterWiring: spend part of one combatant's turn, which is how an
   // attack or a cast pays for itself. 'attack' is the weapon swing, which
   // spends the Attack action and banks the extra swings of Extra Attack.

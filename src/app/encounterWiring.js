@@ -1,5 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
-import { mountInitiativePanel } from '../ui/InitiativePanel.js';
+import { initiativeStatus, mountInitiativePanel } from '../ui/InitiativePanel.js';
+import { mountFightBar } from '../ui/FightBar.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import { addParticipant, startCombat, dropParticipant } from '../combat/Initiative.js';
 import {
@@ -27,6 +28,7 @@ import { addLethargy } from './lethargy.js';
 import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
+import { wireTurnOrder } from './turnOrder.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { focusMapCanvas } from './combatWiring.js';
 import {
@@ -209,6 +211,7 @@ export function wireEncounters(app) {
   };
 
   wireEncounterPanels(app, { onStartCombat: startCombatSetup });
+  wireTurnOrder(app, { setCombat });
 
   /**
    * Resolve the name and side to show for a participant, from whatever
@@ -359,9 +362,9 @@ export function wireEncounters(app) {
     // Every turn boundary on the way runs its effects, such as a repeated
     // save or the damage a chip deals.
     advancePastHeld(app, { setCombat, tickRound });
-    // The sidebar panel redraws itself after its own button. The combat
-    // screen must be told that the turn moved, in either case.
-    app.views.combatScreen.update();
+    // The Initiative card refresh also redraws the bar above the map and the
+    // combat screen, which all name the turn.
+    app.views.initiativePanel.update();
   };
 
   app.actions.endCombat = async () => {
@@ -403,6 +406,36 @@ export function wireEncounters(app) {
     onOpen: () => app.actions.setMode('combat'),
   });
 
+  // The bar above the map and the Initiative card both lead back to the
+  // combat screen. The bar names the turn with the same labels as the card.
+  const fightBar = mountFightBar(mustGetElement('map-viewport').parentElement ?? document.body, {
+    getStatus: () => {
+      const combat = current();
+      if (!combat) return null;
+      const ids = combat.order.map((p) => p.id);
+      return initiativeStatus(combat, (p) => {
+        const view = describe(p);
+        return view && { ...view, name: combatLabels(app, ids).get(p.id) ?? view.name };
+      });
+    },
+    onReturn: () => app.actions.setMode('combat'),
+  });
+  // During a fight the Initiative card moves to the top of the Session tab, so
+  // the GM does not scroll past the World, Time, and Encounters cards to
+  // reach it. It moves back under Encounters once the fight ends. The move is
+  // in the markup, not only the CSS order, so the tab order matches.
+  const sessionPanel = initiativeContainer.parentElement;
+  const cardHome = initiativeContainer.previousElementSibling;
+  function placeInitiativeCard() {
+    if (!sessionPanel) return;
+    const running = current() !== null;
+    if (running && sessionPanel.firstElementChild !== initiativeContainer) {
+      sessionPanel.prepend(initiativeContainer);
+    } else if (!running && cardHome && cardHome.nextElementSibling !== initiativeContainer) {
+      cardHome.after(initiativeContainer);
+    }
+  }
+
   // Walking away from the fight, or deleting the last creature in it,
   // drops the running combat, because its participants are no longer
   // here. Killing every foe does not drop it: the screen shows the foes as
@@ -442,6 +475,8 @@ export function wireEncounters(app) {
       initiativeContainer.hidden = current() === null;
       document.body.classList.toggle('fight-running', current() !== null);
       initiativePanel.update();
+      fightBar.update();
+      placeInitiativeCard();
       app.views.combatScreen.update();
     },
   };

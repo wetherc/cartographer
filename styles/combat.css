@@ -691,3 +691,13 @@ body.mode-combat .app-buildrail {
 .combat-screen__log > [role='tabpanel'][hidden] {
   display: none;
 }
+
+/* Delay turn sits under the name at its own width, not the column's. */
+.combat-screen__delay {
+  align-self: flex-start;
+  justify-self: start;
+}
+
+.combat-screen__initiative {
+  width: 5rem;
+}

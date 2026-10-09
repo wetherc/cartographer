@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'back'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -71,6 +71,7 @@ const PATHS = {
     'M18 17l-6 5',
   ],
   chevron: ['M9 6l6 6-6 6'],
+  back: ['M15 6l-6 6 6 6'],
   // Three dots in a row open a menu of more actions.
   more: [
     'M5 11a1 1 0 100 2 1 1 0 000-2z',

@@ -173,6 +173,27 @@ function storeConditions(app, found, conditions) {
 }
 
 /**
+ * Replace one combatant's chip list with a hand edit, such as the combat
+ * screen's condition bar. The write settles HP buffs and Haste's lethargy, and
+ * a chip that leaves a character unable to act ends its concentration, the
+ * same as a chip that lands from an attack or a spell. An id that matches no
+ * combatant writes nothing.
+ * @param {AppContext} app
+ * @param {string} id
+ * @param {import('../types/entities.js').Condition[]} conditions
+ */
+export function setCombatantConditions(app, id, conditions) {
+  const found = findCombatant(app, id);
+  if (!found) return;
+  if (found.kind === 'character') {
+    storeCharacterChips(app, found, settleChips(app, found.entity, conditions));
+    return;
+  }
+  storeCreature(app, found.entity, settleChips(app, found.entity, conditions), found.store);
+  app.actions.markDirty();
+}
+
+/**
  * End everything one cast is holding: the conditions on every target, and the
  * creatures it summoned. A dropped spell, a spell lost to damage, a spell
  * displaced by another, or a spell whose duration ran out must all do this.

@@ -1303,7 +1303,7 @@ The combat screen runs one fight at the full width of the page.
 | Area | Contents |
 | --- | --- |
 | Top | The turn ribbon: one chip per combatant in initiative order, with its name and number, as in "Gray Wolf 2" |
-| Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
+| Left column | The active combatant: initiative, AC, HP, conditions with the GM's add and remove controls, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
 | Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
 | Right column | The **Log** and **Map** tabs, with the dice tray docked below them. **Log** shows the combat log. **Map** shows a read-only map of nine by nine tiles around the party, with the fog of the Play map and a marker on the tile of each hostile creature that still stands. Markers show only near the party, as on the Play map |
 
@@ -1345,7 +1345,11 @@ selects its number, so you can type the next amount over it.
 
 | Control | Who | What it does |
 | --- | --- | --- |
-| Back to map | Everyone | Leaves the screen without an end to the fight. The Initiative card in the sidebar shows the round and has **Open combat** |
+| Back to map | Everyone | Leaves the screen without an end to the fight. A bar above the Play map shows the round and whose turn it is, and its **Return to fight** button opens the screen again. The Initiative card moves to the top of the Session tab and has **Open combat** too |
+| Previous turn | GM only | Moves the turn back one combatant, past a combatant that cannot act. Use it to take back a **Next turn** pressed by mistake. It moves the turn only: a repeated save, a round tick, or a chip that ended on the way stays as it is, and the header **Undo** takes those back. It is disabled on the first turn of the fight |
+| Initiative field | GM only | Sits in the left column. Type a new value and press Enter, or leave the field, to fix a mistyped roll. The order sorts again, and the turn stays with the combatant who has it |
+| Delay turn | GM only | Shows in the left column on the current turn. The combatant moves to just after the next combatant in the order and takes that combatant's initiative, and the next combatant starts its turn. The delayed combatant keeps its unspent actions. The last combatant of a round cannot delay |
+| Condition | GM only | Sits in the left column with the chips of the combatant it shows. It opens the same dialog as the Condition button of a creature card, and the x on a chip removes it. Players see the chips only |
 | End combat | GM only | Opens the XP dialog when the party did not lose, a character is alive to earn XP, and the fight has XP to award or a standing foe. The dialog ends the fight. While foes stand and no character can earn XP, a confirm asks first. A lost fight, or a won fight with no XP to award, ends with no question |
 
 Unless the party lost, End combat offers the XP of the defeated foes. The
@@ -1964,7 +1968,9 @@ Initiative is a Dexterity check, and it rolls as one.
 
 The log line says what happened to each roll, for example: `Initiative
 rolled: Ser Aldric 17, Mirelle 6 (at disadvantage (dropped 15), Poisoned
-disadvantage).` Every value stays editable until you press Start combat.
+disadvantage).` Every value stays editable until you press Start combat. After
+the start, the GM fixes a value in the initiative field of the left column
+on the combat screen.
 
 A creature that a spell summons into a running fight rolls a plain d20 plus
 its DEX modifier, with no condition or armor effect. You can edit the value

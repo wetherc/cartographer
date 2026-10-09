@@ -22,6 +22,7 @@ import { downState } from '../view/DeathSaveView.js';
  *   onInspect: (id: string) => void,
  *   onLeave: () => void,
  *   onNext: () => void,
+ *   onPrevious?: () => void,
  *   onEnd: () => void,
  * }} callbacks
  * @returns {{
@@ -100,8 +101,16 @@ export function mountCombatRibbon(callbacks) {
     // player tab cannot leave the screen. Leaving changes nothing about the
     // fight, which keeps running. The Play sidebar's Open combat control
     // returns here.
+    // Previous turn takes back a Next turn pressed by mistake. It is the GM's
+    // control, and it is disabled on the first turn of the fight.
+    const previous =
+      gm && callbacks.onPrevious
+        ? textButton('Previous turn', callbacks.onPrevious, { icon: 'back' })
+        : null;
+    if (previous) previous.disabled = view.round === 1 && view.turnIndex === 0;
     controls.append(
       textButton('Back to map', callbacks.onLeave, { icon: 'map' }),
+      ...(previous ? [previous] : []),
       ...(mayEndTurn
         ? [
             textButton(gm ? 'Next turn' : 'End my turn', callbacks.onNext, {

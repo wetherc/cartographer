@@ -655,6 +655,7 @@ the same code. The fight itself renders in combat mode, which
 | Module | Owns |
 | --- | --- |
 | `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and running the turn boundaries on the way |
+| `turnOrder.js` | The GM's corrections to a running order: Previous turn, a new initiative value for one combatant, and Delay. `encounterWiring.js` calls it with its `setCombat` |
 | `turnEffects.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
 | `combatEnd.js` | The fight summary, the XP dialog that opens before the fight ends, the confirm for a fight with standing foes and no character to earn XP, and the award after the fight closes |
 | `summons.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |

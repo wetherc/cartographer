@@ -24,6 +24,10 @@ import { buildTabs } from './Tabs.js';
  *   getView: () => CombatView | null,
  *   isGM: () => boolean,
  *   onNext: () => void,
+ *   onPrevious?: () => void,
+ *   onSetInitiative?: (id: string, initiative: number) => void,
+ *   onDelay?: () => void,
+ *   onSetConditions?: (id: string, conditions: import('../types/entities.js').Condition[]) => void,
  *   onEnd: () => void,
  *   onLeave: () => void,
  *   getInspectedId: () => string | null,
@@ -138,6 +142,7 @@ export function mountCombatScreen(container, callbacks) {
     },
     onLeave: callbacks.onLeave,
     onNext: callbacks.onNext,
+    onPrevious: callbacks.onPrevious,
     onEnd: callbacks.onEnd,
   });
   // The column's back link drops the inspection, and the screen redraws

@@ -209,3 +209,109 @@ function refreshTurn(order, index) {
   });
   return changed ? next : order;
 }
+
+/**
+ * Step the turn pointer back to the previous turn. The GM uses this to take
+ * back a Next turn pressed by mistake. Going back past the top of the order
+ * returns to the last row of the round before. The pointer passes over rows
+ * that `isDefeated` names, the same rows `advanceTurn` passes over. Budgets
+ * stay as they are, so the combatant the pointer returns to keeps what it
+ * already spent. The function returns the state unchanged (identity
+ * preserved) on the first turn of round 1, on an empty order, and when every
+ * earlier turn in the fight belongs to a defeated row. Pure
+ * function.
+ * @param {CombatState} state
+ * @param {(participant: Participant) => boolean} [isDefeated]
+ * @returns {CombatState}
+ */
+export function retreatTurn(state, isDefeated = () => false) {
+  const count = state.order.length;
+  if (count === 0) return state;
+  let index = state.index;
+  let round = state.round;
+  for (let steps = 0; steps < count; steps += 1) {
+    if (index === 0 && round === 1) break;
+    index -= 1;
+    if (index < 0) {
+      index = count - 1;
+      round -= 1;
+    }
+    if (!isDefeated(state.order[index])) break;
+  }
+  if (index === state.index && round === state.round) return state;
+  if (isDefeated(state.order[index])) return state;
+  return { ...state, index, round };
+}
+
+/**
+ * True when `retreatTurn` has a turn to go back to.
+ * @param {CombatState} state
+ * @returns {boolean}
+ */
+export function canRetreat(state) {
+  return state.order.length > 0 && (state.round > 1 || state.index > 0);
+}
+
+/**
+ * Give one participant a new initiative value and sort the order again. The
+ * GM uses this to fix a roll typed wrong. The turn pointer stays on the
+ * combatant who holds the turn, wherever the order puts them, as in
+ * `addParticipant`. The function returns the state unchanged (identity
+ * preserved) when the id is not in the order or the value does not change.
+ * Pure function.
+ * @param {CombatState} state
+ * @param {string} id
+ * @param {number} initiative
+ * @param {(participant: Participant) => string} [nameOf] for the tiebreak
+ * @returns {CombatState}
+ */
+export function setParticipantInitiative(state, id, initiative, nameOf) {
+  const target = state.order.find((p) => p.id === id);
+  if (!target || target.initiative === initiative) return state;
+  const holder = state.order[state.index]?.id;
+  const order = sortInitiative(
+    state.order.map((p) => (p === target ? { ...p, initiative } : p)),
+    nameOf,
+  );
+  const index = Math.max(
+    0,
+    order.findIndex((p) => p.id === holder),
+  );
+  return { ...state, index, order };
+}
+
+/**
+ * True when the combatant who holds the turn can delay it: some row comes
+ * after them in this round.
+ * @param {CombatState} state
+ * @returns {boolean}
+ */
+export function canDelay(state) {
+  return state.index < state.order.length - 1;
+}
+
+/**
+ * Delay the current turn. The combatant who holds the turn moves to just
+ * after the next row and takes that row's initiative, so a later sort keeps
+ * them near that place. The pointer stays at the same index, which now
+ * names the next row, and that row starts its turn with a fresh budget. The
+ * delayed combatant keeps its budget, because its turn has not been taken
+ * yet. The last row of a round has no later row in the round, so the
+ * function returns the state unchanged (identity preserved) there. Pure
+ * function.
+ * @param {CombatState} state
+ * @returns {CombatState}
+ */
+export function delayTurn(state) {
+  if (!canDelay(state)) return state;
+  const at = state.index;
+  const delayed = state.order[at];
+  const next = state.order[at + 1];
+  const order = [
+    ...state.order.slice(0, at),
+    next,
+    { ...delayed, initiative: next.initiative },
+    ...state.order.slice(at + 2),
+  ];
+  return { ...state, order: refreshTurn(order, at) };
+}

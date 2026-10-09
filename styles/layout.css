@@ -422,3 +422,35 @@ body.sidebar-collapsed .app-sidebar {
   background: transparent;
   color: var(--overlay-text);
 }
+
+/* The fight bar sits above the map while a fight runs, so the way back to
+   the combat screen stays in view from the map. Build mode hides it, because
+   authoring does not touch the fight. */
+.fight-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+}
+
+.fight-bar[hidden],
+body.mode-build .fight-bar {
+  display: none;
+}
+
+.fight-bar__mark {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.fight-bar__status {
+  flex: 1;
+  min-width: 10rem;
+  font-weight: 600;
+}

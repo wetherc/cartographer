@@ -102,6 +102,10 @@ src/app/encounterWiring.js ... the only writer of state.combat, with the turn
                                flow as registered actions
 src/app/turnAdvance.js ....... the turn advance, with the turn boundaries
                                that it passes on the way
+src/app/turnOrder.js ......... the GM's corrections to the order: Previous
+                               turn, a new initiative value, and Delay
+src/ui/FightBar.js ........... the bar above the Play map that names the turn
+                               and returns to the combat screen
 src/app/turnActions.js ....... takes a turn action, and the GM's pip
                                override on the budget
 src/app/turnEffects.js ....... what the start and the end of one turn do:

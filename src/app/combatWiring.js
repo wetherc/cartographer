@@ -16,7 +16,7 @@ import {
   turnKey,
 } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
-import { applyToTarget, endSpellEffects } from './combatantWrites.js';
+import { applyToTarget, endSpellEffects, setCombatantConditions } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
@@ -132,6 +132,16 @@ export function wireCombatScreen(app) {
       };
     },
     onNext: () => app.actions.advanceCombatTurn(),
+    // The GM's corrections to the order (see turnOrder.js).
+    onPrevious: () => app.actions.retreatCombatTurn(),
+    onSetInitiative: (id, initiative) => app.actions.setCombatInitiative(id, initiative),
+    onDelay: () => app.actions.delayCombatTurn(),
+    // The condition bar's edit goes through the same chip write as a spell
+    // or an attack, then the screen redraws with the stored list.
+    onSetConditions: (id, conditions) => {
+      setCombatantConditions(app, id, conditions);
+      app.views.initiativePanel.update();
+    },
     onEnd: () => app.actions.endCombat(),
     // Leaving is a view change only. The fight keeps running, and the Play
     // sidebar's status card offers the way back in. The mode switch hides

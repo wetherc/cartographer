@@ -1,12 +1,12 @@
 import { el } from './dom.js';
 import { bareButton, sectionLabel, textButton } from './buttons.js';
-import { conditionChip } from './ConditionsBar.js';
+import { conditionChip, mountConditionsBar } from './ConditionsBar.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatActionBar } from './CombatActionBar.js';
 import { deathSaveBlock } from './DeathSaveBlock.js';
 import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
-import { select } from './formFields.js';
+import { numberField, select } from './formFields.js';
 import { hpTargetId } from '../view/CombatHpTarget.js';
 import { viewTurnKey } from '../view/CombatSelection.js';
 
@@ -71,8 +71,14 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
       ),
     );
 
+    if (gm && current && callbacks.onDelay) element.appendChild(delayControl(view));
+
     const facts = el('div', 'combat-screen__facts');
-    facts.appendChild(factLine('Initiative', String(row.initiative)));
+    facts.appendChild(
+      gm && callbacks.onSetInitiative
+        ? initiativeField(row, callbacks.onSetInitiative)
+        : factLine('Initiative', String(row.initiative)),
+    );
     if (row.ac !== null) facts.appendChild(factLine('AC', String(row.ac)));
     if (row.hp) {
       // The GM sees exact HP anywhere. A player sees exact HP for every
@@ -99,7 +105,17 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
     const hpTarget = hpTargetId(view, { picked: hpPick, selectedId, inspectedId });
     if (gm && view.rows.some((r) => r.hp)) element.appendChild(hpControls(view, hpTarget, gm));
 
-    if (row.conditions.length > 0) {
+    // The GM adds and removes chips here, so a foe knocked prone does not
+    // need a trip back to the map. Everyone else sees the chips only.
+    const onSetConditions = callbacks.onSetConditions;
+    if (gm && onSetConditions) {
+      const holder = el('div', 'combat-screen__active-conditions');
+      mountConditionsBar(holder, {
+        getConditions: () => row.conditions,
+        onChange: (next) => onSetConditions(row.id, next),
+      });
+      element.appendChild(holder);
+    } else if (row.conditions.length > 0) {
       element.appendChild(
         el(
           'div',
@@ -261,6 +277,25 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
     );
   }
 
+  /**
+   * The GM's Delay control for the current turn. The combatant moves to just
+   * after the next row, and that row starts its turn. The last row of a round
+   * has no later row, so the button is disabled there.
+   * @param {CombatView} view
+   */
+  function delayControl(view) {
+    const last = view.turnIndex >= view.rows.length - 1;
+    const button = textButton('Delay turn', () => callbacks.onDelay?.(), {
+      icon: 'down',
+      className: 'combat-screen__delay',
+      title: last
+        ? 'The last combatant in the round has no later turn to wait for'
+        : 'Act after the next combatant in the order',
+    });
+    button.disabled = last;
+    return button;
+  }
+
   return {
     element,
     render,
@@ -268,4 +303,26 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
       element.innerHTML = '';
     },
   };
+}
+
+/**
+ * The GM's initiative field for the shown combatant. A typed value commits
+ * when the field loses focus or on Enter, and the host sorts the order again
+ * with the turn left where it is. An empty or unchanged value commits
+ * nothing.
+ * @param {CombatantRow} row
+ * @param {(id: string, initiative: number) => void} onSet
+ * @returns {HTMLElement}
+ */
+export function initiativeField(row, onSet) {
+  const input = numberField(row.initiative, { min: -10, max: 50 });
+  input.classList.add('combat-screen__initiative');
+  input.setAttribute('aria-label', `Initiative of ${row.name ?? 'Unknown combatant'}`);
+  input.addEventListener('focus', () => input.select());
+  input.addEventListener('change', () => {
+    const typed = Number.parseInt(input.value, 10);
+    if (!Number.isFinite(typed) || typed === row.initiative) return;
+    onSet(row.id, typed);
+  });
+  return factLine('Initiative', input);
 }
