@@ -1,5 +1,7 @@
 import { promptModal, confirmDelete } from '../ui/Modal.js';
 import { addXP, getHP, setMaxHP, setBonusHP, setBaseAC } from '../entities/Character.js';
+import { isDead } from '../entities/DeathSaves.js';
+import { payReward } from '../quest/QuestReward.js';
 import { applyFresh, removeById } from '../entities/Roster.js';
 import { moveCharacter } from '../party/CharacterTokens.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -180,9 +182,10 @@ export function rosterActions(app, { scope, selectCharacter }) {
     // character as usual.
     // The GM can type the XP each character gets, or a total for the app to
     // split. The amount's caption restates the result on every edit, so a
-    // split needs no sums by hand.
+    // split needs no sums by hand. A dead character gets no share and does
+    // not count toward the split, as with fight and quest rewards.
     onAwardXP: async () => {
-      const count = state.characters.length;
+      const count = state.characters.filter((c) => !isDead(c)).length;
       /** @param {string} mode @param {string} amount */
       const award = (mode, amount) =>
         partyAward(mode === 'total' ? 'total' : 'each', Number(amount) || 0, count);
@@ -214,14 +217,15 @@ export function rosterActions(app, { scope, selectCharacter }) {
         },
       );
       if (!values) return;
-      const amount = award(values.mode, values.amount).each;
-      if (amount <= 0) return;
-      state.characters = state.characters.map((c) => addXP(c, amount));
+      const per = values.mode === 'total' ? 'total' : 'each';
+      const paid = payReward(state.characters, { per, gp: 0, xp: Number(values.amount) || 0 });
+      if (paid.xp <= 0) return;
+      state.characters = paid.characters;
       scope.reselect(); // refresh the sheet, inventory, and roster
       app.actions.markDirty();
-      app.actions.logEvent('note', `The party is awarded ${amount} XP each.`);
+      app.actions.logEvent('note', `The party is awarded ${paid.xp} XP each.`);
       app.toasts.show(
-        `Awarded ${amount} XP to ${state.characters.length} character${state.characters.length === 1 ? '' : 's'}.`,
+        `Awarded ${paid.xp} XP to ${paid.count} character${paid.count === 1 ? '' : 's'}.`,
       );
     },
   };

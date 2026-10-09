@@ -2232,7 +2232,7 @@ character detail card shows.
 | Place on map | GM, while the party is split | Moves that character. See [Party splitting](#party-splitting) |
 | More actions (three dots) | GM | Opens a menu with **Grant XP**, which grants XP to that character alone (the default is 100), and **Delete**, which deletes the character after a confirm |
 | New character | GM | Opens character creation |
-| Award Party XP | GM | Grants XP to every character: the same amount to each, or a total split evenly and rounded down. The default is 100 per character |
+| Award Party XP | GM | Grants XP to every living character: the same amount to each, or a total split evenly among them and rounded down. A dead character gets nothing and does not count in the split. The default is 100 per character |
 | Spectator tab | GM | Opens a Player tab bound to no character |
 | Allow splitting the party | GM | See [Party splitting](#party-splitting) |
 | Playing as | Player tab | Binds the tab to a character. Locked in a tab opened from a player tab link, until the tab loses its character |

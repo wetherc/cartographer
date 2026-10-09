@@ -44,3 +44,19 @@ test('rewardLine names what each character got, or gives null', async () => {
   assert.equal(rewardLine(0, 300), 'The party receives 300 XP each.');
   assert.equal(rewardLine(0, 0), null);
 });
+
+test('an XP-only total split among the living leaves the dead out of the count', async () => {
+  // The party Award XP dialog pays through payReward with no gold.
+  const { payReward } = await import('../src/quest/QuestReward.js');
+  const { createCharacter } = await import('../src/entities/Character.js');
+  const hero = createCharacter('hero', 'Hero');
+  const sage = createCharacter('sage', 'Sage');
+  const dead = { ...createCharacter('dead', 'Dead'), deathSaves: { successes: 0, failures: 3 } };
+  const paid = payReward([hero, sage, dead], { gp: 0, xp: 300, per: 'total' });
+  assert.deepEqual([paid.xp, paid.count], [150, 2]);
+  assert.deepEqual(
+    paid.characters.map((c) => c.xp),
+    [150, 150, 0],
+  );
+  assert.equal(paid.characters[2], dead);
+});

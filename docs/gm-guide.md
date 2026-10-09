@@ -604,10 +604,10 @@ that.
 ### Level a character
 
 1. In the **Party** panel, click **Award Party XP** to give XP to each
-   character at once. To split a total instead, set **Award** to **A total,
-   split evenly**, and the caption shows the XP that each character gets. To
-   give XP to one character, click the three-dot button on their row and
-   then **Grant XP**.
+   living character at once. A dead character gets none. To split a total
+   instead, set **Award** to **A total, split evenly**, and the caption shows
+   the XP that each living character gets. To give XP to one character,
+   click the three-dot button on their row and then **Grant XP**.
 2. A **Level up** mark shows on the party row of each character with a
    level to assign. Click the row to open the sheet. A banner at the top
    says how many levels wait.
