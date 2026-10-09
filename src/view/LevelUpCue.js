@@ -18,14 +18,15 @@ export function levelUpCue({ levels, improvements, choices }) {
 
 /**
  * The level on a roster row: the level the rules read, plus the levels
- * earned by XP and not yet assigned. A Fighter 4 with XP for level 5 reads
- * "Lv 4 (+1 to assign)", so the row does not claim a level the rules ignore.
+ * earned by XP and not yet assigned, in parentheses after the name. A Fighter 4
+ * with XP for level 5 reads "(Lv 4, +1 to assign)", so the row does not claim a
+ * level the rules ignore.
  * @param {number} level the effective level
  * @param {number} pending levels left to assign
  * @returns {string}
  */
 export function rosterLevelText(level, pending) {
-  return pending > 0 ? `Lv ${level} (+${pending} to assign)` : `Lv ${level}`;
+  return pending > 0 ? `(Lv ${level}, +${pending} to assign)` : `(Lv ${level})`;
 }
 
 /**

@@ -26,8 +26,8 @@ test('every kind of step joins into one line, in the plural', () => {
 });
 
 test('the level labels name the levels left to assign', () => {
-  assert.equal(rosterLevelText(4, 0), 'Lv 4');
-  assert.equal(rosterLevelText(4, 1), 'Lv 4 (+1 to assign)');
+  assert.equal(rosterLevelText(4, 0), '(Lv 4)');
+  assert.equal(rosterLevelText(4, 1), '(Lv 4, +1 to assign)');
   assert.equal(sheetLevelText(4, 0), 'Level 4');
   assert.equal(sheetLevelText(4, 1), 'Level 4, 1 level to assign');
   assert.equal(sheetLevelText(4, 2), 'Level 4, 2 levels to assign');

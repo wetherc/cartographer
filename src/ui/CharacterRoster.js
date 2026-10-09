@@ -173,7 +173,7 @@ export function mountCharacterRoster(container, options) {
             el(
               'span',
               'character-roster__level',
-              `(${rosterLevelText(effectiveLevel(character), pendingLevels(character))})`,
+              rosterLevelText(effectiveLevel(character), pendingLevels(character)),
             ),
           ),
           levelUpBadge(character),

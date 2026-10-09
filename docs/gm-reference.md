@@ -2482,7 +2482,7 @@ current class or a new one.
 
 The proficiency bonus, cantrip damage, and the encounter budget follow the
 assigned class levels. So a pending level does not raise any of them until the
-GM assigns it. The roster reads "Lv 4 (+1 to assign)" and the sheet header
+GM assigns it. The roster reads "(Lv 4, +1 to assign)" and the sheet header
 reads "Level 4, 1 level to assign" while that level waits.
 
 An assignment does these things:
