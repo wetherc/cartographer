@@ -13,7 +13,7 @@
  * `DeathSaves.clearDying` and `Creature.heal` each hold that half.
  */
 
-import { isDefeated, applyDamage } from '../entities/Creature.js';
+import { isDefeated, slay } from '../entities/Creature.js';
 import { isDead, killOutright } from '../entities/DeathSaves.js';
 import {
   atDeathLevel,
@@ -86,15 +86,16 @@ function killIfFatalCharacter(app, character) {
 
 /**
  * The creature half of the sixth level: 0 HP, which is the only way a creature
- * leaves a fight. The damage goes through `applyDamage` so that the defeat log
- * line and the map markers behave as they do for a killing blow.
+ * leaves a fight. The kill goes through `slay`, as Power Word Kill does, so
+ * temporary HP cannot absorb it and no chip that damage ends goes away. The
+ * defeat log line and the map markers behave as they do for a killing blow.
  * @param {AppContext} app
  * @param {Creature} creature already at the new level
  * @returns {Creature}
  */
 function killIfFatalCreature(app, creature) {
   if (!atDeathLevel(creature) || isDefeated(creature)) return creature;
-  const dead = applyDamage(creature, creature.currentHP);
+  const dead = slay(creature);
   logDefeatTransition(app, creature, dead);
   return dead;
 }

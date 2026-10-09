@@ -1581,8 +1581,11 @@ because the whole app reads three failures as dead, and the Unconscious chip
 goes on with them. HP does not change, because exhaustion kills without damage,
 and a damage write would show a wound that did not happen.
 
-A creature goes to 0 HP through `Creature.applyDamage`, which is the only way
-that a creature leaves a fight, and `logDefeatTransition` names it. A combatant
+A creature goes to 0 HP through `Creature.slay`, the write that Power Word
+Kill uses, and `logDefeatTransition` names it. 0 HP is the only way that a
+creature leaves a fight. A damage write would spend temporary HP first and
+leave the creature standing, and it would also end chips that damage ends,
+such as the Unconscious of Sleep. A combatant
 that is already dead takes the level and nothing else, so a second write
 cannot log a second death.
 

@@ -74,6 +74,22 @@ test('the sixth level takes a creature to 0 HP and logs the defeat', () => {
   assert.equal(app.dirty, 1, 'the creature store refreshes without marking dirty itself');
 });
 
+test('the sixth level kills a creature through its temporary HP, and wakes no chip', () => {
+  const asleep = {
+    name: 'Unconscious',
+    rounds: 10,
+    source: { casterId: 'x', spellId: 'sleep', endsOnDamage: true },
+  };
+  const ogre = guard({ currentHP: 30, maxHP: 30, bonusHP: 8, conditions: [asleep] });
+  const app = appWith([], [ogre]);
+  setCombatantExhaustion(app, 'c1', 6);
+  const dead = app.state.creatures[0];
+  assert.equal(dead.currentHP, 0);
+  assert.equal(dead.bonusHP, 0);
+  assert.deepEqual(dead.conditions, [asleep], 'no damage lands, so the Sleep chip stays');
+  assert.deepEqual(app.log, ['Guard: Exhaustion 6: dead.', 'Defeated Guard.']);
+});
+
 test('a creature already at 0 HP takes the level without a second defeat line', () => {
   const app = appWith([], [guard({ currentHP: 0, exhaustion: 5 })]);
   setCombatantExhaustion(app, 'c1', 6);
