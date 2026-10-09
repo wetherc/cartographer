@@ -1,6 +1,7 @@
 import { parseAssignments } from '../ui/ModalFields.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { hostileGroup } from '../entities/CreatureMap.js';
+import { SPELL_KINDS } from '../entities/SpellKinds.js';
 import { combatantsAsTargets, asTarget } from './combatants.js';
 import { splitTrimmedList } from '../util/text.js';
 
@@ -57,7 +58,7 @@ export function selfOnly(spell) {
  * @returns {boolean}
  */
 export function helps(kind) {
-  return kind === 'heal' || kind === 'buff';
+  return SPELL_KINDS[kind].helps;
 }
 
 /**
@@ -81,7 +82,7 @@ export function aids(spell) {
  * @returns {boolean}
  */
 export function targetFree(kind) {
-  return kind === 'utility' || kind === 'summons';
+  return SPELL_KINDS[kind].targetFree;
 }
 
 /**

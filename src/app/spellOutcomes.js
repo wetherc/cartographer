@@ -1,4 +1,5 @@
 import { hitRiderSummary } from '../entities/HitRiders.js';
+import { exhaustive } from '../util/exhaustive.js';
 import { riderSummary } from '../entities/Riders.js';
 import { modsSummary } from '../entities/ChipMods.js';
 import { formatModifier } from '../entities/Modifiers.js';
@@ -259,6 +260,9 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     }
     return;
   }
+  // A utility spell changes nothing that the app tracks. Any other kind that
+  // reaches this line has no branch above, which fails the typecheck.
+  if (kind !== 'utility') exhaustive(kind, undefined);
   app.toasts.show(`${spell.name} cast.`);
 }
 

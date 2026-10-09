@@ -1,4 +1,5 @@
 import { capitalize } from '../util/text.js';
+import { SPELL_KINDS } from '../entities/SpellKinds.js';
 import { CLASS_LIST } from '../entities/Classes.js';
 import { setTip } from './Tooltip.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
@@ -138,7 +139,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   // --- Effect section: swaps controls by kind -----------------------------
   const kindSelect = select(
-    SPELL_EFFECT_KINDS.map((value) => ({ value, label: capitalize(value) })),
+    SPELL_EFFECT_KINDS.map((value) => ({ value, label: SPELL_KINDS[value].label })),
     spell?.effect.kind ?? 'utility',
   );
   const saveEffect = spell?.effect.kind === 'save' ? spell.effect : null;

@@ -5,6 +5,7 @@ import { riderSummary } from '../entities/Riders.js';
 import { modsSummary } from '../entities/ChipMods.js';
 import { UNTIL_LABELS, rollsNoSave } from '../entities/SpellFields.js';
 import { typeRulesSummary } from '../entities/SpellTypeRules.js';
+import { exhaustive } from '../util/exhaustive.js';
 
 /**
  * The lines of the spell detail modal that say what a spell does in play: the
@@ -106,7 +107,10 @@ function effectLine(spell, saveDC) {
     const until = effect.until ? ` until ${UNTIL_LABELS[effect.until]}` : '';
     return changes ? `${chip} — ${changes}${until}` : `${chip}${until}`;
   }
-  return null;
+  // A summons and a utility spell have no effect line. The description text
+  // says what they do.
+  if (effect.kind === 'summons' || effect.kind === 'utility') return null;
+  return exhaustive(effect, null);
 }
 
 /**

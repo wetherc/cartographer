@@ -1290,6 +1290,46 @@ proficiency bonus to the attack only when this check passes. An attacker with
 no `proficiencies` field is always proficient, because a creature's attack
 bonus includes proficiency, the way a 5e stat block does.
 
+## Spell effects
+
+A spell's `effect` is a tagged union, `SpellEffect` in `src/types/spell.ts`.
+Its `kind` is `attack`, `save`, `heal`, `buff`, `summons`, or `utility`, and
+each kind has its own fields. Most code reads one kind with a single test,
+such as `effect.kind === 'attack'`. A few functions dispatch over every kind
+in one `if` chain, and each of those chains ends with `exhaustive(effect,
+fallback)` from `src/util/exhaustive.js`. That function takes a `never`
+parameter, so a kind with no branch above the call fails `pnpm run typecheck`
+at that line. At runtime it returns the fallback, so an effect that did not pass through
+the normalizer gets no outcomes and no summary line.
+
+`src/entities/SpellKinds.js` keeps the traits of each kind that code outside
+the kind's own branches reads. `SPELL_KINDS` maps each kind to its label in
+the spell form, `helps` (the cast reaches the caster's own side, so the dialog
+says "Recipient"), and `targetFree` (the cast picks no creature). The table is
+typed as a record over every kind, so a missing row also fails the typecheck.
+The `helps` and `targetFree` functions in `src/app/spellTargets.js` read it.
+
+### Adding an effect kind
+
+| File | Change | Guard |
+| --- | --- | --- |
+| `src/types/spell.ts` | Declare the effect interface and add it to `SpellEffect` | Typecheck |
+| `src/data/spells.js` | Add the kind to `SPELL_EFFECT_KINDS`, the list the import and the form select accept | `tests/SpellKinds.test.js` |
+| `src/entities/SpellKinds.js` | Add a row to `SPELL_KINDS` | Typecheck, `tests/SpellKinds.test.js` |
+| `src/entities/SpellEntry.js` | Give `normalizeSpellEffect` a branch that keeps the kind's fields | `exhaustive` call, `tests/SpellKinds.test.js` |
+| `src/entities/SpellDraft.js` | Map the form controls to the written effect in `writtenEffect`, when the kind reuses the dice editor differently | `tests/SpellDraft.test.js` |
+| `src/ui/SpellForm.js` and the `SpellForm*.js` blocks | Show the kind's controls in `sync` | Browser check |
+| `src/entities/Casting.js` | Roll the kind in `resolveEffect` | `exhaustive` call |
+| `src/types/cast.ts` | Add the outcome type to `CastOutcome` | Typecheck |
+| `src/entities/CastScaling.js` | Scale the kind with the slot level or the cantrip step, when it scales | `tests/Casting.test.js` |
+| `src/app/spellCastFields.js` | Add the dialog fields the kind needs, such as a roll mode | Browser check |
+| `src/app/spellOutcomes.js` | Apply the outcomes in `applyOutcomes` | `exhaustive` call |
+| `src/view/SpellEffectText.js` | Describe the kind in `effectLine` | `exhaustive` call |
+
+The ward prompts (`src/app/shieldWard.js` and `src/app/damageWard.js`) and
+`DamageWard.landingDamage` read only attack and save outcomes. A new kind that
+deals damage needs a branch there too, and no type check finds it.
+
 ## Spell timing
 
 A `Spell` (`types/spell.ts`) lives in the library and not in a campaign save,

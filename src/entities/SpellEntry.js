@@ -19,6 +19,7 @@ import {
 import { cureFields } from './HealCure.js';
 import { healTypeRules } from './SpellTypeRules.js';
 import { stringList } from './LoadCoercion.js';
+import { exhaustive } from '../util/exhaustive.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 
 /**
@@ -44,7 +45,9 @@ import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spel
  */
 export function normalizeSpellEffect(value) {
   const raw = /** @type {Record<string, any>} */ (value && typeof value === 'object' ? value : {});
-  const kind = SPELL_EFFECT_KINDS.includes(raw.kind) ? raw.kind : 'utility';
+  const kind = /** @type {SpellEffect['kind']} */ (
+    SPELL_EFFECT_KINDS.includes(raw.kind) ? raw.kind : 'utility'
+  );
   const condition = typeof raw.condition === 'string' ? raw.condition.trim() : '';
   if (kind === 'attack') {
     // Projectiles stay absent when the entry says nothing, which is a single
@@ -96,9 +99,9 @@ export function normalizeSpellEffect(value) {
       ...buffExtras(raw),
     };
   }
-  const creature =
-    kind === 'summons' && typeof raw.creature === 'string' ? raw.creature.trim() : '';
-  if (creature) {
+  if (kind === 'summons') {
+    const creature = typeof raw.creature === 'string' ? raw.creature.trim() : '';
+    if (!creature) return { kind: 'utility' };
     // A count keeps to the same cap as a target count, because both put that
     // many creatures into one fight.
     const perStep = clampInt(raw.countPerStep, 0);
@@ -109,7 +112,8 @@ export function normalizeSpellEffect(value) {
       ...(perStep > 0 ? { countPerStep: Math.min(perStep, MAX_TARGET_COUNT) } : {}),
     };
   }
-  return { kind: 'utility' };
+  if (kind === 'utility') return { kind: 'utility' };
+  return exhaustive(kind, { kind: 'utility' });
 }
 
 /**

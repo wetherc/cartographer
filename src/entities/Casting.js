@@ -6,6 +6,7 @@ import { takesMaxDamage, typeSkipReason, withTypeSaveMode } from './SpellTypeRul
 import { rollsNoSave } from './SpellFields.js';
 import { spendResource } from './Character.js';
 import { isRitualOnly, isSpellCastable } from './SpellView.js';
+import { exhaustive } from '../util/exhaustive.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 import {
   allocateProjectiles,
@@ -472,7 +473,10 @@ function resolveEffect(spell, ctx) {
     return [{ creature: effect.creature, count: summonCount(effect, steps) }];
   }
 
-  return [];
+  // A utility spell rolls nothing. Its effect is in the description text.
+  if (effect.kind === 'utility') return [];
+
+  return exhaustive(effect, []);
 }
 
 /**
