@@ -18,8 +18,10 @@ export class PartyTracker {
    * @param {PartyPosition} position
    * The first fog reveal runs here, so a caller that knows the sight rule
    * passes it as `sight`. A tracker built without it clears the fog to
-   * `revealRadius` around the party at night as well as by day.
-   * @param {{ revealRadius?: number, sight?: (node: MapNode) => number }} [options]
+   * `revealRadius` around the party at night as well as by day. A caller
+   * that builds the tracker over a loaded save passes `reveal: false`, so fog
+   * that the GM hid inside the sight radius stays hidden.
+   * @param {{ revealRadius?: number, sight?: (node: MapNode) => number, reveal?: boolean }} [options]
    */
   constructor(grid, position, options = {}) {
     this.grid = grid;
@@ -28,7 +30,8 @@ export class PartyTracker {
     /** @type {((node: MapNode) => number) | null} */
     this.sight = options.sight ?? null;
     this.position = position;
-    this._revealAroundCurrent();
+    if (options.reveal === false) this.place(position);
+    else this._revealAroundCurrent();
   }
 
   /**
@@ -78,6 +81,19 @@ export class PartyTracker {
   moveTo(nodeId, tileId, path = []) {
     this.position = { nodeId, tileId };
     this._revealAroundCurrent(path);
+  }
+
+  /**
+   * Put the party on a tile without revealing any fog. A loaded or adopted
+   * save already contains its fog, and a reveal here would clear tiles that
+   * the GM hid with the fog brush inside the sight radius of the party.
+   * @param {PartyPosition} position
+   */
+  place(position) {
+    if (!this.grid.getNode(position.nodeId)) {
+      throw new Error(`PartyTracker: unknown node "${position.nodeId}"`);
+    }
+    this.position = position;
   }
 
   /** @param {readonly string[]} [path] */

@@ -207,3 +207,24 @@ test('a revealed tile survives the swap, so fog is not re-fogged by adopting', (
 
   assert.equal(app.grid.getNode('world')?.tiles.find((t) => t.id === '3,3')?.revealed, true);
 });
+
+test('rehydrate keeps a tile the GM hid inside the sight radius of the party', () => {
+  const app = fakeApp();
+  const next = buildBlankCampaign();
+  const world = /** @type {import('../src/types/map.js').MapNode} */ (next.grid.getNode('world'));
+  let node = world;
+  for (const id of ['2,2', '2,3']) {
+    node = setTile(node, {
+      ...createTile(id, 'assets/tiles/grass/grass-1.svg'),
+      revealed: id === '2,2',
+    });
+  }
+  next.grid.updateNode(node);
+  next.party = { nodeId: 'world', tileId: '2,2' };
+
+  rehydrateCampaign(app, next);
+
+  const hidden = app.grid.getNode('world')?.tiles.find((t) => t.id === '2,3');
+  assert.equal(hidden?.revealed, false);
+  assert.deepEqual(app.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,2' });
+});

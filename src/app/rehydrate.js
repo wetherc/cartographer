@@ -72,11 +72,10 @@ export function rehydrateCampaign(app, campaign) {
   const loaded = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (campaign));
   for (const key of SYNCED_STATE_KEYS) state[key] = reconcile(state[key], loaded[key]);
 
-  // Revealing around the adopted tile does nothing here. The fog it can
-  // reveal is already in the state that was just loaded. `revealSight`
-  // returns the same node when nothing changed, so the per-node caches stay
-  // warm.
-  app.partyTracker.moveTo(campaign.party.nodeId, campaign.party.tileId);
+  // The adopted fog is already in the loaded state, so the party is placed
+  // with no reveal. A reveal here would clear tiles that the GM hid with the
+  // fog brush inside the sight radius of the party.
+  app.partyTracker.place(campaign.party);
   // Stay on whatever node this tab was looking at. That is the point of not
   // reloading. If the other tab deleted that node, follow the party instead.
   if (!app.grid.getNode(app.navigator.currentNodeId)) app.navigator.goTo(campaign.party.nodeId);

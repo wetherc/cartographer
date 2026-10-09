@@ -1171,8 +1171,15 @@ moves the party.
 `moveTo(nodeId, tileId, path)` updates the position, calls `reveal` on the
 tiles of the walk and the target tile, and writes the revealed tiles straight back into the `TileGrid`
 that the tracker was constructed with. The constructor also reveals around
-the initial position, so a party never starts the campaign fogged in on its
-own tile.
+the initial position, unless the caller passes `reveal: false`.
+
+`place(position)` sets the position with no reveal. The boot path
+(`withTrackers` in `campaign/Campaigns.js`) and a cross-tab adoption
+(`rehydrateCampaign` in `app/rehydrate.js`) both use it, because the loaded
+save already contains its fog. A reveal there would clear a tile that the GM
+hid with the fog brush inside the sight radius of the party, on every page
+load and in every Player tab that adopts the save. `buildExampleCampaign`
+reveals around its start tile itself, because the boot path does not.
 
 The `nodeId` of `moveTo` can differ from the party's current node. A move
 between a parent map and a zoomed-in region (through `MapNavigator`) works the

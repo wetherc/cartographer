@@ -85,13 +85,19 @@ export function buildBlankCampaign() {
  * Field enemies appear in each biome. Briarwick has NPCs. Handouts, a
  * bestiary, and the party complete the demo. The maps come from
  * ExampleWorld.js, from a fixed seed, so every load builds the same campaign.
- * The populace comes from ExampleContent.js.
+ * The populace comes from ExampleContent.js. The fog around the start tile
+ * is cleared here, because the boot path places the party on a loaded save
+ * without a reveal.
  * @param {TilePalette} palette
  * @returns {Campaign}
  */
 export function buildExampleCampaign(palette) {
   const world = buildExampleWorld(palette);
-  return { grid: world.grid, ...buildExampleContent(world) };
+  const campaign = { grid: world.grid, ...buildExampleContent(world) };
+  new PartyTracker(campaign.grid, campaign.party, {
+    sight: (node) => sightRadius(node, campaign.clock),
+  });
+  return campaign;
 }
 
 /**
@@ -213,7 +219,9 @@ export function loadInitialCampaignSafe() {
 
 /**
  * A campaign with the navigator and party tracker that start on it. Both
- * throw on a node the grid does not hold.
+ * throw on a node the grid does not hold. The tracker places the party
+ * without a reveal, so fog that the GM hid near the party stays hidden after
+ * a reload.
  * @param {Campaign} campaign
  */
 function withTrackers(campaign) {
@@ -224,6 +232,7 @@ function withTrackers(campaign) {
     navigator,
     partyTracker: new PartyTracker(campaign.grid, campaign.party, {
       sight: (node) => sightRadius(node, campaign.clock),
+      reveal: false,
     }),
   };
 }

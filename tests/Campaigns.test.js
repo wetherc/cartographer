@@ -230,9 +230,10 @@ test('loadInitialCampaign boots a save with a parent loop and a malformed spellb
   assert.deepEqual(campaign.characters[0].spellbook, { cantrips: [], known: [], prepared: [] });
 });
 
-test('loadInitialCampaignSafe clears the first fog with the sight radius of the hour', () => {
+test('loadInitialCampaignSafe gives the tracker the sight radius of the hour', () => {
   // A 7x7 region at Night (watch 5): sight 1 reveals the party tile and its
-  // four neighbours. The fixed radius of 2 would reveal 13.
+  // four neighbours. The fixed radius of 2 would reveal 13. The boot itself
+  // reveals nothing, so the first reveal comes from the next move.
   const tiles = gridTiles(7, 7).map((t) => ({ ...t, revealed: false }));
   localStorage.setItem(
     'campaign-builder:save',
@@ -245,6 +246,45 @@ test('loadInitialCampaignSafe clears the first fog with the sight radius of the 
       clock: { day: 1, watch: 5 },
     }),
   );
-  const { campaign } = loadInitialCampaignSafe();
+  const { campaign, partyTracker } = loadInitialCampaignSafe();
+  assert.equal(revealedCount(/** @type {any} */ (campaign.grid.getNode('moor'))), 0);
+  partyTracker.moveTo('moor', '3,3');
   assert.equal(revealedCount(/** @type {any} */ (campaign.grid.getNode('moor'))), 5);
+});
+
+test('loadInitialCampaignSafe places the party without clearing fog the GM hid', () => {
+  const tile = (id, revealed) => ({
+    id,
+    imageRef: 'assets/tiles/grass/grass-1.svg',
+    overlayRef: null,
+    metadata: {},
+    revealed,
+    childNodeId: null,
+  });
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [
+        {
+          id: 'world',
+          name: 'World',
+          parentId: null,
+          width: 4,
+          height: 4,
+          tiles: [tile('2,2', true), tile('2,3', false)],
+        },
+      ],
+      party: { nodeId: 'world', tileId: '2,2' },
+    }),
+  );
+  const { campaign, partyTracker, failed } = loadInitialCampaignSafe();
+  assert.equal(failed, false);
+  assert.deepEqual(partyTracker.getPosition(), { nodeId: 'world', tileId: '2,2' });
+  assert.equal(revealedCount(/** @type {any} */ (campaign.grid.getNode('world'))), 1);
+});
+
+test('the example campaign starts with the fog cleared around the party', () => {
+  const campaign = buildExampleCampaign(new TilePalette());
+  const node = campaign.grid.getNode(campaign.party.nodeId);
+  assert.equal(node?.tiles.find((t) => t.id === campaign.party.tileId)?.revealed, true);
 });

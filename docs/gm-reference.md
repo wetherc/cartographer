@@ -900,7 +900,9 @@ The map controls sit in a row over the map.
 
 While a fog brush is picked up, a click paints fog instead of moving the
 party. A second click on the same brush button, or Escape, puts the brush
-down. A change of mode or of map also puts the brush down.
+down. A change of mode or of map also puts the brush down. A tile that you
+hide stays hidden after a reload and in every Player tab, until the party
+moves within sight of it again.
 
 When a map opens in Build mode, the view fits the whole map, even when its
 tiles then draw small. In Play mode the view fits the revealed tiles. If they

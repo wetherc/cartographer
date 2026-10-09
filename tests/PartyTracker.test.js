@@ -74,3 +74,27 @@ test('a sight rule given to the constructor clears the first fog', () => {
   assert.equal(revealedCount(grid.getNode('n')), 1);
   assert.equal(tracker.sightFor(grid5x5()), 0);
 });
+
+test('a tracker built with reveal off places the party and clears no fog', () => {
+  const grid = new TileGrid();
+  grid.addNode(grid5x5());
+  const before = grid.getNode('n');
+  const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '2,2' }, { reveal: false });
+  assert.deepEqual(tracker.getPosition(), { nodeId: 'n', tileId: '2,2' });
+  assert.equal(grid.getNode('n'), before);
+  assert.throws(
+    () => new PartyTracker(grid, { nodeId: 'nope', tileId: '0,0' }, { reveal: false }),
+    /unknown node/,
+  );
+});
+
+test('place moves the party without revealing fog', () => {
+  const grid = new TileGrid();
+  grid.addNode(grid5x5());
+  const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '0,0' }, { revealRadius: 0 });
+  const before = grid.getNode('n');
+  tracker.place({ nodeId: 'n', tileId: '4,4' });
+  assert.deepEqual(tracker.getPosition(), { nodeId: 'n', tileId: '4,4' });
+  assert.equal(grid.getNode('n'), before);
+  assert.throws(() => tracker.place({ nodeId: 'nope', tileId: '0,0' }), /unknown node/);
+});
