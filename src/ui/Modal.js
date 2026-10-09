@@ -12,18 +12,9 @@
  */
 
 import { sectionLabel, textButton } from './buttons.js';
-import { classNames, el, uniqueId } from './dom.js';
-import {
-  captioned,
-  checkboxInput,
-  numberField,
-  select,
-  setOptions,
-  textareaField,
-  textField,
-} from './formFields.js';
-import { buildImagePickField } from './ImagePickField.js';
-import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
+import { classNames, el } from './dom.js';
+import { captioned } from './formFields.js';
+import { buildFieldControl } from './FieldControl.js';
 import { dialogPartId, noteFocus, pickReturnFocus, repairFocus } from './dialogFocus.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
@@ -151,18 +142,6 @@ export function openDialog(spec) {
 }
 
 /**
- * The composite fields and the action button are not `<input>`s. The form
- * keeps one element per field so it can attach the change listener, toggle
- * `disabled`, and focus the first field without a check on each field kind.
- * This function is the one place that casts the element to `HTMLInputElement`.
- * @param {HTMLElement} element
- * @returns {HTMLInputElement}
- */
-function asInput(element) {
-  return /** @type {HTMLInputElement} */ (/** @type {unknown} */ (element));
-}
-
-/**
  * Show a form modal. Resolves to a record of field name to string value on
  * submit, or null if cancelled or dismissed. With `wide` set, the form lays
  * fields out two per row. A field marked `full` spans both columns. Use
@@ -226,8 +205,7 @@ export function promptModal(title, fields, options = {}) {
    * for example "Class skills (choose 2)". */
   /** @type {Record<string, Text>} */
   const labelTexts = {};
-  /** Value setters for the composite fields, whose state is not an
-   * input.value. A plain field falls through to the default assignment. */
+  /** Value setters per field, which `onChange` routes `set` through. */
   /** @type {Record<string, (value: string) => void>} */
   const setters = {};
   /** The whole field wrapper per name. `onChange` uses these to show or hide
@@ -252,124 +230,28 @@ export function promptModal(title, fields, options = {}) {
         const labelText = document.createTextNode(field.label);
         const caption = el('span', '', labelText);
         labelTexts[field.name] = labelText;
-        /** The checkbox field lays its caption and box out on one line. */
-        let checkRow = false;
-
-        /** @type {HTMLInputElement | HTMLSelectElement} */
-        let input;
-        if (field.type === 'select') {
-          const choices = field.options ?? [];
-          // No stated value means the first option, which is what a bare
-          // `<select>` shows; naming it keeps `select`'s value argument honest.
-          input = select(choices, String(field.value ?? choices[0]?.value ?? ''));
-          getters[field.name] = () => input.value;
-        } else if (field.type === 'checkbox') {
-          // The box sits after its caption, not under it, so the label reads
-          // as one line. The wrapper class carries that layout.
-          const box = checkboxInput(!!field.value);
-          checkRow = true;
-          input = box;
-          getters[field.name] = () => (box.checked ? '1' : '');
-          setters[field.name] = (value) => {
-            box.checked = !!value && value !== '0';
-          };
-        } else if (field.type === 'file') {
-          // The picked image's decode is tracked, so a quick submit waits for
-          // it. An existing image stays the value until a new pick replaces it.
-          const pick = buildImagePickField(field, (read) => {
+        const control = buildFieldControl(field, {
+          // The picked image's decode is tracked, so a quick submit waits for it.
+          onRead: (read) => {
             reads[field.name] = read;
-          });
-          input = asInput(pick.element);
-          getters[field.name] = pick.get;
-          extras[field.name] = pick.error;
-        } else if (
-          field.type === 'multiselect' ||
-          field.type === 'tags' ||
-          field.type === 'pillgrid' ||
-          field.type === 'allocation'
-        ) {
-          // Each composite field owns its own state and rendering. The dialog
-          // holds only its handle: one element to mount, one reader for the
-          // submitted record, one writer for `onChange`'s `set`. A multiselect
-          // also adds the refilter that `setOptions` routes to.
-          const composite =
-            field.type === 'multiselect'
-              ? buildMultiselect(field)
-              : field.type === 'tags'
-                ? buildTagsField(field)
-                : field.type === 'allocation'
-                  ? buildAllocation(field)
-                  : buildPillGrid(field);
-          input = asInput(composite.element);
-          getters[field.name] = composite.get;
-          setters[field.name] = composite.set;
-          if (composite.setOptions) rebuilders[field.name] = composite.setOptions;
-          if (composite.setTotal) totals[field.name] = composite.setTotal;
-        } else if (field.type === 'button') {
-          // This is an in-form action, for example "Reroll scores". A click
-          // fires the form's onChange under the field's name and adds no
-          // value to the submitted record. The field's label sits on the
-          // button itself. The listener reaches `button` at click time, after
-          // the binding settles.
-          const button = textButton(field.label, () => button.dispatchEvent(new Event('input')));
-          // The field wrapper is a <label> with an empty caption, and
-          // Chromium names a labelled button by that label, so the button
-          // reads as a nameless button. aria-label names it by its text.
-          button.setAttribute('aria-label', field.label);
-          labelText.nodeValue = '';
-          input = asInput(button);
-          getters[field.name] = () => '';
-        } else if (field.type === 'note') {
-          // A line of text that onChange rewrites through setLabel, for
-          // example a placement warning. The caption is a polite live region,
-          // so a screen reader hears the new text. It adds no input.
+          },
+        });
+        const input = control.input;
+        getters[field.name] = control.get;
+        setters[field.name] = control.set;
+        if (control.setOptions) rebuilders[field.name] = control.setOptions;
+        if (control.setTotal) totals[field.name] = control.setTotal;
+        if (control.extra) extras[field.name] = control.extra;
+        // The box of a checkbox sits after its caption, so the label reads as
+        // one line, and the wrapper class contains that layout. A button names
+        // itself, so its caption stays empty. A note's caption is the field,
+        // a polite live region that onChange rewrites.
+        const checkRow = control.layout === 'check';
+        if (control.layout === 'button') labelText.nodeValue = '';
+        if (control.layout === 'note') {
           caption.setAttribute('role', 'status');
           caption.className = 'modal__note';
-          input = asInput(el('span', ''));
-          getters[field.name] = () => '';
-        } else if (field.type === 'textarea') {
-          // A prose field gets the same box the rail forms give it, rather
-          // than a one-line input that hides most of what the GM typed.
-          const area = textareaField(field.value === undefined ? '' : String(field.value), {
-            rows: field.rows,
-            placeholder: field.placeholder,
-          });
-          input = asInput(area);
-          getters[field.name] = () => area.value;
-        } else {
-          // A plain text or number field comes from the same builders the
-          // inline rail forms use, so the two paths agree on the field class
-          // and on the number field's clamp when an edit commits.
-          const plain =
-            field.type === 'number'
-              ? numberField(field.value ?? '', {
-                  min: field.min,
-                  max: field.max,
-                  placeholder: field.placeholder,
-                })
-              : textField(field.value === undefined ? '' : String(field.value), {
-                  placeholder: field.placeholder,
-                  type: field.type === 'search' ? 'search' : 'text',
-                });
-          // A search field narrows another field, and an Enter that submits
-          // from it acts on a choice that the GM has not looked at yet.
-          if (field.type === 'search')
-            plain.addEventListener('keydown', (event) => {
-              if (event.key === 'Enter') event.preventDefault();
-            });
-          input = plain;
-          getters[field.name] = () => plain.value;
-          if (field.type !== 'number' && field.suggestions?.length) {
-            const list = el('datalist', '');
-            list.id = uniqueId('modal-suggest');
-            list.append(
-              ...field.suggestions.map((value) => Object.assign(el('option', ''), { value })),
-            );
-            plain.setAttribute('list', list.id);
-            extras[field.name] = list;
-          }
         }
-        if (field.disabled) input.disabled = true;
         const label = captioned(
           caption,
           input,
@@ -410,20 +292,8 @@ export function promptModal(title, fields, options = {}) {
         /** @type {ModalFormHandle} */
         const handle = {
           get: (name) => getters[name](),
-          set: (name, value) => {
-            if (setters[name]) setters[name](String(value));
-            else inputs[name].value = String(value);
-          },
-          setOptions: (name, opts, max = Infinity) => {
-            const input = inputs[name];
-            if (rebuilders[name]) rebuilders[name](opts, max);
-            else if (input instanceof HTMLSelectElement) {
-              // A plain select keeps its choice while that choice is still
-              // offered, and falls back to the first option otherwise.
-              const kept = opts.some((o) => o.value === input.value);
-              setOptions(input, opts, kept ? input.value : (opts[0]?.value ?? ''));
-            }
-          },
+          set: (name, value) => setters[name](String(value)),
+          setOptions: (name, opts, max = Infinity) => rebuilders[name]?.(opts, max),
           setDisabled: (name, disabled) => {
             inputs[name].disabled = disabled;
           },

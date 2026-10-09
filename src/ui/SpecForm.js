@@ -7,23 +7,13 @@
  * `ModalFormHandle` the dialog hands it, so a rule such as "re-stamp the
  * default stats when the tier changes" is written once and runs in both.
  *
- * The controls come from `formFields.js` and `ModalFields.js`, the same
- * builders the dialog uses, so a field looks and behaves alike on both
- * surfaces.
+ * The controls come from `FieldControl.buildFieldControl`, the same builder
+ * the dialog uses, so a field looks and behaves alike on both surfaces.
  */
 
-import {
-  buildInlineForm,
-  checkbox,
-  fieldRow,
-  labeled,
-  numberField,
-  select,
-  setOptions,
-  textareaField,
-  textField,
-} from './formFields.js';
-import { buildMultiselect } from './ModalFields.js';
+import { buildInlineForm, fieldRow, labeled } from './formFields.js';
+import { buildFieldControl } from './FieldControl.js';
+import { el } from './dom.js';
 import { sectionLabel } from './buttons.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
@@ -37,107 +27,46 @@ import { sectionLabel } from './buttons.js';
  * refiltered.
  * @typedef {{
  *   node: HTMLElement,
- *   input: HTMLElement,
+ *   input: HTMLInputElement,
  *   get: () => string,
  *   set: (value: string) => void,
- *   setOptions?: (options: FieldOption[]) => void,
+ *   setOptions?: (options: FieldOption[], max?: number) => void,
+ *   setTotal?: (total: number) => void,
  * }} RenderedField
  */
 
 /**
- * Cast a control that is not an `<input>` to the element type the shared
- * accessors are typed against. The composite fields and the textarea keep
- * their own value, read through `get`, so the cast is only about holding one
- * element per field.
- * @param {HTMLElement} element
- * @returns {HTMLInputElement}
- */
-function asInput(element) {
-  return /** @type {HTMLInputElement} */ (/** @type {unknown} */ (element));
-}
-
-/**
- * Build one field's control and its captioned wrapper.
+ * Build one field's control and its captioned wrapper. The control comes from
+ * `buildFieldControl`, the builder the dialog uses too, so every field kind
+ * renders on both surfaces.
  * @param {ModalField} field
  * @returns {RenderedField}
  */
 function renderField(field) {
-  if (field.type === 'select') {
-    const picker = select(field.options, String(field.value ?? field.options[0]?.value ?? ''));
-    return {
-      node: labeled(field.label, picker),
-      input: picker,
-      get: () => picker.value,
-      set: (value) => {
-        picker.value = value;
-      },
-      setOptions: (options) => setOptions(picker, options, picker.value),
-    };
+  const control = buildFieldControl(field);
+  const { input, get, set } = control;
+  /** @type {HTMLElement} */
+  let node;
+  if (control.layout === 'check') {
+    // The box sits before its caption on one line, as in `checkbox`.
+    node = el('label', 'field-check u-muted', input, el('span', '', field.label));
+  } else {
+    node = labeled(control.layout === 'button' ? '' : field.label, input);
+    if (control.layout === 'note') {
+      const caption = /** @type {HTMLElement} */ (node.querySelector('span'));
+      caption.setAttribute('role', 'status');
+      caption.className = 'modal__note';
+    }
+    if (control.extra) node.appendChild(control.extra);
   }
-  if (field.type === 'checkbox') {
-    // The box sits before its caption on one line, so `checkbox` owns the
-    // wrapper here instead of `labeled`.
-    const { label, input } = checkbox(field.label, !!field.value);
-    return {
-      node: label,
-      input,
-      get: () => (input.checked ? '1' : ''),
-      set: (value) => {
-        input.checked = !!value && value !== '0';
-      },
-    };
-  }
-  if (field.type === 'multiselect') {
-    // The picker keeps its dialog classes, which is what gives it the
-    // fixed-height scroll box in the rail too.
-    const composite = buildMultiselect(field);
-    return {
-      node: labeled(field.label, composite.element),
-      input: composite.element,
-      get: composite.get,
-      set: composite.set,
-      setOptions: composite.setOptions,
-    };
-  }
-  if (field.type === 'textarea') {
-    const area = textareaField(field.value === undefined ? '' : String(field.value), {
-      rows: field.rows,
-      placeholder: field.placeholder,
-    });
-    return {
-      node: labeled(field.label, area),
-      input: area,
-      get: () => area.value,
-      set: (value) => {
-        area.value = value;
-      },
-    };
-  }
-  if (field.type === 'number' || field.type === 'text' || field.type === undefined) {
-    const input =
-      field.type === 'number'
-        ? numberField(field.value ?? '', {
-            min: field.min,
-            max: field.max,
-            placeholder: field.placeholder,
-          })
-        : textField(field.value === undefined ? '' : String(field.value), {
-            placeholder: field.placeholder,
-          });
-    return {
-      node: labeled(field.label, input),
-      input,
-      get: () => input.value,
-      set: (value) => {
-        input.value = value;
-      },
-    };
-  }
-  // The file, tags, pill-grid, allocation, and button fields belong to
-  // character creation and the item dialogs, none of which has a rail form.
-  // A spec that reaches here needs a renderer written for that kind, not a
-  // silently dropped field.
-  throw new Error(`No inline renderer for the "${field.type}" field kind`);
+  return {
+    node,
+    input,
+    get,
+    set,
+    ...(control.setOptions ? { setOptions: control.setOptions } : {}),
+    ...(control.setTotal ? { setTotal: control.setTotal } : {}),
+  };
 }
 
 /**
@@ -152,8 +81,7 @@ function renderField(field) {
  * `assemble` receives the same field-name-to-string record that `promptModal`
  * resolves to, so both surfaces read a form back through the same functions.
  * `onChange` receives the changed field's name and a handle on the whole
- * form, matching the dialog's `onChange`. The handle's `setTotal` does
- * nothing, because an allocation field has no inline renderer.
+ * form, matching the dialog's `onChange`.
  * @template T
  * @param {{
  *   fields: ModalField[],
@@ -192,7 +120,6 @@ export function buildSpecForm({
   for (const field of rest) {
     const built = renderField(field);
     rendered[field.name] = built;
-    if (field.disabled) asInput(built.input).disabled = true;
     if (field.hidden) built.node.hidden = true;
     if (field.section) {
       flush();
@@ -214,23 +141,23 @@ export function buildSpecForm({
     const handle = {
       get: (field) => rendered[field].get(),
       set: (field, value) => rendered[field].set(String(value)),
-      setOptions: (field, options) => rendered[field].setOptions?.(options),
+      setOptions: (field, options, max) => rendered[field].setOptions?.(options, max),
       setDisabled: (field, disabled) => {
-        asInput(rendered[field].input).disabled = disabled;
+        rendered[field].input.disabled = disabled;
       },
       setLabel: (field, text) => {
         const caption = rendered[field].node.querySelector('span');
         if (caption) caption.textContent = text;
       },
       setRange: (field, min, max) => {
-        const input = asInput(rendered[field].input);
+        const input = rendered[field].input;
         input.min = min === undefined ? '' : String(min);
         input.max = max === undefined ? '' : String(max);
       },
       setHidden: (field, hidden) => {
         rendered[field].node.hidden = hidden;
       },
-      setTotal: () => {},
+      setTotal: (field, total) => rendered[field].setTotal?.(total),
     };
     for (const [field, built] of Object.entries(rendered)) {
       built.input.addEventListener('input', () => onChange(field, handle));
@@ -241,7 +168,7 @@ export function buildSpecForm({
     Object.fromEntries(Object.entries(rendered).map(([field, built]) => [field, built.get()]));
 
   const form = buildInlineForm({
-    nameInput: asInput(name.input),
+    nameInput: name.input,
     rows,
     assemble: () => assemble(values()),
     submitLabel,

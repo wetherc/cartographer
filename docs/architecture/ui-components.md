@@ -45,7 +45,7 @@ places where the code does not meet the contract.
   src/ui/buttons.js .......... shared builders: buttons, icons, dialogs,
   src/ui/icons.js             form fields, tabs, disclosures, toasts
   src/ui/Modal.js
-  src/ui/formFields.js, SpecForm.js
+  src/ui/formFields.js, FieldControl.js, SpecForm.js
   src/ui/Tabs.js, Disclosure.js, Toast.js, ContextMenu.js, dom.js
           |
           v
@@ -943,15 +943,14 @@ buildSpecForm({ fields, assemble, submitLabel, onSubmit,
   `promptModal` resolves to, so both read a form back through the same
   functions.
 - `onChange` receives the same `ModalFormHandle`, so a rule such as "stamp
-  the default stats again when the tier changes" runs in both. The handle's
-  `setTotal` does nothing here.
+  the default stats again when the tier changes" runs in both.
 
 The spec itself is in `app/creatureFields.js` (see
-[The app wiring layer](app-wiring.md)). The controls come from
-`formFields.js` and `ModalFields.js`, the builders that the dialog uses. The
-file, tags, pill-grid, allocation, and button kinds have no inline renderer.
-A spec that uses one of them throws, so the form never silently drops a
-field.
+[The app wiring layer](app-wiring.md)). Both surfaces build each control
+through `buildFieldControl` in `ui/FieldControl.js`, which covers every field
+kind. Its switch ends in a `never` check, so a kind added to `ModalField`
+without a control fails the typecheck. The caller adds only the caption and
+the wrapper.
 
 ## Tabs and disclosures
 
