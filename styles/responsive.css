@@ -27,6 +27,26 @@
     height: min(55vh, 32rem);
   }
 
+  /* In Build mode the tools rail follows the map, and the tree rail moves
+     below it, so the swatches sit next to the cells they paint. On the Paint
+     tab the palette comes first, above Generate and Tools, and its sections
+     scroll in a short box so the strip stays near the map. */
+  body.mode-build #build-tools {
+    order: 0;
+  }
+
+  body.mode-build .app-buildrail--tree {
+    order: 1;
+  }
+
+  #build-panel-paint > #palette-container {
+    order: -1;
+  }
+
+  #palette-container .palette__sections {
+    max-height: min(40vh, 20rem);
+  }
+
   /* Stacked below the map, the tree rail scrolls with the page and keeps a
      box of its own. */
   .app-buildrail--tree {

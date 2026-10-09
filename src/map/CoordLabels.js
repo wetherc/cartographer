@@ -145,3 +145,45 @@ export function visibleCoordLabels(view, layout) {
   }
   return { columns, rows };
 }
+
+/**
+ * The padding a fit keeps for the coordinate labels at one label font size,
+ * in buffer px. `lead` is the room at the top and left edges of the map. A
+ * label is pinned to the canvas edge, over the first row or column, when the
+ * map edge sits closer than two label paddings (1.8 font sizes), so `lead`
+ * keeps that much, up to 64 CSS px. `labelDepth` is the room the column label
+ * plate needs below a wide box at the top, 1.5 font sizes.
+ * @param {number} fontSize in buffer px
+ * @param {number} pixelRatio
+ * @returns {{ lead: number, labelDepth: number }}
+ */
+export function coordLabelRoom(fontSize, pixelRatio) {
+  return { lead: Math.min(64 * pixelRatio, 1.8 * fontSize), labelDepth: 1.5 * fontSize };
+}
+
+/**
+ * Fit a view with only the label room that its own labels need. The label
+ * font grows with the zoom, up to the cap of COORD_SCALE. A fit that keeps
+ * room for the largest font can leave tiles a few pixels under the size that
+ * draws labels, while the smaller font of those tiles needs far less room.
+ * Each pass fits again with the font of the last fit, and keeps the new fit
+ * only while its own font still fits in the room that pass kept.
+ * @template {{ scale: number }} F
+ * @param {(fontSize: number) => F} fitAt the fit with room for this font size
+ * @param {(scale: number) => number} fontAt the label font size at a scale
+ * @param {number} maxFont the largest label font size
+ * @returns {F}
+ */
+export function fitForLabels(fitAt, fontAt, maxFont) {
+  let font = maxFont;
+  let fitted = fitAt(font);
+  for (let pass = 0; pass < 3; pass++) {
+    const next = fontAt(fitted.scale);
+    if (next >= font) break;
+    const candidate = fitAt(next);
+    if (fontAt(candidate.scale) > next) break;
+    font = next;
+    fitted = candidate;
+  }
+  return fitted;
+}

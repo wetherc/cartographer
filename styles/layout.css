@@ -143,6 +143,16 @@ body.mode-build .map-controls__fog {
   box-shadow: var(--shadow-2);
 }
 
+/* In Build mode the mini-map moves to the bottom-right corner. The column
+   labels run along the top of the map and the row labels down its left
+   side, so this corner covers no label, and a fit keeps no column for it. */
+body.mode-build .minimap {
+  top: auto;
+  left: auto;
+  right: var(--space-2);
+  bottom: var(--space-2);
+}
+
 .minimap[hidden] {
   display: none;
 }

@@ -48,10 +48,11 @@ export function mountMapChrome(app, env, hooks) {
   // the edge exit bands move off the part of the canvas they cover. The
   // observers fire when either shows, hides, or changes size. A canvas
   // resize changes the buffer scale, so the resize handler calls this too.
-  // In Play mode the mini-map floats over the map: a fit keeps no column for
-  // it, and the coordinate digits under it hide. In Build mode it takes
-  // pointer events over cells the GM paints, so the fit keeps room for it
-  // and a fitted map starts clear of it.
+  // The mini-map floats over the map in every mode, so a fit keeps no column
+  // for it and the map gets the full width. In Play mode it sits in the
+  // top-left corner and the coordinate digits under it hide. In Build mode
+  // CSS moves it to the bottom-right corner, away from the coordinate labels.
+  // The GM can pan a cell out from under it, or close it from the toolbar.
   const syncMapOccluders = () => {
     const canvasRect = canvasEl.getBoundingClientRect();
     const boxes = [miniMap.element, mapControls?.element].filter(
@@ -65,7 +66,7 @@ export function mountMapChrome(app, env, hooks) {
           canvasEl.width,
           canvasEl.height,
         ),
-        float: box === miniMap.element && state.mode !== 'build',
+        float: box === miniMap.element,
       })),
     );
   };

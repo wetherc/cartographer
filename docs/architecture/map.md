@@ -393,7 +393,7 @@ links down toward the party's map, and the party marker and the fit focus
 use that tile. `MapMarkers.partyDot` shrinks the marker into the lower-left
 corner of a tile with a point of interest, a child link, or a way out, so
 the tile art and the exit badge stay in view. Build mode fits with no focus,
-so a large map starts at its top-left corner past the mini-map. In
+so a large map starts at its top-left corner. In
 Play mode, `MapCanvas.fit` frames `revealedExtent` (`src/map/FitArea.js`):
 the box of revealed tiles, grown by two cells and to at least 12 cells on
 each axis. A fit to the whole region frames mostly fog, so a small explored
@@ -1588,10 +1588,10 @@ where it is.
 
 The coordinate digits move off the same HTML. `coordLabelLayout` takes the
 rectangles as `view.occluders`. A wide box, such as the zoom toolbar, moves
-the whole run of column digits below it, and a tall box, such as the
-mini-map in Build mode, moves the whole run of row digits right of it. A
-digit that stays under the other kind of box is hidden by it. In Play mode
-the mini-map floats, and the digits under it hide (see below). The band geometry keeps the
+the whole run of column digits below it, and a tall box at the left edge
+moves the whole run of row digits right of it. A
+digit that stays under the other kind of box is hidden by it. The mini-map
+floats, and the digits under it hide (see below). The band geometry keeps the
 HTML rectangles apart as `chrome`, because its own `occluders` list also
 contains the digit strips, and a strip tested against itself would move.
 
@@ -1602,16 +1602,21 @@ on each of them and on each canvas resize.
 A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
 the height of a band to a north or south side that has an exit, and pushes
 the top side below the zoom toolbar, with room for the column label plate
-there (1.5 times the largest label font). The inset that decides whether a
-box sits at an edge scales with the pixel ratio. In Play mode the mini-map
-rectangle has `float: true`, so a fit keeps no column for it and the map
+there (1.5 times the label font). The label room at the top and left edges
+follows the label font too. `fitForLabels` (`CoordLabels.js`) fits once with
+room for the largest font, then fits again with the font of that fit, as
+long as the new fit still has room for its own font. A map whose tiles land
+just under the size that draws digits then gains the room the large font
+would take, and often crosses that size. The inset that decides whether a
+box sits at an edge scales with the pixel ratio. The mini-map rectangle has
+`float: true` in every mode, so a fit keeps no column for it and the map
 passes under it.
 `visibleCoordLabels` (`CoordLabels.js`) drops each coordinate digit whose
 plate overlaps a floating box, and a region name skips any spot under one.
-The GM collapses the mini-map to see those digits. In Build mode the
-rectangle has no `float`, because the mini-map catches the clicks and paint
-strokes aimed at the cells under it. A fit then starts past it, as for any tall
-box at the left edge or wide box at the top. `onModeChanged` in `mapWiring.js`
+The GM collapses the mini-map to see those digits. In Build mode CSS moves
+the mini-map to the bottom-right corner, where no digit draws. It still
+catches the clicks and paint strokes aimed at the cells under it, so the GM
+pans those cells out or collapses it. `onModeChanged` in `mapWiring.js`
 sends the rectangles again on each mode switch. A pan or a zoom by the GM can
 still move cells under the mini-map in either mode. A west or east band is
 wide, so a fit keeps no room for it, and the band slides clear instead. The exits and the occluders reach

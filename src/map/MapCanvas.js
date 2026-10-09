@@ -4,7 +4,8 @@ import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
 import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
 import { exitBandDepth } from './ExitBands.js';
-import { COORD_SCALE } from './CoordLabels.js';
+import { COORD_SCALE, coordLabelRoom, fitForLabels } from './CoordLabels.js';
+import { labelSize } from './CanvasText.js';
 import { revealedExtent } from './FitArea.js';
 import { FollowScheduler, followOffset } from './MapFollow.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
@@ -193,7 +194,6 @@ export class MapCanvas {
     if (!node) return;
     this._userView = false;
     if (options) this._fitWhole = Boolean(options.whole);
-    const sides = this._fitSides();
     // In Play mode a fit frames the revealed tiles plus a margin, so the
     // explored part fills the canvas instead of a corner of the fog.
     const area = (!this.revealAll && revealedExtent(node)) || {
@@ -204,16 +204,24 @@ export class MapCanvas {
     };
     const ts = this.tileSize;
     const focus = this._focusPoint();
-    const fitted = fitToExtent(area.width * ts, area.height * ts, canvas.width, canvas.height, {
-      minScale: this.minZoom,
-      maxScale: this.maxZoom,
-      sides,
-      // Build mode always frames the whole map, because the GM edits all
-      // of it. The readable floor would cut off the right and bottom of a
-      // large region.
-      readableScale: this._fitWhole || this.revealAll ? 0 : readableScale(ts),
-      focus: focus && { x: focus.x - area.x * ts, y: focus.y - area.y * ts },
-    });
+    const ratio = globalThis.devicePixelRatio || 1;
+    /** @param {number} fontSize */
+    const fitAt = (fontSize) =>
+      fitToExtent(area.width * ts, area.height * ts, canvas.width, canvas.height, {
+        minScale: this.minZoom,
+        maxScale: this.maxZoom,
+        sides: this._fitSides(fontSize),
+        // Build mode always frames the whole map, because the GM edits all
+        // of it. The readable floor would cut off the right and bottom of a
+        // large region.
+        readableScale: this._fitWhole || this.revealAll ? 0 : readableScale(ts),
+        focus: focus && { x: focus.x - area.x * ts, y: focus.y - area.y * ts },
+      });
+    const fitted = fitForLabels(
+      fitAt,
+      (scale) => labelSize(ts * scale, COORD_SCALE, ratio),
+      COORD_SCALE.max * ratio,
+    );
     this.scale = fitted.scale;
     this.offsetX = fitted.offsetX - area.x * ts * fitted.scale;
     this.offsetY = fitted.offsetY - area.y * ts * fitted.scale;
@@ -538,25 +546,25 @@ export class MapCanvas {
 
   /**
    * The padding a fit keeps on each side of the map. The top and left fit
-   * the coordinate labels, which hang off those two edges, up to about 60
-   * buffer pixels at the label font cap. The bottom and right have no
+   * the coordinate labels at `fontSize`, which hang off those two edges. The
+   * default is the label font cap. The bottom and right have no
    * labels, so a small margin there lets the fit zoom closer. Each side with
    * an exit band, or under the mini-map or the zoom toolbar, keeps room for
    * them too.
+   * @param {number} [fontSize] the label font size, in buffer px
    */
-  _fitSides() {
+  _fitSides(fontSize = COORD_SCALE.max * (globalThis.devicePixelRatio || 1)) {
     const ratio = globalThis.devicePixelRatio || 1;
+    const room = coordLabelRoom(fontSize, ratio);
     return fitSides({
-      lead: 64 * ratio,
+      lead: room.lead,
       trail: 16 * ratio,
       exitSides: this.exitSides,
       bandDepth: exitBandDepth(ratio),
       occluders: this.occluders,
       canvasWidth: this.canvas.width,
       inset: 8 * ratio,
-      // The column label plate reaches 1.5 font sizes above the map, at
-      // most the label cap.
-      labelDepth: 1.5 * COORD_SCALE.max * ratio,
+      labelDepth: room.labelDepth,
     });
   }
 
