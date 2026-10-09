@@ -11,7 +11,8 @@ import { hpBand } from '../view/ViewRole.js';
 /** @typedef {import('../view/NearbyGroups.js').NearbyGroup} NearbyGroup */
 
 /**
- * Mount the Nearby encounters list in its compact form. Each line is one
+ * Mount a compact list of foes, as the Active encounter and Nearby
+ * encounters tabs show them. Each line is one
  * group of foes that share a name ("Gray Wolf x4"), with an HP bar and the
  * distance of the nearest one. Every defeated foe folds into one
  * "Defeated (2)" line at the end. For the GM, a line is a disclosure
@@ -101,7 +102,11 @@ export function mountNearbyList(container, opts) {
               const result = await spec.onClick();
               if (result !== false && result !== null) update();
             },
-            { icon: spec.icon, className: 'encounter-panel__add' },
+            {
+              icon: spec.icon,
+              variant: spec.variant,
+              className: spec.className ?? 'encounter-panel__add',
+            },
           ),
         );
       }
@@ -124,7 +129,7 @@ export function mountNearbyList(container, opts) {
     const have = [...root.children].filter((n) => want.includes(/** @type {HTMLElement} */ (n)));
     if (want.every((n, i) => n === have[i])) return;
     const active = /** @type {HTMLElement | null} */ (document.activeElement);
-    const before = root.querySelector(':scope > .encounter-panel__add');
+    const before = root.querySelector(':scope > button');
     for (const line of want) if (line) root.insertBefore(line, before);
     if (active && active !== document.activeElement && root.contains(active)) {
       active.focus({ preventScroll: true });

@@ -8,7 +8,6 @@ import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
-import { mountListPanel } from './listPanel.js';
 import { mountNearbyList } from './NearbyList.js';
 import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
@@ -20,7 +19,8 @@ import { describeTile } from '../map/TileCoords.js';
 
 /**
  * Mount the encounter panel: an Active encounter and Nearby encounters tab
- * pair, always shown, each tab holding one list panel. The Active tab
+ * pair, always shown, each tab holding one compact list of foe groups (see
+ * `NearbyList.js`). The Active tab
  * lists the standing hostile creatures at and around the party's tile, and
  * carries the GM's Start combat button. Gaining an
  * active encounter switches to it. Losing the last one switches back to
@@ -103,6 +103,7 @@ export function mountEncounterPanel(container, callbacks) {
   /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(encounter, fn) {
     callbacks.onUpdate(fn(encounter));
+    activeList.update();
     nearbyList.update();
     // A row write can defeat or revive a foe, which moves the rating. The
     // list panel repaints only its own rows after an action, so the
@@ -121,16 +122,17 @@ export function mountEncounterPanel(container, callbacks) {
     // A bound encounter shows its column and row, counted from 1 as on the
     // map edge. This lets the GM tell two same-named foes apart and see
     // where in the region it is staged.
-    // The name has a line of its own, and the HP and place go below it,
-    // muted. Each of the two facts keeps to one line, so a narrow sidebar
-    // breaks between them instead of inside "column 14, row 5".
+    // The name, HP, and place share one full-width line above the amount
+    // and the buttons, and wrap onto a second line in a narrow sidebar.
+    // Each fact keeps to one line, so the wrap falls between them instead
+    // of inside "column 14, row 5".
     const detail = ctx.gm
       ? [
           `HP ${encounter.currentHP}/${encounter.maxHP}`,
           encounter.location ? describeTile(encounter.location.tileId) : null,
         ]
       : [hpBand(encounter.currentHP, encounter.maxHP)];
-    const label = el('span', 'encounter-panel__label u-col');
+    const label = el('span', 'encounter-panel__label');
     label.append(
       el('span', 'encounter-panel__name', nameOf(encounter)),
       ...detail.flatMap((text) =>
@@ -152,7 +154,7 @@ export function mountEncounterPanel(container, callbacks) {
     // The visible caption says what the number is for. The input keeps its
     // own name with the creature in it, so a screen reader tells the rows
     // apart.
-    const amount = el('label', 'encounter-panel__amount-field u-col');
+    const amount = el('label', 'encounter-panel__amount-field u-row u-g1');
     amount.append(el('span', 'encounter-panel__amount-caption', 'Amount'), amountInput);
 
     return [label, amount];
@@ -205,6 +207,7 @@ export function mountEncounterPanel(container, callbacks) {
           if (!ok) return false;
           callbacks.onDelete(encounter.id);
           renderDifficulty();
+          activeList.update();
           nearbyList.update();
         },
       },
@@ -265,6 +268,7 @@ export function mountEncounterPanel(container, callbacks) {
         getEntity: () => encounter,
         onSet: (level) => {
           onSetExhaustion(encounter, level);
+          activeList.update();
           nearbyList.update();
           // The sixth level defeats the creature, which moves the rating.
           renderDifficulty();
@@ -284,7 +288,7 @@ export function mountEncounterPanel(container, callbacks) {
     className: 'encounter-panel__list',
     classes: {
       row: 'encounter-panel__row u-col u-g1',
-      head: 'u-row u-g2',
+      head: 'encounter-panel__head u-row u-g2',
       rowModifiers: /** @param {Encounter} e */ (e) => [
         isDefeated(e) && 'encounter-panel__row--defeated',
       ],
@@ -343,12 +347,15 @@ export function mountEncounterPanel(container, callbacks) {
     difficulty.hidden = line === '';
   }
 
-  const activeList = mountListPanel(activePanel, {
-    ...rowOptions,
+  // The Active tab uses the compact lines of the Nearby tab, so a pack of
+  // six wolves takes one line until the GM opens it.
+  const activeList = mountNearbyList(activePanel, {
+    list: { ...rowOptions, dependsOn: () => activeAddButtons().length, emptyMessage: '' },
     getRows: () => callbacks.getActiveEncounters(),
+    getPosition: () => callbacks.getPosition?.() ?? null,
+    gate,
     emptyMessage: 'No active encounter.',
     addButtons: activeAddButtons,
-    dependsOn: () => activeAddButtons().length,
   });
 
   // A Nearby row gains "Add to fight" while a fight runs that the creature

@@ -1132,17 +1132,19 @@ The Encounters panel in the Session tab has two tabs.
 | Nearby encounters | The other hostile creatures within the nearby range, on the node of the party, plus unplaced ones | The other live hostile creatures on revealed tiles of the node of the party, plus unplaced ones that the party walked into. A defeated foe does not show |
 
 A friendly or neutral creature never shows in the Active encounter tab. It
-stays in the NPCs panel. Each row shows the name on one line, and the HP and
-the column and row on a second line. On a GM tab, the **Amount** field of a
-row sets how much the damage and heal buttons of that row apply.
+stays in the NPCs panel.
 
-The Nearby encounters tab shows one line for each group of foes that share
-a name, such as "Gray Wolf x4". The line shows the HP of the group added
-up and the distance of the nearest one in tiles. The nearest group comes
-first. Every defeated foe goes into one "Defeated (2)" line at the end. On
-a GM tab, click a line to open the full rows of its foes, with the same
-controls as an Active encounter row. One line opens at a time. A Player
-tab shows each line as text, with the HP band instead of the bar.
+Both tabs show one line for each group of foes that share a name, such as
+"Gray Wolf x4". The line shows the HP of the group added up and the distance
+of the nearest one in tiles, or "Here" when it stands on the tile of the
+party. The nearest group comes first. Every defeated foe goes into one
+"Defeated (2)" line at the end. On a GM tab, click a line to open the full
+row of each of its foes. One line opens at a time in each tab. A Player tab
+shows each line as text, with the HP band instead of the bar.
+
+A full row shows the name, the HP, and the column and row on its first line.
+The **Amount** field and the buttons of the row go on the line below. The
+Amount field sets how much the damage and heal buttons of that row apply.
 
 A GM tab also shows these controls:
 

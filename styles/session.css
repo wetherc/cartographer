@@ -25,10 +25,20 @@
   text-decoration: line-through;
 }
 
-/* The name line and, below it, the muted HP and place line. The column can
-   shrink below its text width, so the amount field keeps its room. */
+/* A member row's head wraps, so the name line takes the full width and the
+   amount and the buttons sit on the line below it. */
+.encounter-panel__head {
+  flex-wrap: wrap;
+}
+
+/* The name, then the muted HP and place, on one full-width line. In a narrow
+   sidebar the facts wrap below the name. */
 .encounter-panel__label {
-  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-2);
+  flex: 1 1 100%;
   min-width: 0;
   font-size: var(--text-label);
 }
@@ -43,7 +53,7 @@
   white-space: nowrap;
 }
 
-/* The damage or heal amount with its caption above it. */
+/* The damage or heal amount with its caption beside it. */
 .encounter-panel__amount-field {
   align-items: center;
   font-size: var(--text-label);

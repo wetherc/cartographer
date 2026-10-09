@@ -348,9 +348,9 @@ layout. The quest, handout, NPC, encounter, library, and Build-rail
 encounter panels each configure it, and it returns the usual `{ update }`.
 
 A panel with tabs mounts one list panel for each tab panel. The encounter
-panel's Active tab is a list panel. Its Nearby tab is `NearbyList.js`,
-which draws one disclosure line per group of foes from
-`view/NearbyGroups.js` and mounts a list panel for the open group only.
+panel's Active and Nearby tabs each mount `NearbyList.js`, which draws one
+disclosure line per group of foes from `view/NearbyGroups.js` and mounts a
+list panel for the open group only.
 The equipment library's five category subtabs are five list panels.
 
 The caller decides the markup:

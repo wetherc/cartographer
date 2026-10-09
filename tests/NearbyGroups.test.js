@@ -28,6 +28,7 @@ test('distanceText names tiles in the singular and plural', () => {
   assert.equal(distanceText(null, false), 'Not on this map');
   assert.equal(distanceText(null, true), '', 'an unplaced foe shows on every map');
   assert.equal(distanceText(3, true), '3 tiles away');
+  assert.equal(distanceText(0), 'Here', 'a foe on the tile of the party');
 });
 
 test('groupNearby marks a group with an unplaced member', () => {

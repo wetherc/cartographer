@@ -34,13 +34,15 @@ export function distanceTo(creature, position) {
 /**
  * The distance as the list shows it. A group with no member on this map
  * reads "Not on this map", unless a member is unplaced. An unplaced foe
- * shows on every map, so the line shows no distance for it.
+ * shows on every map, so the line shows no distance for it. A foe on the
+ * tile of the party reads "Here".
  * @param {number | null} distance
  * @param {boolean} [unplaced]
  * @returns {string}
  */
 export function distanceText(distance, unplaced = false) {
   if (distance === null) return unplaced ? '' : 'Not on this map';
+  if (distance === 0) return 'Here';
   return distance === 1 ? '1 tile away' : `${distance} tiles away`;
 }
 
