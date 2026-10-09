@@ -9,6 +9,7 @@ import { getProficiencies } from '../entities/Proficiencies.js';
 import { undoLastChoice, withExpertise, applyFeatureGrant } from '../entities/Progression.js';
 import { pendingFeatureGrants } from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
+import { isDead } from '../entities/DeathSaves.js';
 import { hasExpertiseSource } from '../entities/ExpertiseSources.js';
 import { buildInvocationRows } from './InvocationPicker.js';
 import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
@@ -225,7 +226,8 @@ export function buildProgressSection(getCharacter, opts) {
   for (const pool of hitDice) {
     const row = addRow();
     addText(row, `${pool.name} ${pool.current}/${pool.max}`);
-    if (opts.play && pool.current > 0) {
+    // A dead character regains no HP, so the sheet offers no spend.
+    if (opts.play && pool.current > 0 && !isDead(character)) {
       row.appendChild(
         textButton(
           'Spend',

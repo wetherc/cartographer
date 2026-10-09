@@ -13,6 +13,8 @@ import { getClass } from './Classes.js';
 import { getClasses, primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
 import { effectiveStats } from './Equipment.js';
+import { isDead } from './DeathSaves.js';
+import { restoreResource } from './ResourceRestore.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -242,7 +244,10 @@ export function syncHitDice(character) {
  * pool to use. When `die` is omitted, the function spends the first pool
  * with a die left. A legacy sizeless pool rolls the primary class's die. A
  * character with no matching charged pool, or no resolvable die size,
- * returns unchanged with 0 healed. The RNG is injected for testability.
+ * returns unchanged with 0 healed. The heal goes through `restoreResource`,
+ * so a dying character who rises above 0 HP loses its death saves and the
+ * Unconscious chip. A dead character returns unchanged with 0 healed. The RNG
+ * is injected for testability.
  * @param {Character} character
  * @param {number | null} [die]
  * @param {() => number} [rng]
@@ -253,15 +258,12 @@ export function spendHitDie(character, die = null, rng = Math.random) {
     (r) => r.current > 0 && (die === null || r.id === hitDicePoolId(die)),
   );
   const size = pool ? (hitDieOfPool(pool) ?? hitDieFor(character)) : null;
-  if (!pool || size === null) return { character, healed: 0, rolled: 0 };
+  if (!pool || size === null || isDead(character)) return { character, healed: 0, rolled: 0 };
   const rolled = 1 + Math.floor(rng() * size);
   const healed = Math.max(0, rolled + conModifierOf(character));
-  const resources = character.resources.map((r) => {
-    if (r.id === pool.id) return spend(r, 1);
-    if (r.id === HP_RESOURCE_ID) return restore(r, healed);
-    return r;
-  });
-  return { character: { ...character, resources }, healed, rolled };
+  const resources = updateById(character.resources, pool.id, (r) => spend(r, 1));
+  const next = restoreResource({ ...character, resources }, HP_RESOURCE_ID, healed);
+  return { character: next, healed, rolled };
 }
 
 /** @param {Character} character @returns {number} */

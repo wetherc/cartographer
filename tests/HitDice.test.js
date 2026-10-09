@@ -28,6 +28,7 @@ import {
 import { withSpellSlots } from '../src/entities/SpellSlots.js';
 import { assignLevel } from '../src/entities/LevelAssign.js';
 import { createResource } from '../src/entities/Resource.js';
+import { dropToDying, killOutright } from '../src/entities/DeathSaves.js';
 
 /** @param {number} [con] */
 function fighter(con = 10) {
@@ -253,6 +254,30 @@ test('spendHitDie heals the roll plus CON and marks the die spent', () => {
   assert.equal(getHP(character).current, 13);
   assert.equal(getHitDicePools(character)[0].current, 0);
   assert.equal(character.resources.find((r) => r.id === 'ki').current, 3);
+});
+
+test('spendHitDie on a dying character heals through the death-save rules', () => {
+  const full = withHitDice(withHP(fighter(14), 20));
+  const dying = dropToDying(spendResource(full, 'hp', 20));
+  assert.ok(dying.conditions.some((c) => c.name === 'Unconscious'));
+  const { character, healed } = spendHitDie(dying, null, () => 0.5); // d10 -> 6
+  assert.equal(healed, 8);
+  assert.equal(getHP(character).current, 8);
+  assert.equal(character.deathSaves, null);
+  assert.equal(
+    character.conditions.some((c) => c.name === 'Unconscious'),
+    false,
+  );
+  assert.equal(getHitDicePools(character)[0].current, 0);
+});
+
+test('spendHitDie leaves a dead character unchanged and spends no die', () => {
+  const full = withHitDice(withHP(fighter(14), 20));
+  const dead = killOutright(spendResource(full, 'hp', 20));
+  const result = spendHitDie(dead, null, () => 0.5);
+  assert.equal(result.character, dead);
+  assert.equal(result.healed, 0);
+  assert.equal(result.rolled, 0);
 });
 
 test('spendHitDie spends the requested die size, skipping drained pools', () => {

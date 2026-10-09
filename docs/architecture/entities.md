@@ -617,7 +617,9 @@ with no proficiency lists.
 modifier per level (`classMaxHP`, the 5e average rule). It also models hit
 dice as resource pools sized to the assigned class levels. `withHitDice`
 creates the pools, and `syncHitDice` derives them again and keeps the spent
-count. `spendHitDie` spends one die and heals. `restoreHitDice` gives back half
+count. `spendHitDie` spends one die and heals through `restoreResource`, so a
+dying character who rises above 0 HP stops dying, and a dead character spends
+nothing. `restoreHitDice` gives back half
 of the total dice on a long rest, largest die size first.
 `entities/RestHitDice.js` spends the counts that the Short rest dialog
 (`ui/ShortRestDialog.js`) collects. `spendRestDice` rolls each pool's count
@@ -1709,9 +1711,12 @@ saves does not apply to a death save.
 ### Damage and healing at 0 HP
 
 A heal above 0 HP clears the tracker of a dying or stable character. The rule
-is in `Character.restoreResource`, because every heal in the app goes through
-that function: the heal control of the combat screen, the HP stepper of the
-sheet, a healing spell, and a rest. A character at 5 HP can therefore never
+is in `restoreResource`, because every heal in the app goes through that
+function: the heal control of the combat screen, the HP stepper of the sheet,
+a healing spell, a rest, and a spent hit die. The function lives in
+`ResourceRestore.js`, and `Character.js` re-exports it. `HitDice.js` imports it
+from there, because `Character.js` imports `HitDice.js` and the reverse import
+would form a cycle. A character at 5 HP can therefore never
 read as dying.
 
 The same function refuses HP to a dead character (three failures), and
