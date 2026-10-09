@@ -547,7 +547,9 @@ An attack roll that hits is a trigger that the app does see, and
 adds AC (`mods.ac`), and whose `castPlan` the defender can pay for without
 an opt-out. The defender also needs an unspent reaction, the ability to
 act, no chip of that spell already, and a viewer who may act for it
-(`CombatView.mayActOn`). `wardRaise` measures how far the AC would go up by
+(`CombatView.mayActOn`). The damage and Redirect Attack pauses run the
+same checks through `reactionCaster` and `reactionPlan` in
+`src/app/reactionGate.js`. `wardRaise` measures how far the AC would go up by
 reading `acOf` with and without the candidate chip, so a floor such as
 Barkskin's 16 counts. Shield on a base AC of 12 under Barkskin raises the AC
 from 16 to 17, and the ward offers +1 and only against a roll of 16. A spell

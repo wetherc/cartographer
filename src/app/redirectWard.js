@@ -1,8 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
-import { canSpend } from '../combat/ActionBudget.js';
-import { isDowned, mayActOn } from '../combat/CombatView.js';
-import { canReact } from '../entities/ConditionEffects.js';
-import { isGM } from '../view/ViewRole.js';
+import { isDowned } from '../combat/CombatView.js';
+import { reactionCaster } from './reactionGate.js';
 import { combatantsAsTargets, findCombatant } from './combatants.js';
 
 /**
@@ -45,24 +43,16 @@ import { combatantsAsTargets, findCombatant } from './combatants.js';
  * @returns {Redirect | null}
  */
 export function pendingRedirect(app, defenderId, attackerId) {
-  const combat = app.state.combat;
-  if (!combat || defenderId === attackerId) return null;
-  const found = findCombatant(app, defenderId);
-  if (found?.kind !== 'creature' || found.entity.redirectAttack !== true) return null;
-  if (isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
-  const viewer = {
-    gm: isGM(app.state.role),
-    boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
-  };
-  if (!mayActOn(found, viewer, defenderId)) return null;
-  const self = combat.order.find((p) => p.id === defenderId);
-  if (!self || !canSpend(self, 'reaction')) return null;
+  const caster = reactionCaster(app, defenderId, attackerId, { fight: true });
+  if (!caster?.combat || !caster.participant) return null;
+  const { found, combat, participant: self } = caster;
+  if (found.kind !== 'creature' || found.entity.redirectAttack !== true) return null;
   const allies = combatantsAsTargets(app, combat, self, { allies: true }).filter((t) => {
     if (t.id === defenderId || t.id === attackerId) return false;
     const ally = findCombatant(app, t.id);
     return !!ally && !isDowned(ally);
   });
-  return allies.length > 0 ? { id: defenderId, name: found.entity.name, allies } : null;
+  return allies.length > 0 ? { id: defenderId, name: found.label, allies } : null;
 }
 
 /**

@@ -1,16 +1,12 @@
 import { confirmModal } from '../ui/Modal.js';
 import { reactionSpells } from '../combat/Reactions.js';
-import { canSpend } from '../combat/ActionBudget.js';
-import { acOf, isDowned, mayActOn } from '../combat/CombatView.js';
-import { canReact } from '../entities/ConditionEffects.js';
+import { acOf } from '../combat/CombatView.js';
 import { buffCondition } from '../entities/Casting.js';
 import { blockerOf } from '../entities/ChipMods.js';
 import { createCondition } from '../entities/Conditions.js';
 import { wardTurns, wardedOutcome } from '../entities/CastRolls.js';
-import { isGM } from '../view/ViewRole.js';
 import { findCombatant, logName, spellsOf } from './combatants.js';
-import { combatTargets, rosterTargets } from './spellTargets.js';
-import { castPlan } from './spellCast.js';
+import { reactionCaster, reactionPlan } from './reactionGate.js';
 import { resolveCast } from './spellCastResolve.js';
 
 /**
@@ -109,17 +105,9 @@ export function wardRaise(found, spell) {
  * @returns {Ward | null}
  */
 export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
-  if (defenderId === attackerId) return null;
-  const found = findCombatant(app, defenderId);
-  if (!found || isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
-  const viewer = {
-    gm: isGM(app.state.role),
-    boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
-  };
-  if (!mayActOn(found, viewer, defenderId)) return null;
-  const combat = app.state.combat;
-  const participant = combat?.order.find((p) => p.id === defenderId) ?? null;
-  if (combat && (!participant || !canSpend(participant, 'reaction'))) return null;
+  const caster = reactionCaster(app, defenderId, attackerId);
+  if (!caster) return null;
+  const { found } = caster;
   const held = new Set((found.entity.conditions ?? []).map((c) => c.name));
   const choices = reactionSpells(spellsOf(app, defenderId))
     .filter((spell) => acBonus(spell) > 0 && !held.has(buffCondition(spell)))
@@ -131,14 +119,8 @@ export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
     .filter((c) => c.bonus > 0 || c.blocks)
     .sort((a, b) => b.bonus - a.bonus);
   for (const { spell, bonus, blocks } of choices) {
-    const offered =
-      combat && participant
-        ? combatTargets(app, combat, participant, spell)
-        : rosterTargets(app, spell, defenderId);
-    if (!offered.some((t) => t.id === defenderId)) continue;
-    const plan = castPlan(app, found.entity, spell, offered);
-    if (!plan.ok || plan.actionBlocked || plan.armor.length > 0) continue;
-    if (plan.material.required && !plan.material.satisfied) continue;
+    const plan = reactionPlan(app, caster, spell);
+    if (!plan) continue;
     return {
       id: defenderId,
       name: found.label,

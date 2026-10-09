@@ -1,15 +1,10 @@
 import { confirmModal } from '../ui/Modal.js';
 import { reactionSpells } from '../combat/Reactions.js';
-import { canSpend } from '../combat/ActionBudget.js';
-import { isDowned, mayActOn } from '../combat/CombatView.js';
-import { canReact } from '../entities/ConditionEffects.js';
 import { buffCondition } from '../entities/Casting.js';
 import { defensesOf } from '../entities/DamageDefenses.js';
 import { landingDamage, wardType } from '../entities/DamageWard.js';
-import { isGM } from '../view/ViewRole.js';
-import { findCombatant, spellsOf } from './combatants.js';
-import { combatTargets, rosterTargets } from './spellTargets.js';
-import { castPlan } from './spellCast.js';
+import { logName, spellsOf } from './combatants.js';
+import { reactionCaster, reactionPlan } from './reactionGate.js';
 import { resolveCast } from './spellCastResolve.js';
 
 /**
@@ -45,9 +40,8 @@ import { resolveCast } from './spellCastResolve.js';
 
 /**
  * The reaction that the defender could cast against a hit from
- * `attackerId`, or null. The gates match `shieldWard.pendingWard`: the
- * defender can act and holds its reaction, the viewer may act for it, and it
- * can pay for the cast. The spell has to resist a type in the hit that the
+ * `attackerId`, or null. The defender passes `reactionCaster` and can pay
+ * for the cast through `reactionPlan`, as in `shieldWard.pendingWard`. The spell has to resist a type in the hit that the
  * defender does not resist already.
  * @param {AppContext} app
  * @param {string} defenderId
@@ -57,34 +51,20 @@ import { resolveCast } from './spellCastResolve.js';
  * @returns {DamageWard | null}
  */
 export function pendingDamageWard(app, defenderId, attackerId, groups, options = {}) {
-  if (defenderId === attackerId) return null;
-  const found = findCombatant(app, defenderId);
-  if (!found || isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
-  const viewer = {
-    gm: isGM(app.state.role),
-    boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
-  };
-  if (!mayActOn(found, viewer, defenderId)) return null;
-  const combat = app.state.combat;
-  const participant = combat?.order.find((p) => p.id === defenderId) ?? null;
-  if (combat && (!participant || !canSpend(participant, 'reaction'))) return null;
+  const caster = reactionCaster(app, defenderId, attackerId);
+  if (!caster) return null;
+  const { found } = caster;
   const held = new Set((found.entity.conditions ?? []).map((c) => c.name));
   const defenses = defensesOf(found.entity, { nonmagical: !!options.nonmagical });
   for (const spell of reactionSpells(spellsOf(app, defenderId))) {
     if (held.has(buffCondition(spell))) continue;
     const type = wardType(spell, groups, defenses);
     if (!type) continue;
-    const offered =
-      combat && participant
-        ? combatTargets(app, combat, participant, spell)
-        : rosterTargets(app, spell, defenderId);
-    if (!offered.some((t) => t.id === defenderId)) continue;
-    const plan = castPlan(app, found.entity, spell, offered);
-    if (!plan.ok || plan.actionBlocked || plan.armor.length > 0) continue;
-    if (plan.material.required && !plan.material.satisfied) continue;
+    const plan = reactionPlan(app, caster, spell);
+    if (!plan) continue;
     return {
       id: defenderId,
-      name: found.entity.name,
+      name: found.label,
       spell,
       type,
       plan,
@@ -123,13 +103,14 @@ export async function offerDamageWard(app, ward, message, { ask = confirmModal }
 
 /**
  * The line ahead of the question for one outcome of a damage spell.
+ * @param {AppContext} app
  * @param {import('../types/spell.js').Spell} spell
  * @param {any} o one outcome of the cast
  * @param {number} total the damage before defenses
  * @returns {string}
  */
-function spellDamageMessage(spell, o, total) {
-  const name = o.target.name;
+function spellDamageMessage(app, spell, o, total) {
+  const name = logName(app, o.target);
   if (spell.effect.kind === 'attack') {
     const hit = o.shots
       ? `${spell.name}: ${o.hits} of ${o.fired} hit ${name}`
@@ -174,7 +155,12 @@ export function wardSpellDamage(app, spell, result, casterId, opts = {}) {
     for (const o of outcomes) {
       const guard = guardOf(o);
       if (guard)
-        await offerDamageWard(app, guard.ward, spellDamageMessage(spell, o, guard.total), opts);
+        await offerDamageWard(
+          app,
+          guard.ward,
+          spellDamageMessage(app, spell, o, guard.total),
+          opts,
+        );
     }
     return result;
   })();
