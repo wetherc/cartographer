@@ -221,6 +221,20 @@ test('isFresh is true only when nothing at all is spent', () => {
   assert.equal(isFresh(at({ attacksLeft: 1 })), false);
 });
 
+test('isFresh is false for every spent field of a fresh budget', () => {
+  for (const [key, value] of Object.entries(freshBudget())) {
+    const spent = typeof value === 'number' ? 1 : true;
+    // budgetOf reads a spare action only beside a surge.
+    const extra = key === 'spare' ? { surged: true } : {};
+    assert.equal(isFresh(at({ ...extra, [key]: spent })), false, key);
+  }
+});
+
+test('refresh gives back a spent death save and spent spell flags', () => {
+  const used = at({ deathSave: true, actionSpell: true, bonusSpell: true });
+  assert.deepEqual(refresh(used).used, freshBudget());
+});
+
 test('refresh gives a whole turn back, reaction included', () => {
   const used = at({
     action: true,
@@ -261,6 +275,8 @@ test('unspend frees one cost, and freeing the action drops its banked swings', (
     'action',
   );
   assert.deepEqual(budgetOf(swung.used), { ...freshBudget(), bonus: true });
+  const cast = unspend(at({ action: true, actionSpell: true }), 'action');
+  assert.equal(budgetOf(cast.used).actionSpell, false, 'the action takes its spell back');
   const reacted = unspend(at({ reaction: true, action: true, attacksLeft: 1 }), 'reaction');
   assert.equal(budgetOf(reacted.used).attacksLeft, 1, 'only the action gives its bank back');
 });

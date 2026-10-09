@@ -333,6 +333,9 @@ sets through `spendBudget` after it spends the cost. `castPlan` asks
 `spellRuleBlock` only when the caster holds the running turn and the cast is
 not a repeat, and puts the reason on the plan as `ruleBlock`. The dialog then
 adds an "Ignore the bonus action spell rule" box that `submitRequires` gates.
+When the GM gives back the action or the bonus action, `unspend` clears the
+spell flag of that cost too. `refresh` clears both flags, and the death save
+flag, at the start of each turn of the combatant.
 
 A cast with no target ticked is refused inside the dialog. The `validate`
 option of `promptModal` runs `missingTarget` from `app/spellTargets.js` when

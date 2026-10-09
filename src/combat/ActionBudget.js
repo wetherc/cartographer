@@ -129,9 +129,10 @@ export function unspend(participant, cost) {
   if (!used[cost]) return participant;
   const next = { ...used, [cost]: false };
   if (cost === 'action') Object.assign(next, { attacksLeft: 0, attacked: false });
-  // A bonus action given back takes its spell with it, so the rule no longer
-  // limits the rest of the turn.
+  // A bonus action or action given back takes its spell with it, so the
+  // spell rule no longer limits the rest of the turn.
   if (cost === 'bonus') next.bonusSpell = false;
+  if (cost === 'action') next.actionSpell = false;
   return { ...participant, used: next };
 }
 
@@ -187,22 +188,17 @@ export function attacksAvailable(participant, attacksPerAction = 1, extraAction 
 
 /**
  * Whether the budget holds nothing spent. Used to keep `refresh` identity-safe.
+ * The test compares every field of `freshBudget`, so a flag added to the
+ * budget later also resets at the start of a turn. A missed flag (such as the
+ * death save) would stay spent for the rest of the fight.
  * @param {Participant} participant
  * @returns {boolean}
  */
 export function isFresh(participant) {
   const used = budgetOf(participant.used);
-  return (
-    !used.action &&
-    !used.bonus &&
-    !used.reaction &&
-    used.attacksLeft === 0 &&
-    !used.attacked &&
-    !used.sneak &&
-    !used.extra &&
-    !used.surged &&
-    !used.spare &&
-    used.legendary === 0
+  const fresh = freshBudget();
+  return Object.entries(fresh).every(
+    ([key, value]) => used[/** @type {keyof ActionBudget} */ (key)] === value,
   );
 }
 

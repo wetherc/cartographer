@@ -361,3 +361,17 @@ test('advanceTurn ends the surprise of a combatant it steps past', () => {
   assert.equal(currentParticipant(result.state)?.id, 'c');
   assert.equal(result.state.order[1].surprised, undefined);
 });
+
+test('a death save spent on each turn comes back over a full round', () => {
+  let state = startCombat([createParticipant('a', 15), createParticipant('b', 10)], nameOf({}));
+  for (let turn = 0; turn < 4; turn += 1) {
+    const current = currentParticipant(state);
+    assert.ok(current);
+    if (current.id === 'a') {
+      assert.equal(current.used?.deathSave ?? false, false, `turn ${turn}`);
+      const order = state.order.map((p) => (p.id === 'a' ? spend(p, 'deathSave') : p));
+      state = { ...state, order };
+    }
+    state = advanceTurn(state).state;
+  }
+});
