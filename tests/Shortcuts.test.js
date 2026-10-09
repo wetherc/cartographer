@@ -19,8 +19,8 @@ test('undo is the stroke-level one in Build and the save-level one elsewhere', (
   assert.equal(shortcutFor({ key: 'z', metaKey: true }, { mode: 'library', gm: true }), 'undo');
 });
 
-test('shift makes it a redo, and always the save-level one', () => {
-  assert.equal(shortcutFor({ key: 'z', ctrlKey: true, shiftKey: true }, gmInBuild), 'redo');
+test('shift makes it the redo that matches the mode', () => {
+  assert.equal(shortcutFor({ key: 'z', ctrlKey: true, shiftKey: true }, gmInBuild), 'redo-stroke');
   assert.equal(shortcutFor({ key: 'z', metaKey: true, shiftKey: true }, gmInPlay), 'redo');
 });
 
@@ -60,7 +60,7 @@ test('the help dialog documents every shortcut', () => {
     '?: show this list',
     'Ctrl/Cmd+S: save the campaign',
     'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
-    'Ctrl/Cmd+Shift+Z: redo the last undone save',
+    'Ctrl/Cmd+Shift+Z: redo (Build: last undone edit; Play: next save)',
     'B / P: switch to Build / Play mode',
     'C: open or close the full character sheet (Play)',
     'Escape: close a dialog or the full sheet, or put down the fog brush',

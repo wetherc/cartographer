@@ -5,7 +5,7 @@
  * does, and the two places where it depends on mode and role.
  */
 
-/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'build' | 'play' | 'help' | 'sheet'} ShortcutAction */
+/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'redo-stroke' | 'build' | 'play' | 'help' | 'sheet'} ShortcutAction */
 
 /**
  * The shortcut list that the '?' dialog shows. This list stays beside the
@@ -18,7 +18,7 @@ export const SHORTCUT_HELP = [
   '?: show this list',
   'Ctrl/Cmd+S: save the campaign',
   'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
-  'Ctrl/Cmd+Shift+Z: redo the last undone save',
+  'Ctrl/Cmd+Shift+Z: redo (Build: last undone edit; Play: next save)',
   'B / P: switch to Build / Play mode',
   'C: open or close the full character sheet (Play)',
   'Escape: close a dialog or the full sheet, or put down the fog brush',
@@ -40,8 +40,7 @@ export const SHORTCUT_HELP = [
  * Ctrl/Cmd+Z means two different undos. In Build mode it is the
  * stroke-level undo, because that is what a GM reaches for while painting.
  * Everywhere else it is the save-level undo that the header button drives.
- * Shift turns it into a redo, always the save-level redo, because strokes
- * have no redo.
+ * Shift turns it into the matching redo.
  *
  * Save, Undo, and Redo are GM-only. A player tab hides their header
  * buttons, and a Ctrl+Z on the table display rolls the campaign back for
@@ -60,8 +59,8 @@ export function shortcutFor(event, context) {
   if (command && !context.gm) return null;
   if (command && key === 's') return 'save';
   if (command && key === 'z') {
-    if (event.shiftKey) return 'redo';
-    return context.mode === 'build' ? 'undo-stroke' : 'undo';
+    if (context.mode === 'build') return event.shiftKey ? 'redo-stroke' : 'undo-stroke';
+    return event.shiftKey ? 'redo' : 'undo';
   }
   if (command || event.altKey) return null;
   if (event.key === 'b' && context.gm) return 'build';

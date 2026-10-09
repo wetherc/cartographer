@@ -56,6 +56,7 @@ const ACTION_NAMES = [
   'focusLocation',
   'centerOnLocation',
   'undoStroke',
+  'redoStroke',
   'onModeChanged',
   'onRoleChanged',
   'setMode',

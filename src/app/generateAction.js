@@ -212,6 +212,7 @@ export function wireGenerateAction(app, env) {
     // itself. Record all of it so the stroke-undo ring can revert it.
     env.recordEdit({
       ...regenerateSnapshot({
+        label: `${values.archetype.replace('-', ' ')} generation`,
         node,
         parent: grid.getParent(node),
         created: deeper.map((sub) => sub.id),

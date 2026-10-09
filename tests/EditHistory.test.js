@@ -6,6 +6,8 @@ import {
   nodeSnapshot,
   commitEdit,
   addHandoutBindings,
+  liveEdits,
+  samePosition,
   DEFAULT_EDIT_LIMIT,
 } from '../src/map/EditHistory.js';
 import { createMapNode } from '../src/map/TileGrid.js';
@@ -101,4 +103,46 @@ test('addHandoutBindings keeps the ring when there is nothing to add or no edit'
   /** @type {import('../src/map/EditHistory.js').EditSnapshot[]} */
   const empty = [];
   assert.equal(addHandoutBindings(empty, [{ handoutId: 'x', nodeId: 'a', tileId: '0,0' }]), empty);
+});
+
+test('nodeSnapshot names the edit for the Undo button', () => {
+  const a = createMapNode('a', 'A', null, 2, 2);
+  assert.equal(nodeSnapshot([a]).label, 'map edit');
+  assert.equal(nodeSnapshot([a], 'paint stroke').label, 'paint stroke');
+});
+
+test('commitEdit records where an edit left the party, and drops a party that did not move', () => {
+  const a = createMapNode('a', 'A', null, 2, 2);
+  const withParty = { ...nodeSnapshot([a]), party: { nodeId: 'a', tileId: '0,0' } };
+  const moved = commitEdit([withParty], () => a, { nodeId: 'a', tileId: '1,1' })[0];
+  assert.deepEqual(moved.party, { nodeId: 'a', tileId: '0,0' });
+  assert.deepEqual(moved.partyAfter, { nodeId: 'a', tileId: '1,1' });
+  const still = commitEdit([withParty], () => a, { nodeId: 'a', tileId: '0,0' })[0];
+  assert.equal(still.party, null);
+  assert.equal(still.partyAfter, null);
+  // An edit that never recorded the party keeps no party.
+  const plain = commitEdit([nodeSnapshot([a])], () => a, { nodeId: 'a', tileId: '1,1' })[0];
+  assert.equal(plain.party, null);
+  assert.equal(plain.partyAfter, undefined);
+});
+
+test('samePosition compares node and tile', () => {
+  assert.equal(samePosition({ nodeId: 'a', tileId: '0,0' }, { nodeId: 'a', tileId: '0,0' }), true);
+  assert.equal(samePosition({ nodeId: 'a', tileId: '0,0' }, { nodeId: 'b', tileId: '0,0' }), false);
+  assert.equal(samePosition(null, { nodeId: 'a', tileId: '0,0' }), false);
+});
+
+test('liveEdits drops entries whose node is gone or whose removed map lost its parent', () => {
+  const a = createMapNode('a', 'A', null, 2, 2);
+  const gone = createMapNode('gone', 'Gone', 'a', 2, 2);
+  const orphan = createMapNode('orphan', 'Orphan', 'deleted', 2, 2);
+  const child = createMapNode('child', 'Child', 'orphan', 2, 2);
+  const ok = nodeSnapshot([a]);
+  const stale = nodeSnapshot([gone]);
+  const orphaned = { ...nodeSnapshot([a]), removed: [orphan, child] };
+  const nested = { ...nodeSnapshot([a]), removed: [gone, { ...child, parentId: 'gone' }] };
+  const exists = (/** @type {string} */ id) => id === 'a';
+  assert.deepEqual(liveEdits([ok, stale, orphaned, nested], exists), [ok, nested]);
+  const all = [ok];
+  assert.equal(liveEdits(all, exists), all, 'the same array when every entry applies');
 });

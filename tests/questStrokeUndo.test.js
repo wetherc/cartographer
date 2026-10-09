@@ -44,16 +44,16 @@ function regenerated() {
   return fixture;
 }
 
-test('undoStroke puts back a quest link the regeneration removed', () => {
+test('undoStroke puts back a quest link the regeneration removed', async () => {
   const { gestures, app } = regenerated();
-  gestures.undoStroke();
+  await gestures.undoStroke();
   assert.deepEqual(app.state.quests[0].links, [placeLink('keep'), placeLink('cellar', '1,1')]);
   assert.ok(app.refreshes.includes('questPanel'));
 });
 
-test('undoStroke removes a quest link to a node the undo takes away', () => {
+test('undoStroke removes a quest link to a node the undo takes away', async () => {
   const { gestures, app, grid } = regenerated();
-  gestures.undoStroke();
+  await gestures.undoStroke();
   assert.equal(grid.getNode('deep'), undefined);
   assert.equal(
     app.state.quests[0].links.some((l) => l.kind === 'place' && l.nodeId === 'deep'),

@@ -44,7 +44,9 @@ export interface MapEnv {
   syncExits: () => void;
   syncPaletteKind: () => void;
   refreshMapDescription: () => void;
-  snapshotEdit: (...nodes: MapNode[]) => void;
+  snapshotEdit: (node: MapNode, label?: string) => void;
   recordEdit: (snapshot: EditSnapshot) => void;
   finishEdit: () => void;
+  /** Drops the stroke-undo and redo entries that name a deleted node. */
+  pruneEdits: () => void;
 }

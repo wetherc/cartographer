@@ -32,7 +32,8 @@ import { hiddenHandoutTiles } from '../handout/Handouts.js';
  * Wires everything on and around the map: the canvas and its stroke and click
  * gestures, the breadcrumb, both world trees, the tile inspector, the palette
  * and its drag and drop, the fog controls, the screen-reader map description,
- * stroke-level undo, and the Build-rail tools (Undo stroke, Export PNG).
+ * stroke-level undo and redo, and the Build tools (the header Undo stroke
+ * and Redo stroke buttons, and Export PNG).
  *
  * This function owns the mounts and the location-sync actions. The
  * Build-mode authoring gestures live in mapAuthoring.js. The Play-mode
@@ -91,7 +92,9 @@ export function wireMapView(app) {
   env.snapshotEdit = authoring.snapshotEdit;
   env.recordEdit = authoring.recordEdit;
   env.finishEdit = authoring.finishEdit;
+  env.pruneEdits = authoring.pruneEdits;
   app.actions.undoStroke = authoring.undoStroke;
+  app.actions.redoStroke = authoring.redoStroke;
   app.actions.meetCreatures = travel.meetCreaturesHere;
 
   /** Show the party marker only on the node where the party stands. Resolve
@@ -551,7 +554,7 @@ export function wireMapView(app) {
   };
   new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 
-  syncEmptyMap = wireMapBuildTools(app, env, authoring.undoStroke, buildTabs).syncEmptyMap;
+  syncEmptyMap = wireMapBuildTools(app, env, authoring, buildTabs).syncEmptyMap;
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();

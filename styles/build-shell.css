@@ -106,7 +106,7 @@
   }
 }
 
-/* Undo stroke and Export PNG sit side by side when the rail is wide enough,
+/* The buttons of the Tools card sit side by side when the rail is wide enough,
    which leaves more height to the palette. */
 .map-tools {
   display: grid;

@@ -7,23 +7,42 @@ import {
 } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { mustGetElement } from '../ui/dom.js';
+import { setTip } from '../ui/Tooltip.js';
 import { mountBuildEmptyMap } from '../ui/BuildEmptyMap.js';
 import { isBlankMap, PAINT_TAB } from '../view/BuildTool.js';
 
 /**
- * Wire the Build map tools: stroke-level undo, a fog-free PNG export of the
- * current node, and the card over a map with no tiles. Only the GM in Build
- * mode sees them. A player never sees these tools.
+ * Wire the Build map tools: the header Undo stroke and Redo stroke buttons,
+ * a fog-free PNG export of the current node, and the card over a map with
+ * no tiles. Only the GM in Build mode sees them. A player never sees these
+ * tools.
+ *
+ * Each stroke button is disabled while its ring is empty, and its tooltip
+ * names the edit it would change, such as "Undo the world generation on
+ * Nordale Heights". A whole generated world is one entry, so the GM sees
+ * what one click takes back before the click.
  * @param {import('../types/app.js').AppContext} app
  * @param {import('./mapWiring.js').MapEnv} env
- * @param {() => void} undoStroke
+ * @param {{
+ *   undoStroke: () => Promise<void>,
+ *   redoStroke: () => Promise<void>,
+ *   onStrokeHistoryChange: (fn: (status: import('./strokeHistory.js').StrokeStatus) => void) => void,
+ * }} strokes the stroke history of the map authoring
  * @param {{ select: (tabId: string) => void }} buildTabs the Build rail tab strip
  * @returns {{ syncEmptyMap: () => void }} call after each draw of the map
  */
-export function wireMapBuildTools(app, env, undoStroke, buildTabs) {
+export function wireMapBuildTools(app, env, strokes, buildTabs) {
   const { grid, navigator, toasts } = app;
-  mustGetElement('stroke-undo-btn').addEventListener('click', undoStroke);
-  mustGetElement('header-stroke-undo-btn').addEventListener('click', undoStroke);
+  const undoBtn = /** @type {HTMLButtonElement} */ (mustGetElement('header-stroke-undo-btn'));
+  const redoBtn = /** @type {HTMLButtonElement} */ (mustGetElement('header-stroke-redo-btn'));
+  undoBtn.addEventListener('click', () => void strokes.undoStroke());
+  redoBtn.addEventListener('click', () => void strokes.redoStroke());
+  strokes.onStrokeHistoryChange(({ undo, redo }) => {
+    undoBtn.disabled = !undo;
+    redoBtn.disabled = !redo;
+    setTip(undoBtn, undo ? `Undo the ${undo} (Ctrl/Cmd+Z)` : 'Nothing to undo on the map');
+    setTip(redoBtn, redo ? `Redo the ${redo} (Ctrl/Cmd+Shift+Z)` : 'Nothing to redo on the map');
+  });
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
     // An empty map exports a blank image, so the GM hears why instead.

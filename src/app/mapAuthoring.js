@@ -1,4 +1,4 @@
-import { getTile, updateTileMetadata, withoutDeadLinks } from '../map/TileGrid.js';
+import { getTile, updateTileMetadata } from '../map/TileGrid.js';
 import { clientToBuffer, parseCoords, screenToTile, tileIdAt } from '../map/MapGeometry.js';
 import {
   paintTile,
@@ -10,23 +10,13 @@ import {
 } from '../map/TilePaint.js';
 import { isOverlayType } from '../map/TileCatalog.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
-import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
-import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
-import { restoreBindings, tileBindingsLost, unbindTiles } from '../handout/Handouts.js';
-import { restoreLinks } from '../quest/QuestLinks.js';
-import { unlinkRemovedNodes } from './questCleanup.js';
+import { recallAll } from '../party/CharacterTokens.js';
+import { tileBindingsLost, unbindTiles } from '../handout/Handouts.js';
 import { refreshLocationPanels } from './locationPanels.js';
-import {
-  nodeSnapshot,
-  pushEdit,
-  popEdit,
-  commitEdit,
-  addHandoutBindings,
-} from '../map/EditHistory.js';
-import { revertEdit } from '../map/EditRevert.js';
+import { nodeSnapshot } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
-import { resyncMapViews } from './mapResync.js';
 import { effectiveBrush } from '../view/BuildTool.js';
+import { createStrokeHistory } from './strokeHistory.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -35,100 +25,39 @@ import { effectiveBrush } from '../view/BuildTool.js';
  * This module builds Build-mode authoring for the map view. It handles the
  * paint, erase, and region stroke gestures, the drop-paint target, the tile
  * inspector with its link and spawn functions, and the stroke-level undo
- * ring. The code stays separate from mapWiring, so the wiring module only
+ * and redo (`strokeHistory.js`). The code stays separate from mapWiring, so the wiring module only
  * mounts views and keeps them in sync. Every function here reads the shared
  * MapEnv late. Wiring assigns mapCanvas, inspector, and nodeActions before a
  * gesture can happen.
  * @param {AppContext} app
  * @param {MapEnv} env
+ * @param {Parameters<typeof createStrokeHistory>[2]} [options] passed to
+ *   the stroke history
  */
-export function createMapAuthoring(app, env) {
+export function createMapAuthoring(app, env, options) {
   const { palette, grid, navigator, partyTracker, toasts, state } = app;
 
   /**
-   * Stroke-level undo for Build mode: an in-memory ring of node snapshots.
-   * The code takes one snapshot before each paint, erase, region link, tile
-   * link, drop-paint, or generate action. This lets the user undo one bad
-   * edit without a reload. The ring lasts only for this session. The
-   * persisted Undo button still handles undo at the save level.
-   * @type {import('../map/EditHistory.js').EditSnapshot[]}
+   * Stroke-level undo and redo for Build mode. The code records one entry
+   * before each paint, erase, region link, tile link, drop-paint, or
+   * generate action, so the GM can take back one bad edit without a reload.
    */
-  let editHistory = [];
+  const history = createStrokeHistory(app, env, options);
 
-  /** Save the given nodes' state before the edit, onto the stroke-undo ring.
-   * @param {...import('../types/map.js').MapNode} nodes */
-  function snapshotEdit(...nodes) {
-    recordEdit(nodeSnapshot(nodes));
+  /** Save a node's state before an edit, onto the stroke-undo ring.
+   * @param {import('../types/map.js').MapNode} node
+   * @param {string} [label] what the edit is, for the Undo button */
+  function snapshotEdit(node, label) {
+    history.record(nodeSnapshot([node], label));
   }
 
-  /** Save a full edit record onto the stroke-undo ring. A generate action
-   * builds one that also names the nodes it created and removed and where
-   * the party stood.
-   * @param {import('../map/EditHistory.js').EditSnapshot} snapshot */
-  function recordEdit(snapshot) {
-    editHistory = pushEdit(editHistory, snapshot);
-  }
-
-  /** Record the nodes of the most recent edit as the edit left them. Every
-   * edit calls this when it finishes, so undo can revert only the cells
-   * that the edit changed. */
-  function finishEdit() {
-    editHistory = commitEdit(editHistory, (id) => grid.getNode(id));
-  }
-
-  /**
-   * Restore the most recent stroke-undo snapshot. Nodes the edit created go
-   * first, so a link they hold cannot outlive them. Nodes the edit removed
-   * come back next. On each rewritten node, only the cells and fields that
-   * the edit changed go back, so a later fog reveal or inspector note stays.
-   * A tile link to a node that no longer exists is cleared. A rewritten
-   * node deleted since the snapshot stays deleted. Any character or creature
-   * the edit moved goes back to their own tile, any handout it made
-   * campaign-wide binds to its node again, any quest link it removed comes
-   * back, and the entry memory goes back to what the edit found. A quest
-   * link to a node the edit created goes with that node. The party moves
-   * back when the edit moved it and its
-   * node still exists. A view left inside a removed node moves to the first
-   * restored node. The panels that filter by location then re-read the state,
-   * because a restored location changes which of them show what.
-   */
-  function undoStroke() {
-    const popped = popEdit(editHistory);
-    editHistory = popped.history;
-    const snapshot = popped.snapshot;
-    if (!snapshot) {
-      toasts.show('Nothing to undo.');
-      return;
-    }
-    for (const id of snapshot.created) {
-      if (grid.getNode(id)) grid.removeNode(id);
-    }
-    for (const node of snapshot.removed) grid.addNode(node);
-    snapshot.nodes.forEach((node, i) => {
-      const current = grid.getNode(node.id);
-      if (!current) return;
-      const reverted = revertEdit(current, node, snapshot.after?.[i] ?? null);
-      grid.updateNode(withoutDeadLinks(reverted, (id) => grid.getNode(id) !== undefined));
-    });
-    state.characters = restorePlacements(state.characters, snapshot.recalled);
-    state.creatures = restoreCreaturePlacements(state.creatures, snapshot.creatures);
-    state.handouts = restoreBindings(state.handouts, snapshot.handouts);
-    // A quest link to a node the undo just removed goes, and a link the edit
-    // took off comes back.
-    unlinkRemovedNodes(app, new Set(snapshot.created));
-    state.quests = restoreLinks(state.quests, snapshot.questLinks ?? []);
-    app.views.questPanel.update();
-    if (snapshot.entryTiles) state.entryTiles = snapshot.entryTiles;
-    const party = snapshot.party;
-    if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);
-    if (grid.getNode(navigator.currentNodeId)) {
-      resyncMapViews(app, env, { reframe: true });
-    } else {
-      env.goToNode(snapshot.nodes[0].id);
-    }
-    refreshLocationPanels(app);
-    app.actions.markDirty();
-    toasts.show('Undid the last edit.');
+  /** The Undo button's name for a stroke of the given brush.
+   * @param {ReturnType<typeof effectiveBrush>} brush */
+  function strokeLabel(brush) {
+    if (brush === 'region') return 'region stroke';
+    if (brush === 'erase') return 'erase stroke';
+    if (brush === 'erase-path') return 'path erase';
+    return 'paint stroke';
   }
 
   /**
@@ -171,7 +100,7 @@ export function createMapAuthoring(app, env) {
   function linkSelectedTile(childNodeId) {
     if (!env.selectedTileId) return;
     const node = navigator.getCurrentNode();
-    snapshotEdit(node);
+    snapshotEdit(node, 'tile link');
     const updated = stampRegionLink(node, env.selectedTileId, childNodeId);
     grid.updateNode(updated);
     env.mapCanvas.refreshNode(updated);
@@ -180,7 +109,7 @@ export function createMapAuthoring(app, env) {
     // out. Linking an interior's only door seals it. Unlinking the tile
     // opens it again.
     env.syncExits();
-    finishEdit();
+    history.finish();
     app.actions.markDirty();
   }
 
@@ -232,10 +161,10 @@ export function createMapAuthoring(app, env) {
     const id = await env.nodeActions.addChildNode(navigator.currentNodeId);
     if (!id) return;
     env.palettePanel.regionPicker.pick(id);
-    snapshotEdit(navigator.getCurrentNode());
+    snapshotEdit(navigator.getCurrentNode(), 'region stroke');
     paintRegionCell(tileId);
     settleAfterStroke();
-    finishEdit();
+    history.finish();
   }
 
   // Build-mode authoring uses strokes. A left-drag applies the active brush
@@ -273,7 +202,7 @@ export function createMapAuthoring(app, env) {
       return;
     }
     if (strokeHeld) return;
-    if (first && active) snapshotEdit(navigator.getCurrentNode());
+    if (first && active) snapshotEdit(navigator.getCurrentNode(), strokeLabel(active));
     if (active === 'region') {
       if (paintRegionCell(id)) strokeTouched = true;
     } else if (active === 'erase') {
@@ -313,7 +242,7 @@ export function createMapAuthoring(app, env) {
     const lost = tileBindingsLost(state.handouts, node.id, (id) => Boolean(getTile(node, id)));
     if (lost.length === 0) return;
     state.handouts = unbindTiles(state.handouts, lost);
-    editHistory = addHandoutBindings(editHistory, lost);
+    history.addBindings(lost);
     refreshLocationPanels(app);
   }
 
@@ -332,7 +261,7 @@ export function createMapAuthoring(app, env) {
     ) {
       unbindErasedTiles();
     }
-    finishEdit();
+    history.finish();
     if (strokeTouched) {
       strokeTouched = false;
       settleAfterStroke();
@@ -410,21 +339,24 @@ export function createMapAuthoring(app, env) {
         env.mapCanvas.scale,
       );
       const tileId = tileIdAt(coords.x, coords.y);
-      snapshotEdit(navigator.getCurrentNode());
+      snapshotEdit(navigator.getCurrentNode(), 'paint stroke');
       const overlay = isOverlayType(entry.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
       const imageRef = palette.imageFor(entry, coords.x, coords.y);
       applyToTile(tileId, (node) => paintTile(node, tileId, imageRef, overlay, scale));
       settleAfterStroke();
-      finishEdit();
+      history.finish();
     });
   }
 
   return {
     snapshotEdit,
-    recordEdit,
-    finishEdit,
-    undoStroke,
+    recordEdit: history.record,
+    finishEdit: history.finish,
+    undoStroke: history.undo,
+    redoStroke: history.redo,
+    pruneEdits: history.prune,
+    onStrokeHistoryChange: history.onChange,
     applyToTile,
     linkSelectedTile,
     onStrokeCell,

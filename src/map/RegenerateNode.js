@@ -230,8 +230,10 @@ export function regenerateTokenMoves({ tokens, nodeId, width, height, entry, lan
  * creature in a removed node comes back to the party marker or to no place
  * at all, one in the node itself re-lands on the new layout, and a handout
  * bound to a removed node becomes campaign-wide. Undo needs each of those
- * as it stood.
+ * as it stood. `label` names the edit for the Undo button, and defaults to
+ * "map generation".
  * @param {{
+ *   label?: string,
  *   node: MapNode,
  *   parent: MapNode | null,
  *   created: string[],
@@ -245,6 +247,7 @@ export function regenerateTokenMoves({ tokens, nodeId, width, height, entry, lan
  * @returns {EditSnapshot}
  */
 export function regenerateSnapshot({
+  label = 'map generation',
   node,
   parent,
   created,
@@ -256,6 +259,7 @@ export function regenerateSnapshot({
   entryTiles,
 }) {
   return {
+    label,
     nodes: parent ? [node, parent] : [node],
     after: null,
     created,

@@ -14,6 +14,8 @@ export const INTERIOR = 'assets/tiles/interior/interior';
  * A one-node interior plus the recording app and env the authoring gestures
  * read. Every derived-state call a gesture makes appends its name to `calls`, so
  * a test asserts what a stroke settled rather than reaching into a canvas.
+ * A stroke undo that asks first appends its question to `confirms` and
+ * gets `answer.value` back, after `answer.during` runs while it is open.
  */
 export function authoring({ mode = 'build', scale = 1 } = {}) {
   const palette = new TilePalette();
@@ -94,8 +96,18 @@ export function authoring({ mode = 'build', scale = 1 } = {}) {
     worldTree: { update: () => calls.push('worldTree') },
     regionTree: { update: () => calls.push('regionTree') },
   });
+  /** @type {{ message: string, options: any }[]} */
+  const confirms = [];
+  const answer = { value: true, during: /** @type {(() => void) | null} */ (null) };
+  const confirm = async (/** @type {string} */ message, /** @type {any} */ options) => {
+    confirms.push({ message, options });
+    answer.during?.();
+    return answer.value;
+  };
   return {
-    gestures: createMapAuthoring(app, env),
+    gestures: createMapAuthoring(app, env, { confirm }),
+    confirms,
+    answer,
     app,
     env,
     grid,

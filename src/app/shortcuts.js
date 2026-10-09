@@ -35,7 +35,8 @@ export function wireShortcuts(app) {
 
     if (action === 'save') mustGetElement('save-btn').click();
     else if (action === 'undo') mustGetElement('undo-btn').click();
-    else if (action === 'undo-stroke') app.actions.undoStroke();
+    else if (action === 'undo-stroke') void app.actions.undoStroke();
+    else if (action === 'redo-stroke') void app.actions.redoStroke();
     else if (action === 'redo') mustGetElement('redo-btn').click();
     else if (action === 'build') app.actions.setMode('build');
     else if (action === 'play') app.actions.setMode('play');

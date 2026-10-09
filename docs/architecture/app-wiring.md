@@ -102,7 +102,7 @@ UI state for one feature stays private inside the module that owns it:
 
 - the selected tile
 - the active brush
-- the stroke-undo history
+- the stroke-undo and redo history
 - the selected character
 - the dirty flag
 - the combatant that the combat screen inspects
@@ -298,8 +298,10 @@ argument.
   the tile that opens it on the map above (`placeNoun`), such as "a village"
   or "an inn", and "the world map" at the root. It also defines `createBuildWarning`, the Build-rail
   warning for a node that has no way in or out.
-- `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
-  Build rail, and the Undo stroke button that the header shows in Build mode.
+- `mapBuildTools.js` wires the Export PNG button of the Build rail, and the
+  Undo stroke and Redo stroke buttons that the header shows in Build mode.
+  It disables each stroke button while its list is empty, and sets its
+  tooltip to the edit that it would change.
   It also mounts the empty-map card of `ui/BuildEmptyMap.js` over the canvas,
   and it returns `syncEmptyMap`, which `wireMapView` calls after each draw so
   the card shows only while the map in view has no tiles.
@@ -342,8 +344,9 @@ unplaces one, or changes what a handout is bound to.
 The gesture layers live beside `mapWiring.js`, each in its own file:
 
 - `mapAuthoring.js` handles Build mode: paint, erase, and region strokes,
-  drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` and
-  `finishEdit` on the `MapEnv`, and `undoStroke` as an action).
+  drop-paint, and the tile inspector. It records each edit through
+  `strokeHistory.js` (`snapshotEdit`, `finishEdit`, and `pruneEdits` on
+  the `MapEnv`, and `undoStroke` and `redoStroke` as actions).
 - `mapTravel.js` handles Play mode: cell clicks, discovery of
   points of interest, and meetings with NPCs. It keeps its own views in step
   and does not call `resyncMapViews`.
@@ -421,18 +424,32 @@ the map that follows that parent.
 The stroke-undo ring in `EditHistory.js` keeps one `EditSnapshot` for each
 edit. A snapshot records:
 
+- a label, such as "paint stroke", that the buttons and toasts name
 - the rewritten nodes, as the edit found them and as it left them
 - the ids of created nodes, and the removed nodes
-- the party position
+- the party position before the edit and after it, only when the edit
+  moved the party
 - the locations of the characters and creatures that the edit moved
 - the nodes and tiles that freed handouts were bound to
 - the entry memory
 
 An erase stroke learns which tiles it removed only at the end of the stroke.
 `mapAuthoring.js` then adds the tile bindings that the stroke drops to the
-stroke's entry (`EditHistory.addHandoutBindings`). `undoStroke` in
-`mapAuthoring.js` applies the whole record, then refreshes the location
-panels through `app/locationPanels.js`.
+stroke's entry (`EditHistory.addHandoutBindings`).
+
+`app/strokeHistory.js` keeps two rings, one for undo and one for redo.
+A step pops one entry, applies it, and pushes its inverse onto the other
+ring, so undo and redo share one code path. The inverse records the nodes
+as the step found them and left them, the maps it removed, and every
+location it moved. A new edit empties the redo ring. Nodes that the step
+removes go through `NodeCleanup.locationsAfterDelete`, the same rules as a
+node delete, and the step then refreshes the location panels through
+`app/locationPanels.js`. The party moves back only while it still stands
+where the edit left it or stands in a removed node, so a walk after the
+edit stays. A step that removes nodes or edits a node out of view asks
+first. `EditHistory.liveEdits` drops an entry whose node is gone, or whose
+removed node would come back under a deleted parent. A node delete calls it
+through `pruneEdits`, and so does each step.
 
 Each edit calls `finishEdit` on the `MapEnv` when it is done, which records
 the nodes as the edit left them. `EditRevert.revertEdit` then writes back

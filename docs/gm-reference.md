@@ -435,19 +435,45 @@ road, the road stays on top.
 
 | Control | What it does |
 | --- | --- |
-| Undo stroke | Reverts the last edit. A whole drag, a region link, and a generation each count as one edit. The header shows a second Undo stroke button in Build mode, left of Undo, and Ctrl/Cmd+Z presses it |
 | Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A map with no tiles downloads nothing, and a message says so |
-
-Undo stroke reverts only the cells and fields that the edit changed. Fog
-that the party revealed and notes written after the edit stay. A tile link
-to a node that was deleted after the edit comes back as no link.
-
-The stroke history is separate from the header Undo and Redo. It has no
-redo, and it ends when the page reloads.
 
 If a map is too large for 64 pixels per tile, Export PNG uses a smaller
 size and names the size it used. If no size fits, the app refuses the
 export.
+
+### Stroke undo and redo
+
+In Build mode, the header shows **Undo stroke** and **Redo stroke** to the
+left of Undo and Redo.
+
+| Control | What it does |
+| --- | --- |
+| Undo stroke | Reverts the last edit on the map. A whole drag, a tile link, a region link, and a generation each count as one edit. Ctrl/Cmd+Z presses it |
+| Redo stroke | Applies the last undone edit again. Ctrl/Cmd+Shift+Z presses it. A new edit empties the redo list |
+
+The tooltip of each button names the edit and its map, such as "Undo the
+paint stroke on Briarwick Vale". A button is disabled when it has no edit
+to change.
+
+Undo stroke reverts only the cells and fields that the edit changed. Fog
+that the party revealed and notes written after the edit stay. A tile link
+to a node that was deleted after the edit comes back as no link. A tile
+outside the current width and height of the map does not come back, so a
+stroke undone after a shrink leaves the map at its new size.
+
+An undo or redo asks first when it removes maps, such as the sub-maps of a
+generation, or when the edit is on a map other than the one in view. On a
+removed map, a character rejoins the party, a creature becomes unplaced, a
+handout becomes campaign-wide, and a quest link goes, as for a deleted map.
+The party moves back to where it stood before the edit only while it still
+stands where the edit left it, or stands in a map that the undo removes.
+When the place it stood before is gone, the party comes out beside the
+removed map, as it does for a deleted map. If no map is left to land in,
+the undo refuses.
+
+Deleting a map in the World tree drops every stroke edit on that map from
+the lists. The stroke lists are separate from the header Undo and Redo,
+and they end when the page reloads.
 
 ### Tile inspector fields
 
@@ -3063,7 +3089,7 @@ Press `?` anywhere for the shortcut reference.
 | ? | Show the shortcut reference |
 | Ctrl/Cmd+S | Save |
 | Ctrl/Cmd+Z | In Build mode, undo the last stroke. In Play and Library mode, undo to the previous save |
-| Ctrl/Cmd+Shift+Z | Redo the last undone save |
+| Ctrl/Cmd+Shift+Z | In Build mode, redo the last undone stroke. In Play and Library mode, redo the last undone save |
 | B, P | Switch to Build or Play mode |
 | C | In Play mode, open or close the full character sheet |
 | Escape | Close a dialog or the full sheet, or put down the fog brush |

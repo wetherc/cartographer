@@ -227,6 +227,9 @@ export function createNodeActions(app, env) {
     // they were entered goes with them.
     state.entryTiles = forgetEntries(state.entryTiles, doomed);
     const removed = grid.removeNode(nodeId);
+    // A stroke-undo entry for a deleted map would write to nothing or add
+    // back a map whose parent is gone.
+    env.pruneEdits();
     app.actions.markDirty();
     if (after.party !== before.party) {
       const parent = grid.getNode(after.party.nodeId);

@@ -155,6 +155,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
     entryTiles,
   });
   assert.deepEqual(snapshot, {
+    label: 'map generation',
     nodes: [level1, town],
     after: null,
     created: ['fresh-2'],

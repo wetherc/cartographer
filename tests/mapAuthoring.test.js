@@ -8,7 +8,7 @@ import { variantIdAt } from '../src/map/TileCatalog.js';
 const plazaAt = (/** @type {number} */ x, /** @type {number} */ y) =>
   `assets/tiles/plaza/${variantIdAt('plaza', x, y)}.svg`;
 
-test('a paint stroke settles the ways out along with the rest of the derived state', () => {
+test('a paint stroke settles the ways out along with the rest of the derived state', async () => {
   const { gestures, grid, calls } = authoring();
   // Painting a door on the outer wall is what clears Build's sealed-interior
   // warning, and that warning is derived where the exits are, so a stroke which
@@ -21,7 +21,7 @@ test('a paint stroke settles the ways out along with the rest of the derived sta
   assert.ok(settled(calls).includes('syncExits'), settled(calls).join(','));
 });
 
-test('a stroke that mutated nothing settles nothing', () => {
+test('a stroke that mutated nothing settles nothing', async () => {
   const { gestures, env, calls } = authoring();
   // The inspect brush selects the pressed cell instead of painting it.
   env.activeBrush = null;
@@ -30,7 +30,7 @@ test('a stroke that mutated nothing settles nothing', () => {
   assert.deepEqual(calls, ['selectTile']);
 });
 
-test('linking a tile recomputes the ways out, because a linked tile is no longer one', () => {
+test('linking a tile recomputes the ways out, because a linked tile is no longer one', async () => {
   const { gestures, env, grid, calls } = authoring();
   grid.addNode(createMapNode('cellar', 'Cellar', 'keep', 2, 2, { kind: 'interior' }));
   gestures.onStrokeCell(0, 2, null, true);
@@ -52,7 +52,7 @@ const tick = () =>
     setTimeout(resolve, 0);
   });
 
-test('a region stroke links every cell it crosses and settles the ways out', () => {
+test('a region stroke links every cell it crosses and settles the ways out', async () => {
   const { gestures, env, grid, calls } = authoring();
   env.activeBrush = 'region';
   env.palettePanel.regionPicker.pick('cellar');
@@ -66,7 +66,7 @@ test('a region stroke links every cell it crosses and settles the ways out', () 
   assert.ok(settled(calls).includes('syncExits'), settled(calls).join(','));
 });
 
-test('a region stroke moves a cell out of the region it was in', () => {
+test('a region stroke moves a cell out of the region it was in', async () => {
   const { gestures, env, grid } = authoring();
   env.activeBrush = 'region';
   env.palettePanel.regionPicker.pick('cellar');
@@ -78,7 +78,7 @@ test('a region stroke moves a cell out of the region it was in', () => {
   assert.equal(getTile(grid.getNode('keep') ?? null, '0,0')?.childNodeId, 'crypt');
 });
 
-test('a region stroke with no region picked clears the links it crosses', () => {
+test('a region stroke with no region picked clears the links it crosses', async () => {
   const { gestures, env, grid } = authoring();
   env.activeBrush = 'region';
   env.palettePanel.regionPicker.pick('cellar');
@@ -90,7 +90,7 @@ test('a region stroke with no region picked clears the links it crosses', () => 
   assert.equal(getTile(grid.getNode('keep') ?? null, '0,0')?.childNodeId, null);
 });
 
-test('a region stroke over cells that already link there settles nothing', () => {
+test('a region stroke over cells that already link there settles nothing', async () => {
   const { gestures, env, grid, calls } = authoring();
   env.activeBrush = 'region';
   env.palettePanel.regionPicker.pick('cellar');
@@ -104,7 +104,7 @@ test('a region stroke over cells that already link there settles nothing', () =>
   assert.deepEqual(settled(calls), []);
 });
 
-test('one undo takes back a whole region stroke', () => {
+test('one undo takes back a whole region stroke', async () => {
   const { gestures, env, grid } = authoring();
   env.goToNode = () => {};
   env.activeBrush = 'region';
@@ -112,7 +112,7 @@ test('one undo takes back a whole region stroke', () => {
   gestures.onStrokeCell(0, 0, null, true);
   gestures.onStrokeCell(1, 0, null, false);
   gestures.onStrokeEnd();
-  gestures.undoStroke();
+  await gestures.undoStroke();
   const keep = grid.getNode('keep') ?? null;
   assert.equal(getTile(keep, '0,0')?.childNodeId ?? null, null);
   assert.equal(getTile(keep, '1,0')?.childNodeId ?? null, null);
@@ -144,7 +144,7 @@ test('a first region stroke the user cancels out of links nothing', async () => 
   assert.equal(getTile(grid.getNode('keep'), '0,0')?.childNodeId, null);
 });
 
-test('a region stroke hands the inspector its tile back when one is selected', () => {
+test('a region stroke hands the inspector its tile back when one is selected', async () => {
   const { gestures, env, inspected } = authoring();
   env.selectedTileId = '0,0';
   env.activeBrush = 'region';
@@ -154,7 +154,7 @@ test('a region stroke hands the inspector its tile back when one is selected', (
   assert.equal(inspected.at(-1)?.childNodeId, 'cellar');
 });
 
-test('a stroke on the selected tile hands the inspector the painted tile back', () => {
+test('a stroke on the selected tile hands the inspector the painted tile back', async () => {
   const { gestures, env, inspected } = authoring();
   env.selectedTileId = '0,2';
   gestures.onStrokeCell(0, 2, null, true);
@@ -165,7 +165,7 @@ test('a stroke on the selected tile hands the inspector the painted tile back', 
   assert.equal(inspected.length, 1);
 });
 
-test('the erase brushes clear a tile and a whole path', () => {
+test('the erase brushes clear a tile and a whole path', async () => {
   const erasing = authoring();
   erasing.env.activeBrush = 'erase';
   erasing.gestures.onStrokeCell(1, 1, null, true);
@@ -180,7 +180,7 @@ test('the erase brushes clear a tile and a whole path', () => {
   assert.ok(settled(pathing.calls).includes('syncExits'));
 });
 
-test('a scaled stamp places once instead of painting every cell of a drag', () => {
+test('a scaled stamp places once instead of painting every cell of a drag', async () => {
   const { gestures, grid, env } = authoring({ scale: 2 });
   env.activeBrush = { type: 'interior', imageRef: `${INTERIOR}-floor-2.svg` };
   gestures.onStrokeCell(0, 0, null, true);
@@ -192,7 +192,7 @@ test('a scaled stamp places once instead of painting every cell of a drag', () =
   assert.equal(getTile(grid.getNode('keep'), '2,0')?.imageRef, `${INTERIOR}-floor-1.svg`);
 });
 
-test('the Play-mode fog brush reveals and hides tiles instead of painting them', () => {
+test('the Play-mode fog brush reveals and hides tiles instead of painting them', async () => {
   const revealing = authoring({ mode: 'play' });
   revealing.env.fogTool = 'reveal';
   revealing.gestures.onStrokeCell(3, 3, null, true);
@@ -205,7 +205,7 @@ test('the Play-mode fog brush reveals and hides tiles instead of painting them',
   assert.equal(getTile(hiding.grid.getNode('keep'), '3,3')?.revealed, false);
 });
 
-test('a Play-mode stroke with no fog tool on paints nothing', () => {
+test('a Play-mode stroke with no fog tool on paints nothing', async () => {
   const { gestures, grid, calls } = authoring({ mode: 'play' });
   const before = grid.getNode('keep');
   gestures.onStrokeCell(0, 2, null, true);
@@ -214,7 +214,7 @@ test('a Play-mode stroke with no fog tool on paints nothing', () => {
   assert.deepEqual(calls, []);
 });
 
-test('linkSelectedTile with nothing selected does nothing', () => {
+test('linkSelectedTile with nothing selected does nothing', async () => {
   const { gestures, grid, calls } = authoring();
   const before = grid.getNode('keep');
   gestures.linkSelectedTile('cellar');
@@ -252,7 +252,7 @@ function dropEvent(tileId, x, y) {
   };
 }
 
-test('dropping a palette swatch on the canvas paints that cell', () => {
+test('dropping a palette swatch on the canvas paints that cell', async () => {
   const { gestures, grid, calls } = authoring();
   const canvas = canvasStub();
   gestures.wireCanvasDrop(/** @type {any} */ (canvas));
@@ -264,7 +264,7 @@ test('dropping a palette swatch on the canvas paints that cell', () => {
   assert.ok(settled(calls).includes('refreshMapDescription'), 'a drop settles like a stroke');
 });
 
-test('a drop outside Build mode, or of something the palette does not hold, paints nothing', () => {
+test('a drop outside Build mode, or of something the palette does not hold, paints nothing', async () => {
   const playing = authoring({ mode: 'play' });
   const playCanvas = canvasStub();
   playing.gestures.wireCanvasDrop(/** @type {any} */ (playCanvas));
@@ -280,7 +280,7 @@ test('a drop outside Build mode, or of something the palette does not hold, pain
   assert.equal(building.grid.getNode('keep'), before);
 });
 
-test('dragover only offers a drop target while authoring', () => {
+test('dragover only offers a drop target while authoring', async () => {
   const building = authoring();
   const buildCanvas = canvasStub();
   building.gestures.wireCanvasDrop(/** @type {any} */ (buildCanvas));
@@ -296,7 +296,7 @@ test('dragover only offers a drop target while authoring', () => {
   assert.equal(ignored.prevented, false);
 });
 
-test('a random-variant brush paints the position pick of each cell', () => {
+test('a random-variant brush paints the position pick of each cell', async () => {
   const { gestures, grid, env, app } = authoring();
   env.activeBrush = app.palette.anyVariant('plaza');
   gestures.onStrokeCell(0, 1, null, true);
@@ -307,7 +307,7 @@ test('a random-variant brush paints the position pick of each cell', () => {
   assert.equal(getTile(node, '1,1')?.imageRef, plazaAt(1, 1));
 });
 
-test('dropping a random-variant swatch paints the position pick', () => {
+test('dropping a random-variant swatch paints the position pick', async () => {
   const { gestures, grid } = authoring();
   const canvas = canvasStub();
   gestures.wireCanvasDrop(/** @type {any} */ (canvas));
@@ -315,7 +315,7 @@ test('dropping a random-variant swatch paints the position pick', () => {
   assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, plazaAt(1, 1));
 });
 
-test('a region stroke leaves a site entrance linked and says so once', () => {
+test('a region stroke leaves a site entrance linked and says so once', async () => {
   const { gestures, env, grid, toastMessages } = authoring();
   // A door on the outer wall is the way into the keep's cellar.
   env.activeBrush = { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` };
@@ -335,7 +335,7 @@ test('a region stroke leaves a site entrance linked and says so once', () => {
   ]);
 });
 
-test('a brush inspects instead of painting while another rail tab is open', () => {
+test('a brush inspects instead of painting while another rail tab is open', async () => {
   const { gestures, env, grid, calls } = authoring();
   env.buildTab = 'build-tab-tile';
   gestures.onStrokeCell(0, 2, null, true);

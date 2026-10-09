@@ -177,7 +177,8 @@ export interface AppActions {
   // mapWiring: navigate to and center the map on a position, and leave the
   // Build-mode tile selection alone (the roster follows a split party).
   centerOnLocation(location: EncounterLocation): void;
-  undoStroke(): void;
+  undoStroke(): Promise<void>;
+  redoStroke(): Promise<void>;
   // generateAction: go to the root node and open the Generate dialog on the
   // world archetype with every level of sub-maps. Resolves to null when the
   // GM cancels, and otherwise tells whether the party moved to the start of

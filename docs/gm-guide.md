@@ -185,8 +185,9 @@ shut. A party that walked to the link then stops one tile short of it.
    pointer crosses gets the brush. A click paints one cell.
 5. To clear cells, pick **Erase tile** and drag. To remove only a road or a
    path and keep the ground below it, pick **Erase path**.
-6. To take back the last stroke, click **Undo stroke** in the Tools card,
-   or press Ctrl+Z (Cmd+Z). A whole drag counts as one stroke.
+6. To take back the last stroke, click **Undo stroke** in the header, or
+   press Ctrl+Z (Cmd+Z). A whole drag counts as one stroke. To paint it
+   again, click **Redo stroke**, or press Ctrl+Shift+Z (Cmd+Shift+Z).
 
 The palette shows only the sections that the node kind can use. An
 interior shows **Interior** and **Furnishings**. A region shows
@@ -244,8 +245,12 @@ Ashford Hills" changes to the name pattern of the new archetype, such as
 "The Ashford Sands". Its block on the world map takes the ground of the new
 climate.
 
-To take back a generation, click **Undo stroke** once. This also removes
-each sub-map that the generation made.
+To take back a generation, click **Undo stroke** once. The tooltip of the
+button names the generation first, such as "Undo the world generation on
+Nordale Heights". The undo removes each sub-map that the generation made,
+so it asks you to confirm first. A character on a removed sub-map rejoins
+the party, and a creature there becomes unplaced. **Redo stroke** applies
+the generation again.
 
 ### Mark a point of interest
 
