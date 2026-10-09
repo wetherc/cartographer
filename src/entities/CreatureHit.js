@@ -1,4 +1,4 @@
-import { CONCENTRATING } from './Conditions.js';
+import { CONCENTRATING, hasCondition } from './Conditions.js';
 import { canAct } from './ConditionEffects.js';
 import { resolveSave } from './Checks.js';
 import { spendRiders } from './Riders.js';
@@ -58,9 +58,7 @@ export function settleConcentration(prev, next, opts = {}) {
     });
     if (!save.success) return { creature: drop(creature), events, ended };
   }
-  const chipped = creature.conditions.some(
-    (c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase(),
-  );
+  const chipped = hasCondition(creature.conditions, CONCENTRATING);
   if (!chipped || !canAct(creature.conditions)) return { creature: drop(creature), events, ended };
   return { creature, events, ended: null };
 }

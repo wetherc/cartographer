@@ -8,6 +8,7 @@
  */
 
 import { roll } from '../dice/DiceRoller.js';
+import { hasCondition } from './Conditions.js';
 
 /** @typedef {import('../types/spell.js').SpellHpPool} SpellHpPool */
 /** @typedef {import('../types/dice.js').DieType} DieType */
@@ -53,7 +54,7 @@ export function rollHpPool(pool, steps, rng) {
  */
 export function walkHpPool(targets, total, condition) {
   const held = (/** @type {CastTarget} */ target, /** @type {string} */ name) =>
-    (target.conditions ?? []).some((c) => c.name.toLowerCase() === name.toLowerCase());
+    hasCondition(target.conditions, name);
   const ranked = [...targets].sort(
     (a, b) => (a.hp ?? Number.POSITIVE_INFINITY) - (b.hp ?? Number.POSITIVE_INFINITY),
   );

@@ -2245,7 +2245,10 @@ off every recipient when the caster stops concentrating.
 Two riders on one creature both apply, so Bless and Bane cancel out on average
 and neither one wins. `addCondition` matches names without case, and the
 newer chip replaces the older one in the same place (see `sameSlot`) with its
-source and its rider.
+source and its rider. Every other name test on chips goes through
+`Conditions.conditionKey`, which trims a name and makes it lower case. The
+helpers `hasCondition`, `standardCondition`, and `uniqueNames` use the same
+key, so a name typed as " prone" matches the Prone chip in every path.
 
 The hand-add dialog in `ui/ConditionsBar.js` takes only a name and a duration.
 A chip that a GM adds by hand has no rider, so a chip named `Bless` by hand

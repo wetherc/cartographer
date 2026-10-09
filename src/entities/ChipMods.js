@@ -1,7 +1,7 @@
 import { clampInt } from '../util/num.js';
 import { ABILITY_SCORES, formatModifier } from './Modifiers.js';
 import { DAMAGE_TYPES } from './Equipment.js';
-import { strongestPerName } from './Conditions.js';
+import { conditionKey, strongestPerName, uniqueNames } from './Conditions.js';
 
 /**
  * What a condition chip changes on its holder besides a d20 roll. A buff
@@ -36,14 +36,7 @@ const MAX_TEMP_EACH_TURN = 30;
  * @returns {string[]}
  */
 function nameList(value) {
-  if (!Array.isArray(value)) return [];
-  /** @type {string[]} */
-  const names = [];
-  for (const entry of value) {
-    const name = typeof entry === 'string' ? entry.trim() : '';
-    if (name && !names.some((n) => n.toLowerCase() === name.toLowerCase())) names.push(name);
-  }
-  return names;
+  return Array.isArray(value) ? uniqueNames(value) : [];
 }
 
 /**
@@ -151,9 +144,9 @@ export function heldBoost(conditions) {
  * @returns {Condition | undefined}
  */
 export function immunityTo(conditions, name) {
-  const key = name.trim().toLowerCase();
+  const key = conditionKey(name);
   return (conditions ?? []).find((chip) =>
-    (chip.mods?.immune ?? []).some((n) => n.toLowerCase() === key),
+    (chip.mods?.immune ?? []).some((n) => conditionKey(n) === key),
   );
 }
 

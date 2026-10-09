@@ -8,6 +8,7 @@
  */
 
 import { exhaustionLevel } from './Exhaustion.js';
+import { conditionKey, hasCondition, uniqueNames } from './Conditions.js';
 
 /** @typedef {import('../types/spell.js').SpellHealEffect} SpellHealEffect */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -27,12 +28,7 @@ const MAX_NAMES = 12;
  */
 export function cureNames(value) {
   const list = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
-  /** @type {string[]} */
-  const names = [];
-  for (const raw of list) {
-    const name = typeof raw === 'string' ? raw.trim() : '';
-    if (name && !names.some((n) => n.toLowerCase() === name.toLowerCase())) names.push(name);
-  }
+  const names = uniqueNames(list);
   return names.length ? names.slice(0, MAX_NAMES) : null;
 }
 
@@ -55,8 +51,8 @@ export function cureFields(raw) {
  * @returns {boolean}
  */
 function has(entity, name) {
-  if (name.toLowerCase() === EXHAUSTION.toLowerCase()) return exhaustionLevel(entity) > 0;
-  return entity.conditions.some((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (conditionKey(name) === conditionKey(EXHAUSTION)) return exhaustionLevel(entity) > 0;
+  return hasCondition(entity.conditions, name);
 }
 
 /**

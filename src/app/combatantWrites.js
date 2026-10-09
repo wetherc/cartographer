@@ -1,6 +1,7 @@
 import { applyDamage, heal, isDefeated } from '../entities/Creature.js';
 import {
   addCondition,
+  conditionKey,
   createCondition,
   endedLine,
   outlasts,
@@ -108,7 +109,7 @@ export function applyConditionToTarget(
   }
   if (outlasts(held, chip)) return true;
   const ended = (more.mods?.immune ?? []).flatMap((n) =>
-    found.entity.conditions.filter((c) => c.name.toLowerCase() === n.toLowerCase()),
+    found.entity.conditions.filter((c) => conditionKey(c.name) === conditionKey(n)),
   );
   const kept = found.entity.conditions.filter((c) => !ended.includes(c));
   const conditions = addCondition(kept, name, rounds, extras);

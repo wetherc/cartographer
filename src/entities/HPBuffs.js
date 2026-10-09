@@ -1,4 +1,5 @@
 import { heldBoost } from './ChipMods.js';
+import { hasCondition } from './Conditions.js';
 import { getHP, restoreResource } from './Character.js';
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { heal } from './Creature.js';
@@ -84,7 +85,7 @@ function settleBoost(entity) {
  */
 function settleTemp(entity) {
   const from = entity.bonusHPFrom;
-  if (!from || entity.conditions.some((c) => c.name.toLowerCase() === from)) return entity;
+  if (!from || hasCondition(entity.conditions, from)) return entity;
   const { bonusHPFrom: _from, ...rest } = entity;
   return /** @type {T} */ ({ ...rest, bonusHP: 0 });
 }

@@ -9,7 +9,7 @@
  */
 
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
-import { CONDITIONS } from '../entities/Conditions.js';
+import { standardCondition } from '../entities/Conditions.js';
 
 /** @typedef {import('../types/entities.js').HitSave} HitSave */
 
@@ -28,8 +28,7 @@ export function normalizeHitSave(value) {
   const raw = /** @type {Record<string, unknown>} */ (value);
   const ability = String(raw.ability ?? '').toUpperCase();
   const dc = Math.floor(Number(raw.dc));
-  const key = String(raw.condition ?? '').toLowerCase();
-  const condition = CONDITIONS.find((c) => c.toLowerCase() === key);
+  const condition = standardCondition(String(raw.condition ?? ''));
   if (!ABILITY_SCORES.includes(ability) || !(dc >= 1) || !condition) return null;
   return { ability, dc: Math.min(dc, MAX_DC), condition };
 }

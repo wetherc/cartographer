@@ -1,4 +1,4 @@
-import { createCondition } from './Conditions.js';
+import { createCondition, hasCondition } from './Conditions.js';
 
 /**
  * The lethargy that Haste leaves when it ends. In 5e the target then can't
@@ -55,7 +55,7 @@ export function endedEffects(prev, next) {
  */
 export function withLethargy(prev, next, timing) {
   if (!endedEffects(prev, next).some((chip) => chip.mods?.extraAction)) return next;
-  if (next.some((chip) => chip.name.toLowerCase() === LETHARGIC.toLowerCase())) return next;
+  if (hasCondition(next, LETHARGIC)) return next;
   const extras = timing.expires ? { expires: timing.expires } : {};
   return [...next, createCondition(LETHARGIC, timing.rounds, extras)];
 }

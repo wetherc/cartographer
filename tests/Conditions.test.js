@@ -10,6 +10,10 @@ import {
   sameSlot,
   strongestPerName,
   tracksCast,
+  conditionKey,
+  hasCondition,
+  standardCondition,
+  uniqueNames,
 } from '../src/entities/Conditions.js';
 
 test('addCondition appends a new condition', () => {
@@ -159,4 +163,22 @@ test('strongestPerName keeps one chip per name, the highest score, first on a ti
   const d = createCondition('Shielded', 10, { mods: { ac: 5 } });
   const score = (/** @type {any} */ chip) => chip.mods?.ac ?? 0;
   assert.deepEqual(strongestPerName([a, c, b, d], score), [b, c]);
+});
+
+test('condition names match trimmed and without case', () => {
+  assert.equal(conditionKey(' Prone '), 'prone');
+  assert.equal(conditionKey(undefined), '');
+  const list = [{ name: 'Prone' }, { name: 'Bless' }];
+  assert.equal(hasCondition(list, ' prone'), true);
+  assert.equal(hasCondition(list, 'BLESS'), true);
+  assert.equal(hasCondition(list, 'Stunned'), false);
+  assert.equal(hasCondition(undefined, 'Prone'), false);
+  assert.equal(standardCondition(' paralyzed'), 'Paralyzed');
+  assert.equal(standardCondition('Haste'), undefined);
+  assert.deepEqual(uniqueNames([' Prone', 'prone', '', 3, 'Bless ', 'BLESS']), ['Prone', 'Bless']);
+});
+
+test('removeCondition and endedLine ignore stray spaces', () => {
+  assert.deepEqual(removeCondition([createCondition('Prone')], ' prone '), []);
+  assert.ok(!endedLine('Goblin', ' prone').includes('affected by'));
 });

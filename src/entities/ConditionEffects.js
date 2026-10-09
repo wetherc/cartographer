@@ -10,6 +10,7 @@
  */
 
 import { chipSlants } from './ChipSlants.js';
+import { conditionKey } from './Conditions.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('./Riders.js').RiderSource} RiderSource */
@@ -108,7 +109,7 @@ export const CONDITION_EFFECTS = {
  */
 export function conditionEffect(name) {
   if (typeof name !== 'string') return null;
-  return CONDITION_EFFECTS[name.trim().toLowerCase()] ?? null;
+  return CONDITION_EFFECTS[conditionKey(name)] ?? null;
 }
 
 /**

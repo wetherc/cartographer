@@ -4,7 +4,7 @@
  * A party character counts as humanoid. Every function is pure.
  */
 
-import { CONCENTRATING, CONDITIONS } from './Conditions.js';
+import { CONCENTRATING, CONDITIONS, conditionKey } from './Conditions.js';
 
 /** @typedef {import('../types/creature.js').CreatureType} CreatureType */
 
@@ -92,10 +92,10 @@ export function creatureTypeOf(kind, entity) {
  * @returns {boolean}
  */
 export function isImmuneToCondition(entity, condition) {
-  const key = condition.trim().toLowerCase();
+  const key = conditionKey(condition);
   const own = /** @type {{ conditionImmunities?: unknown } | null | undefined} */ (entity);
   return normalizeConditionImmunities(own?.conditionImmunities).some(
-    (c) => c.toLowerCase() === key,
+    (c) => conditionKey(c) === key,
   );
 }
 

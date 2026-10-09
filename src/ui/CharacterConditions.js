@@ -1,5 +1,5 @@
 import { settleHPBuffs } from '../entities/HPBuffs.js';
-import { CONCENTRATING } from '../entities/Conditions.js';
+import { CONCENTRATING, hasCondition } from '../entities/Conditions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { canAct } from '../entities/ConditionEffects.js';
 import { mountConditionsBar } from './ConditionsBar.js';
@@ -60,7 +60,7 @@ export function buildConditionsSection(character, ctx) {
     // unable to act ends the spell the same way.
     onChange: (next) => {
       const held = live();
-      const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
+      const kept = hasCondition(next, CONCENTRATING);
       const withConditions = settleHPBuffs({ ...held, conditions: next });
       if (held.concentration && (!kept || !canAct(next))) endConcentration(withConditions);
       else commit(withConditions);

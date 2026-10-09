@@ -11,6 +11,7 @@
  */
 
 import { DAMAGE_TYPES } from './Equipment.js';
+import { hasCondition } from './Conditions.js';
 
 /** @typedef {import('../types/creature.js').DamageDefenses} DamageDefenses */
 /** @typedef {import('../dice/DiceRoller.js').DamageGroup} DamageGroup */
@@ -80,7 +81,7 @@ export function defensesOf(entity, { nonmagical = false } = {}) {
     ...(c.mods?.resist ?? []),
     ...(nonmagical && c.mods?.resistNonmagical ? WEAPON_TYPES : []),
   ]);
-  const stone = (entity.conditions ?? []).some((c) => c.name?.trim().toLowerCase() === 'petrified');
+  const stone = hasCondition(entity.conditions, 'Petrified');
   const resist = [...own.resist, ...race, ...chips, ...(stone ? DAMAGE_TYPES : [])];
   const immune = stone ? [...new Set([...own.immune, 'poison'])] : own.immune;
   return {

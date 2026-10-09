@@ -220,8 +220,8 @@ export function addCondition(list, name, rounds = null, extras = {}) {
  * @returns {Condition[]}
  */
 export function removeCondition(list, name) {
-  const key = name.toLowerCase();
-  return list.filter((c) => c.name.toLowerCase() !== key);
+  const key = conditionKey(name);
+  return list.filter((c) => conditionKey(c.name) !== key);
 }
 
 /**
@@ -260,7 +260,62 @@ export function endOnDamage(list) {
  * @returns {string}
  */
 export function endedLine(holder, condition) {
-  const key = condition.trim().toLowerCase();
-  const standard = CONDITIONS.some((n) => n.toLowerCase() === key);
+  const standard = standardCondition(condition) !== undefined;
   return `${holder} is no longer ${standard ? '' : 'affected by '}${condition}`;
+}
+
+/**
+ * The matching key of a condition name: trimmed and lower case. Two names
+ * with the same key name the same condition, so " prone" matches "Prone".
+ * @param {string | null | undefined} name
+ * @returns {string}
+ */
+export function conditionKey(name) {
+  return String(name ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Whether a chip list has a chip of this name, by `conditionKey`.
+ * @param {readonly { name?: string }[] | null | undefined} list
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function hasCondition(list, name) {
+  const key = conditionKey(name);
+  return (list ?? []).some((c) => conditionKey(c.name) === key);
+}
+
+/**
+ * The spelling in `CONDITIONS` of a standard condition, or undefined when
+ * the name is not one of them. The match uses `conditionKey`.
+ * @param {string | null | undefined} name
+ * @returns {string | undefined}
+ */
+export function standardCondition(name) {
+  const key = conditionKey(name);
+  return CONDITIONS.find((c) => c.toLowerCase() === key);
+}
+
+/**
+ * A list of names, trimmed, with blanks, values that are not strings, and
+ * repeats dropped. A repeat has the same `conditionKey` as an earlier name,
+ * and the first spelling stays.
+ * @param {readonly unknown[]} list
+ * @returns {string[]}
+ */
+export function uniqueNames(list) {
+  /** @type {string[]} */
+  const names = [];
+  const seen = new Set();
+  for (const raw of list) {
+    const name = typeof raw === 'string' ? raw.trim() : '';
+    const key = name.toLowerCase();
+    if (name && !seen.has(key)) {
+      seen.add(key);
+      names.push(name);
+    }
+  }
+  return names;
 }
