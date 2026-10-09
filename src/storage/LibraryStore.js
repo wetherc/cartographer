@@ -87,13 +87,45 @@ export function downloadLibrary(library, filename = 'campaign-library.json') {
   downloadJSON(JSON.stringify(library, null, 2), filename);
 }
 
+/** The four lists of a library file. */
+const LIBRARY_LISTS = /** @type {const} */ (['equipment', 'creatures', 'spells', 'feats']);
+
+/**
+ * Whether parsed JSON looks like a library file: an object with at least one
+ * of the four library lists as an array. A campaign export, a bare array, or
+ * any other JSON fails this test. Without it, such a file normalizes to an
+ * empty library, and Replace then deletes every customization.
+ * @param {unknown} raw
+ * @returns {boolean}
+ */
+export function isLibraryFile(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  const record = /** @type {Record<string, unknown>} */ (raw);
+  return LIBRARY_LISTS.some((key) => Array.isArray(record[key]));
+}
+
+/**
+ * The entry counts of a library, for the import confirm and toast, for
+ * example "2 equipment, 0 creature, 5 spell, 1 feat entries".
+ * @param {CustomLibrary} library
+ * @returns {string}
+ */
+export function libraryCounts(library) {
+  const { equipment, creatures, spells, feats } = library;
+  return `${equipment.length} equipment, ${creatures.length} creature, ${spells.length} spell, ${feats.length} feat entries`;
+}
+
 /**
  * Read a custom library from a File object (the Import picker). The function
- * rejects only on a read error or a parse error. A file with a structural
- * error normalizes instead of failing.
+ * rejects on a read error or a parse error, and resolves to null when the
+ * JSON is not a library file (see `isLibraryFile`). A library file with a
+ * structural error in one entry normalizes instead of failing.
  * @param {File} file
- * @returns {Promise<CustomLibrary>}
+ * @returns {Promise<CustomLibrary | null>}
  */
 export function readLibraryFromFile(file) {
-  return readFileText(file).then((text) => normalizeLibrary(JSON.parse(text)));
+  return readFileText(file).then((text) => {
+    const raw = JSON.parse(text);
+    return isLibraryFile(raw) ? normalizeLibrary(raw) : null;
+  });
 }

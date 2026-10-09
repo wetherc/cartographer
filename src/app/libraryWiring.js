@@ -30,6 +30,7 @@ import {
   fetchLibraryFile,
   downloadLibrary,
   readLibraryFromFile,
+  libraryCounts,
   LIBRARY_FILE,
 } from '../storage/LibraryStore.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
@@ -448,7 +449,7 @@ export function wireLibrary(app) {
     const file = importInput.files?.[0];
     importInput.value = '';
     if (!file) return;
-    /** @type {CustomLibrary} */
+    /** @type {CustomLibrary | null} */
     let imported;
     try {
       imported = await readLibraryFromFile(file);
@@ -456,17 +457,19 @@ export function wireLibrary(app) {
       app.toasts.show('That file is not a readable library JSON.', { level: 'error' });
       return;
     }
+    if (!imported) {
+      app.toasts.show('That file is not a library file.', { level: 'error' });
+      return;
+    }
     if (!isLibraryEmpty(custom)) {
       const ok = await confirmModal(
-        'Replace your library customizations with this file? Built-in defaults are unaffected.',
+        `Your library has ${libraryCounts(custom)}. This file has ${libraryCounts(imported)}. Replace your customizations with this file? Built-in defaults are unaffected.`,
         { title: 'Replace your library?', variant: 'danger', confirmLabel: 'Replace' },
       );
       if (!ok) return;
     }
     setCustom(imported);
-    app.toasts.show(
-      `Library loaded: ${imported.equipment.length} equipment, ${imported.creatures.length} creature, ${imported.spells.length} spell, ${imported.feats.length} feat entries.`,
-    );
+    app.toasts.show(`Library loaded: ${libraryCounts(imported)}.`);
   });
 
   resetButton.disabled = isLibraryEmpty(custom);

@@ -6,6 +6,8 @@ import {
   saveCustomLibrary,
   clearCustomLibrary,
   fetchLibraryFile,
+  isLibraryFile,
+  libraryCounts,
 } from '../src/storage/LibraryStore.js';
 import { emptyLibrary } from '../src/library/Library.js';
 import { installLocalStorage } from './helpers/env.js';
@@ -89,4 +91,20 @@ test('fetchLibraryFile returns null on a missing file, bad JSON, or network erro
     throw new TypeError('network down');
   };
   assert.equal(await fetchLibraryFile(), null);
+});
+
+test('isLibraryFile accepts an object with at least one library list', () => {
+  assert.equal(isLibraryFile(emptyLibrary()), true);
+  assert.equal(isLibraryFile({ spells: [] }), true);
+  assert.equal(isLibraryFile({ feats: [{ name: 'Alert' }], extra: 1 }), true);
+});
+
+test('isLibraryFile refuses JSON that is not a library file', () => {
+  for (const raw of [null, 3, 'text', [], { hello: 1 }, { equipment: 5 }, { nodes: [] }]) {
+    assert.equal(isLibraryFile(raw), false, JSON.stringify(raw));
+  }
+});
+
+test('libraryCounts names the size of each list', () => {
+  assert.equal(libraryCounts(sample()), '1 equipment, 0 creature, 0 spell, 0 feat entries');
 });

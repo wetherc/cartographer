@@ -3117,7 +3117,7 @@ customizations, and a campaign import offers to restore them. See
 | Library file control | What it does |
 | --- | --- |
 | Export library | Downloads `campaign-library.json` |
-| Import library | Loads an exported file into this browser, and replaces the customizations after a confirmation |
+| Import library | Loads an exported file into this browser. When you have customizations, a confirmation shows the entry counts of your library and of the file before it replaces them. A file with none of the four library lists (equipment, creatures, spells, feats), such as a campaign export, is refused with "That file is not a library file." |
 | Reset library | Removes all customizations and restores the built-in defaults. It is disabled while the library has no customizations |
 
 The Library file card sits at the top of Library mode, above the tabs.
