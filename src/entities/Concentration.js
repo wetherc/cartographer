@@ -144,22 +144,24 @@ export function checkOnDamage(character, damage, opts = {}) {
 }
 
 /**
- * Advance one combat round: spend a round of the effect's duration and drop
- * it when it runs out. A duration with no round count (open-ended, or
- * measured in days) never expires here.
+ * Spend `rounds` of the effect's duration and drop it when it runs out. A
+ * combat round passes 1, and the game clock passes the rounds of a watch. A
+ * duration with no round count (open-ended, or measured in days) never
+ * expires here.
  *
  * The function rewrites the chip's counter from `remaining` instead of
- * decrementing it. This lets the shared `tickConditions` run over the same
- * list first. Whatever that does to the chip, the number the GM reads
- * afterward is the state's own number.
+ * decrementing it. The caller elapses the condition list first, and whatever
+ * that does to the chip, the number the GM reads afterward is the state's
+ * own number.
  * @template {Holder} T
  * @param {T} character
+ * @param {number} [rounds]
  * @returns {{ character: T, expired: boolean }}
  */
-export function tick(character) {
+export function tick(character, rounds = 1) {
   const held = character.concentration;
   if (!held || held.remaining === null) return { character, expired: false };
-  const remaining = held.remaining - 1;
+  const remaining = held.remaining - rounds;
   if (remaining <= 0) return { character: drop(character), expired: true };
   return {
     character: {

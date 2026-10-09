@@ -9,7 +9,6 @@ import {
   withDefaults,
   effectiveStatBlock,
   addStatModifier,
-  tickStatModifiers,
   editCreature,
   applyDamage,
   heal,
@@ -18,6 +17,7 @@ import {
 } from '../src/entities/Creature.js';
 import { toTemplate, fromTemplate } from '../src/entities/CreatureTemplate.js';
 import { createCondition } from '../src/entities/Conditions.js';
+import { elapse } from '../src/entities/TimedEffects.js';
 import { slotLevelOf } from '../src/entities/SpellSlots.js';
 
 /** The normalized stat block createCreature stamps from partial input. */
@@ -187,11 +187,11 @@ test('stat modifiers stack per stat and tick down one round at a time', () => {
   const once = addStatModifier(base, 'STR', 2, 2);
   const twice = addStatModifier(once, 'STR', 1, 1);
   assert.equal(effectiveStatBlock(twice).STR, 19);
-  const afterOne = { ...twice, statMods: tickStatModifiers(twice.statMods) };
+  const afterOne = elapse(twice, 1).entity;
   assert.equal(effectiveStatBlock(afterOne).STR, 18, 'the one-round modifier drops first');
-  const afterTwo = { ...afterOne, statMods: tickStatModifiers(afterOne.statMods) };
+  const afterTwo = elapse(afterOne, 1).entity;
   assert.equal(effectiveStatBlock(afterTwo).STR, 16);
-  assert.equal(tickStatModifiers(afterTwo.statMods), afterTwo.statMods);
+  assert.equal(elapse(afterTwo, 1).entity, afterTwo);
 });
 
 test('addStatModifier ignores a zero delta and a zero duration', () => {

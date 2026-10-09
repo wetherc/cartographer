@@ -1649,14 +1649,16 @@ when the caster concentrates on nothing.
   `checkOnDamage(character, damage, opts)` rolls the CON save against that DC
   through `savingThrow` and drops the spell on a failure. It returns the whole
   save, so the log can show the DC and the roll.
-- `tick(character)` spends one round of the duration and reports `expired`
-  when the duration runs out.
+- `tick(character, rounds)` spends `rounds` of the duration (one by default)
+  and reports `expired` when the duration runs out.
 
 The `Concentrating` chip is for display only. `begin` writes it, `drop`
 removes it, and `tick` writes its counter again from `remaining` instead of
-counting it down. The round wrap calls `TimedEffects.passRound`, which ticks
-the chips first and then calls `tick`, so the GM reads the counter of the
-state. `Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
+counting it down. The round wrap and the game clock both call `TimedEffects.elapse`, which
+elapses the chips first and then calls `tick`, so the GM reads the counter of
+the state. The clock passes the same function for characters and creatures,
+so a creature concentrating outside a fight runs out on time, and `passTime`
+then ends the chips and summons of its spell. `Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
 modules use the same spelling.
 
 ### Where concentration begins and ends

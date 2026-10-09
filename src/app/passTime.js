@@ -1,5 +1,5 @@
 import { advanceMinutes, formatClock, formatMinutes, watchesBetween } from '../time/GameClock.js';
-import { ROUNDS_PER_WATCH, elapseCharacter, elapseCreature } from '../entities/TimedEffects.js';
+import { ROUNDS_PER_WATCH, elapse } from '../entities/TimedEffects.js';
 import { commitCreatures } from './combatants.js';
 import { endSpellEffects } from './combatantWrites.js';
 
@@ -22,15 +22,22 @@ export function passTime(app, watches) {
   if (rounds <= 0) return;
   /** @type {{ casterId: string, spellId: string }[]} */
   const ended = [];
-  const characters = state.characters.map((c) => {
-    const result = elapseCharacter(c, rounds);
+  /**
+   * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
+   * @param {T} entity
+   * @returns {T}
+   */
+  const pass = (entity) => {
+    const result = elapse(entity, rounds);
     if (result.ended) {
-      app.actions.logEvent('note', `${c.name}'s concentration on ${result.ended.spellName} ends.`);
-      ended.push({ casterId: c.id, spellId: result.ended.spellId });
+      const { spellName, spellId } = result.ended;
+      app.actions.logEvent('note', `${entity.name}'s concentration on ${spellName} ends.`);
+      ended.push({ casterId: entity.id, spellId });
     }
-    return result.character;
-  });
-  const creatures = state.creatures.map((c) => elapseCreature(c, rounds));
+    return result.entity;
+  };
+  const characters = state.characters.map(pass);
+  const creatures = state.creatures.map(pass);
   if (characters.some((c, i) => c !== state.characters[i])) {
     state.characters = characters;
     app.actions.refreshSelectedCharacter();

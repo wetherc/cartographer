@@ -211,7 +211,7 @@ indexes and the pack cache of the save key on that identity.
 
 ### The round wrap
 
-The round wrap runs `TimedEffects.passRound` over every character and every
+The round wrap runs `TimedEffects.elapse(entity, 1)` over every character and every
 creature, bystanders included. It takes one round off the timed chips, the
 timed stat modifiers, and a held concentration. An entity with nothing timed
 comes back as the same object, and a collection with no changed entity keeps

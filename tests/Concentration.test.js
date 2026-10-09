@@ -10,7 +10,8 @@ import {
   tick,
 } from '../src/entities/Concentration.js';
 import { createCharacter } from '../src/entities/Character.js';
-import { addCondition, tickConditions } from '../src/entities/Conditions.js';
+import { addCondition } from '../src/entities/Conditions.js';
+import { elapse } from '../src/entities/TimedEffects.js';
 
 /**
  * A deterministic RNG replaying a queue of unit values, one per call, matching
@@ -193,15 +194,15 @@ test('the chip stays in step with the duration when the round tick runs first', 
   // agree afterwards, whichever ran first.
   let held = begin(caster(), spell('s1', 'Hold Person', 3), 2).character;
   for (const expected of [2, 1]) {
-    const ticked = tick({ ...held, conditions: tickConditions(held.conditions) });
-    held = ticked.character;
-    assert.equal(ticked.expired, false);
+    const ticked = elapse(held, 1);
+    held = ticked.entity;
+    assert.equal(ticked.ended, null);
     assert.equal(held.concentration?.remaining, expected);
     assert.deepEqual(chip(held), { name: 'Concentrating', rounds: expected });
   }
-  const last = tick({ ...held, conditions: tickConditions(held.conditions) });
-  assert.equal(last.expired, true);
-  assert.equal(chip(last.character), undefined);
+  const last = elapse(held, 1);
+  assert.equal(last.ended?.spellId, 's1');
+  assert.equal(chip(last.entity), undefined);
 });
 
 test('a concentration save uses up a Resistance chip', () => {

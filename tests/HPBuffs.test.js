@@ -5,7 +5,7 @@ import { createCreature } from '../src/entities/Creature.js';
 import { createCharacter, getHP, setBonusHP, withHP } from '../src/entities/Character.js';
 import { reconcileMaxHP } from '../src/entities/HitDice.js';
 import { createCondition } from '../src/entities/Conditions.js';
-import { elapseCharacter, passRound } from '../src/entities/TimedEffects.js';
+import { elapse } from '../src/entities/TimedEffects.js';
 
 /** A chip that raises the HP maximum by `n`, for `rounds` rounds. */
 const aid = (n, rounds = null) => createCondition('Aid', rounds, { mods: { maxHP: n } });
@@ -79,10 +79,10 @@ test('game time and the round tick end a timed raise', () => {
     conditions: [aid(5, 1)],
   });
   assert.equal(getHP(hero)?.max, 25);
-  assert.equal(getHP(elapseCharacter(hero, 2400).character)?.max, 20);
+  assert.equal(getHP(elapse(hero, 2400).entity)?.max, 20);
   const goblin = settleHPBuffs({
     ...createCreature('g', 'Goblin', { maxHP: 7 }),
     conditions: [aid(5, 1)],
   });
-  assert.equal(passRound(goblin).entity.maxHP, 7);
+  assert.equal(elapse(goblin, 1).entity.maxHP, 7);
 });

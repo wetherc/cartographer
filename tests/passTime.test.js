@@ -62,3 +62,29 @@ test('a walk that crosses a watch logs and announces its length and the new time
   assert.equal(passTravelTime(app, 0), false, 'a free walk changes nothing');
   assert.deepEqual(app.state.clock, { day: 1, watch: 1, minutes: 90 });
 });
+
+test('passing a watch ends a creature concentration, its chips, and its summons', () => {
+  const source = { casterId: 'hag', spellId: 'hold' };
+  const hag = {
+    ...createCreature('hag', 'Hag'),
+    concentration: { spellId: 'hold', spellName: 'Hold Person', slotLevel: 2, remaining: 10 },
+    conditions: [createCondition('Concentrating', 10)],
+  };
+  const wolf = {
+    ...createCreature('w1', 'Wolf'),
+    summonedBy: { casterId: 'hag', spellId: 'hold', spellName: 'Hold Person' },
+  };
+  const cleric = {
+    ...createCharacter('c1', 'Cleric'),
+    conditions: [createCondition('Paralyzed', null, { source })],
+  };
+  const app = stubApp({ state: { characters: [cleric], creatures: [hag, wolf] } });
+  passTime(app, 1);
+  assert.deepEqual(
+    app.state.creatures.map((c) => [c.id, c.concentration ?? null]),
+    [['hag', null]],
+  );
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.ok(app.log.includes("Hag's concentration on Hold Person ends."));
+  assert.ok(app.log.includes('Cleric is no longer Paralyzed.'));
+});

@@ -21,7 +21,7 @@ import {
   nearbyFoes,
   nearbyRadius,
 } from '../combat/CombatRoster.js';
-import { passRound } from '../entities/TimedEffects.js';
+import { elapse } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
 import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
@@ -313,7 +313,7 @@ export function wireEncounters(app) {
      */
     const tickAll = (list) => {
       const next = list.map((entity) => {
-        const { entity: passed, ended } = passRound(entity);
+        const { entity: passed, ended } = elapse(entity, 1);
         // A Haste chip that runs out on the tick leaves before its caster's
         // concentration sweep can see it, so the tick adds the lethargy.
         const ticked = passed === entity ? entity : addLethargy(app, entity, passed, notes);
