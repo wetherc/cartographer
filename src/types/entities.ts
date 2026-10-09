@@ -335,6 +335,15 @@ export interface DamagePart {
   rerollBelow?: number;
 }
 
+/** Coins by kind, each a whole count of zero or more. */
+export interface Purse {
+  pp: number;
+  gp: number;
+  ep: number;
+  sp: number;
+  cp: number;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -661,6 +670,9 @@ export interface Character extends HPBuffFields {
   stats: Record<string, number>;
   resources: ResourcePool[];
   inventory: InventoryItem[];
+  /** The coins the character carries. A load fills it, and moves the gold
+   * stack of an older save into `gp`. Absent reads as no coins. */
+  purse?: Purse;
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
   /** Exhaustion, 0 to 6. Each level costs 2 on every d20 test and 5 feet of

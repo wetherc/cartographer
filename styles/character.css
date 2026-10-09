@@ -738,3 +738,26 @@
 #sheet-tabs .tabs__tab {
   flex: 0 0 auto;
 }
+
+.purse-fields {
+  margin-bottom: var(--space-3);
+}
+
+.purse-fields__heading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label);
+}
+
+.purse-fields__text {
+  margin: 0;
+}
+
+.purse-fields__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 8rem));
+  gap: var(--space-2);
+}
+
+.purse-fields__row .form__number {
+  width: 100%;
+}

@@ -450,33 +450,6 @@ test('damageCharacter ends a chip that damage ends, even when bonus HP takes the
   assert.equal(getHP(damageCharacter(bare, 3))?.current, 7);
 });
 
-test('addGold pays into the gold stack, a stack named gold, or a new purse', async () => {
-  const { addGold } = await import('../src/entities/Character.js');
-  const stack = (/** @type {string} */ id, /** @type {string} */ name, quantity = 5) => ({
-    id,
-    name,
-    quantity,
-    notes: '',
-    type: /** @type {const} */ ('gear'),
-  });
-  const base = /** @type {any} */ ({ inventory: [stack('rope', 'Rope')] });
-  const byId = addGold(
-    { ...base, inventory: [stack('gold', 'Coins'), stack('g2', 'Gold bar')] },
-    10,
-  );
-  assert.equal(byId.inventory[0].quantity, 15);
-  const byName = addGold({ ...base, inventory: [stack('purse', 'Gold (gp)')] }, 2.7);
-  assert.equal(byName.inventory[0].quantity, 7);
-  const fresh = addGold(base, 3);
-  assert.deepEqual(fresh.inventory[1], stack('gold', 'Gold (gp)', 3));
-  assert.equal(addGold(base, 0), base);
-  assert.equal(addGold(base, Number.NaN), base);
-  assert.equal(
-    addGold({ ...base, inventory: [stack('gild', 'Goldenrod')] }, 1).inventory.length,
-    2,
-  );
-});
-
 test('addItem gives a renamed stack its own row instead of merging by id', () => {
   let hero = addItem(createCharacter('c1', 'Hero'), item('dagger', 'Dagger'));
   hero = updateItem(hero, 'dagger', { ...hero.inventory[0], name: 'Dagger +1' });

@@ -160,30 +160,3 @@ export function settlePactWeapon(character) {
   const { pactWeapon: _old, ...rest } = character;
   return /** @type {T} */ (rest);
 }
-
-/**
- * Add gold pieces to a character's purse: the stack with id `gold`, or else
- * the first item whose name starts with the word "gold", or else a new
- * "Gold (gp)" stack. A quest reward pays through this. A count of zero or
- * less changes nothing.
- * @param {Character} character
- * @param {number} gp
- * @returns {Character}
- */
-export function addGold(character, gp) {
-  const amount = Math.floor(gp);
-  if (!(amount > 0)) return character;
-  const purse =
-    character.inventory.find((i) => i.id === 'gold') ??
-    character.inventory.find((i) => /^gold\b/i.test(i.name));
-  if (!purse) {
-    return addItem(character, {
-      id: 'gold',
-      name: 'Gold (gp)',
-      quantity: amount,
-      notes: '',
-      type: 'gear',
-    });
-  }
-  return addItem(character, { ...purse, quantity: amount });
-}

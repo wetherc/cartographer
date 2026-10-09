@@ -8,6 +8,8 @@ import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
+import { buildPurseFields } from './PurseFields.js';
+import { purseOf, setPurse } from '../entities/Purse.js';
 import { shownItem, tileText } from '../view/ItemTiles.js';
 import { capitalize, slugify } from '../util/text.js';
 
@@ -254,7 +256,16 @@ export function mountInventoryPanel(
     refillList = fillList;
     fillList();
 
-    const panel = el('div', '', controls, list);
+    // A player spends and counts coins at the table, so the coin fields
+    // follow `canPlay`, the same as using an item.
+    const coins = buildPurseFields(purseOf(/** @type {Character} */ (current)), {
+      editable: playable,
+      onChange: (next) => {
+        const character = current;
+        if (character) commit(setPurse(character, next));
+      },
+    });
+    const panel = el('div', '', coins, controls, list);
 
     searchInput.addEventListener('input', () => {
       searchQuery = searchInput.value;
@@ -324,6 +335,7 @@ export function mountInventoryPanel(
         prev.id === next.id &&
         prev.inventory === next.inventory &&
         prev.equipment === next.equipment &&
+        prev.purse === next.purse &&
         shown.playable === canPlay() &&
         shown.editable === canEdit()
       ) {

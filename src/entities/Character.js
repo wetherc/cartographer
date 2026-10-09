@@ -14,6 +14,7 @@ import { derive } from './Progression.js';
 import { clearDying, isDead } from './DeathSaves.js';
 import { easeExhaustion, exhaustionFields } from './Exhaustion.js';
 import { emptyEquipment, migrateEquipment, migrateItem } from './Equipment.js';
+import { migrateGoldStack } from './Purse.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses } from './Multiclass.js';
@@ -187,7 +188,8 @@ export {
   prepareSpell,
   unprepareSpell,
 } from './CharacterSpellbook.js';
-export { addItem, addGold, transferItem, updateItem, removeItem } from './CharacterInventory.js';
+export { addItem, transferItem, updateItem, removeItem } from './CharacterInventory.js';
+export { addGold } from './Purse.js';
 
 /**
  * Fill in fields that a loaded character can predate: any missing ability
@@ -256,7 +258,11 @@ export function withDefaults(character) {
     concentration: character.concentration ?? null,
     deathSaves: character.deathSaves ?? null,
     equipment: migrateEquipment(character.equipment),
-    inventory: recordList(character.inventory).map(migrateItem),
+    // A gold stack of an older save moves into the purse here.
+    ...migrateGoldStack({
+      inventory: recordList(character.inventory).map(migrateItem),
+      purse: character.purse,
+    }),
     bonusHP: character.bonusHP ?? 0,
     baseAC: character.baseAC ?? 10,
     location: character.location ?? null,

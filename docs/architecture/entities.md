@@ -457,6 +457,8 @@ new value.
                          by derive
     CharacterSpellbook.js  learn, prepare, and copy the spells of a spellbook
     CharacterInventory.js  add, hand over, edit, and remove inventory stacks
+    Purse.js             the coins of a character: add, set, format, and the
+                         load step that moves a "Gold (gp)" stack into gp
           |
           v
     Character.js         the character value itself; withDefaults runs on

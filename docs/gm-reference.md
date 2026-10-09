@@ -2859,7 +2859,14 @@ hand, and a pair of daggers can fill both hands. A two-handed weapon in the
 main hand empties the off hand. The Off hand card reads "Both hands on" the weapon, and it stays closed
 until the weapon comes out of the main hand.
 
-The Inventory tab has a search box over names and descriptions, a type
+The **Coins** row at the top of the Inventory tab has one field for each
+5e coin: platinum (pp), gold (gp), electrum (ep), silver (sp), and copper
+(cp). Type a count and press Enter or leave the field to save it. The GM and
+the player of a bound tab can change the counts, and a spectator sees one
+line such as "25 gp, 7 sp". A save that keeps gold as a "Gold (gp)" item
+moves that item into the gold field when it loads.
+
+The Inventory tab also has a search box over names and descriptions, a type
 filter, and one collapsible heading per item type. Under each heading, every
 item is a tile with its name, one short stat line, a badge such as "x41" for
 a stack, and an "Equipped" mark for an item in a slot. Click a tile to show
@@ -2879,6 +2886,7 @@ pane sits beside the tiles, and on a narrow one it sits under them.
 | Two-handed damage | The other dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Magic | For a weapon: tick **Magical weapon** so that resistance to nonmagical weapon damage does not apply |
+| Light | For gear: tick **Sheds light** for a torch or a lantern, so the group that carries it sees in the dark (see the sight table) |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |
 | Min STR | For body armor: the Strength score that it needs. 0 means none |
@@ -3009,8 +3017,7 @@ XP**, and **Pay**. Pay is either "To each living character" or "As a total,
 split evenly". A total splits among the living characters and rounds down.
 When you complete a quest with a reward, the dialog shows the three fields
 with the reward filled in, and you can change them first. The gold goes
-into the Gold stack of each character, or into the first item whose name
-starts with "Gold". A character with neither gets a new "Gold (gp)" item.
+into the gold field of the Coins row of each character.
 A dead character gets no share. The travelogue line reads, for example,
 "The party receives 50 gp and 300 XP each." Set both amounts to 0 to
 remove the reward.

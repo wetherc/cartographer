@@ -16,6 +16,7 @@ import { buildStamp } from '../entities/FeatChoices.js';
 import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { xpForLevel } from '../entities/Experience.js';
+import { emptyPurse } from '../entities/Purse.js';
 import { DEFAULT_FEATS } from '../data/feats.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -78,8 +79,8 @@ const bare = () => ({
   accessory2: null,
 });
 
-/** @param {number} gp @returns {InventoryItem} */
-const purse = (gp) => ({ id: 'gold', name: 'Gold (gp)', quantity: gp, notes: '', type: 'gear' });
+/** @param {number} gp @returns {import('../types/entities.js').Purse} */
+const purse = (gp) => ({ ...emptyPurse(), gp });
 
 /** @returns {InventoryItem} */
 const healingPotion = () => ({
@@ -158,8 +159,8 @@ function aldric() {
     },
     { ...healingPotion(), quantity: 2 },
     { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear', light: true },
-    purse(25),
   ];
+  c.purse = purse(25);
   c.equipment = {
     ...bare(),
     chest: 'chain-mail',
@@ -245,8 +246,8 @@ function mirelle() {
       notes: 'Asks the temple for a priest who is not afraid of graves.',
       type: 'gear',
     },
-    purse(12),
   ];
+  c.purse = purse(12);
   c.equipment = { ...bare(), chest: 'scale-mail', mainHand: 'mace', offHand: 'dawn-shield' };
   return derive(c);
 }
@@ -345,8 +346,8 @@ function wren() {
       type: 'gear',
     },
     healingPotion(),
-    purse(41),
   ];
+  c.purse = purse(41);
   c.equipment = {
     ...bare(),
     chest: 'leather-armor',
@@ -470,8 +471,8 @@ function brannoc() {
       spellFocus: true,
     },
     healingPotion(),
-    purse(18),
   ];
+  c.purse = purse(18);
   c.equipment = {
     ...bare(),
     chest: 'splint',

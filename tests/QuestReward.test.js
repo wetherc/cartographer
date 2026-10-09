@@ -26,7 +26,7 @@ test('payReward pays each living character and skips the dead', async () => {
   const each = payReward([hero, sage, dead], { gp: 50, xp: 300, per: 'each' });
   assert.deepEqual([each.gp, each.xp, each.count], [50, 300, 2]);
   assert.equal(each.characters[0].xp, 300);
-  assert.equal(each.characters[1].inventory.at(-1)?.quantity, 50);
+  assert.equal(each.characters[1].purse?.gp, 50);
   assert.equal(each.characters[2], dead);
   const split = payReward([hero, sage, dead], { gp: 25, xp: 0, per: 'total' });
   assert.deepEqual([split.gp, split.xp], [12, 0]);
@@ -35,7 +35,7 @@ test('payReward pays each living character and skips the dead', async () => {
   assert.equal(tiny.characters[0], hero, 'a share that rounds to nothing pays nothing');
   assert.deepEqual(payReward([dead], { gp: 5, xp: 5, per: 'each' }).count, 0);
   const xpOnly = payReward([hero], { gp: 0, xp: 10, per: 'each' });
-  assert.equal(xpOnly.characters[0].inventory.length, hero.inventory.length);
+  assert.equal(xpOnly.characters[0].purse, hero.purse);
 });
 
 test('rewardLine names what each character got, or gives null', async () => {
