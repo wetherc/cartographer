@@ -230,7 +230,15 @@ board card that the GM or player picked as the target.
 
 The app never validates the inspection, because a user can inspect a
 defeated combatant on purpose. An id that stops resolving falls back to
-whoever's turn it is. The app releases the target on the refresh that shows
+whoever's turn it is. `heldInspection` in `view/CombatSelection.js` drops
+the inspection when the turn changes, when the fight ends, or when a new
+fight starts. It compares `inspectKey`, which is the fight's `startedAt`
+with `turnKey`, so a new fight that opens on the same round and holder
+still drops it. Without this, the column keeps a combatant picked turns
+ago, and the action bar and the death-save block of the current turn stay
+hidden. `nextInspection` makes a click on the current chip, or on the
+inspected chip, follow the turn again, and the column's **Back to current
+turn** link passes null to `onInspect`. The app releases the target on the refresh that shows
 it defeated, out of the order, or with the fight over. Otherwise the card of
 a defeated foe would keep its pressed ring after the attack dialog stopped
 using the pick. `heldTarget` in `view/CombatSelection.js` also releases the
@@ -831,7 +839,11 @@ The HP value is exact where the viewer can act for the combatant. That is the
 GM for every combatant, and a player for their own character only. Other
 viewers see a coarse HP band. The GM also gets an amount field with Damage and
 Heal buttons, the same controls as the Encounters panel. They apply through
-`applyToTarget`, which is the single write path for every hit.
+`applyToTarget`, which is the single write path for every hit. The target
+select defaults to the inspected combatant, then to the selected card
+(`hpTargetId` in `view/CombatHpTarget.js`). With neither, it reads "Choose a
+target" and both buttons stay disabled, so a Damage click cannot land on the
+turn holder by default. Each press sets the amount back to 1.
 
 Under the facts is the combatant's loadout in its full form: weapons with
 their damage rolls, and a chip for each slot pool. Below the loadout is the

@@ -8,18 +8,19 @@
 
 /**
  * The id the HP box targets. A pick in the box itself wins. Otherwise the
- * card selected on the board wins, then the combatant inspected in the left
- * column, then the combatant whose turn it is. Each candidate counts only
- * when it is a row with HP, so a stale id falls through to the next one.
+ * combatant inspected in the left column wins, because the box sits under
+ * that combatant's name, then the card selected on the board. Each candidate
+ * counts only when it is a row with HP, so a stale id falls through to the
+ * next one. The box never falls back to the combatant whose turn it is, so a
+ * Damage click with no target picked cannot hit the turn holder by default.
  * @param {CombatView} view
  * @param {{ picked?: string | null, selectedId?: string | null, inspectedId?: string | null }} ids
- * @returns {string | null} null when no row has HP
+ * @returns {string | null} null when no candidate names a row with HP
  */
 export function hpTargetId(view, { picked = null, selectedId = null, inspectedId = null }) {
   const withHP = new Set(view.rows.filter((r) => r.hp).map((r) => r.id));
-  const current = view.rows[view.turnIndex]?.id ?? null;
-  for (const id of [picked, selectedId, inspectedId, current]) {
+  for (const id of [picked, inspectedId, selectedId]) {
     if (id && withHP.has(id)) return id;
   }
-  return view.rows.find((r) => r.hp)?.id ?? null;
+  return null;
 }

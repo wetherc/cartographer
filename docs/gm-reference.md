@@ -1286,16 +1286,23 @@ The combat screen runs one fight at the full width of the page.
 | Dashed edge | A combatant that cannot act, such as a stunned one, which is still in the fight but loses its turn. A dying or stable character at 0 HP shows the same edge, because it is still alive |
 
 A click on a ribbon chip inspects that combatant without a change of turn.
+The left column then reads **Inspecting** and shows a **Back to current
+turn** link. A click on the link, on the chip of the current turn, or on
+the inspected chip again returns the column to whoever's turn it is. The
+next turn and the end of the fight also return it.
 
 The Damage and Heal box in the left column shows to the GM only. Its
 **Target** select picks the combatant that the box acts on, and the buttons
-name that combatant, as in **Heal Mirelle**. The target defaults to the card
-selected on the board, then to the inspected combatant, then to the
-combatant whose turn it is. A new selection on the board resets the target.
-A selection lasts for one turn, and **Next turn** clears it. A dying ally
-can be selected, so you can heal it on a foe's turn. The **Amount** stays
-for the rest of the turn, so you can apply one area spell's damage to
-several targets, and a new turn sets it back to 1.
+name that combatant, as in **Heal Mirelle**. The target defaults to the
+inspected combatant, then to the card selected on the board. With neither,
+the select reads **Choose a target**, and **Damage** and **Heal** stay
+disabled until you pick one. The box never defaults to the combatant whose
+turn it is. A new selection on the board or a new inspection resets the
+target. A selection lasts for one turn, and **Next turn** clears it. A
+dying ally can be selected, so you can heal it on a foe's turn. The
+**Amount** starts at 1, and each **Damage** or **Heal** press sets it back
+to 1, so a second click does not repeat a big hit. A click in the field
+selects its number, so you can type the next amount over it.
 
 | Viewer | Loadout shown on a card |
 | --- | --- |
@@ -2331,7 +2338,8 @@ The full sheet has four tabs.
 The top of the sheet shows the name, the race, and a tall HP bar the width
 of the card, with the current and maximum HP above it. Under the bar, the
 GM gets a **Damage** button, an amount field, and a **Heal** button. The
-amount field sets how many HP each click moves. It starts at 1. The level
+amount field sets how many HP each click moves. It starts at 1, and each
+**Damage** or **Heal** press sets it back to 1. The level
 line gives AC, initiative (**Init**), speed, passive Perception (**PP**),
 the proficiency bonus (**Prof**), and XP. Init includes the exhaustion
 penalty, as the initiative roll of a fight does.

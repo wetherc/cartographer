@@ -1,5 +1,5 @@
 import { el } from './dom.js';
-import { sectionLabel, textButton } from './buttons.js';
+import { bareButton, sectionLabel, textButton } from './buttons.js';
 import { conditionChip } from './ConditionsBar.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatActionBar } from './CombatActionBar.js';
@@ -24,18 +24,20 @@ import { viewTurnKey } from '../view/CombatSelection.js';
  * the loadout on the current turn, for a viewer who can act.
  * @param {CombatScreenCallbacks} callbacks
  * @param {(id: string) => Loadout} loadoutOf the screen's per-render loadout cache
+ * @param {() => void} followTurn drops the inspection, so the column shows
+ *   whoever's turn it is again
  * @returns {{
  *   element: HTMLElement,
  *   render: (view: CombatView, gm: boolean) => void,
  *   clear: () => void,
  * }}
  */
-export function mountActiveColumn(callbacks, loadoutOf) {
+export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
   const element = el('aside', 'combat-screen__active');
 
-  // The damage or heal amount stays across the re-renders of one turn. Every
-  // HP edit triggers a re-render. This lets the GM apply the same number to
-  // several combatants without retyping it, as for an area spell.
+  // The damage or heal amount. A Damage or Heal press sets it back to 1, so a
+  // second click does not repeat a big hit by mistake. A new turn also sets
+  // it back.
   let hpAmount = 1;
 
   // The combatant the GM picked in the HP box. A new card selection or a new
@@ -61,6 +63,11 @@ export function mountActiveColumn(callbacks, loadoutOf) {
         'combat-screen__active-header',
         el('h2', 'combat-screen__active-name', row.name ?? 'Unknown combatant'),
         el('span', 'u-muted', current ? 'Current turn' : 'Inspecting'),
+        current
+          ? null
+          : bareButton(['Back to current turn'], followTurn, {
+              className: 'combat-screen__follow-turn',
+            }),
       ),
     );
 
@@ -91,7 +98,7 @@ export function mountActiveColumn(callbacks, loadoutOf) {
       hpContext = context;
     }
     const hpTarget = hpTargetId(view, { picked: hpPick, selectedId, inspectedId });
-    if (gm && hpTarget) element.appendChild(hpControls(view, hpTarget, gm));
+    if (gm && view.rows.some((r) => r.hp)) element.appendChild(hpControls(view, hpTarget, gm));
 
     if (row.conditions.length > 0) {
       element.appendChild(
@@ -179,21 +186,26 @@ export function mountActiveColumn(callbacks, loadoutOf) {
   /**
    * The GM's HP edit control: a target select, an amount field, and a Damage
    * button and a Heal button that name the target. This matches the pattern
-   * the Encounters panel uses. The select defaults to the selected card, so
-   * a heal typed on the boss's turn goes to the ally the GM selected.
+   * the Encounters panel uses. The select defaults to the inspected
+   * combatant, then to the selected card (see `hpTargetId`). With neither,
+   * the select reads "Choose a target" and both buttons stay disabled until
+   * the GM picks one.
    * @param {CombatView} view
-   * @param {string} targetId
+   * @param {string | null} targetId
    * @param {boolean} gm
    */
   function hpControls(view, targetId, gm) {
     const rows = view.rows.filter((r) => r.hp);
     const target = select(
-      rows.map((r) => ({ value: r.id, label: r.name ?? 'Unknown combatant' })),
-      targetId,
+      [
+        { value: '', label: 'Choose a target', disabled: true },
+        ...rows.map((r) => ({ value: r.id, label: r.name ?? 'Unknown combatant' })),
+      ],
+      targetId ?? '',
       { className: 'combat-screen__hp-target', ariaLabel: 'Damage or heal target' },
     );
     target.addEventListener('change', () => {
-      hpPick = target.value;
+      hpPick = target.value || null;
       render(view, gm);
     });
     const row = rows.find((r) => r.id === targetId);
@@ -202,21 +214,29 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     amount.min = '1';
     amount.value = String(hpAmount);
     amount.setAttribute('aria-label', 'Damage or heal amount');
-    const name = row?.name ?? 'Unknown combatant';
-    const damage = textButton(
-      `Damage ${name}`,
-      () => callbacks.onApplyHP(targetId, hpAmount, false),
-      {
-        icon: 'minus',
-        variant: 'danger',
-        ariaLabel: `Damage ${name}`,
-      },
-    );
-    const heal = textButton(`Heal ${name}`, () => callbacks.onApplyHP(targetId, hpAmount, true), {
+    // A focused field selects its text, so typing replaces the number.
+    amount.addEventListener('focus', () => amount.select());
+    const name = row ? (row.name ?? 'Unknown combatant') : null;
+    /** @param {boolean} isHeal */
+    const apply = (isHeal) => {
+      if (!targetId) return;
+      const value = hpAmount;
+      hpAmount = 1;
+      amount.value = '1';
+      callbacks.onApplyHP(targetId, value, isHeal);
+    };
+    const damage = textButton(name ? `Damage ${name}` : 'Damage', () => apply(false), {
+      icon: 'minus',
+      variant: 'danger',
+      ariaLabel: name ? `Damage ${name}` : 'Damage, choose a target first',
+    });
+    const heal = textButton(name ? `Heal ${name}` : 'Heal', () => apply(true), {
       icon: 'heal',
       variant: 'success',
-      ariaLabel: `Heal ${name}`,
+      ariaLabel: name ? `Heal ${name}` : 'Heal, choose a target first',
     });
+    damage.disabled = !name;
+    heal.disabled = !name;
     // The buttons apply the tracked amount, not the field text. When the
     // field holds an unusable value, for example empty, zero, or negative,
     // the buttons disable. This stops the buttons from applying an old valid
@@ -225,8 +245,8 @@ export function mountActiveColumn(callbacks, loadoutOf) {
       const parsed = Number.parseInt(amount.value, 10);
       const valid = Number.isFinite(parsed) && parsed > 0;
       if (valid) hpAmount = parsed;
-      damage.disabled = !valid;
-      heal.disabled = !valid;
+      damage.disabled = !valid || !name;
+      heal.disabled = !valid || !name;
     });
     // The amount sits on its own line above both buttons, with a caption, so
     // it is clear that it feeds either button.

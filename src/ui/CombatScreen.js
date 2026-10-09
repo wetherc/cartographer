@@ -27,7 +27,7 @@ import { buildTabs } from './Tabs.js';
  *   onEnd: () => void,
  *   onLeave: () => void,
  *   getInspectedId: () => string | null,
- *   onInspect: (id: string) => void,
+ *   onInspect: (id: string | null) => void,
  *   getSelectedTargetId: () => string | null,
  *   onSelectTarget: (id: string) => void,
  *   getActions: () => {
@@ -67,7 +67,8 @@ import { buildTabs } from './Tabs.js';
  * switch has already hidden it. The host chooses which combatant the left
  * column shows in detail (`getInspectedId`). It defaults to the combatant
  * whose turn it is. Clicking a ribbon chip inspects that combatant without
- * advancing the turn.
+ * advancing the turn. The host decides when the inspection ends, and passes
+ * null to `onInspect` from the column's "Back to current turn" link.
  *
  * The board's cards double as the target picker. Clicking one reports
  * through `onSelectTarget`, and the host's `getSelectedTargetId` names which
@@ -139,7 +140,12 @@ export function mountCombatScreen(container, callbacks) {
     onNext: callbacks.onNext,
     onEnd: callbacks.onEnd,
   });
-  const column = mountActiveColumn(callbacks, loadoutOf);
+  // The column's back link drops the inspection, and the screen redraws
+  // at once, as it does for a chip click.
+  const column = mountActiveColumn(callbacks, loadoutOf, () => {
+    callbacks.onInspect(null);
+    render();
+  });
   const log = mountCombatLog();
   const board = el('div', 'combat-board');
   const diceDock = el('div', 'combat-screen__dice-dock');

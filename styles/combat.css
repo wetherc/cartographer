@@ -112,6 +112,19 @@ body.mode-combat .app-buildrail {
   font-size: var(--text-heading);
 }
 
+/* While the column inspects another combatant, this link returns it to
+   whoever's turn it is. */
+.combat-screen__follow-turn {
+  margin-inline-start: var(--space-2);
+  color: var(--accent);
+  font-size: var(--text-label);
+  text-decoration: underline;
+}
+
+.combat-screen__follow-turn:hover {
+  color: var(--accent-hover);
+}
+
 .combat-screen__facts {
   display: flex;
   gap: var(--space-4);

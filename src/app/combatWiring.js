@@ -8,7 +8,13 @@ import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
 import { isGM, seesThroughFog } from '../view/ViewRole.js';
-import { heldTarget, turnKey } from '../view/CombatSelection.js';
+import {
+  heldInspection,
+  heldTarget,
+  inspectKey,
+  nextInspection,
+  turnKey,
+} from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
 import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
@@ -44,8 +50,11 @@ export function wireCombatScreen(app) {
   const { state } = app;
 
   /** The ribbon-picked combatant that the left column details, or null for
-   * whoever's turn it is. This value is per tab and is never persisted. */
+   * whoever's turn it is. This value is per tab and is never persisted. It
+   * lasts for one turn of one fight (see `heldInspection`). */
   let inspectedId = /** @type {string | null} */ (null);
+  /** The fight and turn that the inspection was picked on (see `inspectKey`). */
+  let inspectTurn = /** @type {string | null} */ (null);
 
   /** The board-picked target that the next attack or cast opens on, or
    * null for none. This value is as transient as the inspection. The
@@ -71,6 +80,16 @@ export function wireCombatScreen(app) {
         const found = findCombatant(app, id);
         return !found || isGone(found);
       },
+    }));
+  }
+
+  /** Make the left column follow the turn again once the turn or the fight
+   * that the inspection was picked on is over. */
+  function releaseStaleInspection() {
+    ({ inspectedId, heldKey: inspectTurn } = heldInspection({
+      inspectedId,
+      heldKey: inspectTurn,
+      combat: state.combat,
     }));
   }
 
@@ -123,8 +142,12 @@ export function wireCombatScreen(app) {
       focusMapCanvas();
     },
     getInspectedId: () => inspectedId,
+    // A click on the chip of the current turn or of the inspected combatant,
+    // and the column's back link (id null), follow the turn again.
     onInspect: (id) => {
-      inspectedId = id;
+      const currentId = state.combat?.order[state.combat.index]?.id ?? null;
+      inspectedId = id === null ? null : nextInspection(id, { inspectedId, currentId });
+      inspectTurn = inspectKey(state.combat);
     },
     getSelectedTargetId: () => selectedTargetId,
     // Clicking the held card releases it, so the toggle acts like a checkbox.
@@ -312,6 +335,7 @@ export function wireCombatScreen(app) {
   // holding the ended fight's DOM.
   const refresh = createRefreshScheduler(() => {
     releaseStaleTarget();
+    releaseStaleInspection();
     if (state.mode !== 'combat' && state.combat) return;
     screen.update();
   });

@@ -17,24 +17,29 @@ test('a pick in the box wins over every other candidate', () => {
   assert.equal(hpTargetId(view(), ids), 'wolf');
 });
 
-test('the selected card wins over the inspected row and the current turn', () => {
-  assert.equal(hpTargetId(view(), { selectedId: 'mirelle', inspectedId: 'wolf' }), 'mirelle');
+test('the inspected row wins over the selected card', () => {
+  // The box sits under the inspected combatant's name, so it acts on that
+  // combatant and not on a card picked earlier on the board.
+  assert.equal(hpTargetId(view(), { selectedId: 'mirelle', inspectedId: 'wolf' }), 'wolf');
 });
 
-test('the inspected row wins when nothing is selected', () => {
-  assert.equal(hpTargetId(view(), { inspectedId: 'wolf' }), 'wolf');
+test('the selected card wins when nothing is inspected', () => {
+  assert.equal(hpTargetId(view(), { selectedId: 'mirelle' }), 'mirelle');
 });
 
-test('with no other candidate, the box targets the current turn', () => {
-  assert.equal(hpTargetId(view(1), {}), 'mirelle');
+test('with no candidate, the box has no target, not the current turn', () => {
+  assert.equal(hpTargetId(view(1), {}), null);
 });
 
 test('a stale id falls through to the next candidate', () => {
   assert.equal(hpTargetId(view(), { picked: 'gone', selectedId: 'wolf' }), 'wolf');
+  assert.equal(hpTargetId(view(), { inspectedId: 'gone', selectedId: 'wolf' }), 'wolf');
 });
 
 test('a row without HP is never the target', () => {
-  assert.equal(hpTargetId(view(0, ['nohp', 'wolf']), { selectedId: 'nohp' }), 'wolf');
-  assert.equal(hpTargetId(view(0, ['nohp']), {}), null);
-  assert.equal(hpTargetId(view(5, ['nohp', 'wolf']), {}), 'wolf');
+  assert.equal(hpTargetId(view(0, ['nohp', 'wolf']), { selectedId: 'nohp' }), null);
+  assert.equal(
+    hpTargetId(view(0, ['nohp', 'wolf']), { inspectedId: 'nohp', selectedId: 'wolf' }),
+    'wolf',
+  );
 });

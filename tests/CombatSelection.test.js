@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { heldTarget, turnKey, viewTurnKey } from '../src/view/CombatSelection.js';
+import {
+  heldInspection,
+  heldTarget,
+  inspectKey,
+  nextInspection,
+  turnKey,
+  viewTurnKey,
+} from '../src/view/CombatSelection.js';
 import { addParticipant, dropParticipant } from '../src/combat/Initiative.js';
 
 const fight = (/** @type {number} */ round, /** @type {number} */ index) =>
@@ -119,4 +126,39 @@ test('viewTurnKey reads the same key from a combat view', () => {
   assert.equal(viewTurnKey(view), turnKey(ordered));
   assert.equal(viewTurnKey({ ...view, rows: [] }), '1:');
   assert.equal(turnKey({ ...ordered, order: [] }), '1:');
+});
+
+test('inspectKey names the fight and the turn, or null with no fight', () => {
+  assert.equal(inspectKey({ ...fight(2, 1), startedAt: 50 }), '50|2:scout');
+  assert.equal(inspectKey(fight(1, 0)), '0|1:mirelle');
+  assert.equal(inspectKey(null), null);
+});
+
+test('an inspection stays for the rest of its turn', () => {
+  const combat = { ...fight(1, 0), startedAt: 5 };
+  const next = heldInspection({ inspectedId: 'scout', heldKey: '5|1:mirelle', combat });
+  assert.deepEqual(next, { inspectedId: 'scout', heldKey: '5|1:mirelle' });
+});
+
+test('a new turn releases the inspection', () => {
+  const combat = { ...fight(1, 1), startedAt: 5 };
+  const next = heldInspection({ inspectedId: 'scout', heldKey: '5|1:mirelle', combat });
+  assert.deepEqual(next, { inspectedId: null, heldKey: '5|1:scout' });
+});
+
+test('the end of a fight and the start of a new one release the inspection', () => {
+  const ended = heldInspection({ inspectedId: 'scout', heldKey: '5|1:mirelle', combat: null });
+  assert.deepEqual(ended, { inspectedId: null, heldKey: null });
+  // A new fight can open on the same round and turn holder as the last one.
+  const combat = { ...fight(1, 0), startedAt: 9 };
+  const fresh = heldInspection({ inspectedId: 'scout', heldKey: '5|1:mirelle', combat });
+  assert.deepEqual(fresh, { inspectedId: null, heldKey: '9|1:mirelle' });
+});
+
+test('a chip click inspects, and a click on the current or inspected chip follows the turn', () => {
+  const now = { inspectedId: null, currentId: 'mirelle' };
+  assert.equal(nextInspection('scout', now), 'scout');
+  assert.equal(nextInspection('mirelle', now), null);
+  assert.equal(nextInspection('scout', { inspectedId: 'scout', currentId: 'mirelle' }), null);
+  assert.equal(nextInspection('wolf', { inspectedId: 'scout', currentId: 'mirelle' }), 'wolf');
 });

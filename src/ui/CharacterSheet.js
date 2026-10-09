@@ -151,7 +151,8 @@ export function mountCharacterSheet(
 ) {
   let current = initial;
   // The HP amount field is rebuilt on each render. This value refills it,
-  // so a GM who types 7 can press Heal again without typing it twice.
+  // so a typed amount stays through a re-render until a Damage or Heal
+  // press sets it back to 1.
   let hpAmount = 1;
 
   const root = el('div', 'character-sheet');
@@ -281,11 +282,22 @@ export function mountCharacterSheet(
       let controls = null;
       if (perms.hp) {
         // The amount field sets how many HP each step button moves, so a big
-        // hit or heal is one click. An empty or bad entry counts as 1.
+        // hit or heal is one click. An empty or bad entry counts as 1. A press
+        // sets the field back to 1, so a second click does not repeat a big
+        // hit, and a focused field selects its text, so typing replaces it.
         const amountInput = numberField(hpAmount, { min: 1 });
         amountInput.classList.add('character-sheet__hp-amount');
         amountInput.setAttribute('aria-label', `HP amount for ${character.name}`);
-        const amount = () => (hpAmount = Math.max(1, Math.floor(Number(amountInput.value)) || 1));
+        amountInput.addEventListener('focus', () => amountInput.select());
+        amountInput.addEventListener('input', () => {
+          hpAmount = Math.max(1, Math.floor(Number(amountInput.value)) || 1);
+        });
+        const amount = () => {
+          const value = Math.max(1, Math.floor(Number(amountInput.value)) || 1);
+          hpAmount = 1;
+          amountInput.value = '1';
+          return value;
+        };
         // Bonus HP absorbs the hit before the pool does.
         const damageButton = textButton(
           'Damage',
