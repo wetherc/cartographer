@@ -80,20 +80,24 @@ export const CONDITIONS = [
 
 ## 4. Write a test
 
-The tests live in `tests/`, and each test file pairs with one module.
+The tests live in `tests/`. The tests for `src/entities/Conditions.js` are
+in `tests/Conditions.test.js`.
 
 1. Open `tests/Conditions.test.js`.
-2. Add `CONDITIONS` to the import at the top of the file:
+2. Find the import from `'../src/entities/Conditions.js'` at the top of the
+   file. Add `CONDITIONS,` as the first name in its list, and keep the other
+   names:
 
    ```js
    import {
      CONDITIONS,
      createCondition,
-     addCondition,
-     removeCondition,
-     tickConditions,
+     // ... the other names that the file imports
    } from '../src/entities/Conditions.js';
    ```
+
+   Do not replace the whole import with this snippet. The existing tests
+   use the other names, and they fail if you remove them.
 
 3. Add this test at the end of the file:
 
@@ -112,13 +116,18 @@ suite takes several seconds.
 node --test tests/Conditions.test.js
 ```
 
-The summary at the end counts nine tests, one more than before:
+The summary at the end lists the count of tests, passes, and failures. The
+count of tests is one more than before your change, the pass count is the
+same as the test count, and the fail count is `0`:
 
 ```
-# tests 9
-# pass 9
+# tests <count>
+# pass <count>
 # fail 0
 ```
+
+To see the count before your change, run the same command with
+`git stash` first and `git stash pop` after.
 
 If the test fails, read the first assertion in the output. It names the
 file and the line that failed.
@@ -135,12 +144,12 @@ pnpm run typecheck
 
 | Command | What it checks | A clean run ends with |
 | --- | --- | --- |
-| `pnpm test` | Every test file under `tests/` | `3464 passed  0 failed`, with your test included |
+| `pnpm test` | Every test file under `tests/` | A line such as `<count> tests  <count> passed  0 failed`, with your test included |
 | `pnpm run lint` | Style and logic rules, such as unused variables and loose equality | No output after the `eslint .` line |
 | `pnpm run typecheck` | The JSDoc types in the `.js` files against the declarations in `src/types/` | No output after the `tsc --noEmit` line |
 
-The test count grows as the project grows, so your total can differ. The
-count of failures must be `0`.
+The test count changes as the project grows, so this page does not give a
+total. A failure count other than `0` blocks the commit.
 
 The pre-commit hook runs the same three checks. To turn the hook on for
 this clone, run this command once:
@@ -155,16 +164,19 @@ The unit tests build no DOM, so a change that reaches the UI also needs a
 look in the browser.
 
 1. Reload the browser tab with the app.
-2. Click **Load example** in the header, then click **Load example** in the
-   confirmation dialog.
-3. Click **Play** in the mode switch.
+2. Click **Load example** in the header. If the current campaign is not
+   blank, a confirmation dialog opens. Click **Load example** in it.
+3. Make sure that **Play** is selected in the mode switch.
 4. Open the **Session** tab in the sidebar, and find the **Encounters**
    panel.
-5. Open the **Nearby encounters** tab. If it reads "No encounters nearby.",
-   click a tile a few steps from the party marker, and look again.
-6. On an encounter row, click the **Condition** button. The Add condition
-   dialog opens.
-7. Open the **Condition** dropdown. `Cursed` is in the list.
+5. Open the **Nearby encounters** tab. Each line is one group of foes, such
+   as "Gray Wolf x4". If the tab reads "No encounters nearby.", click a tile
+   a few steps from the party marker, and look again.
+6. Click a foe line to open it. The full row of each foe in the group shows
+   below the line.
+7. On a foe row, click the **Condition** button. The Add condition dialog
+   opens.
+8. Open the **Condition** dropdown. `Cursed` is in the list.
 
 If the row already has condition chips, the button is a **+** icon with
 the label "Add condition".
@@ -177,8 +189,8 @@ Keep the browser console open while you check. A missing asset shows as a
 1. Remove `'Cursed'` from `src/entities/Conditions.js`.
 2. Remove the test and the `CONDITIONS` import from
    `tests/Conditions.test.js`.
-3. Run `node --test tests/Conditions.test.js` again. It reports eight
-   passing tests.
+3. Run `node --test tests/Conditions.test.js` again. The test count is
+   one less than in step 5, and the fail count is `0`.
 4. Run `git status`. It lists no changed files.
 5. Stop the dev server with Ctrl+C.
 
