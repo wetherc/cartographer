@@ -590,19 +590,22 @@ that.
    beside **Hit Dice** in the Progression block, and then click **Spend**
    in the confirmation.
 
-### Change a character's maximum HP, bonus HP, or base AC
+### Edit a character
 
 1. In the **Party** panel, click the pencil button on the row of the
-   character (**Edit HP and AC**).
-2. Set **Max HP**. If the new maximum is lower than the current HP, the
+   character (**Edit character**).
+2. Fix the **Name**, the ability scores, or the proficiency lists if they
+   need it. A changed CON moves the maximum HP.
+3. Set **Max HP**. If the new maximum is lower than the current HP, the
    current HP goes down to match. A typed maximum stops the maximum from
    growing with level and CON. To go back to the calculated maximum, tick
    **Use class HP**. If you leave **Max HP** as it is, the maximum stays
    calculated.
-3. Set **Bonus HP (temporary)**. These points sit on top of the HP pool,
+4. Set **Bonus HP (temporary)**. These points sit on top of the HP pool,
    and damage removes them first.
-4. Set **Unarmored base AC**. It applies only while the character wears no
+5. Set **Unarmored base AC**. It applies only while the character wears no
    body armor.
+6. Click **Save**.
 
 ### Level a character
 

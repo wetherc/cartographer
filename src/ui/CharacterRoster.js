@@ -51,9 +51,9 @@ function hpMeter(character) {
  * browse-only. Rows still select, since any viewer can look at a sheet,
  * but the add, delete, and award controls disappear. Roster membership
  * belongs to the GM to manage.
- * If onEditVitals is set, each managed row offers an Edit vitals action for
- * the numbers the GM sets rather than the character earns: maximum HP, bonus
- * HP, and unarmored base AC. If onGrantXP is set, each managed row offers an
+ * If onEditVitals is set, each managed row offers an Edit character action
+ * for what the GM sets rather than the character earns: the name, ability
+ * scores, proficiencies, maximum HP, bonus HP, and unarmored base AC. If onGrantXP is set, each managed row offers an
  * XP action that grants a one-off amount to that character alone, which is
  * the per-character counterpart of Award Party XP below the list.
  * Both open a dialog through the caller. They live here, not on the character
@@ -186,12 +186,10 @@ export function mountCharacterRoster(container, options) {
       const row = el('div', 'character-roster__row u-row u-g1', select);
       if (manage && options.onEditVitals) {
         row.appendChild(
-          iconButton(
-            'edit',
-            `Edit the vitals of ${character.name}`,
-            () => options.onEditVitals?.(character.id),
-            { className: 'character-roster__vitals', title: 'Edit HP and AC' },
-          ),
+          iconButton('edit', `Edit ${character.name}`, () => options.onEditVitals?.(character.id), {
+            className: 'character-roster__vitals',
+            title: 'Edit character',
+          }),
         );
       }
       if (manage && options.playerTabHref) {

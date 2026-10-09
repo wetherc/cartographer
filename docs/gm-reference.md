@@ -2228,7 +2228,7 @@ character detail card shows.
 | Control | Who | What it does |
 | --- | --- | --- |
 | Row name | Everyone | Selects the character |
-| Edit HP and AC (pencil) | GM | Opens the HP and AC dialog |
+| Edit character (pencil) | GM | Opens the edit dialog of that character |
 | Open player tab (arrow out of a box) | GM | Opens a Player tab bound to that character in a new browser tab |
 | Place on map | GM, while the party is split | Moves that character. See [Party splitting](#party-splitting) |
 | More actions (three dots) | GM | Opens a menu with **Grant XP**, which grants XP to that character alone (the default is 100), and **Delete**, which deletes the character after a confirm |
@@ -2242,8 +2242,12 @@ Open player tab is an ordinary link, so a middle-click or the "Open in new
 tab" menu of the browser also works on it. Spectator tab is a button. It
 always opens a new browser tab, and it has no link menu.
 
-| HP and AC field | Meaning |
+| Edit field | Meaning |
 | --- | --- |
+| Name (required) | The name of the character. Save stays off while it is blank |
+| STR to CHA | The stored ability scores, from 1 to 30. They include the race increases and ability score improvements, and not the bonus of worn items. A change updates max HP, saves, checks, and AC at once |
+| Saving throws, Skills, Armor, Weapon categories | The proficiency lists. Expertise stays on the sheet, and a skill removed here loses its expertise too |
+| Other weapons, Tools, Languages | Named weapons, tools, and languages, one pill each |
 | Max HP | The maximum without the raise of a spell such as Aid. A changed value overrides the calculated maximum, and lowers current HP to fit. An unchanged value leaves the maximum calculated, so it still grows with level and CON |
 | Use class HP | Shows only after a typed maximum. Drops the typed value and goes back to the calculated maximum |
 | Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them. A typed amount stays after the spell that granted the old amount ends |

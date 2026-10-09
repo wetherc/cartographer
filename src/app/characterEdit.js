@@ -6,14 +6,26 @@ import {
   setBaseAC,
 } from '../entities/Character.js';
 import { classMaxHP } from '../entities/HitDice.js';
+import { derive, withProficiencies } from '../entities/Progression.js';
+import {
+  getProficiencies,
+  normalizeProficiencies,
+  ARMOR_PROFICIENCIES,
+  WEAPON_CATEGORIES,
+} from '../entities/Proficiencies.js';
+import { ABILITY_SCORES } from '../entities/Modifiers.js';
+import { SKILL_IDS, skillName } from '../data/skills.js';
 import { clampInt } from '../util/num.js';
+import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
+import { statFields } from './statFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 
 /**
  * This module defines the fields of a character's edit dialog and the pure
- * function that applies the submitted values. `rosterActions.js` supplies
+ * functions that apply the submitted values: the name, the ability scores,
+ * the proficiency lists, the HP, and the AC. `rosterActions.js` supplies
  * the modal around them. Both halves are free of DOM code, so the rules are
  * unit-testable.
  */
@@ -105,4 +117,135 @@ export function applyVitals(character, values, shownMax = baseMaxHP(character)) 
   // Base AC applies only while no body armor is worn. The sheet's AC badge
   // shows the derived result either way.
   return setBaseAC(next, clampInt(values.baseAC, 10));
+}
+
+/** The highest ability score a typed edit accepts, the 5e ceiling. */
+const SCORE_MAX = 30;
+
+/**
+ * The name, ability score, and proficiency fields of the edit dialog. The
+ * scores are the stored ones, with the race increases and ability score
+ * improvements already in them and without the bonus of worn items. The
+ * proficiency lists are the full lists, so a GM can add a downtime tool or
+ * remove a pick made by mistake. Expertise has no field here. It stays on
+ * the sheet, and a skill removed here drops its expertise too.
+ * @param {Character} character
+ * @returns {ModalField[]}
+ */
+export function basicsFields(character) {
+  const prof = getProficiencies(character);
+  return [
+    { name: 'name', label: 'Name (required)', value: character.name, section: 'Character' },
+    ...statFields(ABILITY_SCORES, character.stats).map((field) => ({
+      ...field,
+      max: SCORE_MAX,
+    })),
+    {
+      name: 'saves',
+      label: 'Saving throws',
+      type: 'multiselect',
+      value: prof.saves.join(','),
+      options: ABILITY_SCORES.map((key) => ({ value: key, label: key })),
+      columns: true,
+      full: true,
+      section: 'Proficiencies',
+    },
+    {
+      name: 'skills',
+      label: 'Skills',
+      type: 'multiselect',
+      value: prof.skills.join(','),
+      options: SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })),
+      columns: true,
+      full: true,
+    },
+    {
+      name: 'armor',
+      label: 'Armor',
+      type: 'multiselect',
+      value: prof.armor.join(','),
+      options: ARMOR_PROFICIENCIES.map((key) => ({ value: key, label: capitalize(key) })),
+      columns: true,
+    },
+    {
+      name: 'weaponCategories',
+      label: 'Weapon categories',
+      type: 'multiselect',
+      value: prof.weapons.categories.join(','),
+      options: WEAPON_CATEGORIES.map((key) => ({ value: key, label: capitalize(key) })),
+      columns: true,
+    },
+    {
+      name: 'weapons',
+      label: 'Other weapons (hit Enter to add)',
+      type: 'tags',
+      value: prof.weapons.named.join(','),
+      full: true,
+    },
+    {
+      name: 'tools',
+      label: 'Tools (hit Enter to add)',
+      type: 'tags',
+      value: prof.tools.join(','),
+      full: true,
+    },
+    {
+      name: 'languages',
+      label: 'Languages (hit Enter to add)',
+      type: 'tags',
+      value: prof.languages.join(','),
+      full: true,
+    },
+  ];
+}
+
+/**
+ * Apply the submitted name, scores, and proficiency lists to the character
+ * as it is now. A blank name keeps the old one. A blank or invalid score
+ * keeps the old score, and a score stops at 1 and 30. Changed scores and
+ * changed lists both run `Progression.derive`, so a CON edit moves max HP
+ * and a new skill counts toward its checks at once. Unchanged values return
+ * the character unchanged. A field missing from `values` leaves its part
+ * alone. The function is pure.
+ * @param {Character} character
+ * @param {Record<string, string>} values
+ * @returns {Character}
+ */
+export function applyBasics(character, values) {
+  let next = character;
+  const name = (values.name ?? '').trim();
+  if (name && name !== character.name) next = { ...next, name };
+
+  const stats = { ...character.stats };
+  let statsChanged = false;
+  for (const key of ABILITY_SCORES) {
+    const raw = values[`stat-${key}`];
+    if (raw === undefined) continue;
+    const current = character.stats[key] ?? 10;
+    const score = clampInt(raw, 1, SCORE_MAX, current);
+    if (score !== current) {
+      stats[key] = score;
+      statsChanged = true;
+    }
+  }
+  if (statsChanged) next = derive({ ...next, stats });
+
+  if (values.skills === undefined) return next;
+  const before = getProficiencies(character);
+  const lists = normalizeProficiencies({
+    saves: splitList(values.saves),
+    skills: splitList(values.skills),
+    expertise: before.expertise,
+    weapons: {
+      categories: /** @type {import('../types/entities.js').WeaponCategory[]} */ (
+        splitList(values.weaponCategories)
+      ),
+      named: splitTrimmedList(values.weapons),
+    },
+    armor: splitList(values.armor),
+    tools: splitTrimmedList(values.tools),
+    languages: splitTrimmedList(values.languages),
+  });
+  const same = JSON.stringify(lists) === JSON.stringify(normalizeProficiencies(before));
+  return same ? next : withProficiencies(next, lists);
 }

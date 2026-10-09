@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { baseMaxHP, vitalsFields, applyVitals } from '../src/app/characterEdit.js';
+import {
+  baseMaxHP,
+  vitalsFields,
+  applyVitals,
+  basicsFields,
+  applyBasics,
+} from '../src/app/characterEdit.js';
+import { getProficiencies, withProficiencies } from '../src/entities/Proficiencies.js';
 import {
   createCharacter,
   withHP,
@@ -90,4 +97,75 @@ test('bonus HP changes only when the typed amount differs', () => {
 test('clearMaxHPOverride returns a character without the flag unchanged', () => {
   const plain = fighter();
   assert.equal(clearMaxHPOverride(plain), plain);
+});
+
+/** The submitted record of an untouched basics form. @param {any} c */
+function basicsValues(c) {
+  return Object.fromEntries(
+    basicsFields(c).map((field) => [field.name, String(/** @type {any} */ (field).value ?? '')]),
+  );
+}
+
+test('basicsFields opens with the name, the six scores, and the proficiency lists', () => {
+  const c = withProficiencies(fighter(), {
+    ...getProficiencies(fighter()),
+    saves: ['STR', 'CON'],
+    skills: ['athletics'],
+    weapons: { categories: ['simple'], named: ['longsword'] },
+    tools: ["thieves' tools"],
+    languages: ['Common'],
+  });
+  const shown = basicsValues(c);
+  assert.equal(shown.name, 'Bron');
+  assert.equal(shown['stat-CON'], '14');
+  assert.equal(shown.saves, 'STR,CON');
+  assert.equal(shown.weaponCategories, 'simple');
+  assert.equal(shown.weapons, 'longsword');
+  assert.equal(shown.tools, "thieves' tools");
+  assert.equal(applyBasics(c, shown), c, 'an untouched form changes nothing');
+});
+
+test('applyBasics renames, and a blank name keeps the old one', () => {
+  const c = fighter();
+  assert.equal(
+    applyBasics(c, { ...basicsValues(c), name: '  Bron the Bold ' }).name,
+    'Bron the Bold',
+  );
+  assert.equal(applyBasics(c, { ...basicsValues(c), name: '  ' }).name, 'Bron');
+});
+
+test('a score edit re-derives, so a CON change moves max HP', () => {
+  const c = fighter();
+  const tougher = applyBasics(c, { ...basicsValues(c), 'stat-CON': '18' });
+  assert.equal(tougher.stats.CON, 18);
+  assert.equal(getHP(tougher)?.max, 14);
+  const capped = applyBasics(c, { ...basicsValues(c), 'stat-STR': '99', 'stat-DEX': 'x' });
+  assert.equal(capped.stats.STR, 30);
+  assert.equal(capped.stats.DEX, c.stats.DEX ?? 10);
+});
+
+test('applyBasics writes the edited lists and keeps expertise on a kept skill', () => {
+  const c = withProficiencies(fighter(), {
+    ...getProficiencies(fighter()),
+    skills: ['athletics', 'stealth'],
+    expertise: ['athletics', 'stealth'],
+  });
+  const next = applyBasics(c, {
+    ...basicsValues(c),
+    skills: 'athletics,perception',
+    tools: "smith's tools, cook's utensils",
+    languages: 'Common,Dwarvish',
+    armor: 'light,shield',
+  });
+  const prof = getProficiencies(next);
+  assert.deepEqual(prof.skills, ['athletics', 'perception']);
+  assert.deepEqual(prof.expertise, ['athletics']);
+  assert.deepEqual(prof.tools, ["smith's tools", "cook's utensils"]);
+  assert.deepEqual(prof.languages, ['Common', 'Dwarvish']);
+  assert.deepEqual(prof.armor, ['light', 'shield']);
+});
+
+test('applyBasics with no basics fields leaves the character alone', () => {
+  const c = fighter();
+  assert.equal(applyBasics(c, {}), c);
 });

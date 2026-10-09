@@ -2,7 +2,13 @@ import { promptModal, confirmDelete } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
 import { isDead } from '../entities/DeathSaves.js';
 import { payReward } from '../quest/QuestReward.js';
-import { baseMaxHP, vitalsFields, applyVitals } from './characterEdit.js';
+import {
+  baseMaxHP,
+  vitalsFields,
+  applyVitals,
+  basicsFields,
+  applyBasics,
+} from './characterEdit.js';
 import { applyFresh, removeById } from '../entities/Roster.js';
 import { moveCharacter } from '../party/CharacterTokens.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -15,8 +21,9 @@ import { locationFields, readLocation } from './locationFields.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * The GM's roster controls: place one character, edit its HP and AC, grant XP
- * to one character or award it to the party, and add or delete a character.
+ * The GM's roster controls: place one character, edit its name, scores,
+ * proficiencies, HP, and AC, grant XP to one character or award it to the
+ * party, and add or delete a character.
  * `partyWiring.js` passes these handlers to the roster panel, and each one
  * writes through the character scope that `partyWiring.js` owns.
  * @param {AppContext} app
@@ -66,25 +73,34 @@ export function rosterActions(app, { scope, selectCharacter }) {
         app.actions.logEvent('travel', `${character.name} rejoins the party.`);
       }
     },
-    // The numbers a GM sets rather than a character earns: the maximum HP
-    // override, bonus HP from an item or a boon, and the unarmored base AC
-    // that an effect such as Mage Armor raises. Inline fields on the sheet
-    // put three edit boxes in the middle of the numbers a player reads, so
-    // one dialog per character keeps them together and keeps the sheet
-    // read-only. `characterEdit.js` defines the fields and their rules.
+    // The parts of a character a GM sets rather than earns: the name, the
+    // ability scores, the proficiency lists, the maximum HP override, bonus
+    // HP from an item or a boon, and the unarmored base AC that an effect
+    // such as Mage Armor raises. Inline fields on the sheet would put edit
+    // boxes in the middle of the numbers a player reads, so one dialog per
+    // character keeps them together and keeps the sheet read-only.
+    // `characterEdit.js` defines the fields and their rules.
     onEditVitals: async (id) => {
       const character = state.characters.find((c) => c.id === id);
       if (!character) return;
       const shownMax = baseMaxHP(character);
-      const values = await promptModal(`${character.name}: HP and AC`, vitalsFields(character), {
-        submitLabel: 'Save',
-      });
+      const [firstVital, ...restVitals] = vitalsFields(character);
+      const values = await promptModal(
+        `Edit ${character.name}`,
+        [
+          ...basicsFields(character),
+          { ...firstVital, section: 'Hit points and AC' },
+          ...restVitals,
+        ],
+        { submitLabel: 'Save', wide: true, submitRequires: ['name'] },
+      );
       if (!values) return;
       // The edit applies to the character as it is now, not to the copy the
       // dialog opened with. A heal or a cross-tab save while the dialog was
-      // open must survive the write-back.
+      // open must survive the write-back. The scores go first, so a CON
+      // edit moves a class-derived maximum before the HP fields apply.
       const fresh = applyFresh(state.characters, id, (current) =>
-        applyVitals(current, values, shownMax),
+        applyVitals(applyBasics(current, values), values, shownMax),
       );
       if (!fresh.entity) {
         app.toasts.show(`${character.name} was removed while the dialog was open.`);
