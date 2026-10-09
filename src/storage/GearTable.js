@@ -24,7 +24,7 @@
  * the same string.
  */
 
-import { record } from './RecordCoercion.js';
+import { isRecord } from '../util/isRecord.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
@@ -49,14 +49,6 @@ const SITES = [
 
 /** The collections that have a gear site, each listed once. */
 const COLLECTIONS = [...new Set(SITES.map((site) => site.collection))];
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, any>}
- */
-function isRecord(value) {
-  return record(value) !== null;
-}
 
 /**
  * The table entry of one piece, and its JSON text as the dedup key. A piece

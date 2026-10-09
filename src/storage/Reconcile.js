@@ -29,13 +29,7 @@
  * The functions are pure. Neither side is mutated.
  */
 
-/**
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+import { isRecord } from '../util/isRecord.js';
 
 const { hasOwnProperty } = Object.prototype;
 

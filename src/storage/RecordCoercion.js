@@ -16,6 +16,7 @@
 import { budgetOf } from '../combat/ActionBudget.js';
 import { MINUTES_PER_WATCH, WATCHES } from '../time/GameClock.js';
 import { clampInt } from '../util/num.js';
+import { isRecord } from '../util/isRecord.js';
 import { readReward } from '../quest/QuestReward.js';
 
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -31,7 +32,7 @@ import { readReward } from '../quest/QuestReward.js';
  * @returns {any}
  */
 export function record(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  return isRecord(value) ? value : null;
 }
 
 /**

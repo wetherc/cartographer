@@ -16,6 +16,7 @@
  */
 
 import { safeImageRef } from './ImageRefs.js';
+import { isRecord } from '../util/isRecord.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
@@ -305,7 +306,7 @@ export function hoistAssets(state, hash) {
  */
 export function restoreAssets(state, untouched) {
   const raw = state.assets;
-  const table = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
+  const table = isRecord(raw) ? raw : null;
   const mapped = mapStateRefs(
     state,
     (ref) => {

@@ -82,6 +82,7 @@ import {
 import { detachAssets } from './AssetStore.js';
 import { mirrorActive, storedAssetTable } from './AssetMirror.js';
 import { clamp } from '../util/num.js';
+import { isRecord } from '../util/isRecord.js';
 import {
   QUOTA_BYTES,
   footprintWhere,
@@ -202,14 +203,6 @@ function markSave() {
  */
 function deltaKey(seq) {
   return `${HISTORY_KEY}:d${seq}`;
-}
-
-/**
- * @param {unknown} value
- * @returns {boolean}
- */
-function isRecord(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 /**

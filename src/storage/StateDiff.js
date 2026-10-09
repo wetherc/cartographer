@@ -18,6 +18,8 @@
  * of each state instead, where every payload is an `asset:` key.
  */
 
+import { isRecord } from '../util/isRecord.js';
+
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 
@@ -68,14 +70,6 @@ export const ID_KEYED = {
  */
 function idFieldFor(pattern) {
   return Object.prototype.hasOwnProperty.call(ID_KEYED, pattern) ? ID_KEYED[pattern] : undefined;
-}
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**

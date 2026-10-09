@@ -18,6 +18,7 @@
  */
 
 import { memoizeByIdentity } from '../util/memoize.js';
+import { isRecord } from '../util/isRecord.js';
 
 /**
  * True when two JSON-shaped values are structurally identical. The function
@@ -41,16 +42,6 @@ export function sameValue(a, b) {
   const keys = Object.keys(left);
   if (keys.length !== Object.keys(right).length) return false;
   return keys.every((key) => key in right && sameValue(left[key], right[key]));
-}
-
-/**
- * True when the value is a plain record: an object, but not an array and not
- * null. Only records have fields worth trial-deleting.
- * @param {unknown} value
- * @returns {value is Record<string, any>}
- */
-function isRecord(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 /**

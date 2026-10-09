@@ -18,6 +18,7 @@ import { defaultEnemyGear } from '../entities/Creature.js';
 import { coerceWeapon } from '../entities/EquipmentPresets.js';
 import { slugId } from '../entities/Roster.js';
 import { xpForLevel } from '../entities/Experience.js';
+import { isRecord } from '../util/isRecord.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 /** @typedef {import('../types/storage.js').MigrationStep} MigrationStep */
@@ -86,9 +87,7 @@ export const MIGRATIONS = {
   // the sweep that ends that spell's chips early.
   5: (state) => {
     const records = (/** @type {unknown} */ value) =>
-      Array.isArray(value)
-        ? value.filter((e) => e !== null && typeof e === 'object' && !Array.isArray(e))
-        : [];
+      Array.isArray(value) ? value.filter(isRecord) : [];
     /** @type {(e: Record<string, any>) => { level: number, tier: string }} */
     const leveled = (e) => ({
       level: typeof e.level === 'number' && Number.isFinite(e.level) ? e.level : 1,
@@ -173,11 +172,9 @@ export const MIGRATIONS = {
   // malformed passes through untouched, so the validator after the chain
   // still sees it and reports it.
   6: (state) => {
-    const usable = (/** @type {unknown} */ value) =>
-      value !== null && typeof value === 'object' && !Array.isArray(value);
     /** @type {(item: unknown) => unknown} */
     const recastItem = (item) => {
-      if (!usable(item)) return item;
+      if (!isRecord(item)) return item;
       const record = /** @type {Record<string, any>} */ (item);
       if (record.type !== 'weapon' && record.type !== 'bow') return item;
       const { handling: _handling, ...rest } = record;
@@ -185,15 +182,15 @@ export const MIGRATIONS = {
     };
     /** @type {(e: unknown) => unknown} */
     const recastCreature = (e) => {
-      if (!usable(e)) return e;
+      if (!isRecord(e)) return e;
       const record = /** @type {Record<string, any>} */ (e);
-      if (!usable(record.weapon)) return e;
+      if (!isRecord(record.weapon)) return e;
       const { handling: _handling, ...rest } = record.weapon;
       return { ...record, weapon: { ...rest, ...coerceWeapon(record.weapon) } };
     };
     /** @type {(c: unknown) => unknown} */
     const recastCharacter = (c) => {
-      if (!usable(c)) return c;
+      if (!isRecord(c)) return c;
       const record = /** @type {Record<string, any>} */ (c);
       if (!Array.isArray(record.inventory)) return c;
       return { ...record, inventory: record.inventory.map(recastItem) };

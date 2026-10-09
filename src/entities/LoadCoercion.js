@@ -11,17 +11,10 @@ import { PACT_BOONS } from '../data/invocations.js';
 
 import { normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
+import { isRecord } from '../util/isRecord.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
-
-/**
- * @param {unknown} value
- * @returns {value is Record<string, any>}
- */
-function isRecord(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 /**
  * A stored list as its record entries. A value that is not an array reads as
