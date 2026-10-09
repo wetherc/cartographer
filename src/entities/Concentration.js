@@ -13,6 +13,7 @@
 import { CONCENTRATING, addCondition, removeCondition } from './Conditions.js';
 import { spendRiders } from './Riders.js';
 import { savingThrow } from './Checks.js';
+import { hasConcentrationAdvantage } from './FeatChoices.js';
 import { durationInRounds } from './SpellTiming.js';
 import { canAct } from './ConditionEffects.js';
 
@@ -115,7 +116,7 @@ export function dropIfHelpless(character) {
  * The save a concentrating character makes on taking damage: a CON save
  * against `concentrationDC`. A failed save ends the effect. A character
  * holding nothing, or one taking no damage, stays unaffected and reports no
- * save.
+ * save. A character with War Caster rolls the save with advantage.
  *
  * The function reports the whole save, so the caller can log the DC and the
  * roll behind the outcome.
@@ -132,7 +133,13 @@ export function checkOnDamage(character, damage, opts = {}) {
   if (!character.concentration || damage <= 0) {
     return { character, save: null, dropped: false };
   }
-  const save = savingThrow(character, CONCENTRATION_ABILITY, concentrationDC(damage), opts);
+  // War Caster adds an advantage slant, which folds in with the chips.
+  /** @type {'advantage'[]} */
+  const slants = hasConcentrationAdvantage(character) ? ['advantage'] : [];
+  const save = savingThrow(character, CONCENTRATION_ABILITY, concentrationDC(damage), {
+    slants,
+    ...opts,
+  });
   // A one-roll rider such as Resistance is used up by this save.
   const conditions = spendRiders(character.conditions, save.rider?.spent);
   const rolled = conditions === character.conditions ? character : { ...character, conditions };

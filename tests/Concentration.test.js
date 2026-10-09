@@ -235,3 +235,28 @@ test('dropIfHelpless ends the spell only when a chip stops the caster acting', (
   const idle = { ...caster(), conditions: addCondition([], 'Stunned', 1) };
   assert.equal(dropIfHelpless(idle).ended, null, 'nothing held, nothing to end');
 });
+
+test('War Caster rolls the concentration save with advantage', async () => {
+  const { buildStamp } = await import('../src/entities/FeatChoices.js');
+  const { takeFeat } = await import('../src/entities/LevelUp.js');
+  const { DEFAULT_FEATS } = await import('../src/data/feats.js');
+  const warCaster = /** @type {any} */ (DEFAULT_FEATS.find((f) => f.id === 'war-caster'));
+  const fighter = caster({ classes: [{ classId: 'fighter', level: 4 }], level: 4 });
+  const taken = takeFeat(fighter, buildStamp(warCaster, {}));
+  assert.equal(Object.values(taken.asiChoices ?? {})[0]?.concentrationAdvantage, true);
+  const held = begin(taken, spell('s1', 'Hold Person', 10), 2).character;
+  // A 2 and a 15: the higher die plus CON +3 makes 18 against DC 10.
+  const made = checkOnDamage(held, 12, { rng: seq([face(20, 2), face(20, 15)]) });
+  assert.equal(made.dropped, false);
+  assert.equal(made.save?.total, 18);
+  // Without the feat, the same dice keep only the first d20.
+  const plain = begin(fighter, spell('s1', 'Hold Person', 10), 2).character;
+  const lost = checkOnDamage(plain, 12, { rng: seq([face(20, 2), face(20, 15)]) });
+  assert.equal(lost.dropped, true);
+  // A mode that the caller passes wins over the feat.
+  const forced = checkOnDamage(held, 12, {
+    mode: 'normal',
+    rng: seq([face(20, 2), face(20, 15)]),
+  });
+  assert.equal(forced.dropped, true);
+});

@@ -178,6 +178,11 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   });
   setTip(initInput, 'Bonus the taker adds to initiative. 0 for none.');
   const initRow = fieldRow(labeled('Initiative bonus', initInput));
+  const concentration = checkbox(
+    'Advantage on concentration saves',
+    feat?.effects.some((e) => e.kind === 'concentrationAdvantage') ?? false,
+  );
+  setTip(concentration.label, 'Advantage on the CON save that keeps concentration after damage');
 
   // A grid of options means nothing while its count is 0, and the rider and
   // ability controls mean nothing while their sections are off.
@@ -235,6 +240,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
         },
         { kind: 'hp', perLevel: hpInput.value },
         { kind: 'initiative', bonus: initInput.value },
+        ...(concentration.input.checked ? [{ kind: 'concentrationAdvantage' }] : []),
         ...(rider.input.checked
           ? [
               {
@@ -272,6 +278,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       toolsRow,
       hpRow,
       initRow,
+      fieldRow(concentration.label),
       fieldRow(rider.label),
       riderRow,
       riderRollsRow,

@@ -135,7 +135,9 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  *
  * With `ability` and no `mode`, the chips also slant the roll, so Restrained
  * gives disadvantage on a DEX save, and Haste gives advantage on one. A
- * caller that passes `mode` has already folded the chips in.
+ * caller that passes `mode` has already folded the chips in. `slants` adds
+ * slants that do not come from a chip, such as the advantage of War Caster,
+ * and they fold in with the chip slants under the 5e rule.
  * @param {number} bonus
  * @param {number} dc
  * @param {{
@@ -143,11 +145,14 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  *   rng?: RandomFn,
  *   conditions?: import('./Riders.js').RiderSource[],
  *   ability?: string,
+ *   slants?: ('advantage' | 'disadvantage' | null)[],
  * }} [opts]
  * @returns {SaveResult}
  */
-export function resolveSave(bonus, dc, { ability, ...opts } = {}) {
-  const slant = ability ? rollMode({ roller: opts.conditions, kind: 'save', ability }) : null;
+export function resolveSave(bonus, dc, { ability, slants = [], ...opts } = {}) {
+  const slant = ability
+    ? rollMode({ roller: opts.conditions, kind: 'save', ability }, slants)
+    : null;
   const mode = opts.mode ?? slant ?? 'normal';
   return /** @type {SaveResult} */ (resolveD20(bonus, dc, 'save', { ...opts, mode }));
 }
@@ -164,7 +169,7 @@ export function resolveSave(bonus, dc, { ability, ...opts } = {}) {
  * @param {Character} character
  * @param {string} ability
  * @param {number} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], slants?: ('advantage' | 'disadvantage' | null)[] }} [opts]
  * @returns {SaveResult & { proficient: boolean }}
  */
 export function savingThrow(character, ability, dc, opts = {}) {

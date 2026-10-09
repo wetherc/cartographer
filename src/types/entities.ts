@@ -535,6 +535,9 @@ export type AsiChoice =
       /** The bonus to initiative the feat grants, which
        * `Checks.initiativeBonus` adds. */
       initiativeBonus?: number;
+      /** True when the feat gives advantage on the CON save that keeps
+       * concentration after damage (War Caster). */
+      concentrationAdvantage?: boolean;
     };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).

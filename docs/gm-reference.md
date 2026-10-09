@@ -2267,7 +2267,7 @@ new concentration spell ends the old one.
 
 | Event | Result |
 | --- | --- |
-| Damage | A CON save against DC 10 or half the damage, whichever is higher. A failure ends the spell |
+| Damage | A CON save against DC 10 or half the damage, whichever is higher. A failure ends the spell. A character with the War Caster feat rolls the save with advantage |
 | A condition that loses the turn | Ends the spell |
 | 0 HP for a creature | Ends the spell |
 | The duration runs out | Ends the spell |

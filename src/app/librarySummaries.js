@@ -39,6 +39,7 @@ export function featSummary(feat) {
       return `+1 ${effect.abilities.length > 0 ? effect.abilities.join('/') : 'any'}`;
     }
     if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
+    if (effect.kind === 'concentrationAdvantage') return 'advantage on concentration saves';
     if (effect.kind === 'hp') return `+${effect.perLevel} HP per level`;
     if (effect.kind === 'initiative') return `+${effect.bonus} initiative`;
     return [

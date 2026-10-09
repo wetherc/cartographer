@@ -41,7 +41,10 @@ export type FeatEffect =
    * taker has, now and at every later level (the Tough feat). */
   | { kind: 'hp'; perLevel: number }
   /** Add `bonus` to the taker's initiative (the Alert feat). */
-  | { kind: 'initiative'; bonus: number };
+  | { kind: 'initiative'; bonus: number }
+  /** Advantage on the CON save that keeps concentration after damage (the
+   * War Caster feat). */
+  | { kind: 'concentrationAdvantage' };
 
 /**
  * Proficiency lists, one per kind, as a feat or class-feature record stores
@@ -77,6 +80,8 @@ export interface FeatStamp {
   hpPerLevel?: number;
   /** The bonus to initiative that the feat grants. */
   initiativeBonus?: number;
+  /** True when the feat gives advantage on concentration saves. */
+  concentrationAdvantage?: boolean;
 }
 
 /** The checked part of a feat prerequisite. Every named part has to hold. */

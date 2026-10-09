@@ -12,7 +12,14 @@
 import { deepFreeze } from '../util/deepFreeze.js';
 
 /** The effect kinds a feat can carry. @type {import('../types/feat.js').FeatEffect['kind'][]} */
-export const FEAT_EFFECT_KINDS = ['asi', 'proficiency', 'rider', 'hp', 'initiative'];
+export const FEAT_EFFECT_KINDS = [
+  'asi',
+  'proficiency',
+  'rider',
+  'hp',
+  'initiative',
+  'concentrationAdvantage',
+];
 
 /** @type {Feat[]} */
 export const DEFAULT_FEATS = deepFreeze([
@@ -181,6 +188,6 @@ export const DEFAULT_FEATS = deepFreeze([
       'You have advantage on Constitution saving throws to keep concentration ' +
       'on a spell when you take damage. You can cast with weapons or a shield ' +
       'in hand, and cast a single-target spell as an opportunity attack.',
-    effects: [],
+    effects: [{ kind: 'concentrationAdvantage' }],
   },
 ]);

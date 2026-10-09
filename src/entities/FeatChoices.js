@@ -73,6 +73,18 @@ export function choicePool(choice, vocabulary, held) {
 }
 
 /**
+ * Whether a taken feat gives the character advantage on the CON save that
+ * keeps concentration after damage (War Caster).
+ * @param {Character} character
+ * @returns {boolean}
+ */
+export function hasConcentrationAdvantage(character) {
+  return listASIChoices(character).some(
+    (choice) => choice.type === 'feat' && choice.concentrationAdvantage === true,
+  );
+}
+
+/**
  * The standing roll riders the character's taken feats carry, each as a
  * `{ name, rider }` source the rider roller reads exactly like a condition
  * chip. A creature never takes feats and holds no choices, so this reads as
@@ -121,6 +133,7 @@ export function buildStamp(feat, picks) {
     (sum, e) => sum + (e.kind === 'initiative' ? e.bonus : 0),
     0,
   );
+  const concentration = feat.effects.some((e) => e.kind === 'concentrationAdvantage');
   return {
     name: feat.name,
     featId: feat.id,
@@ -136,5 +149,6 @@ export function buildStamp(feat, picks) {
     ...(rider ? { rider } : {}),
     ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
     ...(initiativeBonus > 0 ? { initiativeBonus } : {}),
+    ...(concentration ? { concentrationAdvantage: true } : {}),
   };
 }
