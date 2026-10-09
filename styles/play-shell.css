@@ -59,8 +59,14 @@
      tray opens, the party card gives up height and its roster scrolls inside
      the card, so the tray never covers a party row. The scroll box is the
      roster, not the card, because a scroll box clips the card title that
-     straddles the frame. */
+     straddles the frame. The tray leaves the party card at least
+     --roster-min, which is the card margins (about 2.5rem), its frame and
+     title (about 3.8rem), and four 3.75rem roster rows. A taller tray scrolls
+     inside its own box, so on a short screen an open tray does not push the
+     roster down to one or two rows. */
   body.mode-play .app-dock {
+    --roster-min: 21.5rem;
+
     grid-area: dock;
     display: flex;
     flex-direction: column;
@@ -86,8 +92,18 @@
   }
 
   body.mode-play #dice-tray-container {
+    display: flex;
+    flex-direction: column;
     flex: none;
+    max-height: calc(100% - var(--roster-min));
     margin-top: auto;
+  }
+
+  /* The tray body scrolls, not the card, for the same reason as the roster. */
+  body.mode-play #dice-tray-container > .dice-tray {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   /* In the narrow dock, a roster row puts the name on its own line above the

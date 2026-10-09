@@ -1403,7 +1403,11 @@ The few layout switches are in known places:
   and the Party card takes the rest. The roster inside the Party card
   (`#party-container > .character-roster`) scrolls when the tray opens,
   and the card itself does not, because a scroll box clips the
-  `.card__title` that straddles the card frame.
+  `.card__title` that straddles the card frame. The tray's height stops at
+  the dock height less `--roster-min`, which leaves room for the card and
+  four roster rows. A taller open tray scrolls inside
+  its `.dice-tray` body, and each roll scrolls it back to the result line
+  at its top.
 - **Build shell.** `styles/build-shell.css` makes Build mode the same kind
   of fixed screen. The Build rail width is `clamp(19rem, 22vw, 30rem)`, and
   the swatch grid uses `repeat(auto-fill, minmax(2.875rem, 1fr))`, so a

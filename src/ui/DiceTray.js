@@ -195,6 +195,11 @@ export function mountDiceTray(container, opts = {}) {
       verdict ?? '',
     );
     resultEl.hidden = false;
+    // On a short screen the Play dock caps the tray's height, and the tray
+    // scrolls inside its card. The result line is at the top, so the tray
+    // scrolls back to it, or a Roll press at the bottom would show
+    // no total.
+    root.scrollTop = 0;
     return { result, text };
   }
 

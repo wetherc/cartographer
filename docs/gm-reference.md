@@ -876,7 +876,7 @@ Play mode is where you run a session.
 | Log | Travelogue |
 | Sheet | The character detail card of the selected character |
 
-On a window wider than about 1,090 pixels, Play mode fits the screen and the page does not scroll. The dock and the sidebar each scroll on their own, so the map, the party, the dice tray, and the open sheet stay in view together. A click on a row of the Party card selects that character and opens the Sheet tab. While **Hide panels** is on, the click selects the character and leaves the hidden sidebar on its tab.
+On a window wider than about 1,090 pixels, Play mode fits the screen and the page does not scroll. The dock and the sidebar each scroll on their own, so the map, the party, the dice tray, and the open sheet stay in view together. On a short window, an open dice tray scrolls in its own box, and the Party card keeps room for four characters. A click on a row of the Party card selects that character and opens the Sheet tab. While **Hide panels** is on, the click selects the character and leaves the hidden sidebar on its tab.
 
 **Hide panels** collapses the sidebar and gives the map the full width.
 
