@@ -257,8 +257,8 @@ so a hand-edited library file goes through the same cleaner.
 `src/entities/CreatureChecks.js` derives the numbers. `creatureSaveBonus` and
 `creatureCheckBonus` are the creature versions of `Checks.saveBonus` and
 `Checks.checkBonus`. Each is the ability modifier from `effectiveStatBlock`,
-plus `creatureProficiencyBonus` where the creature is trained, minus the
-exhaustion penalty. `proficiencySummary` is the line that both creature panels
+plus `creatureProficiencyBonus` where the creature is trained.
+`proficiencySummary` is the line that both creature panels
 print.
 
 The creature and character functions are separate because a creature keeps
@@ -1201,8 +1201,8 @@ presets or ticks the box.
 race through `Races.resolveRace`, so a catalog edit reaches every character of
 that race, and a hand-typed race walks at `DEFAULT_SPEED`.
 `armorSpeedPenalty` costs 10 feet when the effective Strength, buffs included,
-is below what the armor needs. `walkSpeed` subtracts that penalty and the
-exhaustion penalty, with a floor of 0. `speedNote` is the sentence that the
+is below what the armor needs. `walkSpeed` subtracts that penalty, with a floor
+of 0, and then applies `Exhaustion.tiredSpeed`. `speedNote` is the sentence that the
 sheet badge shows, and it names each cause that applies.
 
 The module is separate from `Equipment.js` so that every rule that cuts speed
@@ -1542,50 +1542,56 @@ from its training alone.
 
 ## Exhaustion
 
-`entities/Exhaustion.js` models exhaustion by the 2024 rule, where one rule
-scales with the level in place of a table of six different penalties. Each
-level costs 2 on every d20 test and 5 feet of speed, and the sixth level kills.
+`entities/Exhaustion.js` models exhaustion by the 2014 rule, a ladder of six
+levels where each level keeps the effects of the levels below it. Level 1
+gives disadvantage on ability checks, level 2 halves speed, level 3 gives
+disadvantage on attack rolls and saving throws, level 4 halves the HP
+maximum, level 5 sets speed to 0, and level 6 kills.
 
-The level is one number, `exhaustion`, on the character or the creature, and
-nothing else is stored. `exhaustionLevel` reads the number and limits it to
-the range 0 through `MAX_EXHAUSTION` (6), so a hand-edited save cannot go past
-death or below zero. `d20Penalty` and `speedPenalty` derive from the level.
-`atDeathLevel` reports the fatal level, and `exhaustionNote` is the sentence
-for a badge or a log line. `setExhaustion`, `gainExhaustion`, and
-`easeExhaustion` are the writers, and each limits its result to the same
-range.
+The level is one number, `exhaustion`, on the character or the creature.
+`exhaustionLevel` reads the number and limits it to the range 0 through
+`MAX_EXHAUSTION` (6), so a hand-edited save cannot go past death or below
+zero. `exhaustionSlant` gives the slant of a level on one kind of roll, and
+`tiredSpeed` gives the walking speed. `atDeathLevel` reports the fatal level,
+and `exhaustionNote` is the sentence for a badge or a log line.
+`setExhaustion`, `gainExhaustion`, and `easeExhaustion` are the writers, and
+each limits its result to the same range.
 
-The module imports nothing. `Checks.js` imports this module, and `DeathSaves.js`
-is built on `Checks.js`, so an import of either one from here would close a
-cycle. The rules that combine exhaustion with death therefore live with their
-callers.
+The halved HP maximum is the one effect that the app stores. Every HP reader
+reads the stored maximum, so `setExhaustion` runs `settleExhaustionHP`, which
+moves the maximum when the level crosses 4 and records the cut in `hpHalved`.
+This is the same pattern as `hpBoost`, which records the raise of Aid.
+`HitDice.reconcileMaxHP` keeps the cut when a level-up changes the maximum,
+and `app/characterEdit.js` adds the cut back to the maximum that the GM types.
+When the level drops below 4, the cut comes back onto the maximum, and
+current HP stays where it is.
 
-### The penalty on rolls
+This module imports only `PoolIds.js`. `Checks.js` imports this module, and
+`DeathSaves.js` is built on `Checks.js`, so an import of either one from here
+would close a cycle. The rules that combine exhaustion with death therefore
+live with their callers.
 
-The penalty reaches a roll through the bonus and not through a condition chip
-with a rider. A rider applies only when dice are thrown, but the sheet prints
-its saving-throw and skill bonuses without dice. A chip would therefore leave
-the sheet at +5 while the roll gave -1.
+### The slant on rolls
 
-`Checks.saveBonus` and `Checks.checkBonus` include the penalty, so the printed
-number and the rolled number agree, and a passive score gets the penalty with
-no extra code. Each other kind of d20 test includes the penalty too:
+Exhaustion changes no printed bonus. `ConditionEffects.rollMode` takes the
+level as the `tired` field of its query, and `slantsFor` adds the slant of
+`exhaustionSlant` under the name "Exhaustion N", so `modeReasons` names it in
+the log line. `saveOutcome`, `Checks.resolveSave`, and
+`ImposedConditions.repeatSaves` pass the level on in the same way. Each roll
+path reads the level of its roller:
 
-- `combat/WeaponSwing.js` subtracts it from the attack bonus, for a character or
-  a creature.
-- `Classes.spellAttackBonus` subtracts it from a spell attack.
-  `Classes.spellSaveDC` does not, because the target rolls against a DC and the
-  caster does not roll it.
-- `DeathSaves.deathSaveBonus` is the whole bonus of a death save, and both
-  death-save paths read it.
-- `combat/InitiativeRoll.js` subtracts it from the initiative roll that the
-  setup dialog fills.
-- `creatureSaveBonus` subtracts it from a creature's saving throw.
+- `app/checkRolls.js`, `Checks.abilityCheck`, `Checks.savingThrow`, and
+  `combat/Stealth.js` for checks and saves.
+- `combat/WeaponSwing.js` and `app/spellCastResolve.js` for weapon and spell
+  attacks, for a character or a creature.
+- `app/spellCastResolve.js`, `app/weaponAttack.js`, `app/channelDivinity.js`,
+  and `CreatureHit.js` for saves against spells, hit riders, Turn Undead, and
+  concentration.
+- `DeathSaves.deathSaveMode` for both death-save paths.
+- `combat/InitiativeRoll.js` for initiative, which is a DEX check.
 
-The app logs the penalty as its own part, next to the ability modifier and the
-proficiency bonus. `app/checkRolls.js` therefore subtracts the penalty from the
-bonus to get the ability part. Without that step, the log would print a
-modifier that the stat block does not have.
+`Checks.passivePerception` lowers a passive score by 5 from level 1, the
+passive form of disadvantage.
 
 ### The sixth level
 

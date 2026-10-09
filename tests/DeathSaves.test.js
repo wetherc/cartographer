@@ -10,7 +10,7 @@ import {
   judgeDeathSave,
   killOutright,
   recordDamage,
-  deathSaveBonus,
+  deathSaveMode,
   rollDeathSave,
   stabilize,
 } from '../src/entities/DeathSaves.js';
@@ -279,11 +279,12 @@ test('a dying character keeps its tracker through a pack round trip', () => {
   assert.deepEqual(packed.deathSaves, { successes: 1, failures: 2, stable: false });
 });
 
-test('exhaustion lowers a death save, because a death save is a d20 test', () => {
-  assert.equal(deathSaveBonus(dying()), 0, 'a rested character adds nothing');
-  assert.equal(deathSaveBonus(/** @type {any} */ ({ ...dying(), exhaustion: 3 })), -6);
-  const tired = /** @type {any} */ ({ ...dying(), exhaustion: 2 });
-  const { save, outcome } = rollDeathSave(tired, { rng: seq([face(20, 12)]) });
-  assert.equal(save?.total, 8, '12 on the die, less 4');
-  assert.equal(outcome, 'failure', 'the same 12 succeeds when rested');
+test('exhaustion 3 rolls a death save at disadvantage, because it is a saving throw', () => {
+  assert.equal(deathSaveMode(dying()), null, 'a rested character rolls straight');
+  assert.equal(deathSaveMode(/** @type {any} */ ({ ...dying(), exhaustion: 2 })), null);
+  const tired = /** @type {any} */ ({ ...dying(), exhaustion: 3 });
+  assert.equal(deathSaveMode(tired), 'disadvantage');
+  const { save, outcome } = rollDeathSave(tired, { rng: seq([face(20, 12), face(20, 8)]) });
+  assert.equal(save?.total, 8, 'disadvantage keeps the 8');
+  assert.equal(outcome, 'failure', 'the 12 alone succeeds when rested');
 });

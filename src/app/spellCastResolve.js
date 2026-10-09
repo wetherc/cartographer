@@ -1,3 +1,4 @@
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { castSpell } from '../entities/Casting.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
@@ -189,12 +190,13 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       castTargets = chosen.map((t) => {
         // A target's untrained armor slants its STR or DEX save. The slant
         // folds in with the target's chips, so an advantage chip cancels it.
+        const found = findCombatant(app, t.id);
         const outcome = saveOutcome(
           t.conditions,
           saveAbility,
           t.armorPenalty ? ['disadvantage'] : [],
+          found ? exhaustionLevel(found.entity) : 0,
         );
-        const found = findCombatant(app, t.id);
         const evasion = found?.kind === 'character' && hasFeature(found.entity, 'Evasion');
         return {
           ...t,
@@ -248,6 +250,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
               kind: 'attack',
               melee,
               rollerType: attackerType(live),
+              tired: exhaustionLevel(live),
             }),
             // A chip that the target's own spell left on the caster (Chill
             // Touch on an undead caster) slants the roll.

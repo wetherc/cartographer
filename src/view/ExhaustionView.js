@@ -7,10 +7,9 @@
 
 import {
   MAX_EXHAUSTION,
-  d20Penalty,
   exhaustionLevel,
   exhaustionNote,
-  speedPenalty,
+  levelEffects,
 } from '../entities/Exhaustion.js';
 
 /** @typedef {import('../entities/Exhaustion.js').Exhaustible} Exhaustible */
@@ -67,7 +66,7 @@ export function exhaustionReadout(entity) {
 function exhaustionSummary(level, fatal) {
   if (!level) return '';
   if (fatal) return 'Dead';
-  return `${d20Penalty({ exhaustion: level })} to d20, -${speedPenalty({ exhaustion: level })} ft`;
+  return levelEffects(level);
 }
 
 /**

@@ -3,7 +3,7 @@ import { sourceSlant } from '../entities/SourceSlant.js';
 import { attackTweak, rollDamage } from '../dice/DiceRoller.js';
 import { attackAbility, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
-import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { critRange, sneakAttackDice } from '../entities/Features.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
@@ -51,7 +51,6 @@ import {
  *   abilityMod: number,
  *   proficiency: number,
  *   proficient: boolean,
- *   tired: number,
  *   style: number,
  *   modifier: number,
  *   tweak: ReturnType<typeof attackTweak>,
@@ -95,13 +94,9 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   // rating ladder, the same one its saves and spells use.
   const proficiency = attackerProficiency(attacker);
   const proficient = attackerProficientWith(attacker, weapon);
-  // An attack roll is a d20 test, so exhaustion takes 2 off it for each level.
-  // Both kinds of attacker carry the level, so a tired foe swings worse too.
-  // Damage is untouched: the penalty is on the roll, not on the hit.
-  const tired = d20Penalty(attacker);
   // The Archery fighting style adds 2 to a ranged weapon.
   const style = styleAttackBonus(attacker, weapon);
-  const attackBonus = abilityMod + (proficient ? proficiency : 0) + tired + style;
+  const attackBonus = abilityMod + (proficient ? proficiency : 0) + style;
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
   // view. `attackTweak` rolls penalty dice and folds them into the modifier,
   // and keeps the values in its note for the log.
@@ -126,6 +121,9 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     kind: 'attack',
     melee,
     rollerType: attackerType(attacker),
+    // Both kinds of attacker have an exhaustion level, and from level 3 it
+    // slants the attack roll.
+    tired: exhaustionLevel(attacker),
   });
   // A mode the GM picked in the dialog wins over the chips, and it is always
   // passed on, so a picked `normal` also cancels the tray's standing toggle
@@ -159,7 +157,6 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     abilityMod,
     proficiency,
     proficient,
-    tired,
     style,
     modifier: attackBonus + tweak.modifier + rider.modifier,
     tweak,
@@ -228,7 +225,6 @@ export function attackLine(setup, roll) {
   const reasons = picked ? `${picked} set by the GM` : slantReasons;
   const conditionNote = reasons ? `, ${reasons}` : '';
   const proficiencyNote = setup.proficient ? `proficiency +${setup.proficiency}` : 'not proficient';
-  const tiredNote = setup.tired ? `, exhaustion ${exhaustionLevel(attacker)} ${setup.tired}` : '';
   const styleNote = setup.style ? `, Archery +${setup.style}` : '';
   // An off-hand swing and an opportunity attack both roll to hit like any other
   // swing, so the note sits on the attack line: it says where the missing damage
@@ -238,7 +234,7 @@ export function attackLine(setup, roll) {
   // where the difference came from.
   const coverAC = setup.cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
   const wardAC = raised && roll.wardName ? ` (${roll.wardName} +${raised})` : '';
-  return `${roll.attackerName ?? attacker.name} attacks ${roll.defenderName ?? defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${tiredNote}${styleNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote}, ${roll.outcome}.`;
+  return `${roll.attackerName ?? attacker.name} attacks ${roll.defenderName ?? defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${styleNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote}, ${roll.outcome}.`;
 }
 
 /**

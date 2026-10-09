@@ -19,7 +19,7 @@ import {
   saveBonus,
 } from '../entities/Checks.js';
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
-import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { characterProficiency } from '../entities/Multiclass.js';
@@ -119,7 +119,10 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const phrase = `${article(name)} ${name}`;
   // A creature that cannot move fails a Strength or Dexterity save outright.
   // That failure never reaches the tray, so the sheet reports it on its own.
-  const outcome = event.kind === 'save' ? saveOutcome(character.conditions, event.key) : null;
+  const outcome =
+    event.kind === 'save'
+      ? saveOutcome(character.conditions, event.key, [], exhaustionLevel(character))
+      : null;
   if (outcome?.autoFail) {
     app.actions.logEvent(
       'roll',
@@ -131,15 +134,11 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const bonus =
     event.kind === 'save' ? saveBonus(character, event.key) : checkBonus(character, event.key);
   const proficiency = proficiencyPart(character, event);
-  // Exhaustion is already inside the bonus, so the breakdown has to take it
-  // back out. Without this the penalty would hide inside the ability part, and
-  // the log would print a modifier the stat block does not have.
-  const tired = d20Penalty(character);
-  // The ability part is what is left after proficiency and exhaustion, rather
+  // The ability part is what is left after proficiency, rather
   // than a second read of the stat table. The breakdown then cannot drift from
   // the bonus the tray rolled with, whatever `Checks.js` decides a bonus is
   // made of.
-  const abilityMod = bonus - proficiency.amount - tired;
+  const abilityMod = bonus - proficiency.amount;
   const ability = event.kind === 'save' ? event.key : (checkAbility(event.key) ?? event.key);
   // Rider dice roll outside the tray, the way an attack's do, so a bonus and a
   // penalty read the same in the log.
@@ -151,6 +150,7 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
     roller: character.conditions,
     kind: event.kind,
     ability,
+    tired: exhaustionLevel(character),
   });
   // Armor the character is not trained for slants every STR and DEX roll, per
   // the 5e armor proficiency rule. The slant folds in with the chips, and an
@@ -178,7 +178,6 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const natural = d20?.rolls[0] ?? 0;
   const parts = [`${ability} ${formatModifier(abilityMod)}`];
   if (proficiency.word) parts.push(proficiency.word);
-  if (tired) parts.push(`exhaustion ${exhaustionLevel(character)} ${tired}`);
   if (rider.note) parts.push(rider.note);
   // Naming the chips keeps a cancelled pair readable: the line says why the
   // roll came out straight, not just that it did.

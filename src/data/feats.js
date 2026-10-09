@@ -167,7 +167,6 @@ export const DEFAULT_FEATS = deepFreeze([
   {
     id: 'skilled',
     name: 'Skilled',
-    repeatable: true,
     description: 'You gain proficiency in any three skills of your choice.',
     effects: [{ kind: 'proficiency', skills: { choose: 3, from: [] } }],
   },

@@ -1,3 +1,4 @@
+import { settleExhaustionHP } from '../entities/Exhaustion.js';
 import {
   getHP,
   setMaxHP,
@@ -32,14 +33,16 @@ import { statFields } from './statFields.js';
 
 /**
  * The maximum HP the GM sees and types: the pool's maximum without the raise
- * that a chip adds (Aid's `hpBoost`). The chip ends on its own, so the typed
- * value has to leave it out, or the raise would stay after the chip ends.
+ * that a chip adds (Aid's `hpBoost`), and with the cut of exhaustion level 4
+ * (`hpHalved`) put back. The chip and the exhaustion end on their own, so
+ * the typed value has to leave them out, or the change would stay after they
+ * end.
  * @param {Character} character
  * @returns {number | null} null for a character with no HP pool
  */
 export function baseMaxHP(character) {
   const hp = getHP(character);
-  return hp ? hp.max - (character.hpBoost ?? 0) : null;
+  return hp ? hp.max - (character.hpBoost ?? 0) + (character.hpHalved ?? 0) : null;
 }
 
 /**
@@ -109,7 +112,10 @@ export function applyVitals(character, values, shownMax = baseMaxHP(character)) 
     } else {
       const shown = shownMax ?? base;
       const typed = clampInt(values.maxHP, 1, Infinity, shown);
-      if (typed !== shown) next = setMaxHP(next, typed + (character.hpBoost ?? 0));
+      if (typed !== shown) {
+        const full = setMaxHP({ ...next, hpHalved: 0 }, typed + (character.hpBoost ?? 0));
+        next = settleExhaustionHP(full);
+      }
     }
     const bonus = clampInt(values.bonusHP, 0);
     if (bonus !== (character.bonusHP ?? 0)) next = setBonusHP(next, bonus);

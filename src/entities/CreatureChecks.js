@@ -18,7 +18,6 @@ import {
   formatModifier,
   proficiencyBonus,
 } from './Modifiers.js';
-import { d20Penalty } from './Exhaustion.js';
 import { checkAbility } from './Checks.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 
@@ -62,8 +61,8 @@ export function isProficientCreatureSkill(creature, skillId) {
 
 /**
  * What a creature adds to a saving throw in one ability: the ability modifier
- * from its combat stat block, plus its proficiency bonus where it is trained,
- * less 2 for each level of exhaustion. The stat block is the effective one, so
+ * from its combat stat block, plus its proficiency bonus where it is trained.
+ * The stat block is the effective one, so
  * a timed modifier on an ability reaches the save the same way it reaches an
  * attack.
  * @param {Creature} creature
@@ -75,7 +74,7 @@ export function creatureSaveBonus(creature, ability) {
   const trained = isProficientCreatureSave(creature, ability)
     ? creatureProficiencyBonus(creature)
     : 0;
-  return mod + trained + d20Penalty(creature);
+  return mod + trained;
 }
 
 /**
@@ -96,7 +95,7 @@ export function creatureCheckBonus(creature, key) {
     SKILL_IDS.includes(key) && isProficientCreatureSkill(creature, key)
       ? creatureProficiencyBonus(creature)
       : 0;
-  return mod + trained + d20Penalty(creature);
+  return mod + trained;
 }
 
 /**

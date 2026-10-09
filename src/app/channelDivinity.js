@@ -1,3 +1,4 @@
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { promptModal } from '../ui/Modal.js';
 import { offerResistance } from './legendaryResistance.js';
 import { spendResource } from '../entities/Character.js';
@@ -91,9 +92,10 @@ export async function turnUndead(
     // with the slants of the target's own chips under the cancel rule.
     const resists = target.kind === 'creature' && target.entity.turnResistance === true;
     const conditions = target.entity.conditions;
-    const mode = rollMode({ roller: conditions, kind: 'save', ability: 'WIS' }, [
-      resists ? 'advantage' : null,
-    ]);
+    const mode = rollMode(
+      { roller: conditions, kind: 'save', ability: 'WIS', tired: exhaustionLevel(target.entity) },
+      [resists ? 'advantage' : null],
+    );
     const save = resolveSave(combatantSaveBonus(target, 'WIS'), dc, {
       mode: mode ?? 'normal',
       conditions,

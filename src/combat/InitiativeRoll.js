@@ -9,11 +9,12 @@
  *
  * The modifier itself comes from the participant, which the roster stamped
  * from `Checks.initiativeBonus` or the stat block. This module adds nothing to
- * it but the penalty. Feral Instinct gives advantage.
+ * it. Exhaustion gives disadvantage from level 1, because initiative is a DEX
+ * check, and Feral Instinct gives advantage.
  */
 
 import { unproficientWear } from '../entities/Armor.js';
-import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import { droppedNote } from './AttackResolve.js';
 import { hasFeature } from '../entities/Features.js';
@@ -24,21 +25,25 @@ import { hasFeature } from '../entities/Features.js';
 /** @typedef {import('../entities/ConditionEffects.js').RollMode} RollMode */
 
 /**
- * What the game state does to one initiative roll: the mode of the d20, the
- * signed exhaustion penalty, and the phrases that say where each came from.
+ * What the game state does to one initiative roll: the mode of the d20 and
+ * the phrases that say where it came from.
  *
  * A missing entity happens when nothing holds the participant id any more. It
  * reads as a plain roll rather than an error, because the GM can still start
  * the fight and edit the value by hand.
  * @param {Character | Creature | null | undefined} entity
- * @returns {{ mode: RollMode | null, penalty: number, reasons: string[] }}
+ * @returns {{ mode: RollMode | null, reasons: string[] }}
  */
 export function initiativeSlant(entity) {
   const roller = entity ?? /** @type {Character} */ ({});
   // A check reads only the roller's own chips, so there is no target side and
   // no reach to state. The ability is not asked for either: a chip that slants
   // checks slants all of them.
-  const query = /** @type {const} */ ({ roller: roller.conditions, kind: 'check' });
+  const query = /** @type {const} */ ({
+    roller: roller.conditions,
+    kind: 'check',
+    tired: exhaustionLevel(roller),
+  });
   // Every weapon attack rolls off STR or DEX and takes this slant, and so does
   // a DEX check. Only a character carries proficiency lists, so a creature is
   // never untrained for what it wears.
@@ -46,19 +51,17 @@ export function initiativeSlant(entity) {
   const wearSlant = badWear.length > 0 ? /** @type {const} */ ('disadvantage') : null;
   // Feral Instinct (barbarian 7) gives advantage on every initiative roll.
   const feral = hasFeature(roller, 'Feral Instinct') ? /** @type {const} */ ('advantage') : null;
-  const penalty = d20Penalty(roller);
   const reasons = [];
   const chips = modeReasons(query);
   if (chips) reasons.push(chips);
   if (wearSlant) reasons.push(`not proficient with ${badWear.join(' and ')}, disadvantage`);
   if (feral) reasons.push('Feral Instinct, advantage');
-  if (penalty) reasons.push(`exhaustion ${exhaustionLevel(roller)} ${penalty}`);
-  return { mode: rollMode(query, [wearSlant, feral]), penalty, reasons };
+  return { mode: rollMode(query, [wearSlant, feral]), reasons };
 }
 
 /**
  * Roll initiative for one row of the setup dialog. The value is the d20 plus
- * the participant's DEX modifier plus the exhaustion penalty. Advantage keeps
+ * the participant's initiative modifier. Advantage keeps
  * the higher of two d20s and disadvantage the lower, matching the tray.
  *
  * The note is for the log line. It names the dropped die and every reason the
@@ -70,14 +73,14 @@ export function initiativeSlant(entity) {
  * @returns {{ value: number, note: string }}
  */
 export function rollInitiative(participant, entity, rng = Math.random) {
-  const { mode, penalty, reasons } = initiativeSlant(entity);
+  const { mode, reasons } = initiativeSlant(entity);
   const d20 = () => Math.floor(rng() * 20) + 1;
   const slanted = mode === 'advantage' || mode === 'disadvantage';
   const rolls = slanted ? [d20(), d20()] : [d20()];
   const natural = mode === 'disadvantage' ? Math.min(...rolls) : Math.max(...rolls);
   const kept = rolls.indexOf(natural);
   const dropped = rolls.filter((_, i) => i !== kept);
-  const value = natural + (participant.modifier ?? 0) + penalty;
+  const value = natural + (participant.modifier ?? 0);
   const parts = [droppedNote({ dropped }, mode ?? undefined).trim(), ...reasons].filter(Boolean);
   return { value, note: parts.join(', ') };
 }

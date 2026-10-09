@@ -11,6 +11,7 @@
 
 import { chipSlants } from './ChipSlants.js';
 import { conditionKey } from './Conditions.js';
+import { exhaustionSlant } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('./Riders.js').RiderSource} RiderSource */
@@ -190,13 +191,20 @@ function againstSlant(effect, melee) {
  *   melee?: boolean,
  *   ability?: string,
  *   rollerType?: string | null,
+ *   tired?: number,
  * }} query
  * @returns {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]}
  */
-function slantsFor({ roller, target, kind, melee = true, ability, rollerType }) {
+function slantsFor({ roller, target, kind, melee = true, ability, rollerType, tired = 0 }) {
   const key = abilityKey(ability);
   /** @type {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]} */
   const found = [];
+  // Exhaustion is a level, not a chip, so it joins under its own name.
+  const weary = exhaustionSlant(tired, kind);
+  if (weary) {
+    const condition = /** @type {RiderSource} */ ({ name: `Exhaustion ${tired}`, rounds: null });
+    found.push({ condition, slant: weary, from: 'roller' });
+  }
   for (const { condition, effect } of effectsOf(roller)) {
     /** @type {Slant | undefined} */
     let slant;
@@ -257,6 +265,7 @@ function slantsFor({ roller, target, kind, melee = true, ability, rollerType }) 
  *   melee?: boolean,
  *   ability?: string,
  *   rollerType?: string | null,
+ *   tired?: number,
  * }} query
  * @param {(Slant | null)[]} [extra]
  * @returns {RollMode | null}
@@ -332,9 +341,10 @@ export function autoCrits(conditions, { melee = true } = {}) {
  * @param {RiderSource[] | undefined | null} conditions
  * @param {string} ability
  * @param {(Slant | null)[]} [extra]
+ * @param {number} [tired] the exhaustion level of the roller
  * @returns {{ autoFail: boolean, failedBy: string | null, mode: RollMode | null }}
  */
-export function saveOutcome(conditions, ability, extra = []) {
+export function saveOutcome(conditions, ability, extra = [], tired = 0) {
   const key = abilityKey(ability);
   for (const { condition, effect } of effectsOf(conditions)) {
     if (key && effect.autoFailSaves?.includes(key)) {
@@ -344,6 +354,6 @@ export function saveOutcome(conditions, ability, extra = []) {
   return {
     autoFail: false,
     failedBy: null,
-    mode: rollMode({ roller: conditions, kind: 'save', ability }, extra),
+    mode: rollMode({ roller: conditions, kind: 'save', ability, tired }, extra),
   };
 }

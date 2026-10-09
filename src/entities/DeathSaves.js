@@ -17,7 +17,7 @@
 import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
 import { resolveSave } from './Checks.js';
 import { riderSources } from './FeatChoices.js';
-import { atDeathLevel, d20Penalty, easeExhaustion } from './Exhaustion.js';
+import { atDeathLevel, easeExhaustion, exhaustionLevel, exhaustionSlant } from './Exhaustion.js';
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { restore as restorePool } from './Resource.js';
 import { updateById } from './Roster.js';
@@ -186,18 +186,18 @@ function countFailures(state, count) {
 }
 
 /**
- * What a character adds to a death save. A death save takes no ability
- * modifier and no proficiency, so exhaustion is the whole of it and the value
- * is zero or negative.
+ * The mode of a death save. A death save is a saving throw, so exhaustion of
+ * level 3 or higher rolls it at disadvantage. A death save takes no ability
+ * modifier and no proficiency, so it has no bonus of its own.
  *
  * Both death-save paths read this one function. The headless
  * {@link rollDeathSave} below hands it to `resolveSave`, and `app/deathSaves.js`
  * hands it to the dice tray. Neither can drift from the other.
  * @param {Character} character
- * @returns {number}
+ * @returns {'disadvantage' | null}
  */
-export function deathSaveBonus(character) {
-  return d20Penalty(character);
+export function deathSaveMode(character) {
+  return exhaustionSlant(exhaustionLevel(character), 'save');
 }
 
 /**
@@ -206,9 +206,8 @@ export function deathSaveBonus(character) {
  * rolls through the tray and calls {@link judgeDeathSave} with the same
  * numbers.
  *
- * The save goes through `Checks.resolveSave` with {@link deathSaveBonus},
- * which is 0 for a rested character and the exhaustion penalty for a tired
- * one. Going through that function is what lets a rider such as Bless join the
+ * The save goes through `Checks.resolveSave` with the mode of
+ * {@link deathSaveMode}. Going through that function is what lets a rider such as Bless join the
  * roll. No ability key is passed, so the automatic failure that unconsciousness
  * imposes on Strength and Dexterity saves does not catch a death save.
  *
@@ -225,8 +224,10 @@ export function deathSaveBonus(character) {
 export function rollDeathSave(character, opts = {}) {
   const state = character.deathSaves;
   if (!state || !isDying(character)) return { character, save: null, outcome: null };
-  const save = resolveSave(deathSaveBonus(character), DEATH_SAVE_DC, {
+  const tiredMode = deathSaveMode(character);
+  const save = resolveSave(0, DEATH_SAVE_DC, {
     conditions: riderSources(character),
+    ...(tiredMode ? { mode: tiredMode } : {}),
     ...opts,
   });
   const judged = judgeDeathSave(state, save);

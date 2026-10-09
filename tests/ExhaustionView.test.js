@@ -36,8 +36,11 @@ test('the pips fill up to the level, and the sixth is the fatal one', () => {
 test('a level names its cost in the badge, the summary, and the note', () => {
   const readout = exhaustionReadout({ exhaustion: 3 });
   assert.equal(readout.badge, 'Exhaustion 3');
-  assert.equal(readout.summary, '-6 to d20, -15 ft');
-  assert.equal(readout.note, 'Exhaustion 3: -6 to every d20 test, and 15 feet slower.');
+  assert.equal(readout.summary, 'disadvantage on checks, attacks, and saves, half speed');
+  assert.equal(
+    readout.note,
+    'Exhaustion 3: disadvantage on checks, attacks, and saves, half speed.',
+  );
   assert.equal(readout.ariaLabel, 'Exhaustion 3 of 6');
   assert.equal(readout.fatal, false);
 });

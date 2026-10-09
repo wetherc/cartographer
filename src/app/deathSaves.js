@@ -13,7 +13,7 @@
 import {
   DEATH_SAVE_DC,
   applyJudged,
-  deathSaveBonus,
+  deathSaveMode,
   isDead,
   isDying,
   judgeDeathSave,
@@ -85,12 +85,13 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   // Rider dice roll outside the tray, the way an attack's and a sheet check's
   // do, so a bonus and a penalty read the same in the log.
   const rider = rollRiders(riderSources(character), 'save', rng);
-  // Exhaustion is the only standing part of the modifier. It is not a rider, so
-  // it joins the tray's number here and the log names it below.
-  const tired = deathSaveBonus(character);
+  // Exhaustion of level 3 or higher rolls the save at disadvantage, and the
+  // log names it below.
+  const tired = deathSaveMode(character);
   const { result } = app.actions.rollDice({
     counts: { d20: 1 },
-    modifier: tired + rider.modifier,
+    modifier: rider.modifier,
+    ...(tired ? { mode: tired } : {}),
   });
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
@@ -100,7 +101,7 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const next = { ...applied, conditions: spendRiders(applied.conditions, rider.spent) };
   found.store(next);
   app.actions.markDirty();
-  const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} ${tired}` : '';
+  const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} disadvantage` : '';
   const rode = rider.note ? `, ${rider.note}` : '';
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
   app.actions.logEvent(

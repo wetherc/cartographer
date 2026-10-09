@@ -69,10 +69,10 @@ test('a chip the rules table does not know leaves the roll alone', () => {
   assert.equal(rolled.note, '');
 });
 
-test('exhaustion takes its penalty off the total and the note states the level', () => {
-  const rolled = rollInitiative(at(3), hero({ exhaustion: 2 }), faces([14]));
-  assert.equal(rolled.value, 13, 'd20 14 plus DEX +3 less 4 for two levels');
-  assert.equal(rolled.note, 'exhaustion 2 -4');
+test('exhaustion rolls initiative at disadvantage and the note states the level', () => {
+  const rolled = rollInitiative(at(3), hero({ exhaustion: 2 }), faces([14, 6]));
+  assert.equal(rolled.value, 9, 'the lower d20 6 plus DEX +3');
+  assert.match(rolled.note, /Exhaustion 2 disadvantage/);
 });
 
 test('a chip and untrained armor cancel against nothing and roll once', () => {
@@ -85,12 +85,11 @@ test('a chip and untrained armor cancel against nothing and roll once', () => {
   assert.match(rolled.note, /Poisoned disadvantage, not proficient with heavy armor/);
 });
 
-test('initiativeSlant reports the mode, the penalty, and every reason', () => {
-  assert.deepEqual(initiativeSlant(hero()), { mode: null, penalty: 0, reasons: [] });
+test('initiativeSlant reports the mode and every reason', () => {
+  assert.deepEqual(initiativeSlant(hero()), { mode: null, reasons: [] });
   assert.deepEqual(initiativeSlant(hero({ exhaustion: 1, conditions: [{ name: 'Frightened' }] })), {
     mode: 'disadvantage',
-    penalty: -2,
-    reasons: ['Frightened disadvantage', 'exhaustion 1 -2'],
+    reasons: ['Exhaustion 1 disadvantage, Frightened disadvantage'],
   });
 });
 

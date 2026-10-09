@@ -1,3 +1,4 @@
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 /**
  * The Stealth contest before a fight, and the log lines of the setup dialog.
  *
@@ -138,6 +139,7 @@ export function rollStealth(entity, kind, rng = Math.random) {
     roller: entity.conditions,
     kind: 'check',
     ability: 'DEX',
+    tired: exhaustionLevel(entity),
   });
   /** @type {import('../entities/ConditionEffects.js').Slant[]} */
   const wear = [];

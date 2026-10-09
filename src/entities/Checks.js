@@ -1,3 +1,4 @@
+import { exhaustionLevel, exhaustionSlant } from './Exhaustion.js';
 /**
  * The two d20 rolls a character makes outside combat: saving throws and
  * ability checks. This module says what a creature adds to each, and how the
@@ -9,7 +10,6 @@ import { roll } from '../dice/DiceRoller.js';
 import { abilityModifier, ABILITY_SCORES } from './Modifiers.js';
 import { characterProficiency } from './Multiclass.js';
 import { effectiveStats } from './Equipment.js';
-import { d20Penalty } from './Exhaustion.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from './Proficiencies.js';
 import { rollRiders } from './Riders.js';
 import { rollMode } from './ConditionEffects.js';
@@ -49,8 +49,9 @@ import { listASIChoices } from './LevelUp.js';
  * class grants that save, or in every save once the monk has Diamond Soul.
  * A paladin with Aura of Protection adds its own CHA modifier, at least +1.
  * An ability with no score for the character reads
- * as 10, the same default the rest of the stat code uses. Exhaustion takes 2
- * off for each of its levels, because a saving throw is a d20 test.
+ * as 10, the same default the rest of the stat code uses. Exhaustion does
+ * not change the bonus. From level 3 it slants the roll instead (see
+ * `Exhaustion.exhaustionSlant`).
  *
  * This function works for characters only. A creature keeps its ability scores
  * in a different field and climbs the proficiency ladder by challenge rating,
@@ -62,7 +63,7 @@ import { listASIChoices } from './LevelUp.js';
 export function saveBonus(character, ability) {
   const mod = abilityModifier(effectiveStats(character)[ability] ?? 10);
   const proficient = proficientSave(character, ability) ? characterProficiency(character) : 0;
-  return mod + proficient + auraBonus(character) + d20Penalty(character);
+  return mod + proficient + auraBonus(character);
 }
 
 /**
@@ -146,12 +147,13 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  *   conditions?: import('./Riders.js').RiderSource[],
  *   ability?: string,
  *   slants?: ('advantage' | 'disadvantage' | null)[],
+ *   tired?: number,
  * }} [opts]
  * @returns {SaveResult}
  */
-export function resolveSave(bonus, dc, { ability, slants = [], ...opts } = {}) {
+export function resolveSave(bonus, dc, { ability, slants = [], tired = 0, ...opts } = {}) {
   const slant = ability
-    ? rollMode({ roller: opts.conditions, kind: 'save', ability }, slants)
+    ? rollMode({ roller: opts.conditions, kind: 'save', ability, tired }, slants)
     : null;
   const mode = opts.mode ?? slant ?? 'normal';
   return /** @type {SaveResult} */ (resolveD20(bonus, dc, 'save', { ...opts, mode }));
@@ -177,6 +179,7 @@ export function savingThrow(character, ability, dc, opts = {}) {
     ...resolveSave(saveBonus(character, ability), dc, {
       conditions: riderSources(character),
       ability,
+      tired: exhaustionLevel(character),
       ...opts,
     }),
     proficient: proficientSave(character, ability),
@@ -218,9 +221,8 @@ export function checkAbility(key) {
  * half the proficiency bonus instead, through {@link halfProficiency}. A bare ability key is never
  * proficient, because proficiency in 5e attaches to a skill and not to an
  * ability. A key that names neither a skill nor an ability reads as a score
- * of 10, the same default the rest of the stat code uses. Exhaustion takes 2
- * off for each of its levels, which also carries the penalty into a passive
- * score, because {@link passiveScore} reads this value.
+ * of 10, the same default the rest of the stat code uses. Exhaustion does
+ * not change the bonus. It slants the roll instead.
  *
  * This function works for characters only, for the same reason
  * {@link saveBonus} does. `CreatureChecks.creatureCheckBonus` is the
@@ -232,12 +234,11 @@ export function checkAbility(key) {
 export function checkBonus(character, key) {
   const ability = checkAbility(key);
   const mod = abilityModifier((ability ? effectiveStats(character)[ability] : undefined) ?? 10);
-  const tired = d20Penalty(character);
   if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) {
-    return mod + halfProficiency(character, ability) + tired;
+    return mod + halfProficiency(character, ability);
   }
   const bonus = characterProficiency(character);
-  return mod + (hasExpertise(character, key) ? bonus * 2 : bonus) + tired;
+  return mod + (hasExpertise(character, key) ? bonus * 2 : bonus);
 }
 
 /** The bard feature that adds half proficiency to checks without it. */
@@ -269,11 +270,11 @@ export function halfProficiency(character, ability) {
 }
 
 /**
- * What a character adds to its initiative roll, before exhaustion. The value
+ * What a character adds to its initiative roll. The value
  * is the DEX modifier of the effective score, plus the half proficiency of
  * Jack of All Trades or Remarkable Athlete (initiative is a DEX check), plus
- * the bonus of a feat such as Alert. `InitiativeRoll.rollInitiative` adds the
- * exhaustion penalty at roll time, and the sheet badge adds it to its label.
+ * the bonus of a feat such as Alert. Exhaustion slants the roll in
+ * `InitiativeRoll.initiativeSlant` and does not change this value.
  * @param {Character} character
  * @returns {number}
  */
@@ -324,6 +325,7 @@ export function abilityCheck(character, key, dc = null, opts = {}) {
   return {
     ...resolveCheck(checkBonus(character, key), dc, {
       conditions: riderSources(character),
+      ...(tiredCheck(character) ? { mode: /** @type {const} */ ('disadvantage') } : {}),
       ...opts,
     }),
     ability: checkAbility(key),
@@ -353,5 +355,17 @@ export function passiveScore(bonus, mode = 'normal') {
  * @returns {number}
  */
 export function passivePerception(character, mode = 'normal') {
-  return passiveScore(checkBonus(character, 'perception'), mode);
+  const tired = tiredCheck(character);
+  // Advantage and the disadvantage of exhaustion cancel to a straight score.
+  const net = !tired ? mode : mode === 'advantage' ? 'normal' : tired;
+  return passiveScore(checkBonus(character, 'perception'), net);
+}
+
+/**
+ * The slant that exhaustion puts on a character's ability checks, or null.
+ * @param {Character} character
+ * @returns {'disadvantage' | null}
+ */
+function tiredCheck(character) {
+  return exhaustionSlant(exhaustionLevel(character), 'check');
 }

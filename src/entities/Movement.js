@@ -10,7 +10,7 @@
 
 import { armorTraits, effectiveStats, equippedIndex } from './Equipment.js';
 import { resolveRace } from './Races.js';
-import { exhaustionLevel, speedPenalty } from './Exhaustion.js';
+import { exhaustionLevel, tiredSpeed } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -49,15 +49,14 @@ export function armorSpeedPenalty(character) {
 }
 
 /**
- * The character's walking speed in feet, with every penalty applied. The two
- * penalties add: armor too heavy to move in does not stop costing 10 feet
- * because the wearer is also tired. Never negative, so a slow race at a high
- * level of exhaustion stops rather than walking backwards.
+ * The character's walking speed in feet, with every penalty applied. Armor
+ * too heavy to move in costs 10 feet first, and then exhaustion halves the
+ * rest from level 2 and stops the character at level 5.
  * @param {Character} character
  * @returns {number}
  */
 export function walkSpeed(character) {
-  return Math.max(0, baseSpeed(character) - armorSpeedPenalty(character) - speedPenalty(character));
+  return tiredSpeed(character, Math.max(0, baseSpeed(character) - armorSpeedPenalty(character)));
 }
 
 /**
@@ -69,7 +68,8 @@ export function walkSpeed(character) {
  */
 export function speedNote(character) {
   const armor = armorSpeedPenalty(character);
-  const tired = speedPenalty(character);
+  const afterArmor = Math.max(0, baseSpeed(character) - armor);
+  const tired = afterArmor - tiredSpeed(character, afterArmor);
   const causes = [];
   if (armor) {
     const body = equippedIndex(character).get('chest');

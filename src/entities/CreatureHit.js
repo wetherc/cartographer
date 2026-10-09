@@ -1,3 +1,4 @@
+import { exhaustionLevel } from './Exhaustion.js';
 import { CONCENTRATING, hasCondition } from './Conditions.js';
 import { canAct } from './ConditionEffects.js';
 import { resolveSave } from './Checks.js';
@@ -44,7 +45,12 @@ export function settleConcentration(prev, next, opts = {}) {
     const save = resolveSave(
       creatureSaveBonus(next, CONCENTRATION_ABILITY),
       concentrationDC(damage),
-      { conditions: next.conditions, ability: CONCENTRATION_ABILITY, ...opts },
+      {
+        conditions: next.conditions,
+        ability: CONCENTRATION_ABILITY,
+        tired: exhaustionLevel(next),
+        ...opts,
+      },
     );
     // A one-roll rider such as Resistance is used up by this save.
     const conditions = spendRiders(next.conditions, save.rider?.spent);

@@ -12,10 +12,10 @@ test('a DEX 18 character reads Init +4', () => {
   });
 });
 
-test('exhaustion lowers the initiative badge and names both terms', () => {
+test('exhaustion leaves the initiative badge alone and names the disadvantage', () => {
   const tired = setExhaustion(createCharacter('w', 'Wren', { DEX: 18 }), 1);
   assert.deepEqual(initiativeReadout(tired), {
-    label: 'Init +2',
-    note: 'Initiative bonus: DEX modifier +4, exhaustion -2',
+    label: 'Init +4',
+    note: 'Initiative bonus (DEX modifier). Exhaustion 1: disadvantage',
   });
 });

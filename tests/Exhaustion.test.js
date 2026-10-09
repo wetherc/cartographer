@@ -4,14 +4,14 @@ import {
   LEGACY_CHIP,
   MAX_EXHAUSTION,
   atDeathLevel,
-  d20Penalty,
   easeExhaustion,
   exhaustionFields,
   exhaustionLevel,
   exhaustionNote,
   gainExhaustion,
   setExhaustion,
-  speedPenalty,
+  exhaustionSlant,
+  tiredSpeed,
 } from '../src/entities/Exhaustion.js';
 import { createCondition } from '../src/entities/Conditions.js';
 
@@ -26,13 +26,31 @@ test('exhaustionLevel reads a stored level and clamps a nonsense one', () => {
   assert.equal(exhaustionLevel(/** @type {any} */ ({ exhaustion: null })), 0);
 });
 
-test('each level costs 2 on a d20 test and 5 feet, and the penalty is signed', () => {
-  assert.equal(d20Penalty({ exhaustion: 0 }), 0);
-  assert.equal(d20Penalty({ exhaustion: 1 }), -2);
-  assert.equal(d20Penalty({ exhaustion: 5 }), -10);
-  assert.equal(speedPenalty({ exhaustion: 0 }), 0);
-  assert.equal(speedPenalty({ exhaustion: 1 }), 5);
-  assert.equal(speedPenalty({ exhaustion: 5 }), 25);
+test('the 2014 ladder slants checks at 1, attacks and saves at 3, and cuts speed at 2 and 5', () => {
+  assert.equal(exhaustionSlant(0, 'check'), null);
+  assert.equal(exhaustionSlant(1, 'check'), 'disadvantage');
+  assert.equal(exhaustionSlant(2, 'attack'), null);
+  assert.equal(exhaustionSlant(2, 'save'), null);
+  assert.equal(exhaustionSlant(3, 'attack'), 'disadvantage');
+  assert.equal(exhaustionSlant(3, 'save'), 'disadvantage');
+  assert.equal(tiredSpeed({ exhaustion: 1 }, 30), 30);
+  assert.equal(tiredSpeed({ exhaustion: 2 }, 25), 12);
+  assert.equal(tiredSpeed({ exhaustion: 5 }, 30), 0);
+});
+
+test('level 4 halves the HP maximum, and easing below 4 gives it back without healing', () => {
+  const creature = { exhaustion: 0, maxHP: 21, currentHP: 18 };
+  const halved = setExhaustion(creature, 4);
+  assert.deepEqual([halved.maxHP, halved.currentHP, halved.hpHalved], [10, 10, 11]);
+  const eased = easeExhaustion(halved);
+  assert.deepEqual([eased.maxHP, eased.currentHP, eased.hpHalved], [21, 10, undefined]);
+  const hero = { exhaustion: 0, resources: [{ id: 'hp', current: 9, max: 9 }] };
+  const tired = setExhaustion(hero, 4);
+  assert.deepEqual(tired.resources?.[0], { id: 'hp', current: 4, max: 4 });
+  assert.equal(tired.hpHalved, 5);
+  const deeper = setExhaustion(tired, 5);
+  assert.equal(deeper.resources, tired.resources, 'a level above 4 keeps the same cut');
+  assert.deepEqual(setExhaustion({ exhaustion: 0 }, 4), { exhaustion: 4 });
 });
 
 test('only the sixth level is fatal', () => {
@@ -78,7 +96,7 @@ test('exhaustionNote says what the level costs', () => {
   assert.equal(exhaustionNote({}), 'No exhaustion.');
   assert.equal(
     exhaustionNote({ exhaustion: 2 }),
-    'Exhaustion 2: -4 to every d20 test, and 10 feet slower.',
+    'Exhaustion 2: disadvantage on checks, half speed.',
   );
   assert.equal(exhaustionNote({ exhaustion: MAX_EXHAUSTION }), 'Exhaustion 6: dead.');
 });

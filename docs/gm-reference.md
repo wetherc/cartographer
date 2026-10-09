@@ -1284,8 +1284,8 @@ For example, a DEX 16 creature in Plate has AC 18.
 
 The Encounters and NPCs panels show each trained save and skill with its
 bonus, for example "Saves DEX +4 | Skills Stealth +6". The app calculates
-each bonus from the ability score, the challenge rating, and any
-exhaustion, so there is no number to type.
+each bonus from the ability score and the challenge rating, so there is no
+number to type.
 
 An unrated creature takes its proficiency bonus from its level. With no
 level, the bonus is +2. A save that a spell calls for uses the same bonus,
@@ -1993,7 +1993,7 @@ Initiative is a Dexterity check, and it rolls as one.
 - A condition chip that affects ability checks affects initiative. So a
   poisoned or frightened combatant rolls two d20s and keeps the lower one.
 - Armor that the character is not trained for does the same.
-- Exhaustion takes 2 off the total for each level.
+- Exhaustion of level 1 or higher does the same.
 - Feral Instinct (barbarian 7) gives advantage.
 
 The log line says what happened to each roll, for example: `Initiative
@@ -2142,17 +2142,24 @@ click it.
 Exhaustion is a level from 0 to 6, not a chip, and the app stores it as its
 own number.
 
-| Effect per level | Where it applies |
-| --- | --- |
-| -2 on every d20 test | The saving throws and skills on the sheet, passive Perception, weapon and spell attacks, initiative, and death saves |
-| -5 feet of walking speed | The speed badge on the sheet |
+The app uses the 2014 rules for exhaustion. Each level keeps the effects of
+the levels below it.
 
-The log names the level and the number that it took off. A spell save DC
-is not a d20 test, so exhaustion does not lower it.
+| Level | Effect | Where it applies |
+| --- | --- | --- |
+| 1 | Disadvantage on ability checks | Skill and ability checks from the sheet, Stealth rolls, initiative, and passive Perception (-5) |
+| 2 | Speed halved | The speed badge on the sheet |
+| 3 | Disadvantage on attack rolls and saving throws | Weapon and spell attacks, saves from the sheet and against spells, concentration saves, repeated saves, and death saves |
+| 4 | HP maximum halved | The HP maximum of the character or creature. Current HP drops to the new maximum. When the level falls below 4 again, the maximum comes back, but current HP does not rise |
+| 5 | Speed 0 | The speed badge on the sheet |
+| 6 | Death | See below |
 
-The saving throw of a creature against a spell is a number that you type
-into the cast dialog. The app does not apply exhaustion to it, so subtract
-the penalty as you type it.
+Exhaustion does not change any printed bonus. The log line of a slanted roll
+names the level, such as "Exhaustion 3 disadvantage".
+
+The rest of the rules in the app also follow 2014, with one exception. Skill
+Expert is a feat from Tasha's Cauldron of Everything. Skilled can be taken
+once, as in 2014.
 
 A row of six numbered pips sets the level, and the pips up to the current
 level are filled. The row is on the character sheet under
@@ -2230,7 +2237,7 @@ open and shows "Pick at least one target." No slot is spent. A utility spell
 or a summons needs no target.
 
 The spell attack bonus is the proficiency bonus plus the spell ability
-modifier, minus any exhaustion penalty.
+modifier. From exhaustion level 3, the spell attack rolls at disadvantage.
 
 The app follows the bonus action spell rule on the caster's own turn. After
 a spell cast with the bonus action, the caster can cast only a cantrip with
@@ -2451,8 +2458,8 @@ amount field sets how many HP each click moves. It starts at 1, and each
 **Damage** or **Heal** press sets it back to 1. An empty field, or a number
 below 1, disables both buttons. The level
 line gives AC, initiative (**Init**), speed, passive Perception (**PP**),
-the proficiency bonus (**Prof**), and XP. Init includes the exhaustion
-penalty, as the initiative roll of a fight does.
+the proficiency bonus (**Prof**), and XP. The tooltip of Init names the
+disadvantage of exhaustion, as the initiative roll of a fight uses it.
 
 A caster gets one line per spell level, such as "1st", then the pips, then
 the free count, such as "3 of 4". A filled pip is a free slot. A spent pip is

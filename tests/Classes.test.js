@@ -149,10 +149,10 @@ test('an explicit proficiency on the caster view wins over the level ladder', ()
   assert.equal(spellAttackBonus(rated), 2 + 4);
 });
 
-test('exhaustion lowers the spell attack bonus and leaves the save DC alone', () => {
+test('exhaustion leaves the spell attack bonus and the save DC alone', () => {
   const cleric = character({ class: 'cleric', level: 5, stats: { WIS: 18 } });
   const tired = { ...cleric, exhaustion: 2 };
-  assert.equal(spellAttackBonus(tired), 3 + 4 - 4);
+  assert.equal(spellAttackBonus(tired), 3 + 4, 'exhaustion slants the roll instead');
   assert.equal(spellSaveDC(tired), 8 + 3 + 4, 'a DC is not a roll the caster makes');
   assert.equal(spellAttackBonus({ ...cleric, exhaustion: 0 }), 3 + 4);
   assert.equal(spellAttackBonus({ ...character(), exhaustion: 3 }), null, 'a non-caster has none');

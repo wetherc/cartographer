@@ -73,11 +73,14 @@ function recordedBonus(source) {
  * so a save granted or a stat raised since the cast counts. `riders` are
  * extra rider sources beyond the chips, the feat riders of a character, and
  * they join the retry roll without joining the returned condition list.
+ * `tired` is the exhaustion level of the roller, which slants the save from
+ * level 3.
  * @param {Condition[]} list
  * @param {{
  *   bonusOf?: (source: ConditionSource) => number,
  *   rng?: RandomFn,
  *   riders?: import('./Riders.js').RiderSource[],
+ *   tired?: number,
  * }} [opts]
  * @returns {{
  *   conditions: Condition[],
@@ -86,7 +89,7 @@ function recordedBonus(source) {
  */
 export function repeatSaves(
   list,
-  { bonusOf = recordedBonus, rng = Math.random, riders = [] } = {},
+  { bonusOf = recordedBonus, rng = Math.random, riders = [], tired = 0 } = {},
 ) {
   /** @type {{ condition: Condition, save: import('./Checks.js').SaveResult, ended: boolean }[]} */
   const results = [];
@@ -105,6 +108,7 @@ export function repeatSaves(
       rng,
       conditions: [...list, ...riders],
       ability: source.saveAbility,
+      tired,
     });
     results.push({ condition, save, ended: save.success });
     return !save.success;

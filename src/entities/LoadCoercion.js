@@ -91,6 +91,9 @@ export function conditionList(value) {
 /** The largest stored HP maximum raise. Chips of several spells can add up. */
 const MAX_STORED_BOOST = 1000;
 
+/** The largest HP maximum cut of exhaustion a save can store. */
+const MAX_STORED_HALVED = 100000;
+
 /**
  * An entity with its HP buff fields (see `HPBuffFields`) cleaned. The HP
  * maximum raise is a whole number from 0 up, and a raise of 0 or a value that
@@ -101,11 +104,13 @@ const MAX_STORED_BOOST = 1000;
  * @returns {T}
  */
 export function coerceHPBuffs(entity) {
-  const { hpBoost, bonusHPFrom, ...rest } = entity;
+  const { hpBoost, bonusHPFrom, hpHalved, ...rest } = entity;
   const boost = clampInt(hpBoost, 0, MAX_STORED_BOOST, 0);
+  const halved = clampInt(hpHalved, 0, MAX_STORED_HALVED, 0);
   return /** @type {T} */ ({
     ...rest,
     ...(boost > 0 ? { hpBoost: boost } : {}),
+    ...(halved > 0 ? { hpHalved: halved } : {}),
     ...(typeof bonusHPFrom === 'string' && bonusHPFrom ? { bonusHPFrom } : {}),
   });
 }

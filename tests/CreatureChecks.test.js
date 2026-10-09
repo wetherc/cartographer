@@ -65,10 +65,10 @@ test('an ability the stat block does not carry reads as a score of 10', () => {
   assert.equal(creatureSaveBonus(bare, 'WIS'), 0);
 });
 
-test('exhaustion costs a creature 2 on every save and check', () => {
+test('exhaustion leaves a creature save and check bonus alone', () => {
   const tired = foe({ cr: 5, proficiencies: { saves: ['STR'], skills: [] } });
-  assert.equal(creatureSaveBonus({ ...tired, exhaustion: 3 }, 'STR'), 0, '6 less the 6 penalty');
-  assert.equal(creatureCheckBonus({ ...tired, exhaustion: 1 }, 'athletics'), 1);
+  assert.equal(creatureSaveBonus({ ...tired, exhaustion: 3 }, 'STR'), 6);
+  assert.equal(creatureCheckBonus({ ...tired, exhaustion: 1 }, 'athletics'), 3);
 });
 
 test('a check adds proficiency for a trained skill and never doubles it', () => {
@@ -91,10 +91,14 @@ test('the summary names each trained save and skill with its bonus', () => {
   assert.equal(proficiencySummary(both), 'Saves STR +6, INT +2 | Skills Stealth +5');
 });
 
-test('the summary signs a penalty and reads empty for an untrained creature', () => {
+test('the summary signs a bonus and reads empty for an untrained creature', () => {
   const dim = foe({ proficiencies: { saves: ['INT'], skills: [] } });
   assert.equal(proficiencySummary(dim), 'Saves INT +1', 'INT 8 gives -1, plus the level 1 +2');
-  const worse = { ...dim, stats: { ...dim.stats, INT: 8 }, exhaustion: 2 };
+  const worse = {
+    ...dim,
+    proficiencies: { saves: ['INT'], skills: [] },
+    stats: { ...dim.stats, INT: 1 },
+  };
   assert.equal(proficiencySummary(worse), 'Saves INT -3');
   assert.equal(proficiencySummary(foe()), '');
 });

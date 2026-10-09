@@ -36,9 +36,15 @@ test('availableFeats drops a taken feat by id or by hand-typed name', () => {
     false,
     'a hand-typed name blocks the catalog entry it matches',
   );
-  const repeat = takeFeat(fighter(6), buildStamp(/** @type {any} */ (skilled), {}));
+  const once = takeFeat(fighter(6), buildStamp(/** @type {any} */ (skilled), {}));
   assert.equal(
-    availableFeats(repeat, DEFAULT_FEATS).some((f) => f.id === 'skilled'),
+    availableFeats(once, DEFAULT_FEATS).some((f) => f.id === 'skilled'),
+    false,
+    'Skilled is a 2014 feat, taken once',
+  );
+  const again = { ...skilled, repeatable: true };
+  assert.equal(
+    availableFeats(once, [again]).some((f) => f.id === 'skilled'),
     true,
     'a repeatable feat stays on offer',
   );

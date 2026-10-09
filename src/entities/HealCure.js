@@ -7,7 +7,7 @@
  * pick and writes the result.
  */
 
-import { exhaustionLevel } from './Exhaustion.js';
+import { easeExhaustion, exhaustionLevel } from './Exhaustion.js';
 import { conditionKey, hasCondition, uniqueNames } from './Conditions.js';
 
 /** @typedef {import('../types/spell.js').SpellHealEffect} SpellHealEffect */
@@ -90,7 +90,9 @@ export function applyCure(entity, names) {
   const next = {
     ...entity,
     conditions: entity.conditions.filter((c) => !gone.includes(c)),
-    ...(tired ? { exhaustion: exhaustionLevel(entity) - 1 } : {}),
   };
-  return { entity: next, ended: [...gone.map((c) => c.name), ...(tired ? [EXHAUSTION] : [])] };
+  return {
+    entity: tired ? easeExhaustion(next) : next,
+    ended: [...gone.map((c) => c.name), ...(tired ? [EXHAUSTION] : [])],
+  };
 }

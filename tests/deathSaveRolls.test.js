@@ -158,17 +158,17 @@ test('stabilize leaves a dead, a standing, and an unknown character alone', () =
   assert.equal(app.dirty, 0);
 });
 
-test('exhaustion joins the modifier the tray rolls with, and the log names it', () => {
+test('exhaustion 3 rolls the tray at disadvantage, and the log names it', () => {
   const app = stubApp({
-    characters: [dying({}, { exhaustion: 2 })],
-    rng: scripted([face(20, 12)]),
+    characters: [dying({}, { exhaustion: 3 })],
+    rng: scripted([face(20, 12), face(20, 8)]),
   });
   rollDeathSaveFor(app, 'hero');
-  assert.deepEqual(app.rolls, [{ counts: { d20: 1 }, modifier: -4 }]);
+  assert.deepEqual(app.rolls, [{ counts: { d20: 1 }, modifier: 0, mode: 'disadvantage' }]);
   assert.deepEqual(stored(app).deathSaves, { successes: 0, failures: 1, stable: false });
   assert.equal(
     app.log[0],
-    'Hero rolls a death save (8, exhaustion 2 -4 vs DC 10): Hero slips further.',
+    'Hero rolls a death save (8, exhaustion 3 disadvantage vs DC 10): Hero slips further.',
   );
 });
 

@@ -194,11 +194,15 @@ export function reconcileMaxHP(character) {
   if (character.hpOverride) return character;
   const derived = classMaxHP(character);
   if (derived === null) return character;
-  const max = derived + (character.hpBoost ?? 0);
+  const full = derived + (character.hpBoost ?? 0);
+  // Exhaustion of level 4 halves the maximum, and `hpHalved` records the cut.
+  const cut = character.hpHalved ? full - Math.max(1, Math.floor(full / 2)) : 0;
+  const max = full - cut;
   const pool = character.resources.find((r) => r.id === HP_RESOURCE_ID);
   if (!pool || pool.max === max) return character;
   return {
     ...character,
+    ...(cut > 0 ? { hpHalved: cut } : {}),
     resources: updateById(character.resources, HP_RESOURCE_ID, (r) => adjustMax(r, max)),
   };
 }

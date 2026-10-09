@@ -1,44 +1,67 @@
 /**
- * Exhaustion, in the 2024 form: one rule that scales with the level rather
- * than a table of six different penalties. Each level costs 2 on every d20
- * test and 5 feet of speed, and the sixth level kills.
+ * Exhaustion, in the 2014 form: a ladder of six levels, where each level
+ * keeps the effects of the levels below it.
  *
- * The level is one stored number on the character or the creature. Nothing
- * else is stored. The penalty, the speed cut, and the readout all derive from
- * it here, so no write site can bake a stale value into a save.
+ * | Level | Effect |
+ * | --- | --- |
+ * | 1 | Disadvantage on ability checks |
+ * | 2 | Speed halved |
+ * | 3 | Disadvantage on attack rolls and saving throws |
+ * | 4 | Hit point maximum halved |
+ * | 5 | Speed reduced to 0 |
+ * | 6 | Death |
  *
- * The penalty reaches a roll through the bonus, not through a condition chip
- * with a rider on it. A rider only shows up once dice are thrown, and the
- * sheet prints its saving-throw and skill bonuses without throwing any. A chip
- * would leave the sheet reading +5 where the roll produced -1. Folding the
- * penalty into `Checks.saveBonus` and `Checks.checkBonus` instead means the
- * printed number and the rolled number cannot disagree, and it carries the
- * penalty into a passive score for free.
+ * The level is one stored number on the character or the creature. The
+ * slants, the speed, and the readout all derive from it here. The halved HP
+ * maximum is the one effect that has to be stored, because every HP reader
+ * reads the stored maximum. `setExhaustion` moves the maximum when the level
+ * crosses 4 and records the cut in `hpHalved`, the same way `hpBoost`
+ * records the raise of Aid.
  *
- * Every function here is pure, and this module imports nothing. That is
- * deliberate: `Checks.js` reads it, and `Checks.js` is
- * what `DeathSaves.js` is built on, so any import of those from here would
- * close a cycle. The two rules that need to know about death, the guard that
- * keeps a long rest from easing a dead character and the revive that has to
- * bring a level-6 character back below six, therefore live with their callers.
+ * A slant reaches a roll through `ConditionEffects.rollMode`, whose query
+ * takes the level as `tired`. The modifier on the sheet does not change.
+ *
+ * This module imports only `PoolIds.js`, which imports nothing. `Checks.js`
+ * reads it, and `Checks.js` is what `DeathSaves.js` is built on, so any
+ * import of those from here would close a cycle. The two rules that need to
+ * know about death, the guard that keeps a long rest from easing a dead
+ * character and the revive that has to bring a level-6 character back below
+ * six, therefore live with their callers.
  */
+
+import { HP_RESOURCE_ID } from './PoolIds.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
 /**
- * Anything that carries an exhaustion level. Both `Character` and `Creature`
- * do, and nothing here needs any other field of either.
- * @typedef {{ exhaustion?: number }} Exhaustible
+ * Anything with an exhaustion level. Both `Character` and `Creature` have
+ * one, and the HP fields of either.
+ * @typedef {{
+ *   exhaustion?: number,
+ *   hpHalved?: number,
+ *   maxHP?: number,
+ *   currentHP?: number,
+ *   resources?: { id: string, current: number, max: number }[],
+ * }} Exhaustible
  */
 
 /** The level that kills. There is no seventh. */
 export const MAX_EXHAUSTION = 6;
 
-/** What one level takes off every d20 test. */
-export const PENALTY_PER_LEVEL = 2;
+/** The level from which ability checks roll at disadvantage. */
+export const CHECKS_LEVEL = 1;
 
-/** What one level takes off the walking speed, in feet. */
-export const SPEED_PER_LEVEL = 5;
+/** The level from which speed is halved. */
+export const SLOW_LEVEL = 2;
+
+/** The level from which attack rolls and saving throws roll at disadvantage. */
+export const ROLLS_LEVEL = 3;
+
+/** The level from which the HP maximum is halved. */
+export const HALVED_HP_LEVEL = 4;
+
+/** The level from which speed is 0. */
+export const STILL_LEVEL = 5;
 
 /**
  * The name exhaustion went by while it was a hand-added condition chip, before
@@ -71,27 +94,30 @@ export function exhaustionLevel(entity) {
 }
 
 /**
- * What exhaustion adds to a d20 test: zero, or a negative number. It is signed
- * so that a caller adds it to a bonus rather than remembering to subtract it.
- * @param {Exhaustible} entity
- * @returns {number}
+ * The slant that exhaustion puts on one kind of d20 roll, or null. Level 1
+ * gives disadvantage on ability checks, and level 3 gives it on attack rolls
+ * and saving throws too. Initiative is a DEX check, so it rolls at
+ * disadvantage from level 1.
+ * @param {number} level
+ * @param {'attack' | 'check' | 'save'} kind
+ * @returns {'disadvantage' | null}
  */
-export function d20Penalty(entity) {
-  const level = exhaustionLevel(entity);
-  // Multiplying zero by the negative rate gives -0, which formats as "-0" in a
-  // badge. Returning the level's own zero keeps the readout clean.
-  return level ? -PENALTY_PER_LEVEL * level : 0;
+export function exhaustionSlant(level, kind) {
+  const from = kind === 'check' ? CHECKS_LEVEL : ROLLS_LEVEL;
+  return level >= from ? 'disadvantage' : null;
 }
 
 /**
- * What exhaustion takes off the walking speed, in feet, as a positive number.
- * `Movement.walkSpeed` subtracts it and floors the result at zero, so a slow
- * race at a high level stops rather than walking backwards.
+ * A walking speed after exhaustion: halved (rounded down) from level 2, and 0
+ * from level 5.
  * @param {Exhaustible} entity
+ * @param {number} speed the speed before exhaustion, in feet
  * @returns {number}
  */
-export function speedPenalty(entity) {
-  return SPEED_PER_LEVEL * exhaustionLevel(entity);
+export function tiredSpeed(entity, speed) {
+  const level = exhaustionLevel(entity);
+  if (level >= STILL_LEVEL) return 0;
+  return level >= SLOW_LEVEL ? Math.floor(speed / 2) : speed;
 }
 
 /**
@@ -106,14 +132,49 @@ export function atDeathLevel(entity) {
 }
 
 /**
- * Set the level outright, clamped. This is what the GM's stepper calls.
+ * An entity whose stored HP maximum matches its exhaustion level. From level
+ * 4 the maximum is half the full maximum, rounded down, and `hpHalved`
+ * records the cut. Current HP drops only where it sits above the new
+ * maximum. Below level 4 the cut comes back onto the maximum, but current HP
+ * stays where it is, because a higher maximum is not a heal. An entity that
+ * already matches comes back as the same object.
+ * @template {Exhaustible} T
+ * @param {T} entity
+ * @returns {T}
+ */
+export function settleExhaustionHP(entity) {
+  const had = entity.hpHalved ?? 0;
+  const pool = entity.resources?.find((r) => r.id === HP_RESOURCE_ID);
+  const creature = typeof entity.maxHP === 'number' && typeof entity.currentHP === 'number';
+  if (!creature && !pool) return entity;
+  const full = (creature ? Number(entity.maxHP) : Number(pool?.max)) + had;
+  const cut =
+    exhaustionLevel(entity) >= HALVED_HP_LEVEL ? full - Math.max(1, Math.floor(full / 2)) : 0;
+  if (cut === had) return entity;
+  const max = full - cut;
+  const { hpHalved: _had, ...rest } = entity;
+  const recorded = /** @type {T} */ (cut > 0 ? { ...rest, hpHalved: cut } : rest);
+  if (creature) {
+    return { ...recorded, maxHP: max, currentHP: Math.min(Number(entity.currentHP), max) };
+  }
+  return {
+    ...recorded,
+    resources: entity.resources?.map((r) =>
+      r.id === HP_RESOURCE_ID ? { ...r, max, current: Math.min(r.current, max) } : r,
+    ),
+  };
+}
+
+/**
+ * Set the level outright, clamped, and move the HP maximum to match. This is
+ * what the GM's stepper calls.
  * @template {Exhaustible} T
  * @param {T} entity
  * @param {number} level
  * @returns {T}
  */
 export function setExhaustion(entity, level) {
-  return { ...entity, exhaustion: exhaustionLevel({ exhaustion: level }) };
+  return settleExhaustionHP({ ...entity, exhaustion: exhaustionLevel({ exhaustion: level }) });
 }
 
 /**
@@ -147,6 +208,22 @@ export function easeExhaustion(entity, count = 1) {
 }
 
 /**
+ * The effects of one level, as a phrase for the badge and the log, such as
+ * "disadvantage on checks, attacks, and saves, half speed".
+ * @param {number} level
+ * @returns {string}
+ */
+export function levelEffects(level) {
+  const rolls =
+    level >= ROLLS_LEVEL ? 'disadvantage on checks, attacks, and saves' : 'disadvantage on checks';
+  const parts = [rolls];
+  if (level >= STILL_LEVEL) parts.push('speed 0');
+  else if (level >= SLOW_LEVEL) parts.push('half speed');
+  if (level >= HALVED_HP_LEVEL) parts.push('half HP maximum');
+  return parts.join(', ');
+}
+
+/**
  * A sentence for the badge and the log, saying what the current level costs.
  * @param {Exhaustible} entity
  * @returns {string}
@@ -155,10 +232,7 @@ export function exhaustionNote(entity) {
   const level = exhaustionLevel(entity);
   if (!level) return 'No exhaustion.';
   if (level >= MAX_EXHAUSTION) return `Exhaustion ${level}: dead.`;
-  return (
-    `Exhaustion ${level}: ${d20Penalty({ exhaustion: level })} to every d20 test, ` +
-    `and ${speedPenalty({ exhaustion: level })} feet slower.`
-  );
+  return `Exhaustion ${level}: ${levelEffects(level)}.`;
 }
 
 /**

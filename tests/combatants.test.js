@@ -507,16 +507,14 @@ test('targetSaveBonus derives a save for either kind and reports nothing for an 
   assert.equal(targetSaveBonus(app, 'nobody', 'STR'), undefined);
 });
 
-test('a target save bonus carries exhaustion for both kinds', () => {
+test('a target save bonus leaves exhaustion to the roll mode for both kinds', () => {
   const { hero, goblin } = fixtures();
   const app = stubApp({
     characters: [{ ...hero, exhaustion: 2 }],
     creatures: [{ ...goblin, exhaustion: 2 }],
   });
-  assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR') - 4);
-  // A creature's save is derived now, so the penalty reaches it without the GM
-  // subtracting it by hand.
-  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), -4);
+  assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR'));
+  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), 0);
 });
 
 /** A character holding an equipped, damage-carrying sword. */

@@ -1088,7 +1088,7 @@ test('a thrown melee weapon rolls as a ranged attack for the throw', () => {
   );
 });
 
-test('exhaustion lowers an attack roll, and the log names the level', () => {
+test('exhaustion 2 leaves an attack roll alone', () => {
   const hero = { ...makeHero({ STR: 16 }), exhaustion: 2 };
   const app = stubApp({ characters: [hero], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
@@ -1097,15 +1097,13 @@ test('exhaustion lowers an attack roll, and the log names the level', () => {
     weapon: /** @type {any} */ (SWORD),
     rng: scripted([4 / 8]),
   });
-  // STR +3 and proficiency +2, less 4 for two levels of exhaustion.
-  assert.equal(app.rolls[0].selection.modifier, 1);
-  assert.match(
-    app.log[0],
-    /^Hero attacks Goblin with Sword \(STR \+3, proficiency \+2, exhaustion 2 -4\): 16 to hit/,
-  );
+  // STR +3 and proficiency +2. Exhaustion slants attacks only from level 3.
+  assert.equal(app.rolls[0].selection.modifier, 5);
+  assert.equal(app.rolls[0].selection.mode, undefined);
+  assert.doesNotMatch(app.log[0], /xhaustion/);
 });
 
-test('a tired creature swings at the same penalty, and its damage is untouched', () => {
+test('a creature at exhaustion 3 attacks at disadvantage, and its damage is untouched', () => {
   const goblin = {
     ...createCreature('goblin', 'Goblin', {
       disposition: 'hostile',
@@ -1124,9 +1122,10 @@ test('a tired creature swings at the same penalty, and its damage is untouched',
     weapon: /** @type {any} */ (SWORD),
     rng: scripted([4 / 8]),
   });
-  // STR +3 and proficiency +2, less 6. A creature is always proficient.
-  assert.equal(app.rolls[0].selection.modifier, -1);
-  assert.match(app.log[0], /exhaustion 3 -6\): 19 to hit/);
+  // STR +3 and proficiency +2. A creature is always proficient.
+  assert.equal(app.rolls[0].selection.modifier, 5);
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /Exhaustion 3 disadvantage/);
   assert.match(app.log[1], /\+3\]\.$/, 'the damage keeps the whole ability modifier');
 });
 

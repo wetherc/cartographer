@@ -56,7 +56,7 @@ src/combat/Loadout.js ........ pure: what a combatant wears, swings, and
 src/combat/Arrival.js ........ pure: the text of the alert for the hostile
                                creatures on a tile the party walks onto
 src/combat/InitiativeRoll.js . pure: one initiative roll as a DEX check, with
-                               the slant, the exhaustion penalty, and a note
+                               the slant, including exhaustion, and a note
 src/combat/RefreshScheduler.js pure: one deferred refresh for a burst of
                                writes, with an injectable scheduler
 src/combat/FocusRestore.js ... pure: names a control so a rebuild can give
@@ -1036,7 +1036,8 @@ because the setup reads the party's shared position.
 Initiative is a Dexterity check, so `src/combat/InitiativeRoll.js` rolls it as
 one. `initiativeSlant` asks `ConditionEffects.rollMode` for the mode that the
 roller's chips give a check. It adds the disadvantage of armor the roller is
-not trained for, and it reads the exhaustion penalty. `rollInitiative` throws
+not trained for, and it passes the exhaustion level, which gives
+disadvantage from level 1. `rollInitiative` throws
 the d20s, keeps the higher or the lower one, and adds the DEX modifier that
 the roster stored on the participant.
 

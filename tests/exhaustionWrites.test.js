@@ -24,7 +24,7 @@ test('a raised level is stored, logged, and marks the campaign dirty', () => {
   const app = appWith([hero()]);
   assert.equal(setCombatantExhaustion(app, 'hero', 2), true);
   assert.equal(app.state.characters[0].exhaustion, 2);
-  assert.equal(app.log[0], 'Hero: Exhaustion 2: -4 to every d20 test, and 10 feet slower.');
+  assert.equal(app.log[0], 'Hero: Exhaustion 2: disadvantage on checks, half speed.');
   assert.equal(app.dirty, 1);
 });
 
@@ -96,12 +96,18 @@ test('a creature already at 0 HP takes the level without a second defeat line', 
   assert.deepEqual(app.log, ['Guard: Exhaustion 6: dead.']);
 });
 
-test('a level below the sixth leaves HP and the tracker alone', () => {
+test('a level below the sixth leaves the tracker alone, and level 4 halves the HP maximum', () => {
   const app = appWith([hero()], [guard()]);
-  setCombatantExhaustion(app, 'hero', 5);
-  setCombatantExhaustion(app, 'c1', 5);
+  setCombatantExhaustion(app, 'hero', 3);
+  setCombatantExhaustion(app, 'c1', 3);
   assert.equal(app.state.characters[0].deathSaves ?? null, null);
   assert.equal(app.state.creatures[0].currentHP, 8);
+  setCombatantExhaustion(app, 'c1', 4);
+  assert.equal(app.state.creatures[0].maxHP, 4);
+  assert.equal(app.state.creatures[0].currentHP, 4);
+  setCombatantExhaustion(app, 'c1', 2);
+  assert.equal(app.state.creatures[0].maxHP, 8, 'easing below 4 gives the maximum back');
+  assert.equal(app.state.creatures[0].currentHP, 4, 'but heals nothing');
 });
 
 test('a character who dies of exhaustion drops the spell it held', () => {

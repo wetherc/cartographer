@@ -1,3 +1,4 @@
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { applyDamage, heal, isDefeated } from '../entities/Creature.js';
 import {
   addCondition,
@@ -330,6 +331,7 @@ export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) 
   const found = findCombatant(app, combatantId);
   if (!found) return [];
   const { conditions, results } = repeatSaves(found.entity.conditions, {
+    tired: exhaustionLevel(found.entity),
     rng,
     bonusOf: (source) =>
       source.saveAbility ? combatantSaveBonus(found, source.saveAbility) : (source.saveBonus ?? 0),

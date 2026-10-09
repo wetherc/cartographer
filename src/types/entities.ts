@@ -148,6 +148,10 @@ export interface HPBuffFields {
    * (False Life, Heroism). The temporary HP end with that chip. Absent when
    * the GM typed them or nothing granted any. */
   bonusHPFrom?: string;
+  /** The HP maximum that exhaustion of level 4 or higher takes off, already
+   * taken out of the stored maximum. When the level drops below 4, the
+   * maximum rises by this much. Absent reads as 0. */
+  hpHalved?: number;
 }
 
 /** Which rolls a rider touches. `check` has no roller yet, so a check rider

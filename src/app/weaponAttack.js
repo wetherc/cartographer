@@ -1,3 +1,4 @@
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { promptModal } from '../ui/Modal.js';
 import { weaponIsMagical } from '../entities/MagicWeapon.js';
 import {
@@ -409,6 +410,7 @@ export function rollHitSave(app, defenderId, weapon, rng) {
   const save = resolveSave(combatantSaveBonus(found, rider.ability), rider.dc, {
     ability: rider.ability,
     conditions: found.entity.conditions,
+    tired: exhaustionLevel(found.entity),
     rng,
   });
   app.actions.logEvent(
