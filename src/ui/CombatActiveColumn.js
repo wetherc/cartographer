@@ -75,13 +75,12 @@ export function mountActiveColumn(callbacks, loadoutOf, followTurn) {
     facts.appendChild(factLine('Initiative', String(row.initiative)));
     if (row.ac !== null) facts.appendChild(factLine('AC', String(row.ac)));
     if (row.hp) {
-      // HP shows exact where the viewer can act for this combatant. The GM
-      // sees exact HP anywhere. A player sees exact HP for their own
-      // character, matching their sheet.
+      // The GM sees exact HP anywhere. A player sees exact HP for every
+      // party character, matching the roster, and a band for creatures.
       facts.appendChild(
         factLine(
           'HP',
-          row.mayAct ? `${row.hp.current}/${row.hp.max}` : hpBand(row.hp.current, row.hp.max),
+          row.exactHP ? `${row.hp.current}/${row.hp.max}` : hpBand(row.hp.current, row.hp.max),
         ),
       );
     }

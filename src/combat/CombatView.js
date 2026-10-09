@@ -51,6 +51,7 @@ import { attacksAvailable, budgetOf, legendaryLeft } from './ActionBudget.js';
  *   counted: boolean,
  *   incapacitated: boolean,
  *   mayAct: boolean,
+ *   exactHP: boolean,
  *   deathSaves: import('../types/entities.js').DeathSaveState | null,
  *   used: import('../types/combat.js').ActionBudget,
  *   attacksLeft: number,
@@ -238,6 +239,9 @@ export function buildCombatView(combat, resolve, viewer) {
       // out of the fight, so the surfaces mark it apart from defeat.
       incapacitated: found ? !canAct(conditionsOf(found)) : false,
       mayAct: mayActOn(found, who, participant.id),
+      // The GM sees exact HP on every row. A player sees exact HP for every
+      // party character, as the roster does, and a band for creatures.
+      exactHP: who.gm || found?.kind === 'character',
       // Only a character carries the tracker. Everything else reads null, so
       // the surfaces need no kind check of their own.
       deathSaves: found?.kind === 'character' ? (found.entity.deathSaves ?? null) : null,

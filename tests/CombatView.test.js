@@ -521,3 +521,33 @@ test('a bystander in the order sways the outcome in neither direction', () => {
     'a live bystander does not keep a won fight open',
   );
 });
+
+test('buildCombatView shows a player exact HP for every party character and a band for creatures', () => {
+  const { hero, goblin, sage } = fixtures();
+  const ally = withHP(createCharacter('ally', 'Ally', {}), 9);
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'hero', initiative: 12, modifier: 0 },
+      { id: 'ally', initiative: 11, modifier: 0 },
+      { id: 'goblin', initiative: 10, modifier: 0 },
+      { id: 'sage', initiative: 9, modifier: 0 },
+      { id: 'ghost', initiative: 8, modifier: 0 },
+    ],
+  };
+  const byId = resolver({
+    hero: { kind: 'character', entity: hero },
+    ally: { kind: 'character', entity: ally },
+    goblin: { kind: 'creature', entity: goblin },
+    sage: { kind: 'creature', entity: sage },
+  });
+  const player = buildCombatView(combat, byId, { gm: false, boundCharacterId: 'hero' });
+  assert.deepEqual(
+    player.rows.map((r) => r.exactHP),
+    [true, true, false, false, false],
+  );
+  assert.equal(player.rows[1].mayAct, false, 'exact HP does not let a player act for an ally');
+  const gm = buildCombatView(combat, byId, { gm: true });
+  assert.ok(gm.rows.every((r) => r.exactHP));
+});

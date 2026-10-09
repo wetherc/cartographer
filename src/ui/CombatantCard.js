@@ -57,10 +57,9 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  * what this viewer can see. The card draws whatever survives that trim and
  * leaves out the block when nothing survives.
  *
- * HP shows exact where the viewer can act for the combatant (`row.mayAct`):
- * the GM sees exact HP everywhere, and a player sees exact HP for their own
- * character, matching the sheet they can already read. Everywhere else, HP
- * shows as a coarse band. AC is public information: every viewer sees the
+ * HP shows exact where `row.exactHP` is set. The GM sees exact HP everywhere,
+ * and a player sees exact HP for every party character, matching the roster.
+ * A creature shows a coarse band to a player, friendly NPCs included. AC is public information: every viewer sees the
  * exact value.
  *
  * `reaction` adds the reaction controls under the card. The card is one button
@@ -122,7 +121,7 @@ export function combatantCard(row, selection = {}) {
     card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, ${down.label}`);
   }
 
-  if (row.hp) card.appendChild(hpLine(row.hp, row.mayAct));
+  if (row.hp) card.appendChild(hpLine(row.hp, row.exactHP));
 
   if (row.ac !== null) {
     card.appendChild(el('div', 'combatant-card__meta', `AC ${row.ac}`));
@@ -233,7 +232,7 @@ function foeMark() {
 }
 
 /**
- * The card's HP line. A viewer who can act for the combatant sees exact
+ * The card's HP line. A viewer with exact HP access sees exact
  * numbers over the shared stat-bar track. Every other viewer sees the coarse
  * band used in the rest of the player view.
  * @param {{ current: number, max: number, bonus: number }} hp

@@ -835,9 +835,11 @@ reads "Stable at 0 HP" and a dead character reads "Dead", with no controls.
 The block comes from `ui/DeathSaveBlock.js`, which the character sheet also
 uses, so the screen and the sheet always describe a tracker the same way.
 
-The HP value is exact where the viewer can act for the combatant. That is the
-GM for every combatant, and a player for their own character only. Other
-viewers see a coarse HP band. The GM also gets an amount field with Damage and
+The HP value is exact where the row sets `exactHP`. The GM sees exact HP for
+every combatant, and a player sees exact HP for every party character, as the
+roster shows it. A player sees a coarse HP band for every creature, friendly
+NPCs included. Exact HP gives a player no control over a row, because only
+`mayAct` allows an action. The GM also gets an amount field with Damage and
 Heal buttons, the same controls as the Encounters panel. They apply through
 `applyToTarget`, which is the single write path for every hit. The target
 select defaults to the inspected combatant, then to the selected card

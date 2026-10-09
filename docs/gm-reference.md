@@ -35,7 +35,7 @@ another tab forces out of the GM view does not show this toast.
 | Role | Sees | Can change |
 | --- | --- | --- |
 | GM | Exact foe HP, tile notes, the whole map, and every quest, handout, and NPC | Everything |
-| Player | Foe health as a band (Unharmed, Bloodied, Down), the fog-revealed map, and only what the GM revealed | Nothing, unless the tab is bound to a character |
+| Player | Creature health as a band (Unharmed, Bloodied, Down), exact HP for the party, the fog-revealed map, and only what the GM revealed | Nothing, unless the tab is bound to a character |
 
 A Player tab hides the mode switch, the Campaign, History, and Transfer
 buttons, the fog controls, the Time panel buttons, and the party-split
@@ -98,7 +98,8 @@ GM view. The GM tab ignores bindings and can edit every character.
 The Player view is a display setting on the same browser data. It hides
 these items from the screen:
 
-- the exact HP of a foe (the view shows a health band instead)
+- the exact HP of a creature, foe or NPC ally (the view shows a health band
+  instead). Party characters keep their exact HP
 - the GM-only lines of the travelogue and the combat log: the total of an HP
   pool, the reason that an HP pool or an HP limit gives for each target, the
   save bonus of a creature, and the HP readout of a creature after you set
