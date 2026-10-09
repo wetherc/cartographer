@@ -404,6 +404,11 @@ gives attacks against a Dodging creature disadvantage, and its
 `saveAdvantage` entry gives the Dodging creature advantage on DEX saves. An entry with a
 `poolId` checks that the pool has a use left before it spends anything.
 Second Wind then spends the bonus action and heals through `applyToTarget`.
+Rage spends the bonus action and puts a Raging chip on the barbarian with
+`applyConditionToTarget`. `combat/Rage.js` builds the mods of the chip:
+`resist` for the weapon damage types, `saveAdvantage` and `checkAdvantage` for
+STR, and `meleeDamage` for the damage bonus, which `WeaponSwing.hitDamage`
+adds to a melee hit that uses STR.
 Action Surge calls the `surgeBudget` action of encounterWiring, which runs
 `ActionBudget.surge`. The `surged` flag blocks a second surge on the same
 turn. With the action spent, the action becomes free, and the swings that

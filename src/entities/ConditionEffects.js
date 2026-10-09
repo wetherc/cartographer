@@ -215,6 +215,14 @@ function slantsFor({ roller, target, kind, melee = true, ability, rollerType }) 
       }
     }
   }
+  // Rage gives advantage on STR checks through the same kind of mods.
+  if (kind === 'check' && key) {
+    for (const condition of roller ?? []) {
+      if (condition?.mods?.checkAdvantage?.includes(key)) {
+        found.push({ condition, slant: 'advantage', from: 'roller' });
+      }
+    }
+  }
   // Only an attack reads the other side. A save or a check is rolled against
   // a number, and the creature that set the number does not slant it.
   if (kind !== 'attack') return found;

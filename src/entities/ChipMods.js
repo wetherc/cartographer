@@ -25,6 +25,9 @@ const MAX_AC = 30;
 /** The largest HP maximum raise a chip can name. */
 export const MAX_HP_BOOST = 100;
 
+/** The highest melee damage bonus a chip can write (Rage gives at most 4). */
+const MAX_MELEE_DAMAGE = 10;
+
 /** The most temporary HP a chip can grant at the start of a turn. */
 const MAX_TEMP_EACH_TURN = 30;
 
@@ -89,6 +92,8 @@ export function normalizeChipMods(value) {
   const immune = nameList(raw.immune);
   const tempHPEachTurn = clampInt(raw.tempHPEachTurn, 0, MAX_TEMP_EACH_TURN);
   const saveAdvantage = abilityList(raw.saveAdvantage);
+  const checkAdvantage = abilityList(raw.checkAdvantage);
+  const meleeDamage = clampInt(raw.meleeDamage, 0, MAX_MELEE_DAMAGE);
   const blocks = nameList(raw.blocks).map((id) => id.toLowerCase());
   const attacks = slantOf(raw.attacks);
   const attacksAgainst = slantOf(raw.attacksAgainst);
@@ -102,6 +107,8 @@ export function normalizeChipMods(value) {
     ...(immune.length > 0 ? { immune } : {}),
     ...(tempHPEachTurn > 0 ? { tempHPEachTurn } : {}),
     ...(saveAdvantage.length > 0 ? { saveAdvantage } : {}),
+    ...(checkAdvantage.length > 0 ? { checkAdvantage } : {}),
+    ...(meleeDamage > 0 ? { meleeDamage } : {}),
     ...(raw.extraAction === true ? { extraAction: true } : {}),
     ...(blocks.length > 0 ? { blocks } : {}),
     ...(raw.noHealing === true ? { noHealing: true } : {}),
@@ -213,6 +220,8 @@ export function modsSummary(mods) {
   if (mods.immune) parts.push(`immune to ${mods.immune.join(' and ')}`);
   if (mods.tempHPEachTurn) parts.push(`${mods.tempHPEachTurn} temp HP each turn`);
   if (mods.saveAdvantage) parts.push(`advantage on ${mods.saveAdvantage.join(' and ')} saves`);
+  if (mods.checkAdvantage) parts.push(`advantage on ${mods.checkAdvantage.join(' and ')} checks`);
+  if (mods.meleeDamage) parts.push(`+${mods.meleeDamage} melee damage with STR`);
   if (mods.extraAction) parts.push('an extra action for one weapon attack');
   if (mods.blocks)
     parts.push(`blocks ${mods.blocks.map((id) => id.replace(/-/g, ' ')).join(' and ')}`);

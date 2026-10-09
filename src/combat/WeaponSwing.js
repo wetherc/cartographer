@@ -1,3 +1,4 @@
+import { chipMeleeDamage } from './Rage.js';
 import { sourceSlant } from '../entities/SourceSlant.js';
 import { attackTweak, rollDamage } from '../dice/DiceRoller.js';
 import { attackAbility, weaponKind } from '../entities/Weapons.js';
@@ -299,9 +300,10 @@ export function hitDamage(
   // each damage die of the weapon swing.
   const swing = { melee: setup.melee, twoHanded: !!twoHanded };
   const dueling = styleDamageBonus(attacker, weapon, swing);
+  const rage = chipMeleeDamage(attacker.conditions, setup);
   const reroll = styleRerollBelow(attacker, weapon, swing);
   const styled = reroll ? parts.map((part) => ({ ...part, rerollBelow: reroll })) : parts;
-  const styleNote = `${dueling ? `, Dueling +${dueling}` : ''}${reroll ? ', Great Weapon Fighting' : ''}`;
+  const styleNote = `${dueling ? `, Dueling +${dueling}` : ''}${rage ? `, Rage +${rage}` : ''}${reroll ? ', Great Weapon Fighting' : ''}`;
   // Hit riders (Divine Favor, Hunter's Mark) add dice that a crit doubles.
   // Lifedrinker adds a flat amount, which a crit leaves alone.
   const riders = hitRiders(attacker, defender, { weapon: true });
@@ -309,7 +311,7 @@ export function hitDamage(
   const drink = pactDamage(attacker, weapon, attackerStats(attacker));
   const damage = rollDamage(
     [...styled, ...hitRiderParts(riders, crit, baseType), ...(drink ? [drink.part] : [])],
-    damageModifier(damageMod + dueling, tweaks.damageFlat ?? 0),
+    damageModifier(damageMod + dueling + rage, tweaks.damageFlat ?? 0),
     rng,
   );
   const drinkNote = drink ? `, ${drink.name} +${drink.part.bonus} ${drink.part.damageType}` : '';

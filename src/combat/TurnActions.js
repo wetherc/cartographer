@@ -1,6 +1,6 @@
 import { classLevelOf } from '../entities/Multiclass.js';
 import { COST_LABELS } from './ActionBudget.js';
-import { ACTION_SURGE_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
+import { ACTION_SURGE_ID, RAGE_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
 
 /**
  * Pure list of the turn actions that the combat screen offers as buttons,
@@ -15,7 +15,8 @@ import { ACTION_SURGE_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
  * adds entries with its own group, such as the Cunning Action of a rogue,
  * which offers Dash, Disengage, and Hide as a bonus action. A fighter
  * gets Second Wind and Action Surge, which spend a use of their class pool.
- * Action Surge costs no part of the turn, so its entry has no cost.
+ * Action Surge costs no part of the turn, so its entry has no cost. A
+ * barbarian gets Rage, a bonus action that spends a use of the Rage pool.
  */
 
 /** @typedef {import('../types/combat.js').ActionCost} ActionCost */
@@ -72,6 +73,9 @@ export function hasCunningAction(character) {
 /** The group label of the fighter's class actions. */
 export const FIGHTER_GROUP = 'Fighter';
 
+/** The group label of the barbarian's class actions. */
+export const BARBARIAN_GROUP = 'Barbarian';
+
 /**
  * How many uses are left, for a button title.
  * @param {number} left
@@ -83,12 +87,13 @@ const usesLeft = (left) => `${left} ${left === 1 ? 'use' : 'uses'} left`;
  * The turn actions a combatant can take, as bar entries. Every combatant has
  * the standard actions. `cunningAction` adds the bonus-action copies of
  * Dash, Disengage, and Hide. `secondWind` and `actionSurge` are the uses
- * left in those pools, and a character without the pool passes nothing. A
+ * left in those pools, and so is `rage`. A character without the pool
+ * passes nothing. A
  * pool at 0 still gets its button, and the press says that no use is left.
- * @param {{ cunningAction?: boolean, secondWind?: number, actionSurge?: number }} [features]
+ * @param {{ cunningAction?: boolean, secondWind?: number, actionSurge?: number, rage?: number }} [features]
  * @returns {TurnAction[]}
  */
-export function turnActions({ cunningAction = false, secondWind, actionSurge } = {}) {
+export function turnActions({ cunningAction = false, secondWind, actionSurge, rage } = {}) {
   /** @type {TurnAction[]} */
   const list = STANDARD_ACTIONS.map((a) => ({
     id: a.id,
@@ -129,6 +134,17 @@ export function turnActions({ cunningAction = false, secondWind, actionSurge } =
       title: `Use Action Surge: take one more action this turn (${usesLeft(actionSurge)})`,
       ariaLabel: 'Use Action Surge',
       poolId: ACTION_SURGE_ID,
+    });
+  }
+  if (rage !== undefined) {
+    list.push({
+      id: RAGE_ID,
+      name: 'Rage',
+      cost: 'bonus',
+      group: BARBARIAN_GROUP,
+      title: `Enter a Rage as a bonus action: bonus melee damage, resistance to weapon damage, and advantage on STR checks and saves for 1 minute (${usesLeft(rage)})`,
+      ariaLabel: 'Enter a Rage as a bonus action',
+      poolId: RAGE_ID,
     });
   }
   return list;

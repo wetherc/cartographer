@@ -8,7 +8,13 @@ import {
 } from '../combat/TurnActions.js';
 import { spendResource } from '../entities/Character.js';
 import { classLevelOf } from '../entities/Multiclass.js';
-import { ACTION_SURGE_ID, CHANNEL_DIVINITY_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
+import {
+  ACTION_SURGE_ID,
+  CHANNEL_DIVINITY_ID,
+  RAGE_ID,
+  SECOND_WIND_ID,
+} from '../entities/PoolIds.js';
+import { RAGE_ROUNDS, RAGING, rageLine, rageMods } from '../combat/Rage.js';
 import { channelActions } from '../combat/ChannelDivinity.js';
 import { preserveLife, turnUndead } from './channelDivinity.js';
 import { findCombatant } from './combatants.js';
@@ -27,7 +33,8 @@ import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
  * combatant has, spends the cost through `spendBudget`, and writes the log
  * line and the Dodging chip. A class action also spends one use of its
  * pool: Second Wind heals the fighter, and Action Surge gives the turn one
- * more action through the `surgeBudget` action of encounterWiring.
+ * more action through the `surgeBudget` action of encounterWiring. Rage
+ * leaves a Raging chip whose mods give the Rage bonuses (see `combat/Rage.js`).
  */
 
 /**
@@ -55,6 +62,7 @@ export function turnActionsOf(app, id) {
       cunningAction: hasCunningAction(found.entity),
       secondWind: usesOf(found.entity, SECOND_WIND_ID),
       actionSurge: usesOf(found.entity, ACTION_SURGE_ID),
+      rage: usesOf(found.entity, RAGE_ID),
     }),
     ...channelActions(found.entity, usesOf(found.entity, CHANNEL_DIVINITY_ID)),
   ];
@@ -131,7 +139,7 @@ function useClassAction(app, found, action, rng) {
   const { entity, store } = found;
   const poolId = /** @type {string} */ (action.poolId);
   if ((usesOf(entity, poolId) ?? 0) <= 0) {
-    app.toasts.show(`${found.label} has no use of ${action.name} left. A short rest restores it.`);
+    app.toasts.show(`${found.label} has no use of ${action.name} left. A rest restores it.`);
     return false;
   }
   if (action.id === 'turn-undead') return turnUndead(app, found, { rng });
@@ -155,6 +163,12 @@ function useClassAction(app, found, action, rng) {
   app.actions.markDirty();
   if (poolId === ACTION_SURGE_ID) {
     app.actions.logEvent('combat', actionSurgeLine(found.label));
+    return true;
+  }
+  if (poolId === RAGE_ID) {
+    const mods = rageMods(entity);
+    app.actions.logEvent('combat', rageLine(found.label, mods.meleeDamage ?? 0));
+    applyConditionToTarget(app, entity.id, RAGING, RAGE_ROUNDS, undefined, null, { mods });
     return true;
   }
   const die = Math.floor(rng() * 10) + 1;

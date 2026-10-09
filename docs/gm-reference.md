@@ -1548,6 +1548,7 @@ muted label and a dashed edge, and its tooltip names the cost, as in
 | Dash, Disengage, or Hide under **Cunning Action** | The bonus action, for a Rogue of 2nd level or higher |
 | **Second Wind** | The bonus action and one use of the Second Wind pool |
 | **Action Surge** | One use of the Action Surge pool. It gives the turn one more action |
+| **Rage** | The bonus action and one use of the Rage pool |
 | **Turn Undead** or **Preserve Life** | The action and one use of the Channel Divinity pool, spent only when the GM confirms the dialog |
 
 The whole turn comes back when the turn of that combatant starts again. The
@@ -1594,6 +1595,17 @@ second. An Attack action with the new action gets its Extra Attack swings
 again. The app allows one surge per turn, as 5e does, even for a fighter
 with two uses. A button with no use left, or a second surge in one turn,
 shows a toast and spends nothing.
+
+A Barbarian gets a **Barbarian** group with a **Rage** button while the
+character has the Rage pool. The button spends the bonus action and one use,
+and it puts a Raging chip on the barbarian for 10 rounds (1 minute). While
+the chip lasts, a melee weapon hit that uses STR adds the Rage damage bonus:
++2 up to barbarian level 8, +3 from level 9, and +4 from level 16. The
+barbarian also resists bludgeoning, piercing, and slashing damage, and
+rolls STR checks and STR saves at advantage. The attack line of a hit names
+the bonus, such as "Rage +2". To end a Rage early, remove the Raging chip.
+The app does not end the Rage when the barbarian skips an attack, and it
+does not stop spellcasting or concentration, so the GM applies those rules.
 
 A Cleric of 2nd level or higher gets a **Channel Divinity** group. Each
 button opens a dialog first, and a cancel keeps the use and the action.

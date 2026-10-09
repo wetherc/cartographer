@@ -130,6 +130,11 @@ export interface ChipMods {
   /** True when the holder resists bludgeoning, piercing, and slashing damage
    * from a nonmagical weapon attack (Stoneskin). */
   resistNonmagical?: boolean;
+  /** The abilities whose checks the holder rolls with advantage (Rage's STR). */
+  checkAdvantage?: string[];
+  /** A flat bonus to the damage of the holder's melee weapon attacks that
+   * use STR (Rage). */
+  meleeDamage?: number;
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

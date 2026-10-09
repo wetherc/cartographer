@@ -241,3 +241,21 @@ test('a cleric of level 2 gets the Channel Divinity buttons with its pool', () =
   const ids = turnActionsOf(app, 'mirelle').map((a) => a.id);
   assert.ok(ids.includes('turn-undead') && ids.includes('preserve-life'));
 });
+
+test('Rage spends the bonus action and a use, and leaves a Raging chip with the Rage mods', () => {
+  const app = fight();
+  app.state.characters[1] = {
+    ...app.state.characters[1],
+    classes: [{ classId: 'barbarian', level: 9 }],
+    resources: [{ id: 'rage', name: 'Rage', type: 'uses', current: 1, max: 4 }],
+  };
+  const rage = /** @type {any} */ (turnActionsOf(app, 'aldric').find((a) => a.id === 'rage'));
+  assert.equal(takeTurnAction(app, 'aldric', rage), true);
+  const aldric = app.state.characters[1];
+  assert.equal(usedOf(app, 'aldric').bonus, true);
+  assert.equal(aldric.resources[0].current, 0);
+  const chip = aldric.conditions.find((/** @type {any} */ c) => c.name === 'Raging');
+  assert.equal(chip.rounds, 10);
+  assert.equal(chip.mods.meleeDamage, 3);
+  assert.match(app.log.join('\n'), /Aldric enters a Rage: \+3 melee damage/);
+});
