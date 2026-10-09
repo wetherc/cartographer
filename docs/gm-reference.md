@@ -681,7 +681,9 @@ A town building takes its furnishings from what it is.
 
 A pillar, a table, a bed, a bookshelf, a shelf, and a counter are
 obstacles. The party never lands on an obstacle or a wall when it enters
-a map, and a new link never goes on one.
+a map, and a new link never goes on one. The party also does not land on
+deep water when it enters or leaves a region, unless the map has no other
+floor or land.
 
 The party enters an interior on the outer door nearest the side that it
 comes from. In an interior with no outer door, the party lands on the

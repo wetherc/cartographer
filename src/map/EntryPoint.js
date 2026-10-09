@@ -2,6 +2,7 @@ import { gridCellOf, parseCoords, tileIdAt } from './MapGeometry.js';
 import { tileAt } from './TileIndex.js';
 import { blockFor, nearestSide, opensOutward, sideAxis, stairwayTo } from './MapExits.js';
 import { isBlocked, tileKind } from './TileKinds.js';
+import { isPassable } from './MapPath.js';
 import { clamp } from '../util/num.js';
 import { projectAlong, projectBack } from './RegionCrossing.js';
 
@@ -62,7 +63,9 @@ export function computeEntryTile(width, height, block, party) {
  * an obstacle such as a pillar. Landing there strands the party outside the
  * walkable area. The function keeps the preferred tile when the tile is real
  * and walkable. Otherwise the function picks the nearest walkable tile and
- * prefers a door on a tie. This makes entering an interior read as walking
+ * prefers a door on a tie. Deep water counts as not walkable here, because a
+ * party that lands on it cannot walk anywhere. A wall or an obstacle is the
+ * last choice, and only when the node has nothing else. This makes entering an interior read as walking
  * through it. The function returns the preferred id when the node is empty.
  * @param {import('../types/map.js').MapNode} node node being entered
  * @param {string} preferredId tile id ("x,y") the approach geometry chose
@@ -70,9 +73,12 @@ export function computeEntryTile(width, height, block, party) {
  */
 export function resolveEntryTile(node, preferredId) {
   const preferred = tileAt(node, preferredId);
-  if (preferred && !isBlocked(preferred)) return preferredId;
-  const candidates = node.tiles.filter((t) => !isBlocked(t));
-  const pool = candidates.length ? candidates : node.tiles;
+  if (preferred && isPassable(preferred, false)) return preferredId;
+  const pool = firstNonEmpty(
+    node.tiles.filter((t) => isPassable(t, false)),
+    node.tiles.filter((t) => !isBlocked(t)),
+    node.tiles,
+  );
   if (!pool.length) return preferredId;
   const target = parseCoords(preferredId);
   if (!target) return pool[0].id;
@@ -301,7 +307,8 @@ const PLAIN_TILE_RANGE_SQ = 4;
 /**
  * This function is the parent-side counterpart of resolveEntryTile. The
  * function snaps a computed landing spot to a tile that exists, is painted,
- * and can hold the party. A returning party must land on a cell outside the
+ * and can hold the party. Deep water and walls do not count, because a party
+ * that lands on deep water cannot walk to land. A returning party must land on a cell outside the
  * region block, so the function excludes the block that the party just
  * left. Landing back on that block reads as if the party never left.
  * The function also prefers a plain tile near the spot over the link tile of
@@ -316,7 +323,8 @@ const PLAIN_TILE_RANGE_SQ = 4;
  */
 export function resolveReturnTile(parent, preferredId, excludeChildNodeId) {
   /** @param {import('../types/map.js').Tile} t */
-  const isUsable = (t) => !!t.imageRef && !isBlocked(t) && t.childNodeId !== excludeChildNodeId;
+  const isUsable = (t) =>
+    !!t.imageRef && isPassable(t, false) && t.childNodeId !== excludeChildNodeId;
   const usable = parent.tiles.filter(isUsable);
   const pool = usable.length ? usable : parent.tiles.filter((t) => t.imageRef);
   if (!pool.length) return preferredId;
@@ -353,4 +361,15 @@ function nearestTile(node, tiles, target) {
     if (d >= 0 && (!best || d < best.d)) best = { tile, d };
   }
   return best;
+}
+
+/**
+ * The first list that has at least one entry, or the last list when all are
+ * empty.
+ * @template T
+ * @param {...T[]} lists
+ * @returns {T[]}
+ */
+function firstNonEmpty(...lists) {
+  return lists.find((list) => list.length > 0) ?? lists[lists.length - 1];
 }

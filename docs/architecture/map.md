@@ -1424,7 +1424,10 @@ An interior then lands the party on the outward door nearest that tile
 A generated dungeon leaves void around its rooms, so the floor tile nearest
 the approach side can be far from its door, and sometimes next to its stairs
 down. An interior with no outward door and a region child both snap through
-`resolveEntryTile` to the nearest walkable tile.
+`resolveEntryTile` to the nearest walkable tile. A walkable tile here is one that
+`MapPath.isPassable` accepts, so deep water does not count. A landing on deep
+water would leave a Player tab with no walk to land. The resolver falls back to
+deep water only when the node has no other tile that is not a wall.
 
 ### Return landing
 
@@ -1445,7 +1448,7 @@ and the party lands beside the block instead of at the origin.
 
 The edge and door cases snap through `resolveReturnTile`, the parent-side
 match of `resolveEntryTile`. It picks the nearest painted tile that is not a
-wall and does not belong to the block just left, because a landing back on the
+wall or deep water and does not belong to the block just left, because a landing back on the
 block reads as never having left. It also prefers a plain tile over the link
 tile of another block, when a plain tile lies within two steps of the spot. A
 town packs its buildings close, so the spot outside one door can be the block
