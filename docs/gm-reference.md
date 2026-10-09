@@ -325,13 +325,17 @@ fields.
 
 | Field | Default | Values |
 | --- | --- | --- |
-| Name | New region | Any text |
-| Width (tiles) | 6 | 1 or more |
-| Height (tiles) | 6 | 1 or more |
+| Name | New region | Any text. **Create** and **Save** stay disabled while the name is blank |
+| Width (tiles, 1 to 64) | 6 | A whole number from 1 to 64 |
+| Height (tiles, 1 to 64) | 6 | A whole number from 1 to 64 |
 | Kind | Region | Region or Interior |
 | Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags. The list follows Kind, so a change of Kind refills it and clears a tag of the other kind |
 | Lock | No lock | No lock, Locked, or Unlocked |
 | Key item (name) | (blank) | The name of the item that opens the lock. The field is off while Lock is No lock |
+
+A width or height outside that range keeps the dialog open, and a message
+above the buttons names the field. A map imported with an edge over 64 tiles
+keeps its size when you edit its other settings.
 
 The environment tag is a description only. It has no effect on painting,
 generation, or rules.

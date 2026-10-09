@@ -81,3 +81,31 @@ export const ENTRANCE_ART = {
 export function entranceArtFor(archetype) {
   return ENTRANCE_ART[archetype] ?? null;
 }
+
+/**
+ * The largest width or height that the New map and Map settings dialogs
+ * accept. Fit cannot show a map of thousands of tiles at a readable size,
+ * and the labels drop out. The generator's largest size is 48.
+ */
+export const MAX_MAP_EDGE = 64;
+
+/**
+ * Why a typed map size is refused, or '' when both edges are whole numbers
+ * from 1 to `max`. Map settings passes the node's current edge as `max` when
+ * it is larger, so an imported map over the limit can still be renamed.
+ * @param {string} width the typed width
+ * @param {string} height the typed height
+ * @param {{ width?: number, height?: number }} [max] the largest edge per axis
+ * @returns {string}
+ */
+export function mapSizeProblem(width, height, max = {}) {
+  for (const [label, raw, limit] of /** @type {const} */ ([
+    ['Width', width, max.width ?? MAX_MAP_EDGE],
+    ['Height', height, max.height ?? MAX_MAP_EDGE],
+  ])) {
+    const value = Number(raw);
+    if (raw.trim() === '' || !Number.isInteger(value) || value < 1 || value > limit)
+      return `${label} must be a whole number from 1 to ${limit} tiles.`;
+  }
+  return '';
+}

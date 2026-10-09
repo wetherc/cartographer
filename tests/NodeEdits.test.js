@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 import {
   ENTRANCE_ART,
   entranceArtFor,
+  MAX_MAP_EDGE,
   freshNodeId,
+  mapSizeProblem,
   relandedTile,
   tileWithinBounds,
 } from '../src/map/NodeEdits.js';
@@ -84,4 +86,26 @@ test('a kind the dialog or a save cannot justify falls back', () => {
   assert.equal(coerceNodeKind('dungeon', 'region'), 'region');
   assert.equal(coerceNodeKind(undefined, 'interior'), 'interior');
   assert.equal(coerceNodeKind(null, 'region'), 'region');
+});
+
+test('a map size from 1 to the limit on both edges is accepted', () => {
+  assert.equal(mapSizeProblem('1', '1'), '');
+  assert.equal(mapSizeProblem(String(MAX_MAP_EDGE), '12'), '');
+});
+
+test('a blank, zero, fractional, or oversized map edge is refused by name', () => {
+  const limit = `from 1 to ${MAX_MAP_EDGE} tiles.`;
+  assert.equal(mapSizeProblem('3000', '6'), `Width must be a whole number ${limit}`);
+  assert.equal(mapSizeProblem('0', '6'), `Width must be a whole number ${limit}`);
+  assert.equal(mapSizeProblem('', '6'), `Width must be a whole number ${limit}`);
+  assert.equal(mapSizeProblem('6', '2.5'), `Height must be a whole number ${limit}`);
+  assert.equal(mapSizeProblem('6', 'x'), `Height must be a whole number ${limit}`);
+});
+
+test('a larger per-axis limit lets an oversized map keep its size', () => {
+  assert.equal(mapSizeProblem('100', '6', { width: 100, height: 64 }), '');
+  assert.equal(
+    mapSizeProblem('101', '6', { width: 100, height: 64 }),
+    'Width must be a whole number from 1 to 100 tiles.',
+  );
 });

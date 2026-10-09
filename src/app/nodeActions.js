@@ -1,7 +1,7 @@
 import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.js';
 import { collectSubtreeIds } from '../map/WorldTree.js';
 import { NODE_KINDS, coerceNodeKind, environFieldOptions } from '../map/NodeKinds.js';
-import { freshNodeId } from '../map/NodeEdits.js';
+import { MAX_MAP_EDGE, freshNodeId, mapSizeProblem } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
@@ -77,6 +77,22 @@ export function nodeFieldChange(name, form) {
 }
 
 /**
+ * A map width or height field of the New map and Map settings dialogs. The
+ * caption states the range. The field sets no `min` or `max`, because the
+ * number field moves a value outside those bounds into range when it loses
+ * focus, and a click on Create would then accept 64 for a typed 3000 with no
+ * message. `mapSizeProblem` refuses the value instead and names the field.
+ * @param {'width' | 'height'} name
+ * @param {string | number} value
+ * @param {number} max
+ * @returns {import('../types/modal.js').ModalField}
+ */
+function sizeField(name, value, max) {
+  const label = `${capitalize(name)} (tiles, 1 to ${max})`;
+  return { name, label, type: 'number', value };
+}
+
+/**
  * Build the create, edit, and delete node actions over the app context and
  * the shared MapEnv. This takes the same signature as its sibling gesture
  * modules, mapAuthoring and mapTravel. It stays out of main.js because the
@@ -106,11 +122,15 @@ export function createNodeActions(app, env) {
       'New map',
       [
         { name: 'name', label: 'Name', value: 'New region' },
-        { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
-        { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
+        sizeField('width', 6, MAX_MAP_EDGE),
+        sizeField('height', 6, MAX_MAP_EDGE),
         ...nodeKindFields('region', null),
       ],
-      { onChange: nodeFieldChange },
+      {
+        onChange: nodeFieldChange,
+        submitRequires: ['name'],
+        validate: (get) => mapSizeProblem(get('width'), get('height')),
+      },
     );
     if (!values) return null;
     const id = freshNodeId(nodeExists);
@@ -118,7 +138,7 @@ export function createNodeActions(app, env) {
     const height = clampInt(values.height, 1);
     const kind = coerceNodeKind(values.kind, 'region');
     grid.addNode(
-      createMapNode(id, values.name || 'Untitled', parentId, width, height, {
+      createMapNode(id, values.name.trim() || 'Untitled', parentId, width, height, {
         kind,
         environ: values.environ || null,
       }),
@@ -264,33 +284,31 @@ export function createNodeActions(app, env) {
     let values = null;
     let width = node.width;
     let height = node.height;
+    // A map imported over the size limit keeps its size through a rename.
+    const max = {
+      width: Math.max(MAX_MAP_EDGE, node.width),
+      height: Math.max(MAX_MAP_EDGE, node.height),
+    };
     for (;;) {
       const lock = typed ? readLockFields(typed) : node.lock;
       values = await promptModal(
         'Map settings',
         [
           { name: 'name', label: 'Name', value: typed?.name ?? node.name },
-          {
-            name: 'width',
-            label: 'Width (tiles)',
-            type: 'number',
-            value: typed?.width ?? node.width,
-            min: 1,
-          },
-          {
-            name: 'height',
-            label: 'Height (tiles)',
-            type: 'number',
-            value: typed?.height ?? node.height,
-            min: 1,
-          },
+          sizeField('width', typed?.width ?? node.width, max.width),
+          sizeField('height', typed?.height ?? node.height, max.height),
           ...nodeKindFields(
             coerceNodeKind(typed?.kind, node.kind),
             typed ? typed.environ || null : node.environ,
           ),
           ...lockFields(lock ?? undefined),
         ],
-        { submitLabel: 'Save', onChange: nodeFieldChange },
+        {
+          submitLabel: 'Save',
+          onChange: nodeFieldChange,
+          submitRequires: ['name'],
+          validate: (get) => mapSizeProblem(get('width'), get('height'), max),
+        },
       );
       if (!values) return;
       width = clampInt(values.width, 1, Infinity, node.width);

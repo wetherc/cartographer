@@ -147,7 +147,7 @@ interior, such as a building or a dungeon level.
 1. In the World tree, click the actions button (three dots) on the parent
    node.
 2. Click **Add a child**.
-3. Type a **Name**, and set **Width (tiles)** and **Height (tiles)**.
+3. Type a **Name**, and set the **Width** and **Height** in tiles, from 1 to 64.
 4. Set **Kind** to **Region** or **Interior**.
 5. Set **Environment**, for example **Grassland**, **Cave**, or **Inn**.
 6. Click **Create**.
