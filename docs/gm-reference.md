@@ -1649,6 +1649,10 @@ The uses come back when the party takes a long rest. The app does not ask
 about the save that a weapon hit forces, such as the poison of a giant
 spider. Handle that one by hand.
 
+A spell that fails the target by its hit points, such as Power Word Stun
+or Sleep, rolls no first save, so the dialog does not open for it. The
+repeat save of Power Word Stun at the end of each turn is a real save.
+
 ### Shield against a hit
 
 When an attack roll hits a combatant whose reaction spell raises its AC,

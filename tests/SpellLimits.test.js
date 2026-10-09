@@ -4,6 +4,7 @@ import { castSpell } from '../src/entities/Casting.js';
 import { isRitualOnly } from '../src/entities/SpellView.js';
 import { createResource } from '../src/entities/Resource.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { canResist } from '../src/combat/LegendaryResistance.js';
 
 /** A spell with every field a cast reads, overridden per test. */
 function spell(over = {}) {
@@ -113,4 +114,11 @@ test('an HP limit fails the save at or under the limit and spares a target above
 test('Power Word Stun carries the 150 HP limit', () => {
   const stun = DEFAULT_SPELLS.find((s) => s.id === 'power-word-stun');
   assert.equal(stun?.effect.kind === 'save' && stun.effect.hpLimit, 150);
+});
+
+test('an HP-limit save with a later retry rolls no first save for Legendary Resistance to turn', () => {
+  const cast = stunCast();
+  const [ogre] = /** @type {any[]} */ (cast.ok ? cast.outcomes : []);
+  assert.equal(ogre.noRoll, true);
+  assert.equal(canResist(ogre), false);
 });

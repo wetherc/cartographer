@@ -363,7 +363,10 @@ function resolveEffect(spell, ctx) {
     const parts = scaledParts(effect.damage, spell.scaling, steps);
     const damage = rollDamage(parts, 0, rng);
     const ongoing = ongoingParts(effect.ongoing, steps);
-    const noRoll = rollsNoSave(effect);
+    // The first save of an HP-limit spell never rolls, even for a spell whose
+    // target retries the save on later turns (Power Word Stun). So its outcome
+    // counts as no roll, and Legendary Resistance has no save to turn.
+    const noRoll = rollsNoSave(effect) || effect.hpLimit !== undefined;
     // The type rules pass over some targets before the pool walks, so a
     // skipped target spends none of the pool. Skipped targets come last.
     const rules = effect.typeRules;
