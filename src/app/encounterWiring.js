@@ -15,6 +15,7 @@ import {
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { parleyLine, passivePerceptionOf, rollStealth } from '../combat/Stealth.js';
 import {
+  awayCharacters,
   combatRoster,
   fightInReach,
   initiativeLine,
@@ -230,12 +231,16 @@ export function wireEncounters(app) {
     const startedAt = Date.now();
     const position = app.partyTracker.getPosition();
     const roster = combatRoster(state.characters, state.creatures, position);
+    const away = awayCharacters(state.characters, position);
     const radius = nearbyRadius(app.partyTracker.revealRadius);
     const participants = await combatSetupModal(roster, {
       describe,
       // Hostiles farther out than the encounter group, within the radius of
       // the Nearby tab. The GM ticks the ones that join.
       nearby: nearbyFoes(state.creatures, position, radius),
+      // Characters split off outside the encounter. The GM ticks the ones
+      // that join.
+      away,
       // Initiative is a DEX check, and it rolls as one: the chips of the
       // roller and armor the roller is not trained for slant the d20, and
       // exhaustion takes its penalty off the total. The value stays editable,

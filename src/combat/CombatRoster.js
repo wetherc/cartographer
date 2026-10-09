@@ -1,5 +1,11 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
-import { creaturesNear, encounterGroup, isOnTile } from '../entities/CreatureMap.js';
+import {
+  creaturesNear,
+  encounterGroup,
+  isNearTile,
+  isOnTile,
+  ENCOUNTER_RADIUS,
+} from '../entities/CreatureMap.js';
 import { parseCoords } from '../map/MapGeometry.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
@@ -131,7 +137,8 @@ export function fightInReach(order, creatures, position, radius) {
 }
 
 /**
- * The combatants are everyone involved in this encounter: the whole party,
+ * The combatants are everyone involved in this encounter: every character in
+ * the encounter group (see `inEncounter`),
  * the undefeated hostile creatures of the encounter group (the party's tile
  * and the tiles around it), and any friendly or neutral creature on the
  * party's own tile. Hostile creatures line up as foes. Friendly and neutral
@@ -152,9 +159,39 @@ export function combatRoster(characters, creatures, position) {
     c.disposition === 'hostile' ? !isDefeated(c) : isOnTile(c, position),
   );
   return [
-    ...characters.map((c) => withDex(c.id, effectiveStats(c))),
+    ...characters
+      .filter((c) => inEncounter(c, position))
+      .map((c) => withDex(c.id, effectiveStats(c))),
     ...roster.map((c) => withDex(c.id, effectiveStatBlock(c))),
   ];
+}
+
+/**
+ * Whether a character stands in the encounter group at a position. A character
+ * with no location of its own travels with the party, so it stands on the
+ * party's tile. A character split off to another tile or map stands where it
+ * was placed, and it joins only when that tile is within the encounter radius.
+ * @param {import('../types/entities.js').Character} character
+ * @param {import('../types/map.js').PartyPosition} position
+ * @returns {boolean}
+ */
+export function inEncounter(character, position) {
+  const at = /** @type {any} */ ({ location: character.location ?? position });
+  return !position || isNearTile(at, position, ENCOUNTER_RADIUS);
+}
+
+/**
+ * The characters outside the encounter group at a position, as participants.
+ * The setup dialog lists them with an unticked Join box, so the GM can still
+ * bring in a character the radius leaves out.
+ * @param {import('../types/entities.js').Character[]} characters
+ * @param {import('../types/map.js').PartyPosition} position
+ * @returns {import('../types/combat.js').Participant[]}
+ */
+export function awayCharacters(characters, position) {
+  return characters
+    .filter((c) => !inEncounter(c, position))
+    .map((c) => withDex(c.id, effectiveStats(c)));
 }
 
 /**

@@ -1355,12 +1355,17 @@ open.
 ### Combat setup
 
 **Start combat** opens the setup dialog. The **Set up combat** button of the
-**Encounter!** dialog opens it too. It lists the party, the live hostile
+**Encounter!** dialog opens it too. It lists the characters with the party
+and any split-off character within one tile of the party, the live hostile
 creatures on the tile of the party and on the eight tiles around it, and any
 friendly or neutral creature on the tile of the party. Hostile creatures
 line up as foes, and friendly and neutral creatures line up with the party.
 Only a hostile creature starts an encounter. To fight a friendly or neutral
 creature, set its disposition to hostile first.
+
+Under **Party members elsewhere**, the dialog lists each character split off
+to a tile farther away or to another map. Tick **Join** on a row to bring
+that character into the fight.
 
 Under **Add nearby foes**, the dialog lists the other live hostile creatures
 within the nearby range, nearest first, with the distance in tiles. Tick
@@ -1394,7 +1399,7 @@ running fight. The log and the stored name keep the plain name.
 | Stealth total | The Stealth total of a sneaker row. Roll Stealth fills it, and you can type your own value |
 | PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
-| Join | A foe under **Add nearby foes**: tick it to add the foe to the fight |
+| Join | A foe under **Add nearby foes**, or a character under **Party members elsewhere**: tick it to add that row to the fight |
 | Add the whole group | The label names the creatures, with a count for each name, and the distance, as in "Add the whole group (Gray Wolf x4), 4 tiles away". Ticks or clears the **Join** box of every nearby foe on one tile. It shows as mixed while only some are ticked |
 | Parley | Closes the dialog with no fight, and turns the foes neutral, and logs a line such as "The party settles the encounter without a fight. Goblin Scout 1 and Goblin Scout 2 stand down." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |

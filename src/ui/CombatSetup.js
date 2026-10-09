@@ -33,6 +33,10 @@ import { stealthStep } from './CombatSetupStealth.js';
  * joins the roster for Roll initiative and Start. The Stealth contest covers
  * only the roster.
  *
+ * `away` lists the characters outside the encounter, such as one split off to
+ * another tile or map. They show under "Party members elsewhere" with a Join
+ * box, unticked, and a ticked one joins the roster the same way.
+ *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
  * Start, this function rolls each row that the GM neither rolled nor typed,
@@ -51,6 +55,7 @@ import { stealthStep } from './CombatSetupStealth.js';
  *   onStealth?: (line: string) => void,
  *   onParley?: () => void,
  *   nearby?: import('../combat/CombatRoster.js').NearbyFoe[],
+ *   away?: Participant[],
  * }} [callbacks]
  * @returns {Promise<Participant[] | null>}
  */
@@ -80,12 +85,14 @@ export function combatSetupModal(roster, callbacks = {}) {
   /** @type {Map<string, HTMLInputElement>} */
   const joined = new Map();
   /** The roster plus each nearby foe whose Join box is ticked. */
+  const away = callbacks.away ?? [];
   const active = () => [
     ...roster,
+    ...away.filter((p) => joined.get(p.id)?.checked),
     ...nearby.filter((n) => joined.get(n.participant.id)?.checked).map((n) => n.participant),
   ];
   const labels = numberedNames(
-    [...roster, ...nearby.map((n) => n.participant)].map((p) => ({
+    [...roster, ...away, ...nearby.map((n) => n.participant)].map((p) => ({
       id: p.id,
       name: described(p).name,
     })),
@@ -161,6 +168,17 @@ export function combatSetupModal(roster, callbacks = {}) {
             ...(stealth ? [stealth.cells(participant)] : []),
           ]),
         );
+      }
+
+      if (away.length > 0) {
+        body.push(el('h3', 'combat-setup__nearby-title', 'Party members elsewhere'));
+        for (const participant of away) {
+          const name = describe(participant).name;
+          const join = checkbox('Join', false, { className: 'initiative-panel__surprised' });
+          join.input.setAttribute('aria-label', `Add ${name} to the fight`);
+          joined.set(participant.id, join.input);
+          body.push(initiativeRow(participant, [join.label], 'Away from the party'));
+        }
       }
 
       if (nearby.length > 0) {

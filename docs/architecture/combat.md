@@ -980,8 +980,12 @@ gates the button on that list. The Active tab and the difficulty hint list
 the same creatures, so the panel switches to that tab whenever the button can
 show.
 
-The setup roster from `combatRoster` is the whole party, the creatures of
-`hostileGroup`, and any friendly or neutral creature on the party's own tile.
+The setup roster from `combatRoster` is every character that `inEncounter`
+places within `ENCOUNTER_RADIUS` of the party (a character with no location
+stands on the party's tile), the creatures of `hostileGroup`, and any
+friendly or neutral creature on the party's own tile. `awayCharacters` lists
+the other characters, and the setup dialog shows them under "Party members
+elsewhere" with an unticked Join box.
 A defeated hostile creature stays staged but does not join a new fight, and a
 bystander on the tile joins in any condition. Hostile creatures line up as
 foes, and friendly and neutral creatures line up with the party. A friendly or

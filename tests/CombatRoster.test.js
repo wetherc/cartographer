@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  awayCharacters,
   combatRoster,
+  inEncounter,
   creatureParticipant,
   fightInReach,
   groupTitle,
@@ -116,4 +118,26 @@ test('groupTitle names each creature once, with a count for repeats', () => {
   assert.equal(groupTitle(['Gray Wolf', 'Gray Wolf', 'Gray Wolf', 'Gray Wolf']), 'Gray Wolf x4');
   assert.equal(groupTitle(['Gray Wolf', 'Goblin', 'Gray Wolf']), 'Gray Wolf x2, Goblin');
   assert.equal(groupTitle(['Goblin']), 'Goblin');
+});
+
+test('combatRoster leaves out a character split off outside the encounter', () => {
+  const party = createCharacter('a', 'Aldric');
+  const beside = { ...createCharacter('b', 'Bo'), location: { nodeId: 'n1', tileId: '1,1' } };
+  const far = { ...createCharacter('c', 'Cy'), location: { nodeId: 'n1', tileId: '3,0' } };
+  const town = { ...createCharacter('d', 'Di'), location: { nodeId: 'other-town', tileId: '0,0' } };
+  const wolf = createCreature('wolf', 'Wolf', {
+    disposition: 'hostile',
+    maxHP: 11,
+    location: HERE,
+  });
+  const characters = [party, beside, far, town];
+  assert.deepEqual(
+    combatRoster(characters, [wolf], HERE).map((p) => p.id),
+    ['a', 'b', 'wolf'],
+  );
+  assert.deepEqual(
+    awayCharacters(characters, HERE).map((p) => p.id),
+    ['c', 'd'],
+  );
+  assert.equal(inEncounter(town, /** @type {any} */ (null)), true, 'no position leaves no one out');
 });
