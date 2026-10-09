@@ -172,3 +172,44 @@ test('a full origin neither throws from saveLock nor refuses a claim', async () 
   });
   lock.release();
 });
+
+test('a page restored from the back-forward cache claims its key again', () => {
+  const fire = installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  lock.claim('k');
+  fire('pagehide', { persisted: true });
+  assert.equal(loadLock('k'), null, 'the cached page frees the key');
+  fire('pageshow', { persisted: true });
+  assert.equal(lock.heldKey(), 'k');
+  assert.equal(loadLock('k')?.id, lock.tabId);
+  // A second pageshow, or one for a fresh load, claims nothing more.
+  lock.release();
+  fire('pageshow', { persisted: true });
+  fire('pageshow', { persisted: false });
+  assert.equal(lock.heldKey(), null);
+});
+
+test('a restored page yields when another tab took its key meanwhile', () => {
+  const fire = installWindow();
+  let yielded = 0;
+  const lock = createHeartbeatLock({ onYield: () => (yielded += 1) });
+  lock.claim('k');
+  fire('pagehide', { persisted: true });
+  saveLock({ id: 'other', at: Date.now() }, 'k');
+  fire('pageshow', { persisted: true });
+  assert.equal(yielded, 1);
+  assert.equal(lock.heldKey(), null);
+  assert.equal(loadLock('k')?.id, 'other');
+});
+
+test('a fresh pageshow after a pagehide does not claim, and an unheld tab parks nothing', () => {
+  const fire = installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  fire('pagehide', { persisted: true });
+  fire('pageshow', { persisted: true });
+  assert.equal(lock.heldKey(), null);
+  lock.claim('k');
+  fire('pagehide', { persisted: false });
+  fire('pageshow', { persisted: false });
+  assert.equal(lock.heldKey(), null);
+});

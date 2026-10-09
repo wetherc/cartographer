@@ -1006,6 +1006,9 @@ character. Both locks come from `createHeartbeatLock` in
   before. It refreshes the stored record on an interval, so other tabs can
   see that the holder is alive.
 - `release()` frees the key, and so does `pagehide`.
+- A `pagehide` into the back-forward cache remembers the key. When the
+  browser restores the page, the `pageshow` handler claims the key again.
+  If another tab took the key meanwhile, the tab runs `onYield`.
 - A record that cannot reach storage, for example on a full origin, does
   not refuse the claim. The tab keeps the key in memory and its heartbeat
   tries the write again, so the boot goes on.

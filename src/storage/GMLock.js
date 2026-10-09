@@ -194,8 +194,24 @@ export function createHeartbeatLock({
 
   // Release the lock when the tab closes, so a follower can take over
   // without waiting for the TTL to expire. pagehide also covers tab discard
-  // and navigation.
-  window.addEventListener('pagehide', release);
+  // and navigation, and a page that enters the back-forward cache.
+  /** @type {string | null} */
+  let parked = null;
+  window.addEventListener('pagehide', () => {
+    parked = held;
+    release();
+  });
+
+  // A page restored from the back-forward cache runs on with the role or
+  // the character it had, but its pagehide released the lock and stopped
+  // the heartbeat. It claims the key again. When another tab took the key
+  // in the meantime, the claim fails and the tab yields as for a takeover.
+  window.addEventListener('pageshow', (/** @type {PageTransitionEvent} */ event) => {
+    const key = parked;
+    parked = null;
+    if (!event.persisted || key === null || held !== null) return;
+    if (!claim(key)) onYield();
+  });
 
   return { claim, release, heldKey: () => held, tabId };
 }
