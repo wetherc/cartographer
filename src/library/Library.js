@@ -25,6 +25,7 @@ import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Prof
 import { defenseFields } from '../entities/DamageDefenses.js';
 import { creatureTypeFields } from '../entities/CreatureType.js';
 import { attackTraitFields } from '../entities/CreatureAttacks.js';
+import { actionFields } from '../entities/CreatureActions.js';
 import { normalizeHitSave } from '../combat/HitSave.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
@@ -519,6 +520,7 @@ export function normalizeLibrary(parsed) {
       ...creatureTypeFields(e),
       // A Multiattack below 2 reads as none.
       ...attackTraitFields(e),
+      ...actionFields(e.actions),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),

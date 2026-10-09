@@ -17,6 +17,7 @@ import { sideOf, isDowned } from '../combat/CombatView.js';
 import { labelsFor } from '../combat/DisplayNames.js';
 import { spellbookIds } from './casterFields.js';
 import { pruneCreatureLinks } from './questCleanup.js';
+import { readyActionSpells } from '../entities/CreatureActions.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -337,7 +338,9 @@ export function weaponsOf(app, id) {
  * Mystic Arcanum spells list too. A
  * prepared caster's unprepared spells stay off the list. A creature lists its whole
  * spellbook, because its authoring dialog marks every picked spell as
- * castable. A non-caster's empty spellbook lists nothing.
+ * castable. Its save actions that are ready list after the spells (see
+ * `CreatureActions.readyActionSpells`). A non-caster with no actions lists
+ * nothing.
  * @param {AppContext} app
  * @param {string} id
  * @returns {import('../types/spell.js').Spell[]}
@@ -357,7 +360,7 @@ export function spellsOf(app, id) {
     );
   }
   const book = getSpellbook(found.entity);
-  return resolveSpellIds(spellbookIds(book));
+  return [...resolveSpellIds(spellbookIds(book)), ...readyActionSpells(found.entity)];
 }
 
 /**

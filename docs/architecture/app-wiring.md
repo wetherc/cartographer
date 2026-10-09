@@ -815,6 +815,7 @@ as a `ModalField[]`:
 | --- | --- |
 | `creatureFields.js` | The creature's fields, their live behavior (`creatureFieldsChange`), and `readCreatureFields`. One spec covers foes and townsfolk, because a blank level is the only difference |
 | `gearFields.js` | The weapon and armor picker options, and the read-back order of None, preset, and custom values |
+| `actionFields.js` | The Actions section of the creature dialog: the hidden list field, the summary line, and the list and action dialogs behind **Edit actions** |
 | `statFields.js` | The stat-block fields and their range-limited read-back |
 | `casterFields.js` | The class, level, and spell pickers, and `refilterSpellsOnChange` |
 

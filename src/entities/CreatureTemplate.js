@@ -7,6 +7,7 @@ import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
 import { creatureTypeFields } from './CreatureType.js';
 import { attackTraitFields } from './CreatureAttacks.js';
+import { actionFields, refreshActions } from './CreatureActions.js';
 import { DISPOSITIONS, createCreature } from './Creature.js';
 import { slugId } from './Roster.js';
 import { capitalize } from '../util/text.js';
@@ -46,6 +47,7 @@ export function toTemplate(id, creature) {
     ...defenseFields(creature.defenses),
     ...creatureTypeFields(creature),
     ...attackTraitFields(creature),
+    ...actionFields(refreshActions(creature).actions),
     ...(creature.role !== undefined ? { role: creature.role } : {}),
     ...(creature.notes !== undefined ? { notes: creature.notes } : {}),
     ...casterTemplateFields(creature),
@@ -93,6 +95,7 @@ export function fromTemplate(template, id, location = null) {
     turnResistance: template.turnResistance,
     legendaryActions: template.legendaryActions,
     legendaryResistance: template.legendaryResistance,
+    actions: template.actions,
     ...(template.weapons !== undefined ? { weapons: template.weapons.map(copyEnemyWeapon) } : {}),
     ...(template.armor !== undefined
       ? { armor: template.armor ? { ...template.armor } : template.armor }

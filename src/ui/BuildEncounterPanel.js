@@ -7,6 +7,7 @@ import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { enemyArmorLabel } from '../entities/EnemyArmor.js';
+import { actionSummary } from '../entities/CreatureActions.js';
 import { mountListPanel } from './listPanel.js';
 import { describeTile } from '../map/TileCoords.js';
 
@@ -91,6 +92,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
       for (const weapon of encounter.weapons)
         parts.push(`${weapon.name} ${formatDamage(weapon.damage)}`);
       if (encounter.armor) parts.push(enemyArmorLabel(encounter.armor));
+      for (const action of encounter.actions ?? [])
+        parts.push(`${action.name} (${actionSummary(action)})`);
       if (parts.length) row.appendChild(el('div', 'u-muted', parts.join(' | ')));
 
       // What the creature is trained in, with the bonus it rolls in each. The

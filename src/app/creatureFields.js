@@ -68,6 +68,7 @@ import { arrangeFields, syncDependents } from './creatureLayout.js';
  *   turnResistance?: boolean,
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
+ *   actions?: import('../types/creature.js').CreatureAction[],
  *   stats?: Record<string, number>,
  *   weapons?: import('../types/entities.js').EnemyWeapon[],
  *   armor?: import('../types/entities.js').EnemyArmor | null,

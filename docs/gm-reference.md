@@ -1257,6 +1257,7 @@ needs a caster class.
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
+| Edit actions | No actions | Opens the list of save actions, such as a breath weapon. Pick an action to edit it, or **Add an action**. See [Creature actions](#creature-actions) |
 | Location (map), Column, Row | The selected cell, or the middle of the map when no cell is selected | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
 | Pick on map | | Closes the dialog until you click a tile of the map in view. Then the dialog opens again with your values, and the map, column, and row of that tile. Press Escape, or **Cancel** in the hint over the map, to go back without a change. A click while the dialog waits does not move the party or paint. On a phone, the Play screen shows the **Map** view while the dialog waits, and then goes back to the view you were in. The button shows only in Play and Build mode, because Library mode and the combat screen do not show the map. A second **Pick on map** from another dialog cancels the first, and that first dialog opens again with no change |
 | Move to the party | | Sets the map, column, and row to the party's tile |
@@ -1695,6 +1696,32 @@ another creature. The app does not enforce that timing, so take the action
 when the turn ends and before you click **Next turn**. A legendary action
 that is not an attack, such as a move, has no button, so describe it at
 the table.
+
+### Creature actions
+
+A creature can have save actions, such as the Cold Breath of a winter wolf.
+To add one, click **Edit actions** in the Actions section of the creature
+dialog, pick **Add an action**, and click **Open**. The action dialog asks
+for a name, the saving throw, the DC, one damage term (dice, die, and
+type), a **Recharge** face, and whether a save halves the damage. To change
+or remove an action, pick it in the list and click **Open**. Tick **Remove
+this action** to remove it. Click **Done** to go back to the creature
+dialog, and then click **Save**.
+
+In a fight, each action shows in the spell list of the creature, beside its
+spells. It opens the cast dialog with the DC of the action, spends no slot,
+and costs the Action. Each target rolls its save, and the damage goes
+through the defenses of the target, as for a save spell.
+
+An action with a recharge face (6, 5-6, or 4-6) is spent after one use and
+leaves the spell list. At the start of each turn of the creature, the app
+rolls a d6 for each spent action. On the recharge face or higher, the
+action is ready again. The log shows each roll. The end of a fight makes
+every action ready again.
+
+The Library creature form does not edit actions. A template that you save
+from a creature keeps its actions, and a creature spawned from the template
+gets them.
 
 ### Evasion
 

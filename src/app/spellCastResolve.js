@@ -26,6 +26,7 @@ import { wardSpellAttack } from './shieldWard.js';
 import { redirectSpellTargets } from './redirectWard.js';
 import { wardSpellDamage } from './damageWard.js';
 import { resistSpellSaves } from './legendaryResistance.js';
+import { actionIdOf, spendAction } from '../entities/CreatureActions.js';
 import { healingBonus } from '../entities/HealingBonus.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -315,12 +316,15 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     const holds = spell.concentration && !free?.repeat;
     // A once-per-rest invocation is spent until the next long rest.
     const used = invocation?.oncePerRest ? invocation.invocation.id : null;
+    // A recharge action of a creature is spent until a recharge roll brings it back.
+    const actionId = actionIdOf(spell);
+    const recharges = actionId !== null && spendAction(live, actionId) !== live;
     // A fresh cast of a spell with an open repeat closes the old repeat, so the
     // new cast opens its own at its own slot level and on its own targets.
     const stale = !!spell.repeat && !free?.repeat && heldRepeat(live, spell.id) !== null;
     /** @type {import('../types/entities.js').ConcentrationState | null} */
     let displaced = null;
-    if (result.spent || consumed || holds || used || stale) {
+    if (result.spent || consumed || holds || used || stale || recharges) {
       let next = result.spent ? withCasterState(live, result.caster) : live;
       if (stale) next = dropRepeat(next, spell.id);
       // Only a Character reaches here with an inventory. `materialCheck`
@@ -347,6 +351,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
           used,
         );
       }
+      if (recharges) next = spendAction(next, /** @type {string} */ (actionId));
       writeBack(next);
       app.actions.markDirty();
     }

@@ -8,6 +8,7 @@ import { endedLine, strongestPerName } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
 import { commitCreatures, defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, retryImposedSaves } from './combatantWrites.js';
+import { refreshActions, rollRecharges } from '../entities/CreatureActions.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -57,12 +58,15 @@ export function endTurnEffects(app, id, { rng = Math.random } = {}) {
  * until the start of the caster's next turn. Then each chip that grants
  * temporary HP at the start of the holder's turn (Heroism) grants them. A
  * dying character gets a log line and a toast that ask for its death save,
- * because that roll is the whole of its turn.
+ * because that roll is the whole of its turn. A creature with a spent
+ * recharge action rolls a d6 for it, and each roll gets a log line.
  * @param {AppContext} app
  * @param {string} id
+ * @param {{ rng?: RandomFn }} [options]
  */
-export function startTurnEffects(app, id) {
+export function startTurnEffects(app, id, { rng = Math.random } = {}) {
   sweepChips(app, (list) => passBoundary(list, id, 'start'));
+  rechargeActions(app, id, rng);
   const found = findCombatant(app, id);
   // Two casts of one spell from two casters grant once, from the larger chip.
   const chips = strongestPerName(
@@ -184,4 +188,34 @@ export function endFightEffects(app, { rng = Math.random } = {}) {
     }
   }
   dropTurnChips(app);
+  readyAllActions(app);
+}
+
+/**
+ * Roll the recharge of each spent action of one creature, store the result,
+ * and log each roll.
+ * @param {AppContext} app
+ * @param {string} id
+ * @param {RandomFn} rng
+ */
+function rechargeActions(app, id, rng) {
+  const found = findCombatant(app, id);
+  if (found?.kind !== 'creature') return;
+  const { creature, lines } = rollRecharges(found.entity, rng);
+  if (lines.length === 0) return;
+  found.store(creature);
+  for (const line of lines) app.actions.logEvent('combat', line);
+  app.actions.markDirty();
+}
+
+/**
+ * Make every spent recharge action ready again, because the next fight starts
+ * with each action available.
+ * @param {AppContext} app
+ */
+function readyAllActions(app) {
+  const next = app.state.creatures.map(refreshActions);
+  if (next.every((c, i) => c === app.state.creatures[i])) return;
+  app.state.creatures = next;
+  commitCreatures(app);
 }

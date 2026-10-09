@@ -13,6 +13,7 @@ import {
 } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
+import { actionFormFields, actionsChange, readActions } from './actionFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
 import { endCasterEffects } from './combatantWrites.js';
@@ -83,6 +84,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       ...creatureFields(source, gear, { stats }).map((field) =>
         field.name === 'name' ? { ...field, label: 'Name (required)' } : field,
       ),
+      ...actionFormFields(source?.actions),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
         partyButton: true,
         pickButton: true,
@@ -101,13 +103,14 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       // form that the code below then throws away.
       submitRequires: ['name'],
       onChange: (name, form) => {
+        if (actionsChange(name, form)) return;
         if (!partyChange(name, form) && !mapPick(name, form)) statsChange(name, form);
         placeChange(name, form);
       },
     },
   );
   if (!values) return null;
-  const fields = readCreatureFields(values, gear, { stats });
+  const fields = { ...readCreatureFields(values, gear, { stats }), actions: readActions(values) };
   if (!fields.name) return null;
   const location = readLocation(app, values);
   /** @type {Creature} */

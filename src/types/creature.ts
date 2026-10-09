@@ -162,6 +162,8 @@ export interface Creature extends HPBuffFields {
   /** How many uses of Legendary Resistance the creature spent since the last
    * long rest. Absent means none. */
   legendaryResistanceUsed?: number;
+  /** Save actions such as a breath weapon. Absent means none. */
+  actions?: CreatureAction[];
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -219,6 +221,7 @@ export interface CreatureTemplate {
   turnResistance?: boolean;
   legendaryActions?: number;
   legendaryResistance?: number;
+  actions?: CreatureAction[];
   role?: string;
   notes?: string;
   class?: string;
@@ -232,4 +235,26 @@ export interface CreatureTemplate {
 export interface SurpriseAttack {
   count: number;
   sides: number;
+}
+
+/**
+ * A special action of a creature that forces a saving throw, such as a breath
+ * weapon. The cast dialog resolves it through the save-spell resolver (see
+ * `entities/CreatureActions.js`).
+ */
+export interface CreatureAction {
+  id: string;
+  name: string;
+  /** Ability key of the save, for example "DEX". */
+  saveAbility: import('./spell.js').Ability;
+  /** The save DC, 1 to 30. */
+  dc: number;
+  damage: import('./entities.js').DamagePart[];
+  /** True when a target that saves takes half damage. */
+  halfOnSave: boolean;
+  /** The lowest d6 face that recharges the action at the start of the
+   * creature's turn: 6, 5, or 4. Absent means the action never runs out. */
+  recharge?: number;
+  /** True after a use of a recharge action, until a recharge roll succeeds. */
+  spent?: boolean;
 }

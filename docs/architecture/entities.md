@@ -310,6 +310,16 @@ count below 1 and stops at `MAX_LEGENDARY` (5). The combat screen spends
 both (see [Combat](combat.md)). The creature records its spent uses of
 Legendary Resistance in `legendaryResistanceUsed`, and the party long rest
 removes that field.
+An optional `actions` list keeps save actions such as a breath weapon
+(`entities/CreatureActions.js`). Each action has a name, a save ability, a
+DC from 1 to 30, damage terms, a half-on-save flag, and an optional
+recharge face of 4, 5, or 6. `actionList` repairs a loaded list, and the
+creature, template, and library paths all run it. `actionSpell` turns an
+action into a level 0 save spell with a `creatureAction` marker, so
+`spellsOf` lists it and `castPlan` uses the action DC and casts it free.
+A use of a recharge action sets `spent`. `startTurnEffects` rolls
+`rollRecharges` for the creature whose turn starts, and `endFightEffects`
+readies every action. `toTemplate` stores the actions ready.
 A `packTactics` flag stores only `true`. A `surpriseAttack` stores a dice count and a
 die size (d4 to d12), and `coerceSurpriseAttack` drops any other value. A creature weapon can store an
 `onHitSave` of an ability, a DC, and a condition, which `combat/HitSave.js`

@@ -149,13 +149,18 @@ export function castPlan(app, entity, listed, offered, route = null) {
   // A spell the caster still keeps open from an earlier turn repeats for free,
   // unless the GM picked to cast it anew.
   const hold = listed.repeat && route !== 'anew' ? heldRepeat(entity, listed.id) : null;
+  // A creature save action (see `CreatureActions.actionSpell`) casts with no
+  // slot and uses its own DC.
+  const creatureAction =
+    /** @type {{ creatureAction?: { id: string, dc: number } }} */ (listed).creatureAction ?? null;
   // An invocation casts its spell at will with no slot, or once per long rest
   // with a pact slot. A once-per-rest spell that the spellbook also has casts
   // the usual way, which keeps the use for later. A spent one with no
   // spellbook entry refuses until a long rest. A GM who picked the slot cast
   // of an at-will spell casts it the usual way.
   // A Mystic Arcanum casts once per long rest with no slot.
-  let invocation = hold || route === 'slot' ? null : warlockCast(entity, listed.id);
+  let invocation =
+    hold || route === 'slot' || creatureAction ? null : warlockCast(entity, listed.id);
   // A spent arcanum of a spell the spellbook also has casts with a slot.
   if (
     invocation?.oncePerRest &&
@@ -180,11 +185,13 @@ export function castPlan(app, entity, listed, offered, route = null) {
     return { ok: false, message: `${invocation.invocation.name} is spent until a long rest.` };
   }
   /** @type {import('../types/cast.js').CastFree | null} */
-  const free = hold
-    ? { slotLevel: hold.slotLevel, repeat: true }
-    : invocation && (!invocation.oncePerRest || invocation.free)
-      ? { slotLevel: spell.level }
-      : null;
+  const free = creatureAction
+    ? { slotLevel: 0 }
+    : hold
+      ? { slotLevel: hold.slotLevel, repeat: true }
+      : invocation && (!invocation.oncePerRest || invocation.free)
+        ? { slotLevel: spell.level }
+        : null;
   const repeat = !!free?.repeat;
   // A summons is only as good as the template it names. The check runs here so
   // a spell whose template was renamed or removed refuses before the dialog
@@ -256,7 +263,7 @@ export function castPlan(app, entity, listed, offered, route = null) {
     invocation || tomeRituals(caster).includes(spell.id)
       ? 'warlock'
       : (spellSource(caster, spell.id) ?? undefined);
-  const dc = spellSaveDC(caster, sourceClass) ?? 10;
+  const dc = creatureAction ? creatureAction.dc : (spellSaveDC(caster, sourceClass) ?? 10);
   // Both caps read the level the picker starts on: the lowest slot the
   // caster can spend. This is also the level submitted if the GM does not
   // change it. The projectile allocation and the target checkboxes then

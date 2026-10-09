@@ -158,6 +158,17 @@ const WINTER_KIT = {
   ...natural('Bite', 2, 6, 'piercing'),
   ...guards(['cold']),
   ...trained([], ['perception', 'stealth']),
+  actions: [
+    {
+      id: 'cold-breath',
+      name: 'Cold Breath',
+      saveAbility: /** @type {const} */ ('CON'),
+      dc: 12,
+      damage: [{ count: 4, sides: 8, damageType: 'cold' }],
+      halfOnSave: true,
+      recharge: 5,
+    },
+  ],
 };
 const CULTIST_KIT = trained([], ['deception', 'religion']);
 
