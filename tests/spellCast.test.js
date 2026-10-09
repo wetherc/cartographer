@@ -207,7 +207,7 @@ function planFor(app, caster, s) {
 
 /** The dialog answers a plain Enter submits, with any overrides. */
 function submit(over = {}) {
-  return /** @type {any} */ ({ slot: '1', mode: 'normal', ...over });
+  return /** @type {any} */ ({ slot: '1', mode: 'auto', ...over });
 }
 
 // -- target assembly ------------------------------------------------------
@@ -710,7 +710,7 @@ test('the chips on both sides slant a spell attack', () => {
   assert.equal(app.state.creatures[0].currentHP, 10);
 });
 
-test("the dialog's mode and the chips cancel instead of overriding", () => {
+test("a mode picked in the dialog replaces the chips' slant", () => {
   const caster = mage();
   const goblin = chipped(
     createCreature('goblin', 'Goblin', {
@@ -726,11 +726,31 @@ test("the dialog's mode and the chips cancel instead of overriding", () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin', mode: 'advantage' }), {
     writeBack: () => {},
-    // The GM's advantage and the prone target's ranged disadvantage cancel, so
-    // one d20 is thrown and the 18 behind it is never reached.
+    // The GM's advantage replaces the prone target's ranged disadvantage, so
+    // the roll takes two d20s and keeps the 18.
     rng: seq([d20(2), d20(18), face(10, 7)]),
   });
-  assert.match(app.log[1], /misses Goblin\.$/);
+  assert.match(app.log[1], /hits Goblin/);
+});
+
+test("a Normal pick in the dialog drops the chips' slant", () => {
+  const caster = mage({ conditions: [{ name: 'Blinded' }] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, submit({ target: 'goblin', mode: 'normal' }), {
+    writeBack: () => {},
+    // A Blinded caster would roll two d20s under Auto. Normal rolls one, so
+    // the 2 behind the 18 is never reached.
+    rng: seq([d20(18), d20(2), face(10, 7)]),
+  });
+  assert.match(app.log[1], /hits Goblin/);
 });
 
 test('a paralyzed target fails a body save with no roll', () => {

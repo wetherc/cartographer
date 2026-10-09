@@ -1,6 +1,7 @@
 import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { castSpell } from '../entities/Casting.js';
 import { riderSources } from '../entities/FeatChoices.js';
+import { pickedRollMode } from './rollModeField.js';
 import { autoCrits, combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
@@ -116,7 +117,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // A repeat with fixed damage resolves as its own automatic hit (see
   // `SpellRepeat.repeatedSpell`). Every other cast resolves the spell itself.
   const resolved = free?.repeat ? repeatedSpell(spell) : spell;
-  const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
+  // A mode picked in the dialog replaces the condition slants, the same as in
+  // the weapon attack dialog. Under Auto, the slants fold together.
+  const picked = pickedRollMode(values.mode);
   const saveDC = Number(values.dc) || dc;
   let chosen = chosenTargets(targets, values);
   if (missingTarget(resolved, targets, values)) {
@@ -183,13 +186,10 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     // combatant. A Bless on the caster rides its spell attack rolls, and a
     // Blinded on it slants them.
     const casterConditions = live.conditions ?? [];
-    // The GM's dialog choice and the chips on the table are two sources of the
-    // same slant, so they fold together under the cancel rule. Neither one
-    // overrides the other.
     let castTargets = chosen;
-    // An attack's dialog mode slants the attack roll, so a save that its hit
+    // An attack's dialog mode applies to the attack roll, so a save that its hit
     // brings rolls with only the target's own slant.
-    const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
+    const savePick = resolved.effect.kind === 'save' ? picked : null;
     if (saveAbility) {
       const raceSave = spellRaceSave(resolved.effect, saveAbility);
       castTargets = chosen.map((t) => {
@@ -211,7 +211,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
           // Every live target carries a derived bonus. A target the roster lost
           // while the dialog sat open carries none and saves on the flat die.
           saveBonus: t.saveBonus ?? 0,
-          saveMode: combineModes([saveMode, outcome.mode]) ?? 'normal',
+          saveMode: savePick ?? outcome.mode ?? 'normal',
           ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
         };
       });
@@ -249,8 +249,8 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
         // undead), so each target states its type.
         ...castTypeFieldsOf(app, t.id),
         attackMode:
+          picked ??
           combineModes([
-            mode,
             rollMode({
               roller: casterConditions,
               target: t.conditions,
@@ -262,7 +262,8 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
             // A chip that the target's own spell left on the caster (Chill
             // Touch on an undead caster) slants the roll.
             sourceSlant(casterConditions, t.id),
-          ]) ?? 'normal',
+          ]) ??
+          'normal',
         // A helpless target turns a melee spell hit into a critical one, the
         // same rule a weapon swing follows.
         autoCrit: autoCrits(t.conditions, { melee }),
@@ -276,7 +277,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
       saveDC,
       spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
-      attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
+      attackMode: resolved.effect.kind === 'attack' ? (picked ?? 'normal') : 'normal',
       ritual: asRitual,
       healBonus: healingBonus(live, resolved, slotLevel),
       ...(values['resist-type'] ? { resistPick: values['resist-type'] } : {}),

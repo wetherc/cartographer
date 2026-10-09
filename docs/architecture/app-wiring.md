@@ -699,8 +699,11 @@ bar starts. Casting a spell is the same job, split across five modules:
 
 `weaponAttack.js` itself owns the dialog prompt, the budget spend, the dice
 tray call, the Shield pause, and the writes. `attackFields.js` builds the
-dialog's fields with no DOM code. The rules that the swing applies are pure
-functions in `src/combat/`, which have the unit tests:
+dialog's fields with no DOM code. Its roll mode select comes from
+`rollModeField.js`, which the spell cast dialog also uses, so Auto, Normal,
+Advantage, and Disadvantage mean the same thing in both dialogs. The rules
+that the swing applies are pure functions in `src/combat/`, which have the
+unit tests:
 
 - `AttackTweaks.js` reads the dialog's answers (`readAttackTweaks`), and
   keeps the table of the three swings with `swingKind` and `canSwing`.

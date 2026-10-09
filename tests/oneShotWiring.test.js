@@ -90,7 +90,7 @@ function cast(app, id, values, rng) {
   const caster = app.state.characters[0];
   const plan = /** @type {any} */ (castPlan(app, caster, s, rosterTargets(app, s)));
   assert.equal(plan.ok, true, plan.message);
-  resolveCast(app, plan, /** @type {any} */ ({ mode: 'normal', ...values }), {
+  resolveCast(app, plan, /** @type {any} */ ({ mode: 'auto', ...values }), {
     writeBack: (next) => {
       app.state.characters = replaceById(app.state.characters, next);
     },

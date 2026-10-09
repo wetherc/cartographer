@@ -6,6 +6,7 @@ import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
 import { canSpend } from '../combat/ActionBudget.js';
 import { COVER_LEVELS } from '../combat/Cover.js';
 import { SWINGS, canSwing, swingKind } from '../combat/AttackTweaks.js';
+import { rollModeField } from './rollModeField.js';
 
 /**
  * The fields of the weapon attack dialog, described once. The module has no
@@ -14,14 +15,6 @@ import { SWINGS, canSwing, swingKind } from '../combat/AttackTweaks.js';
  */
 
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
-
-/** The mode control's options, in the order they read best. */
-const MODE_OPTIONS = [
-  { value: 'auto', label: 'Auto (from conditions)' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'advantage', label: 'Advantage' },
-  { value: 'disadvantage', label: 'Disadvantage' },
-];
 
 /** The dice the pre-roll dialog offers for a bonus or penalty die. */
 const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
@@ -142,14 +135,7 @@ export function attackDialog({
       // Advantage is the most common call a GM makes at the table, so the GM
       // sets it here and does not leave the dialog to use the dice tray's
       // toggle.
-      {
-        name: 'mode',
-        label: 'Roll',
-        type: 'select',
-        value: 'auto',
-        options: MODE_OPTIONS,
-        full: true,
-      },
+      rollModeField({ name: 'mode', label: 'Roll', full: true }),
       // Cover is a plain GM call, so it sits in the open part beside the mode.
       // The app knows nothing about walls or barrels, and it never will until
       // tokens have a distance between them.

@@ -1,6 +1,7 @@
 import { maxTargets, scalingSteps } from '../entities/CastScaling.js';
 import { helps, targetFree, targetLabel } from './spellTargets.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
+import { rollModeField } from './rollModeField.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/cast.js').CastPlan} CastPlan */
@@ -245,17 +246,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   // attack, so it offers no attack roll mode.
   const autoHit = spell.effect.kind === 'attack' && spell.effect.projectiles?.autoHit;
   if (kind === 'attack' && !autoHit) {
-    fields.push({
-      name: 'mode',
-      label: 'Attack roll',
-      type: 'select',
-      value: 'normal',
-      options: [
-        { value: 'normal', label: 'Normal' },
-        { value: 'advantage', label: 'Advantage' },
-        { value: 'disadvantage', label: 'Disadvantage' },
-      ],
-    });
+    fields.push(rollModeField({ name: 'mode', label: 'Attack roll' }));
     // A hit that brings a save rolls it against the caster's DC, which the GM
     // can change here the same way as for a save spell.
     if (spell.effect.kind === 'attack' && spell.effect.onHit?.saveAbility) {
@@ -266,17 +257,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   // mode to change.
   if (kind === 'save' && !rollsNoSave(spell.effect)) {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
-    fields.push({
-      name: 'mode',
-      label: 'Save roll',
-      type: 'select',
-      value: 'normal',
-      options: [
-        { value: 'normal', label: 'Normal' },
-        { value: 'advantage', label: 'Advantage' },
-        { value: 'disadvantage', label: 'Disadvantage' },
-      ],
-    });
+    fields.push(rollModeField({ name: 'mode', label: 'Save roll' }));
   }
   // Ticking this box casts the spell without reading or touching the
   // inventory. A table that treats components as flavor does not need to
