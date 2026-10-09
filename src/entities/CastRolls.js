@@ -194,7 +194,7 @@ function onHitOutcome(onHit, target, dc, rng) {
  *   rng: RandomFn,
  * }} ctx `casterId` names the caster, so a mark it left on a target
  *   (a hit rider with `mark` set) adds its dice to a hit on that target.
- * @returns {object[]}
+ * @returns {import('../types/cast.js').AttackOutcome[]}
  */
 export function resolveAttack(effect, ctx) {
   const { parts, ongoing, allocation, targets, saveDC, rng } = ctx;

@@ -29,6 +29,9 @@ import { resolveCast } from './spellCastResolve.js';
  */
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/cast.js').CastOutcome} CastOutcome */
+/** @typedef {import('../types/cast.js').NamedCastTarget} NamedCastTarget */
+/** @typedef {import('../types/cast.js').AttackOutcome<NamedCastTarget>} AttackOutcome */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/cast.js').CastPlan} CastPlan */
 
@@ -207,7 +210,7 @@ function spellHitMessage(app, spell, o) {
  * automatic hits, with no question. The return is null when no target has a
  * ward worth offering and no target blocks the spell, so the caller applies
  * the result without waiting.
- * @template {{ outcomes: object[] }} R
+ * @template {{ outcomes: CastOutcome[] }} R
  * @param {AppContext} app
  * @param {Spell} spell
  * @param {R} result
@@ -218,9 +221,9 @@ function spellHitMessage(app, spell, o) {
 export function wardSpellAttack(app, spell, result, casterId, opts = {}) {
   const effect = spell.effect;
   if (effect.kind !== 'attack') return null;
-  const blocked = (/** @type {any} */ o) =>
+  const blocked = (/** @type {AttackOutcome} */ o) =>
     Boolean(o.target.id && blockerOf(findCombatant(app, o.target.id)?.entity.conditions, spell.id));
-  const given = /** @type {any[]} */ (result.outcomes);
+  const given = /** @type {AttackOutcome[]} */ (result.outcomes);
   const outcomes = given.map((o) => (blocked(o) ? wardedOutcome(effect, o, 0, true) : o));
   const wards = outcomes.map((o) => {
     const ward = o.target.id ? pendingWard(app, o.target.id, casterId, spell.id) : null;

@@ -29,7 +29,13 @@ import {
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').ChipUntil} ChipUntil */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
-/** @typedef {{ outcomes: object[], targets: import('../entities/Casting.js').CastTarget[] }} CastResult */
+/** @typedef {import('../types/cast.js').NamedCastTarget} NamedCastTarget */
+/** @typedef {import('../types/cast.js').AttackOutcome<NamedCastTarget>} AttackOutcome */
+/** @typedef {import('../types/cast.js').SaveOutcome<NamedCastTarget>} SaveOutcome */
+/** @typedef {import('../types/cast.js').HealOutcome<NamedCastTarget>} HealOutcome */
+/** @typedef {import('../types/cast.js').BuffOutcome<NamedCastTarget>} BuffOutcome */
+/** @typedef {import('../types/cast.js').SummonsOutcome} SummonsOutcome */
+/** @typedef {{ outcomes: import('../types/cast.js').CastOutcome[], targets: import('../entities/Casting.js').CastTarget[] }} CastResult */
 
 /**
  * Writing a resolved cast into the world: hit points, condition chips, the
@@ -152,7 +158,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     // open at once. The first target's cure runs at once, and it writes
     // before this function returns unless it has to ask.
     let cures = /** @type {Promise<void> | null} */ (null);
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
+    for (const o of /** @type {HealOutcome[]} */ (result.outcomes)) {
       // A heal skips a dead target, and a spell that raises the dead skips a
       // living one. The log names the reason in place of the heal line. A
       // target of a type the heal skips (undead, construct) is passed over.
@@ -200,7 +206,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     // of the spell's duration.
     const rounds = durationInRounds(spell.duration);
     const until = spell.effect.until;
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
+    for (const o of /** @type {BuffOutcome[]} */ (result.outcomes)) {
       const timing = until ? timingFor(app, until, casterId, o.target.id) : { rounds };
       const imposed = applyConditionToTarget(
         app,
@@ -217,7 +223,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       );
       const changes = [
         o.rider ? riderSummary(o.rider) : '',
-        modsSummary(o.mods),
+        modsSummary(o.mods ?? undefined),
         hitRiderSummary(o.hit),
       ].filter(Boolean);
       const adds = changes.length > 0 ? `: ${changes.join(', ')}` : '';
@@ -237,7 +243,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     // The one outcome names the template and the count. The creatures land on
     // the tile of the party, which is the only place a cast can reach without
     // map distance.
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
+    for (const o of /** @type {SummonsOutcome[]} */ (result.outcomes)) {
       const spawn = spawnSummons(app, spell, casterId, o);
       if ('error' in spawn) {
         app.toasts.show(spawn.error, { level: 'error' });
@@ -266,15 +272,15 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
 function applyAttack(app, spell, result, casterId) {
   const effect = /** @type {import('../types/spell.js').SpellAttackEffect} */ (spell.effect);
   // A one-roll rider on the caster is used up by the first attack it joins.
-  const spent = /** @type {any[]} */ (result.outcomes).flatMap((o) =>
-    [o.rider, ...(o.shots ?? []).map((/** @type {any} */ s) => s.rider)].flatMap(
+  const spent = /** @type {AttackOutcome[]} */ (result.outcomes).flatMap((o) =>
+    [o.shots ? null : o.rider, ...(o.shots ?? []).map((s) => s.rider)].flatMap(
       (r) => r?.spent ?? [],
     ),
   );
   spendRollRiders(app, casterId, { spent });
   // The damage the hits dealt after defenses, for a spell that drains it.
   let dealt = 0;
-  for (const o of /** @type {any[]} */ (result.outcomes)) {
+  for (const o of /** @type {AttackOutcome[]} */ (result.outcomes)) {
     // A multi-projectile cast logs the tally, not one line per ray. The
     // rolls are already aggregated per creature, and the damage carries
     // every ray's dice.
@@ -283,11 +289,11 @@ function applyAttack(app, spell, result, casterId) {
       // Each ray rolls the caster's riders again, so the line names every
       // ray's dice. The tally itself prints no to-hit numbers, and this is
       // the only place the rays' own rolls are recorded.
-      const rode = riderNote(o.shots.map((/** @type {any} */ s) => s.rider));
+      const rode = riderNote(o.shots.map((s) => s.rider));
       // Each ray is its own hit, so the defenses apply to each one.
-      const hits = /** @type {any[]} */ (o.shots)
-        .filter((s) => s.damage)
-        .map((s) => ({ crit: s.crit, ...defendedDamage(app, o.target.id, s.damage.byType) }));
+      const hits = o.shots.flatMap((s) =>
+        s.damage ? [{ crit: s.crit, ...defendedDamage(app, o.target.id, s.damage.byType) }] : [],
+      );
       const defended = defenseNote(
         hits.flatMap((h) => h.notes),
         hits.reduce((n, h) => n + h.total, 0),
@@ -295,7 +301,7 @@ function applyAttack(app, spell, result, casterId) {
       app.actions.logEvent(
         'combat',
         o.hits > 0
-          ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}${defended}.`
+          ? `${spell.name}: ${tally}${rode} for ${o.damage?.detail}${defended}.`
           : `${spell.name}: ${tally}${rode} (AC ${o.ac}).`,
       );
       // Each ray that lands is its own hit, so a concentrating target
@@ -313,15 +319,16 @@ function applyAttack(app, spell, result, casterId) {
     const rode = riderNote([o.rider]);
     if (!o.hit) {
       // A spell that splashes on a miss still deals half its damage.
-      const splash = o.halved
-        ? defendedDamage(app, o.target.id, o.damage.byType, { halve: true })
-        : null;
+      const splash =
+        o.halved && o.damage
+          ? defendedDamage(app, o.target.id, o.damage.byType, { halve: true })
+          : null;
       const splashed = splash
         ? `, splashing for ${splash.total}${splash.notes.length ? ` (${splash.notes.join(', ')})` : ''}`
         : '';
       app.actions.logEvent(
         'combat',
-        `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode}, ${verb} ${logName(app, o.target)}${splashed}.`,
+        `${spell.name}: ${o.attack?.total} to hit vs AC ${o.ac}${rode}, ${verb} ${logName(app, o.target)}${splashed}.`,
       );
       if (splash) applyToTarget(app, o.target.id, splash.total, false);
       dealt += splash?.total ?? 0;
@@ -442,7 +449,7 @@ function applySave(app, spell, result, casterId) {
   const rounds = durationInRounds(spell.duration);
   const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
   const ability = effect.saveAbility;
-  const outcomes = /** @type {any[]} */ (result.outcomes);
+  const outcomes = /** @type {SaveOutcome[]} */ (result.outcomes);
   // An HP pool is one roll for the whole cast, so the log states it once,
   // ahead of the targets it reached.
   const pool = outcomes[0]?.pool;
@@ -453,7 +460,7 @@ function applySave(app, spell, result, casterId) {
   // give reasons in are GM-only.
   const hpRule = !!pool || effect.hpLimit !== undefined;
   for (const o of outcomes) {
-    if (o.unaffectedBy) {
+    if (o.unaffectedBy !== undefined) {
       app.actions.logEvent(
         'combat',
         ...unaffectedLine(logName(app, o.target), o.unaffectedBy, hpRule),

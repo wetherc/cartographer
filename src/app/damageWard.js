@@ -24,6 +24,10 @@ import { resolveCast } from './spellCastResolve.js';
  */
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/cast.js').CastOutcome} CastOutcome */
+/** @typedef {import('../types/cast.js').NamedCastTarget} NamedCastTarget */
+/** @typedef {import('../types/cast.js').AttackOutcome<NamedCastTarget>} AttackOutcome */
+/** @typedef {import('../types/cast.js').SaveOutcome<NamedCastTarget>} SaveOutcome */
 /** @typedef {import('../dice/DiceRoller.js').DamageGroup} DamageGroup */
 
 /**
@@ -146,7 +150,7 @@ function spellDamageMessage(spell, o, total) {
  * waiting. Each question waits for the one before it, and the app looks up
  * each target's reaction again when its question comes, because an earlier
  * cast can change what a later target can do.
- * @template {{ outcomes: object[] }} R
+ * @template {{ outcomes: CastOutcome[] }} R
  * @param {AppContext} app
  * @param {import('../types/spell.js').Spell} spell
  * @param {R} result
@@ -157,8 +161,8 @@ function spellDamageMessage(spell, o, total) {
 export function wardSpellDamage(app, spell, result, casterId, opts = {}) {
   const kind = spell.effect.kind;
   if (kind !== 'attack' && kind !== 'save') return null;
-  const outcomes = /** @type {any[]} */ (result.outcomes);
-  /** @param {any} o */
+  const outcomes = /** @type {(AttackOutcome | SaveOutcome)[]} */ (result.outcomes);
+  /** @param {AttackOutcome | SaveOutcome} o */
   const guardOf = (o) => {
     const { groups, total } = landingDamage(kind, o);
     const ward =

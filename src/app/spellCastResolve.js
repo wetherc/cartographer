@@ -32,6 +32,8 @@ import { healingBonus } from '../entities/HealingBonus.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/cast.js').CastPlan} CastPlan */
+/** @typedef {import('../types/cast.js').CastOutcome} CastOutcome */
+/** @typedef {import('../types/cast.js').AttackOutcome<import('../types/cast.js').NamedCastTarget>} AttackOutcome */
 
 /**
  * What a cast does once the GM has submitted the dialog. `resolveCast` rolls
@@ -448,14 +450,16 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
  * on the creatures it hit records their ids and opens only on a hit.
  * @param {AppContext} app
  * @param {Spell} spell
- * @param {{ slotLevel: number, outcomes: object[], targets: { id?: string }[] }} result
+ * @param {{ slotLevel: number, outcomes: CastOutcome[], targets: { id?: string }[] }} result
  * @param {string} casterId
  */
 function openRepeat(app, spell, result, casterId) {
   if (!spell.repeat) return;
   const hits =
     spell.effect.kind === 'attack'
-      ? /** @type {any[]} */ (result.outcomes).filter((o) => o.hit).map((o) => o.target.id)
+      ? /** @type {AttackOutcome[]} */ (result.outcomes)
+          .filter((o) => o.hit)
+          .map((o) => o.target.id)
       : result.targets.map((t) => t.id);
   const hitIds = /** @type {string[]} */ (hits.filter(Boolean));
   if (!opensRepeat(spell, hitIds)) return;
@@ -474,14 +478,14 @@ function openRepeat(app, spell, result, casterId) {
  * @param {AppContext} app
  * @param {Spell} spell
  * @param {any} caster the live caster
- * @param {{ outcomes: object[] }} result
+ * @param {{ outcomes: CastOutcome[] }} result
  */
 function notePush(app, spell, caster, result) {
   if (spell.id !== 'eldritch-blast') return;
   const push = blastPush(caster);
   if (!push) return;
-  for (const o of /** @type {any[]} */ (result.outcomes)) {
-    const hits = o.hits ?? (o.hit ? 1 : 0);
+  for (const o of /** @type {AttackOutcome[]} */ (result.outcomes)) {
+    const hits = o.shots ? o.hits : o.hit ? 1 : 0;
     if (hits === 0) continue;
     app.actions.logEvent(
       'combat',

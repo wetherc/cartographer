@@ -129,6 +129,42 @@ test('resistSpellSaves turns a failed save of a legendary target into a success'
   assert.equal(next.outcomes[1], result.outcomes[1], 'the goblin has no legendary resistance');
 });
 
+test('resistSpellSaves asks only about a failed save, and passes a skipped target through', async () => {
+  const a = app([king, { ...king, id: 'queen', name: 'Queen' }]);
+  const skipped = {
+    target: { id: 'queen' },
+    unaffectedBy: 'over 100 HP',
+    saved: true,
+    taken: 0,
+    condition: null,
+  };
+  const failed = {
+    target: { id: 'king' },
+    saved: false,
+    dc: 13,
+    taken: 0,
+    condition: 'Frightened',
+  };
+  /** @type {string[]} */
+  const asked = [];
+  const pending = resistSpellSaves(
+    a,
+    fear,
+    { outcomes: [skipped, failed] },
+    {
+      ask: async (message) => {
+        asked.push(message);
+        return true;
+      },
+    },
+  );
+  const next = await /** @type {Promise<any>} */ (pending);
+  assert.equal(asked.length, 1);
+  assert.match(asked[0], /DC 13/);
+  assert.equal(next.outcomes[0], skipped);
+  assert.equal(next.outcomes[1].saved, true);
+});
+
 test('resistSpellSaves returns null when nobody can resist', () => {
   const a = app([king]);
   const saved = { outcomes: [{ target: { id: 'king' }, saved: true }] };

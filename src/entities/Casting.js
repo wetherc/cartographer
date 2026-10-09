@@ -182,7 +182,7 @@ function slotPoolToSpend(caster, slotLevel, pactOnly) {
  *   { ok: true, caster: T, spell: Spell, slotLevel: number, spent: boolean,
  *     ritual: boolean,
  *     effect: import('../types/spell.js').SpellEffect['kind'], targets: CastTarget[],
- *     truncated: number, outcomes: object[] }
+ *     truncated: number, outcomes: import('../types/cast.js').CastOutcome[] }
  * )}
  */
 export function castSpell(caster, spell, options = {}) {
@@ -320,7 +320,7 @@ function payForCast(caster, spell, slotLevel, ritual, granted, pactOnly) {
  *   resistPick?: string,
  *   healBonus?: number,
  * }} ctx
- * @returns {object[]}
+ * @returns {import('../types/cast.js').CastOutcome[]}
  */
 function resolveEffect(spell, ctx) {
   const { effect } = spell;

@@ -8,6 +8,9 @@ import {
 } from '../combat/LegendaryResistance.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/cast.js').CastOutcome} CastOutcome */
+/** @typedef {import('../types/cast.js').NamedCastTarget} NamedCastTarget */
+/** @typedef {import('../types/cast.js').SaveOutcome<NamedCastTarget>} SaveOutcome */
 
 /**
  * The uses of Legendary Resistance a combatant has left, or 0 for anything
@@ -59,7 +62,7 @@ export async function offerResistance(app, id, message, { ask = confirmModal } =
  * turns that outcome into a success (see `resistedOutcome`). The return is
  * null when no target can resist, so the caller applies the result without
  * waiting.
- * @template {{ outcomes: object[] }} R
+ * @template {{ outcomes: CastOutcome[] }} R
  * @param {AppContext} app
  * @param {import('../types/spell.js').Spell} spell
  * @param {R} result
@@ -69,16 +72,20 @@ export async function offerResistance(app, id, message, { ask = confirmModal } =
 export function resistSpellSaves(app, spell, result, opts = {}) {
   const effect = spell.effect;
   if (effect.kind !== 'save') return null;
-  const outcomes = /** @type {any[]} */ (result.outcomes);
-  /** @param {any} o */
+  const outcomes = /** @type {SaveOutcome[]} */ (result.outcomes);
+  /** @param {SaveOutcome} o */
   const resistable = (o) => canResist(o) && leftFor(app, o.target.id) > 0;
   if (!outcomes.some(resistable)) return null;
   return (async () => {
     const next = [];
     for (const o of outcomes) {
+      if (o.unaffectedBy !== undefined || !resistable(o)) {
+        next.push(o);
+        continue;
+      }
       const name = findCombatant(app, o.target.id)?.label ?? o.target.name;
       const message = `${name} fails the ${effect.saveAbility} save against ${spell.name} (DC ${o.dc}).`;
-      const turned = resistable(o) && (await offerResistance(app, o.target.id, message, opts));
+      const turned = await offerResistance(app, o.target.id, message, opts);
       next.push(turned ? resistedOutcome(effect, o) : o);
     }
     return { ...result, outcomes: next };
