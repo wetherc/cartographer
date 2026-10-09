@@ -20,6 +20,7 @@ import type { ActionCost, CombatState, Participant, TurnFlag } from './combat.js
 import type { ViewRole } from './view.js';
 import type { PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection, TrayRollOptions } from './dice.js';
+import type { CampaignFieldKey } from './storage.js';
 import type { ModalField } from './modal.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
@@ -53,6 +54,14 @@ export interface AppState {
   mode: AppMode;
   role: ViewRole;
 }
+
+/** Resolves to true only when A and B are the same union of keys. */
+type SameKeys<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+/** A type error here means `AppState` and `CampaignState` list different campaign fields. */
+type AssertTrue<T extends true> = T;
+export type AppStateFieldsMatch = AssertTrue<
+  SameKeys<Exclude<keyof AppState, 'mode' | 'role'>, CampaignFieldKey>
+>;
 
 export interface Updatable {
   update: () => void;

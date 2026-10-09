@@ -23,6 +23,7 @@
  */
 
 import { reconcile } from '../storage/Reconcile.js';
+import { CAMPAIGN_FIELD_KEYS } from '../storage/CampaignFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../campaign/Campaigns.js').Campaign} Campaign */
@@ -34,22 +35,10 @@ import { reconcile } from '../storage/Reconcile.js';
  * view must not adopt the GM tab's mode along with the GM's map. A fight
  * starting or ending is the one event that moves a follower's mode. The
  * caller decides that through `view/CombatMode.js`, not by copying the save.
- * This list is exported so a test can check it against the campaign shape and
- * catch a field added to one and not the other.
- * @type {string[]}
+ * The list is `CAMPAIGN_FIELD_KEYS`, so a field added to that table syncs too.
+ * @type {readonly string[]}
  */
-export const SYNCED_STATE_KEYS = [
-  'entryTiles',
-  'characters',
-  'creatures',
-  'travelog',
-  'quests',
-  'clock',
-  'handouts',
-  'bestiary',
-  'splitParty',
-  'combat',
-];
+export const SYNCED_STATE_KEYS = CAMPAIGN_FIELD_KEYS;
 
 /**
  * Write a loaded campaign over the live one and refresh everything that reads

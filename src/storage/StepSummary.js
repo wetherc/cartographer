@@ -10,26 +10,22 @@
  * nothing about change.
  */
 
+import { CAMPAIGN_FIELDS } from './CampaignFields.js';
+
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 
 /**
- * The name of each compared part, in the order the toast lists them.
- * `entryTiles` is folded into the party position, and `version` is left out,
- * because neither is something the GM edits.
+ * The name of each compared part, in the order the toast lists them. The
+ * campaign fields come from `CAMPAIGN_FIELDS`, minus those with no label.
+ * `version` is left out, because the GM does not edit it.
  * @type {[keyof CampaignState, string][]}
  */
 const PARTS = [
   ['nodes', 'the map'],
   ['party', 'the party position'],
-  ['characters', 'characters'],
-  ['creatures', 'creatures'],
-  ['quests', 'quests'],
-  ['handouts', 'handouts'],
-  ['bestiary', 'the bestiary'],
-  ['travelog', 'the travelogue'],
-  ['clock', 'the clock'],
-  ['splitParty', 'party splitting'],
-  ['combat', 'the fight'],
+  ...CAMPAIGN_FIELDS.flatMap(({ key, label }) =>
+    label === null ? [] : [/** @type {[keyof CampaignState, string]} */ ([key, label])],
+  ),
 ];
 
 /**

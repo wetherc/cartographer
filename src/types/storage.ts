@@ -82,6 +82,12 @@ export interface CampaignState {
 }
 
 /**
+ * The fields of `CampaignState` that `storage/CampaignFields.js` lists, which
+ * is every field but `version`, `nodes`, and `party`.
+ */
+export type CampaignFieldKey = Exclude<keyof CampaignState, 'nodes' | 'party' | 'version'>;
+
+/**
  * What `buildState` reads a save out of: a tile grid, plus whichever
  * campaign fields the caller holds. Everything but the grid is optional,
  * and falls back to the same empty value that `CampaignState` carries for

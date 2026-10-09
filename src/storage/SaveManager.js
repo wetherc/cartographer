@@ -17,20 +17,11 @@ import { encodeNodeTiles, decodeNodeList, decodeNodeTiles } from './TileCodec.js
 import { encodedOf, namesImageData, nodeReuser, rememberEncoded } from './EncodedNodes.js';
 import { recordExternalWrite, removeStored, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
+import { CAMPAIGN_FIELDS, campaignFields } from './CampaignFields.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
-import {
-  combatState,
-  creatureTemplates,
-  entryTiles as entryTileMemory,
-  gameClock,
-  logEntries,
-  partyPosition,
-  quests as questRecords,
-  record,
-  records,
-} from './RecordCoercion.js';
+import { partyPosition, record, records } from './RecordCoercion.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /**
@@ -97,43 +88,18 @@ export function readSaveMark() {
  * encounters, and everything else at the top level) into one plain,
  * JSON-serializable object.
  *
- * Every field is named once, here. A caller that omits a field gets the
- * same empty value that a save written before the field existed reads as.
- * This is why the argument is a single object, not a positional list. A
- * caller cannot silently drop a field by not knowing to pass it. An earlier
- * signature lost `splitParty` and `combat` on the campaign-replace path for
- * this reason.
+ * The fields come from `CAMPAIGN_FIELDS`. A caller that omits a field gets
+ * the same empty value that a save without the field reads as. The argument
+ * is a single object, not a positional list, so a caller that does not know
+ * a field cannot drop it from the save.
  * @param {import('../types/storage.js').CampaignSource} campaign
  * @returns {CampaignState}
  */
 export function buildState(campaign) {
-  const {
-    grid,
-    party = null,
-    entryTiles = {},
-    characters = [],
-    creatures = [],
-    travelog = [],
-    quests = [],
-    clock = null,
-    handouts = [],
-    bestiary = [],
-    splitParty = false,
-    combat = null,
-  } = campaign;
   return {
-    nodes: [...grid.nodes.values()],
-    party,
-    entryTiles,
-    characters,
-    creatures,
-    travelog,
-    quests,
-    clock,
-    handouts,
-    bestiary,
-    splitParty,
-    combat,
+    nodes: [...campaign.grid.nodes.values()],
+    party: campaign.party ?? null,
+    ...campaignFields(campaign),
     // This function writes the save, so the version it stamps is the format
     // it produces, whatever version a caller's source object still claims.
     version: CURRENT_VERSION,
@@ -381,22 +347,6 @@ export function serialize(state) {
 }
 
 /**
- * A save collection read back as fully-defaulted entities: the record
- * coercion from `RecordCoercion.js`, then the paired `withDefaults`. This is
- * the unpack half of `packState`'s omission, so it must run here on load,
- * not only in the startup path. A stored character can legitimately carry
- * no `spellbook` key now, and `undoHistory` and `readStateFromFile` pass
- * their result to callers that apply no defaulting of their own.
- * @param {string} key a key of ENTITY_DEFAULTS
- * @param {unknown} value
- * @returns {any[]}
- */
-function entities(key, value) {
-  const withDefaults = ENTITY_DEFAULTS[key];
-  return records(value).map((entry) => withDefaults(entry));
-}
-
-/**
  * Parse a serialized campaign. The function defaults any missing field to
  * an empty value instead of throwing an error, so an older or hand-edited
  * save still loads. It coerces every field whose shape the load path
@@ -510,21 +460,12 @@ export function deserialize(json, assets, previous = []) {
     const source = seeds.get(node);
     if (source) rememberEncoded(node, source);
   }
-  const state = {
+  const state = /** @type {CampaignState} */ ({
     version: CURRENT_VERSION,
     nodes: repaired,
     party: partyPosition(parsed.party),
-    entryTiles: entryTileMemory(parsed.entryTiles),
-    characters: entities('characters', parsed.characters),
-    creatures: entities('creatures', parsed.creatures),
-    travelog: logEntries(parsed.travelog),
-    quests: questRecords(parsed.quests),
-    clock: gameClock(parsed.clock),
-    handouts: entities('handouts', parsed.handouts),
-    bestiary: creatureTemplates(parsed.bestiary),
-    splitParty: parsed.splitParty === true,
-    combat: combatState(parsed.combat),
-  };
+    ...Object.fromEntries(CAMPAIGN_FIELDS.map(({ key, coerce }) => [key, coerce(parsed[key])])),
+  });
   // The shortened map reaches the GM through `loadTruncation`
   // (`ShortenedLoad.js`), so the next save does not store it unannounced.
   noteTruncation(state, report);

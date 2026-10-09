@@ -48,7 +48,8 @@ down the whole map.
 5. `withNodeDefaults` on each node, then `withRepairedParents` and
    `withRepairedLinks`.
 6. Field coercion, one function per top-level field, with the entity
-   `withDefaults` functions for the entity lists.
+   `withDefaults` functions for the entity lists. The `coerce` entries of
+   `CAMPAIGN_FIELDS` (see below) name these functions.
 
 The top-level type is `CampaignState` (`src/types/storage.ts`). It has a flat
 `nodes` array, which is the flattened node map of the `TileGrid`. It also has
@@ -67,9 +68,42 @@ the world on each load.
 `buildState` takes one source object (`CampaignSource`), which is a
 `TileGrid` plus any campaign field the caller has. Every field except the
 grid is optional, and each optional field falls back to the empty value that
-a save without that field reads as. To add a top-level field, name it in
-`buildState` and in `CampaignState`, and no caller needs a change to keep
-persisting it.
+a save without that field reads as.
+
+### Campaign fields
+
+`storage/CampaignFields.js` lists every top-level field except `version`,
+`nodes`, and `party`, in save order. Each entry in `CAMPAIGN_FIELDS` has a
+`key`, an `empty` value for a save or a caller without the field, a
+`coerce` function that `deserialize` runs on the stored value, and a
+`label` that the Undo and Redo toast uses (`null` leaves the field out of
+the toast). The helper `campaignFields(source)` copies the table fields out
+of any object and fills each undefined one with its empty value.
+
+These places read the table:
+
+- `buildState` and `deserialize` in `SaveManager.js`
+- `SYNCED_STATE_KEYS` in `app/rehydrate.js`, which is `CAMPAIGN_FIELD_KEYS`
+- `PARTS` in `StepSummary.js`, which adds the labeled fields after the map
+  and the party position
+- `buildBlankCampaign`, `loadInitialCampaign`, and `campaignFromLiveState`
+  in `campaign/Campaigns.js`, which then set `clock` to a fresh clock when
+  it is null, and prune `entryTiles` on load
+- the `app.state` literal in `main.js`
+
+The types still name each field by hand, in `CampaignState`
+(`types/storage.ts`), `AppState` (`types/app.ts`), and the `Campaign`
+typedef in `Campaigns.js`. Typecheck compares the first two with the table.
+The table is a `Record` keyed by `CampaignFieldKey`, so a missing or extra
+key fails, and `AppStateFieldsMatch` fails when `AppState` lists a
+different set. The `Campaign` typedef has no such check.
+`tests/CampaignFields.test.js` reads the `CampaignState` interface source and
+checks its property names against the table, and checks the save order and
+the empty round trip.
+
+To add a top-level field, add it to `CampaignState`, `AppState`, the
+`Campaign` typedef, and the table. No other code needs a change to save,
+load, sync, or name it.
 
 The two live callers pass a whole object. The save and export path spreads
 `app.state` with the grid and the party position added. The campaign-replace

@@ -4,6 +4,7 @@ import { PartyTracker } from '../party/PartyTracker.js';
 import { partySight } from '../party/Sight.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
+import { campaignFields } from '../storage/CampaignFields.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
 import { loadTruncation } from '../storage/ShortenedLoad.js';
 import { createClock } from '../time/GameClock.js';
@@ -57,16 +58,8 @@ export function buildBlankCampaign() {
   return {
     grid,
     party: { nodeId: 'world', tileId: '0,0' },
-    entryTiles: {},
-    characters: [],
-    creatures: [],
-    travelog: [],
-    quests: [],
+    ...campaignFields({}),
     clock: createClock(),
-    handouts: [],
-    bestiary: [],
-    splitParty: false,
-    combat: null,
   };
 }
 
@@ -130,16 +123,9 @@ export function loadInitialCampaign(saved = loadPersistedCampaign()) {
     party: partyOnGrid(saved.party, grid),
     // An entry for a node that another tab deleted names nothing. Dropping
     // it here keeps it out of the next save.
+    ...campaignFields(saved),
     entryTiles: pruneEntries(saved.entryTiles, (nodeId) => grid.getNode(nodeId) !== undefined),
-    characters: saved.characters,
-    creatures: saved.creatures,
-    travelog: saved.travelog,
-    quests: saved.quests,
     clock: saved.clock ?? createClock(),
-    handouts: saved.handouts,
-    bestiary: saved.bestiary,
-    splitParty: saved.splitParty,
-    combat: saved.combat ?? null,
   };
 }
 
@@ -159,18 +145,10 @@ export function campaignFromLiveState(state) {
   return {
     grid,
     party: partyOnGrid(state.party, grid),
-    // No prune here. A delta applied to live state is already consistent,
-    // and a prune would walk the world on every adoption.
-    entryTiles: state.entryTiles,
-    characters: state.characters,
-    creatures: state.creatures,
-    travelog: state.travelog,
-    quests: state.quests,
+    // The entry memory is not pruned here. A delta applied to live state is
+    // already consistent, and a prune would walk the world on every adoption.
+    ...campaignFields(state),
     clock: state.clock ?? createClock(),
-    handouts: state.handouts,
-    bestiary: state.bestiary,
-    splitParty: state.splitParty,
-    combat: state.combat ?? null,
   };
 }
 

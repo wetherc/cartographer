@@ -13,6 +13,7 @@ import { mountTooltips } from './ui/Tooltip.js';
 import { alertModal } from './ui/Modal.js';
 import { loadFailedMessage } from './storage/SaveNotices.js';
 import { undoRestoresSave } from './storage/HistoryLog.js';
+import { campaignFields } from './storage/CampaignFields.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
@@ -72,16 +73,7 @@ function start() {
       partyTracker,
       toasts,
       state: {
-        entryTiles: initial.entryTiles,
-        characters: initial.characters,
-        creatures: initial.creatures,
-        travelog: initial.travelog,
-        quests: initial.quests,
-        clock: initial.clock,
-        handouts: initial.handouts,
-        bestiary: initial.bestiary,
-        splitParty: initial.splitParty,
-        combat: initial.combat,
+        ...campaignFields(initial),
         mode: 'play',
         // Role is per-tab (sessionStorage, not the tab-shared localStorage), so
         // a follower tab can be Player while the GM's tab is GM.

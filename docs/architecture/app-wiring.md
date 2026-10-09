@@ -604,7 +604,8 @@ The adoption has limits:
   display pinned to the Player view does not follow the GM tab into Build
   mode.
 
-A new campaign field goes into `SYNCED_STATE_KEYS`. A test compares that
+`SYNCED_STATE_KEYS` is `CAMPAIGN_FIELD_KEYS` from `storage/CampaignFields.js`,
+so a new campaign field syncs once it is in that table. A test compares that
 list with the fields of `Campaign` and fails when one is missing.
 
 #### Reconcile
