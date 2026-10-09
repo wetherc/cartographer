@@ -120,6 +120,23 @@ meaning everywhere.
 a `disposition`, and a character never has one. Every caller that tells the
 two apart uses this one test.
 
+### Creature terms
+
+The UI and the code use several words for the creature record and the
+records near it. The table gives the meaning of each word.
+
+| Term | Meaning | Where it appears |
+| --- | --- | --- |
+| Creature | Any entry of `state.creatures`, of type `Creature`. | The **New creature** button, the creature form, `Creature.js` |
+| Foe | A creature with `disposition: 'hostile'`, which fights the party. | The **Foes** sub-tab of the Build **Encounters** tab, the **Foes** group of the combat board |
+| NPC | A creature whose disposition is not hostile, such as a townsperson or an ally. | The **NPCs** sub-tab in Build, the **NPCs** card of the Story tab, `storyWiring.js` |
+| Bestiary template | A `CreatureTemplate`. It is a reusable blueprint and not a creature on the map. The campaign keeps its own templates in `state.bestiary`, and the Library keeps the built-in and custom ones. | **Add from bestiary**, the Library **Creatures** tab, `CreatureTemplate.js` |
+| Encounter | The foes near the party. The Active tab lists the encounter group of the party's tile (`hostileGroup`), and the Nearby tab lists the other foes in range. | The **Encounters** card in Play, the Build **Encounters** tab, `views.encounterPanel`, `app/encounterPanels.js` |
+| Mob, Legend | The two tiers of a foe (`'mob'` and `'legend'`). A mob gets rank-and-file default stats for its level, and a legend gets higher ones. The tier only picks the defaults of a new foe. | The **Tier** select of the creature form, `ENEMY_TIERS` in `Modifiers.js` |
+
+Code names with "enemy", such as `EnemyArmor.js` and `defaultEnemyGear`, mean
+any creature, friendly or hostile.
+
 ### Creature AC
 
 `effectiveStatBlock(creature)` is the only AC read. It returns the stat block
