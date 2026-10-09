@@ -1,4 +1,5 @@
 import { getTile, tilesById } from './TileGrid.js';
+import { parseCoords } from './MapGeometry.js';
 import { withNodeTiles } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -69,6 +70,11 @@ function revertTile(current, before, after) {
  * edit erased comes back as it was. Node fields such as the width and the
  * name follow the same rule.
  *
+ * A tile outside the width and height of the result stays out. The node can
+ * have shrunk through Map settings after the edit, and a restored tile there
+ * would sit past the edge. It would draw nowhere, persist through a save,
+ * and count as a lost tile in the next Map settings dialog.
+ *
  * With no `after` record (the edit never finished), the node goes back to
  * `before` whole.
  * @param {MapNode} current
@@ -105,13 +111,19 @@ export function revertEdit(current, before, after) {
     }
   }
   if (!dropped.size && !replaced.size && !Object.keys(fields).length) return current;
+  const node = { ...current, ...fields };
+  /** @param {Tile} tile */
+  const inside = (tile) => {
+    const at = parseCoords(tile.id);
+    return !at || (at.x < node.width && at.y < node.height);
+  };
   /** @type {Tile[]} */
   const tiles = [];
   for (const tile of current.tiles) {
-    if (dropped.has(tile.id)) continue;
+    if (dropped.has(tile.id) || !inside(tile)) continue;
     tiles.push(replaced.get(tile.id) ?? tile);
     replaced.delete(tile.id);
   }
-  tiles.push(...replaced.values());
-  return withNodeTiles({ ...current, ...fields }, tiles);
+  tiles.push(...[...replaced.values()].filter(inside));
+  return withNodeTiles(node, tiles);
 }

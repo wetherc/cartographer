@@ -92,3 +92,27 @@ test('revertEdit reverts node fields the edit changed', () => {
   assert.equal(reverted.environ, null);
   assert.equal(reverted.name, 'Renamed');
 });
+
+test('revertEdit leaves out a tile past the edge of a node shrunk after the edit', () => {
+  // A 4x4 node, painted at 3,3, then shrunk to 2x2 through Map settings.
+  const wide = fillTiles(createMapNode('w', 'Wide', null, 4, 4), (id) =>
+    createTile(id, 'grass.svg'),
+  );
+  const painted = patched(wide, '3,3', { imageRef: 'sand.svg' });
+  const shrunk = { ...painted, width: 2, height: 2, tiles: painted.tiles.slice(0, 0) };
+  const small = fillTiles(shrunk, (id) => createTile(id, 'grass.svg'));
+  const reverted = revertEdit(small, wide, painted);
+  assert.equal(reverted.tiles.length, 4);
+  assert.equal(getTile(reverted, '3,3'), undefined);
+});
+
+test('revertEdit drops current tiles past a width that the revert restores', () => {
+  // The edit grew the node, and a later stroke painted a cell in the new
+  // columns. Undo puts the width back, so that cell goes too.
+  const grown = { ...base, width: 5 };
+  const later = setTile(grown, createTile('4,0', 'sand.svg'));
+  const reverted = revertEdit(later, base, grown);
+  assert.equal(reverted.width, 3);
+  assert.equal(getTile(reverted, '4,0'), undefined);
+  assert.equal(reverted.tiles.length, 3);
+});
