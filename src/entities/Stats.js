@@ -10,6 +10,7 @@ import { enemyArmorDelta } from './EnemyArmor.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/entities.js').StatSource} StatSource */
+/** @typedef {import('./Modifiers.js').StatKey} StatKey */
 
 /** The label a timed adjustment carries in a breakdown. A modifier records no
  * cause, only a delta and a countdown, so every one of them reads the same. */
@@ -34,7 +35,7 @@ const TIMED_LABEL = 'Adjustment';
  * chip in Play shows the same number as the combat card. The base stays the
  * authored AC, which is what the Build chips edit.
  * @param {Character | Creature} entity
- * @param {string} stat
+ * @param {StatKey} stat an upper-case key such as 'DEX'
  * @returns {{ base: number, total: number, rounds: number, sources: StatSource[] }}
  */
 export function effectiveStat(entity, stat) {

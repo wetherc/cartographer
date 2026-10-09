@@ -6,12 +6,11 @@ import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/S
 import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { exhaustionReadout } from '../view/ExhaustionView.js';
-import { d20Penalty } from '../entities/Exhaustion.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildFeaturesSection } from './CharacterFeatures.js';
 import { levelUpBanner } from './CharacterLevelBanner.js';
-import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
-import { effectiveStat } from '../entities/Stats.js';
+import { formatModifier } from '../entities/Modifiers.js';
+import { initiativeReadout } from '../view/InitiativeBadge.js';
 import { passivePerception } from '../entities/Checks.js';
 import { characterProficiency } from '../entities/Multiclass.js';
 import { buildConditionsSection } from './CharacterConditions.js';
@@ -418,16 +417,9 @@ export function mountCharacterSheet(
       // Speed follows a STR edit as well, because armor too heavy for the
       // wearer costs 10 feet.
       speedBadge.textContent = `${walkSpeed(shown)} ft`;
-      // Initiative rolls with the exhaustion penalty, as in rollInitiative.
-      const dex = abilityModifier(effectiveStat(shown, 'dex').total);
-      const tiredInit = d20Penalty(shown);
-      initBadge.textContent = `Init ${formatModifier(dex + tiredInit)}`;
-      tipBadge(
-        initBadge,
-        tiredInit
-          ? `Initiative bonus: DEX modifier ${formatModifier(dex)}, exhaustion ${tiredInit}`
-          : 'Initiative bonus (DEX modifier)',
-      );
+      const init = initiativeReadout(shown);
+      initBadge.textContent = init.label;
+      tipBadge(initBadge, init.note);
       ppBadge.textContent = `PP ${passivePerception(shown)}`;
       profBadge.textContent = `Prof ${formatModifier(characterProficiency(shown))}`;
       tipBadge(speedBadge, speedNote(shown));
@@ -447,7 +439,10 @@ export function mountCharacterSheet(
     // dedicated character or level-up editor owns that. Stats and
     // equipment are both part of the sheet's shape, so a badge is never
     // re-pointed. It is rebuilt when its score can have moved.
-    for (const key of Object.keys(character.stats)) {
+    const keys = /** @type {import('../entities/Modifiers.js').StatKey[]} */ (
+      Object.keys(character.stats)
+    );
+    for (const key of keys) {
       statsList.appendChild(statBadge(character, key));
     }
     main.appendChild(fullOnly(statsList));

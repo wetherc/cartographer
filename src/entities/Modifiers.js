@@ -4,6 +4,8 @@
  */
 
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/spell.js').Ability} Ability */
+/** @typedef {Ability | 'AC'} StatKey */
 
 /** The tiers an enemy can be authored at. Legends run above the normal stats for their level. */
 export const ENEMY_TIERS = /** @type {EnemyTier[]} */ (['mob', 'legend']);
@@ -14,7 +16,7 @@ export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 /** The only stats an enemy carries: the six ability scores plus armor class.
  * Stat blocks are closed over this set. No custom stats exist. */
-export const STAT_KEYS = [...ABILITY_SCORES, 'AC'];
+export const STAT_KEYS = /** @type {StatKey[]} */ ([...ABILITY_SCORES, 'AC']);
 
 /**
  * Close a stat block over STAT_KEYS. The function drops unknown stats, for

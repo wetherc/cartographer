@@ -94,7 +94,7 @@ function d20Face() {
  * {@link openStatBreakdown}. A buffed or debuffed total is tinted, so a
  * modified score is easy to see.
  * @param {Character} character
- * @param {string} key
+ * @param {import('../entities/Modifiers.js').StatKey} key
  * @returns {HTMLElement}
  */
 export function statBadge(character, key) {
