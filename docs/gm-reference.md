@@ -821,7 +821,8 @@ a plain "Return to (parent)" button.
 
 The Encounters tab of the Build rail stages creatures on the map in view.
 The Foes subtab lists foes, and the NPCs subtab lists friendly and neutral
-people.
+people. The NPCs subtab has **New NPC** and **From bestiary**, and its
+bestiary dialog lists the neutral and friendly templates first.
 
 | Control | What it does |
 | --- | --- |
@@ -831,10 +832,17 @@ people.
 | Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
 | Edit, Delete on a row | Edits or deletes that creature |
 
-The Bestiary lists the campaign templates under "This campaign" and the
-hostile templates of the library under "Library", each sorted by name. The
-count adds up to 20 copies. The combat log and the setup dialog number copies
-that share a name, such as "Gray Wolf 2". The location defaults to the
+The Template list groups every campaign template and every library template
+by disposition and then by source, for example "Hostile, this campaign" and
+"Friendly, library", each sorted by name. From the Foes subtab the hostile
+groups come first, and from an NPCs list the neutral groups come first. Each
+copy keeps the disposition of its template, so an Innkeeper arrives as a
+friendly NPC. The count adds up to 20 copies. Two or more copies get numbers
+after the name ("Gray Wolf 1" to "Gray Wolf 4"), and a later spawn continues
+from the highest number in use. With **Spread over nearby tiles** ticked, the
+first copy goes on the chosen tile and the others go on the nearest open
+tiles around it, never on a wall, deep water, or an empty cell. When the
+open area runs out, the rest share the chosen tile. The location defaults to the
 selected cell of the map in view, or to the middle of the map when no cell
 is selected.
 
@@ -2991,7 +2999,9 @@ are not hidden, and it hides the notes and the links.
 
 The NPCs panel in the Story tab lists the friendly and neutral creatures
 near the party. Each row shows a disposition badge, the location, and the
-chips.
+chips. In a GM tab, **New NPC** and **From bestiary** sit below the list.
+**From bestiary** opens the **Add from bestiary** dialog (see [Encounters
+tab](#encounters-tab)) with the tile of the party as the default place.
 
 | Viewer | Lists |
 | --- | --- |

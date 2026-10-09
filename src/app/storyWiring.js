@@ -29,7 +29,7 @@ import { pruneUnlocks } from './questCleanup.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
-import { creatureForm } from './creatureForm.js';
+import { addFromLibrary, creatureForm } from './creatureForm.js';
 import { bringToParty, toggleCompanion } from './companions.js';
 import { commitCreatures } from './combatants.js';
 import { endCasterEffects, storeCreature } from './combatantWrites.js';
@@ -213,6 +213,11 @@ export function wireStory(app) {
     // New NPCs from the Story tab default to where the party stands.
     onAdd: () =>
       creatureForm(app, null, { ...app.partyTracker.getPosition() }, { disposition: 'neutral' }),
+    onAddFromTemplate: () =>
+      addFromLibrary(app, {
+        location: { ...app.partyTracker.getPosition() },
+        disposition: 'neutral',
+      }),
     onEdit: (npc) => creatureForm(app, npc, null),
     onToggleCompanion: (npc) => toggleCompanion(app, npc),
     onBringToParty: (npc) => bringToParty(app, npc),
@@ -233,6 +238,7 @@ export function wireStory(app) {
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
     onDelete: deleteNPC,
     onAdd: () => creatureForm(app, null, viewedPlacement(app), { disposition: 'neutral' }),
+    onAddFromTemplate: () => addFromLibrary(app, { disposition: 'neutral' }),
     onEdit: (npc) => creatureForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,

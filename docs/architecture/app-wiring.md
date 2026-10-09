@@ -675,7 +675,10 @@ item.
 Edits go through the pure `Creature.editCreature`. It keeps live state
 (current HP lowered to fit a new maximum, the stat block, and conditions),
 and it resets the `met` flag when the creature moves. The bestiary spawn
-dialog is `addFromLibrary` in `creatureForm.js`.
+dialog is `addFromLibrary` in `creatureForm.js`. The Foes lists and both NPC
+lists open it, each with its preferred disposition. It numbers the copies
+through `CreatureTemplate.spawnCopies`, and it spreads them with the pure
+`map/SpawnSpread.js` when the GM ticks the spread box.
 
 #### Attacks and casts
 

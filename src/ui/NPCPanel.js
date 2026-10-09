@@ -58,6 +58,7 @@ export function keepPairs(label) {
  *   onUpdate?: (npc: NPC) => void,
  *   onSetExhaustion?: (npc: NPC, level: number) => void,
  *   onAdd?: () => Promise<unknown>,
+ *   onAddFromTemplate?: () => Promise<unknown>,
  *   onEdit?: (npc: NPC) => Promise<unknown>,
  *   onToggleCompanion?: (npc: NPC) => void,
  *   onBringToParty?: (npc: NPC) => void,
@@ -209,8 +210,13 @@ export function mountNPCPanel(container, callbacks) {
       ];
     },
     addButtons: () => {
-      const onAdd = callbacks.onAdd;
-      return onAdd ? [{ label: 'New NPC', icon: 'add', onClick: onAdd }] : [];
+      const { onAdd, onAddFromTemplate } = callbacks;
+      return [
+        onAdd ? { label: 'New NPC', icon: 'add', onClick: onAdd } : null,
+        onAddFromTemplate
+          ? { label: 'From bestiary', icon: 'scroll', onClick: onAddFromTemplate }
+          : null,
+      ];
     },
     addPlacement: callbacks.pinAdd ? 'leading' : 'inline',
   });

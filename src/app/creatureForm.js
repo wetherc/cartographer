@@ -16,10 +16,14 @@ import { gearOptions } from './gearFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
 import { endCasterEffects } from './combatantWrites.js';
+import { spreadTiles } from '../map/SpawnSpread.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
+/** @typedef {import('../types/creature.js').Disposition} Disposition */
+/** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
 
 /**
  * This is the shared create/edit dialog behind every creature authoring
@@ -186,22 +190,28 @@ export async function clearDefeated(app, nodeId) {
   return true;
 }
 
-/** The most copies one "From bestiary" spawn places on a tile. */
+/** The most copies one "From bestiary" spawn places. */
 const MAX_SPAWN = 20;
 
 /**
  * Spawn fresh, full-health creatures from a saved template. The template
- * source is the campaign bestiary plus the hostile entries of the built-in
- * and custom library, grouped by source and sorted by name. The copies
- * appear at a chosen map and tile, which defaults to the Build-mode selected
- * tile of the viewed node. Removing a campaign template is a separate flow
- * (`removeTemplate`), so this dialog only adds.
+ * source is the campaign bestiary plus every entry of the built-in and
+ * custom library, grouped by disposition and source and sorted by name. The
+ * `disposition` option puts its group first: the Foes lists open on hostile
+ * templates and the NPC lists on neutral ones. Each copy keeps the
+ * disposition of its template. The copies appear at a chosen map and tile,
+ * which defaults to `location` (the Build-mode selected tile of the viewed
+ * node when none is given). Two or more copies are numbered, and with
+ * "Spread over nearby tiles" ticked they take the nearest open tiles
+ * around the chosen one (see `spreadTiles`). Removing a campaign template
+ * is a separate flow (`removeTemplate`), so this dialog only adds.
  * @param {AppContext} app
+ * @param {{ location?: EncounterLocation, disposition?: Disposition }} [options]
  * @returns {Promise<Creature[] | null>}
  */
-export async function addFromLibrary(app) {
+export async function addFromLibrary(app, { location, disposition = 'hostile' } = {}) {
   const { state } = app;
-  const library = activeCreatures().filter((t) => t.disposition === 'hostile');
+  const library = activeCreatures();
   if (state.bestiary.length === 0 && library.length === 0) {
     await alertModal(
       'The bestiary is empty. Save a creature as a template first (the save icon on its row).',
@@ -211,29 +221,26 @@ export async function addFromLibrary(app) {
   }
   const placeChange = placementChange(app);
   const mapPick = pickOnMapChange(app);
+  /** @param {string} [query] */
+  const options = (query) => templateOptions(state.bestiary, library, query, disposition);
   const values = await promptModal(
     'Add from bestiary',
     [
       { name: 'filter', label: 'Filter by name', type: 'search', placeholder: 'Wolf' },
-      {
-        name: 'template',
-        label: 'Template',
-        type: 'select',
-        options: templateOptions(state.bestiary, library),
-      },
+      { name: 'template', label: 'Template', type: 'select', options: options() },
       { name: 'count', label: 'Count', type: 'number', value: 1, min: 1, max: MAX_SPAWN },
       // This uses the same node picker and tile X/Y group as the creature
-      // dialog. It defaults to the tile that the GM selected in the node
-      // being viewed.
-      ...locationFields(app, viewedPlacement(app), { pickButton: true, warn: true }),
+      // dialog, with the same warning line for water, walls, empty cells,
+      // and tiles outside the map.
+      ...locationFields(app, location ?? viewedPlacement(app), { pickButton: true, warn: true }),
+      { name: 'spread', label: 'Spread over nearby tiles', type: 'checkbox', value: false },
     ],
     {
       submitLabel: 'Add',
       onChange: (name, form) => {
         mapPick(name, form);
         placeChange(name, form);
-        if (name === 'filter')
-          form.setOptions('template', templateOptions(state.bestiary, library, form.get('filter')));
+        if (name === 'filter') form.setOptions('template', options(form.get('filter')));
       },
       validate: (get) => (get('template') ? '' : 'No template matches the filter.'),
     },
@@ -245,8 +252,15 @@ export async function addFromLibrary(app) {
     (t) => t.id === templateId,
   );
   if (!template) return null;
-  const count = Math.min(MAX_SPAWN, Number(values.count));
-  const created = spawnCopies(template, count, readLocation(app, values), rosterIds(state));
+  const count = Math.min(MAX_SPAWN, clampInt(values.count, 1));
+  const place = readLocation(app, values);
+  const node = place && app.grid.getNode(place.nodeId);
+  const places =
+    place && node && Boolean(values.spread)
+      ? spreadTiles(node, place.tileId, count).map((tileId) => ({ ...place, tileId }))
+      : place;
+  const names = state.creatures.map((c) => c.name);
+  const created = spawnCopies(template, count, places, rosterIds(state), names);
   state.creatures = [...state.creatures, ...created];
   commitCreatures(app);
   return created;
