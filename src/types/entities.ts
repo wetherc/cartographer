@@ -342,6 +342,9 @@ export interface InventoryItem {
   notes: string;
   /** Optional flavor or rules text shown with the item. */
   description?: string;
+  /** Gear that sheds light, such as a torch or a lantern. A moving group in
+   * which one member carries it sees in the dark. Absent means no light. */
+  light?: boolean;
   /** Absent on older saves. Treated as 'gear'. */
   type?: ItemType;
   /** Weapons and bows: melee or ranged. Absent reads as melee. */

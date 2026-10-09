@@ -29,6 +29,9 @@ export const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'shield',
 /** @type {string[]} */
 export const FOCUS_TYPES = ITEM_TYPES.filter((t) => t !== 'consumable');
 
+/** Item types that may shed light, such as a torch or a lantern. */
+export const LIGHT_TYPES = ['gear'];
+
 /** Item types that can be equipped somewhere, and so may buff a stat. */
 export const EQUIPPABLE_TYPES = [
   'weapon',
@@ -67,6 +70,7 @@ export const EQUIPPABLE_TYPES = [
  * @property {DamagePart[]} damage
  * @property {string[]} statusEffects
  * @property {boolean} spellFocus
+ * @property {boolean} [light] gear only: the item sheds light
  * @property {boolean} [magical] weapons only: the weapon counts as magical
  * @property {{ count: unknown, sides: unknown, bonus: unknown }} [heals]
  *   consumables only: the heal dice, with a count of 0 for no heal
@@ -116,6 +120,7 @@ export function assembleItem(draft) {
       : {}),
     ...(acBonus > 0 ? { acBonus } : {}),
     ...(draft.spellFocus && FOCUS_TYPES.includes(type) ? { spellFocus: true } : {}),
+    ...(draft.light && LIGHT_TYPES.includes(type) ? { light: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
     ...(heals ? { heals } : {}),
     ...(WEAPON_TYPES.includes(type) ? weaponFields(draft) : {}),

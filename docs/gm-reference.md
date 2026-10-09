@@ -1079,7 +1079,15 @@ hour.
 | An outdoor map below the world map, from Dawn to Afternoon | 3 |
 | An outdoor map below the world map, at Dusk | 2 |
 | An outdoor map below the world map, at Night | 1 |
+| An outdoor map below the world map, at Night, for a group that sees in the dark | 2 |
 | A building interior | 2 |
+| A dungeon, a cave, or a cellar, for a group that sees in the dark | 3 |
+
+A group sees in the dark when every character in it has darkvision from
+its race, or when one character in it carries an item with the **Sheds
+light** box ticked. The Torch and the Lantern presets tick the box. The
+group is the party, without the characters that stand apart from it. A
+character that moves alone sees with its own darkvision or light.
 
 A room in a building, an inn, or a castle is lit, so when the party steps
 into it, the whole room comes out of the fog with its walls and doors. A

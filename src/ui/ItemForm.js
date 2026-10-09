@@ -22,6 +22,7 @@ import {
   EQUIPPABLE_TYPES,
   FLAT_AC_TYPES,
   FOCUS_TYPES,
+  LIGHT_TYPES,
 } from '../entities/ItemDraft.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -179,6 +180,10 @@ export function buildItemForm({
   const focusBox = checkbox('Component pouch or spellcasting focus', item?.spellFocus ?? false);
   const focusField = labeled('Casting', focusBox.label);
 
+  // A torch or a lantern lets the group that carries it see in the dark.
+  const lightBox = checkbox('Sheds light (torch, lantern)', item?.light ?? false);
+  const lightField = labeled('Light', lightBox.label);
+
   // A consumable can heal the character who drinks it, for example 2d4 + 2
   // on a Potion of Healing. The "Use one" button then rolls the heal.
   const heal = buildHealEditor(item?.heals ?? null);
@@ -295,6 +300,7 @@ export function buildItemForm({
     }
     if (preset.acBonus !== undefined) acInput.value = String(preset.acBonus);
     focusBox.input.checked = preset.spellFocus === true;
+    lightBox.input.checked = preset.light === true;
     if (type === 'consumable') heal.set(preset.heals ?? null);
     if (preset.statusEffects) effects.set(preset.statusEffects);
     const [buff] = Object.entries(preset.statBonuses ?? {});
@@ -325,7 +331,7 @@ export function buildItemForm({
     'item-form__house-rule u-muted',
     '5e armor has no helmet, gloves, or greaves slot. This piece and any AC bonus it gives are a house rule.',
   );
-  const focusRow = fieldRow(focusField);
+  const focusRow = fieldRow(focusField, lightField);
   const healRow = fieldRow(healField);
 
   // The range fields show only for a ranged or thrown weapon, and the
@@ -358,7 +364,9 @@ export function buildItemForm({
     acRow.hidden = acField.hidden && buffStatField.hidden;
     houseRuleNote.hidden = !HOUSE_RULE_TYPES.includes(type);
     healRow.hidden = healField.hidden = type !== 'consumable';
-    focusRow.hidden = focusField.hidden = !FOCUS_TYPES.includes(type);
+    focusField.hidden = !FOCUS_TYPES.includes(type);
+    lightField.hidden = !LIGHT_TYPES.includes(type);
+    focusRow.hidden = focusField.hidden && lightField.hidden;
     syncWeaponFields();
     const presets = presetsFor(type);
     // An existing library entry is the thing a preset would come from, so
@@ -403,6 +411,7 @@ export function buildItemForm({
       damage: damage.get(),
       statusEffects: effects.get(),
       spellFocus: focusBox.input.checked,
+      light: lightBox.input.checked,
       magical: magicBox.input.checked,
       heals: heal.get(),
     });
@@ -440,6 +449,7 @@ export function buildItemForm({
           descriptionInput.value = '';
           quantityInput.value = '1';
           focusBox.input.checked = false;
+          lightBox.input.checked = false;
           heal.set(null);
         },
   });

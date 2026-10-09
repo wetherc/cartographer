@@ -86,7 +86,7 @@ export function createExitTravel(app, env, travel) {
       // Read the parent node back out of the grid, so the reveal around the
       // landing point builds on any write made since the lookup above.
       const fresh = grid.getNode(parent.id) ?? parent;
-      grid.updateNode(partyTracker.reveal(fresh, [landing]));
+      grid.updateNode(partyTracker.reveal(fresh, [landing], [subject]));
     } else {
       partyTracker.moveTo(parent.id, landing); // reveals fog around the landing itself
       state.characters = recallAll(state.characters);
@@ -183,7 +183,7 @@ export function createExitTravel(app, env, travel) {
         tileId: landing,
       });
       const fresh = grid.getNode(target.id) ?? target;
-      grid.updateNode(partyTracker.reveal(fresh, [landing]));
+      grid.updateNode(partyTracker.reveal(fresh, [landing], [subject]));
     } else {
       partyTracker.moveTo(target.id, landing); // reveals fog around the landing itself
       state.characters = recallAll(state.characters);

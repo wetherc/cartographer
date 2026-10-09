@@ -4,6 +4,8 @@ import { revealSight } from './Sight.js';
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../map/TileGrid.js').TileGrid} TileGrid */
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('./Sight.js').SightRule} SightRule */
 
 /**
  * Tracks the party's current position: which node, and which tile within
@@ -21,13 +23,13 @@ export class PartyTracker {
    * `revealRadius` around the party at night as well as by day. A caller
    * that builds the tracker over a loaded save passes `reveal: false`, so fog
    * that the GM hid inside the sight radius stays hidden.
-   * @param {{ revealRadius?: number, sight?: (node: MapNode) => number, reveal?: boolean }} [options]
+   * @param {{ revealRadius?: number, sight?: SightRule, reveal?: boolean }} [options]
    */
   constructor(grid, position, options = {}) {
     this.grid = grid;
     /** The fixed range of markers and of the Nearby list, in tiles. */
     this.revealRadius = options.revealRadius ?? 2;
-    /** @type {((node: MapNode) => number) | null} */
+    /** @type {SightRule | null} */
     this.sight = options.sight ?? null;
     this.position = position;
     if (options.reveal === false) this.place(position);
@@ -36,20 +38,22 @@ export class PartyTracker {
 
   /**
    * Set how far the party sees on a node, for fog reveal only. Without it,
-   * the fog clears to `revealRadius`.
-   * @param {(node: MapNode) => number} sight
+   * the fog clears to `revealRadius`. The rule gets the characters that
+   * move, or nothing for a move of the whole party.
+   * @param {SightRule} sight
    */
   setSight(sight) {
     this.sight = sight;
   }
 
   /**
-   * The radius of fog that the party clears on `node`.
+   * The radius of fog that the party, or `group` when given, clears on `node`.
    * @param {MapNode} node
+   * @param {readonly Character[]} [group] a split-off character that moves alone
    * @returns {number}
    */
-  sightFor(node) {
-    return this.sight ? this.sight(node) : this.revealRadius;
+  sightFor(node, group) {
+    return this.sight ? this.sight(node, group) : this.revealRadius;
   }
 
   /**
@@ -58,10 +62,11 @@ export class PartyTracker {
    * result back to the grid.
    * @param {MapNode} node
    * @param {readonly string[]} tileIds
+   * @param {readonly Character[]} [group] a split-off character that moves alone
    * @returns {MapNode}
    */
-  reveal(node, tileIds) {
-    return revealSight(node, tileIds, this.sightFor(node));
+  reveal(node, tileIds, group) {
+    return revealSight(node, tileIds, this.sightFor(node, group));
   }
 
   /** @returns {PartyPosition} */

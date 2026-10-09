@@ -36,6 +36,7 @@ export interface EquipmentTemplate {
   acBonus?: number;
   statBonuses?: Record<string, number>;
   spellFocus?: boolean;
+  light?: boolean;
   heals?: HealDice;
 }
 

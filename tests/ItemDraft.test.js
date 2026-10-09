@@ -278,3 +278,12 @@ test('a consumable keeps valid heal dice, and other types drop them', () => {
   assert.equal(assembleItem(draft({ type: 'gear', heals }))?.heals, undefined);
   assert.equal(assembleItem(draft({ type: 'consumable' }))?.heals, undefined);
 });
+
+test('only gear keeps the light flag', () => {
+  assert.equal(assembleItem(draft({ name: 'Torch', light: true }))?.light, true);
+  assert.equal(assembleItem(draft())?.light, undefined);
+  assert.equal(
+    assembleItem(draft({ type: 'weapon', name: 'Club', light: true }))?.light,
+    undefined,
+  );
+});

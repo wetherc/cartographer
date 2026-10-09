@@ -226,7 +226,9 @@ export const SHIELD_PRESETS = [{ name: 'Shield', acBonus: 2 }];
  * `spellFocus` are the component pouch and the three focus kinds. Carrying
  * one of them covers a spell's cost-free material component, which is the
  * rule `Casting.materialCheck` applies.
- * @type {{ name: string, description: string, spellFocus?: boolean }[]}
+ * The torch and the lantern set `light`, so a group that carries one sees in
+ * the dark.
+ * @type {{ name: string, description: string, spellFocus?: boolean, light?: boolean }[]}
  */
 export const GEAR_PRESETS = [
   {
@@ -253,13 +255,13 @@ export const GEAR_PRESETS = [
     description: 'Amulet, emblem, or reliquary; covers cost-free material components',
     spellFocus: true,
   },
-  { name: 'Lantern (hooded)', description: 'Bright light 30 ft; burns oil' },
+  { name: 'Lantern (hooded)', description: 'Bright light 30 ft; burns oil', light: true },
   { name: 'Oil Flask', description: 'One pint; fuels a lantern or splashes a target' },
   { name: 'Rations (1 day)', description: 'Dry food for one day of travel' },
   { name: 'Rope (50 ft)', description: 'Hempen rope; holds up to 300 lb' },
   { name: "Thieves' Tools", description: 'Picks and probes for locks and traps' },
   { name: 'Tinderbox', description: 'Flint, steel, and tinder for lighting fires' },
-  { name: 'Torch', description: 'Bright light 20 ft; burns for one hour' },
+  { name: 'Torch', description: 'Bright light 20 ft; burns for one hour', light: true },
   { name: 'Waterskin', description: 'Holds four pints of liquid' },
 ];
 

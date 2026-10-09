@@ -204,7 +204,7 @@ export function createMapTravel(app, env, dialogs) {
       rejoined ? null : { nodeId, tileId: tile.id },
     );
     const before = navigator.getCurrentNode();
-    grid.updateNode(partyTracker.reveal(before, [...path, tile.id]));
+    grid.updateNode(partyTracker.reveal(before, [...path, tile.id], [character]));
     noteSightings(before);
     discoverTile(tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());

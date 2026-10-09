@@ -1087,8 +1087,15 @@ is a set of pure functions over a MapNode that manage the flag:
 The radius of a move comes from `party/Sight.js`. `sightRadius(node, clock)`
 gives 3 tiles on an outdoor map below the world map from Dawn to Afternoon,
 2 at Dusk, and 1 at Night. It gives 2 in an interior and on the world map at
-every hour. `main.js` hands it to `PartyTracker.setSight`, and every fog
-reveal of a move reads `PartyTracker.sightFor(node)`. The tracker also clears
+every hour. Its third argument is the group of characters that moves. When
+`seesInDark(group)` is true, because every member has darkvision or one
+member carries an item with `light: true`, Night gives the Dusk radius and
+a dark interior gives the daylight radius of 3. `partySight(getClock,
+getCharacters)` wraps it as a `SightRule`. A move of the whole party passes
+no group, and the rule then uses the characters with no `location`. A
+split-off character passes itself to `PartyTracker.reveal(node, tileIds,
+group)`. `main.js` hands the rule to `PartyTracker.setSight`, and every fog
+reveal of a move reads `PartyTracker.sightFor(node, group)`. The tracker also clears
 fog around the party when it is built, before `main.js` runs. The load in
 `campaign/Campaigns.js` therefore passes the same rule, read against the
 loaded clock, as the `sight` option of the constructor. Without it, the first

@@ -1,7 +1,7 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
 import { MapNavigator } from '../map/MapNavigator.js';
 import { PartyTracker } from '../party/PartyTracker.js';
-import { sightRadius } from '../party/Sight.js';
+import { partySight } from '../party/Sight.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
@@ -95,7 +95,10 @@ export function buildExampleCampaign(palette) {
   const world = buildExampleWorld(palette);
   const campaign = { grid: world.grid, ...buildExampleContent(world) };
   new PartyTracker(campaign.grid, campaign.party, {
-    sight: (node) => sightRadius(node, campaign.clock),
+    sight: partySight(
+      () => campaign.clock,
+      () => campaign.characters,
+    ),
   });
   return campaign;
 }
@@ -231,7 +234,10 @@ function withTrackers(campaign) {
     campaign,
     navigator,
     partyTracker: new PartyTracker(campaign.grid, campaign.party, {
-      sight: (node) => sightRadius(node, campaign.clock),
+      sight: partySight(
+        () => campaign.clock,
+        () => campaign.characters,
+      ),
       reveal: false,
     }),
   };

@@ -157,7 +157,7 @@ function aldric() {
       type: 'ring',
     },
     { ...healingPotion(), quantity: 2 },
-    { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear' },
+    { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear', light: true },
     purse(25),
   ];
   c.equipment = {

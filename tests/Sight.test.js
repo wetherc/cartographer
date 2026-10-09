@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SIGHT, sightRadius } from '../src/party/Sight.js';
+import { SIGHT, partySight, seesInDark, sightRadius } from '../src/party/Sight.js';
 import { sightedLinks } from '../src/map/Sightings.js';
 import { revealLinksTo, revealedCount } from '../src/map/FogOfWar.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
@@ -85,4 +85,65 @@ test('setSight sets the fog radius and leaves revealRadius alone', () => {
   // 1 from the start, and 3 around the corner at radius 1.
   assert.equal(revealedCount(grid.getNode('n')), 4);
   assert.equal(tracker.revealRadius, 0);
+});
+
+/** A character with only the fields the sight rule reads. */
+function seer({ darkvision = 0, light = false, location = null } = {}) {
+  return /** @type {any} */ ({
+    raceTraits: { darkvision },
+    inventory: light ? [{ id: 'torch', name: 'Torch', quantity: 1, notes: '', light: true }] : [],
+    location,
+  });
+}
+
+test('a group sees in the dark when all have darkvision or one carries a light', () => {
+  assert.equal(seesInDark([]), false, 'an empty party gains nothing');
+  assert.equal(seesInDark([seer({ darkvision: 60 }), seer({ darkvision: 60 })]), true);
+  assert.equal(seesInDark([seer({ darkvision: 60 }), seer()]), false, 'one human blinds the group');
+  assert.equal(seesInDark([seer({ darkvision: 60 }), seer({ light: true })]), true);
+  assert.equal(seesInDark([{ ...seer(), raceTraits: undefined }]), false, 'no race reads as none');
+  const spent = {
+    ...seer(),
+    inventory: [{ id: 't', name: 'Torch', quantity: 0, notes: '', light: true }],
+  };
+  assert.equal(seesInDark([spent]), false, 'an empty stack sheds no light');
+});
+
+test('a group that sees in the dark sees at Night as at Dusk and in dark rooms as by day', () => {
+  const night = { day: 1, watch: 5 };
+  const elves = [seer({ darkvision: 60 })];
+  assert.equal(sightRadius(region, night, elves), SIGHT.dusk);
+  assert.equal(sightRadius(region, night, [seer()]), SIGHT.night);
+  assert.equal(
+    sightRadius(region, { day: 1, watch: 0 }, elves),
+    SIGHT.day,
+    'daylight is unchanged',
+  );
+  const dungeon = createMapNode('d', 'Crypt', 'vale', 4, 4, {
+    kind: 'interior',
+    environ: 'dungeon',
+  });
+  assert.equal(sightRadius(dungeon, night, elves), SIGHT.day);
+  assert.equal(sightRadius(dungeon, night, [seer()]), SIGHT.interior);
+  const hall = createMapNode('h', 'Hall', 'vale', 4, 4, { kind: 'interior', environ: 'building' });
+  assert.equal(sightRadius(hall, night, elves), SIGHT.interior, 'a lit room gains nothing');
+  assert.equal(sightRadius(world, night, elves), SIGHT.world);
+});
+
+test('the party sight rule reads the travelling characters unless a group is given', () => {
+  const clock = { day: 1, watch: 5 };
+  let characters = [seer({ darkvision: 60 }), seer({ location: { nodeId: 'x', tileId: '0,0' } })];
+  const rule = partySight(
+    () => clock,
+    () => characters,
+  );
+  assert.equal(rule(region), SIGHT.dusk, 'the split-off human does not travel');
+  assert.equal(rule(region, [seer()]), SIGHT.night, 'a lone mover sees with its own eyes');
+  characters = [seer()];
+  assert.equal(rule(region), SIGHT.night, 'the rule reads the roster on each call');
+  const grid = new TileGrid();
+  grid.addNode(fillTiles(createMapNode('vale', 'Vale', 'world', 4, 4)));
+  const tracker = new PartyTracker(grid, { nodeId: 'vale', tileId: '0,0' }, { reveal: false });
+  tracker.setSight(rule);
+  assert.equal(tracker.sightFor(region, [seer({ light: true })]), SIGHT.dusk);
 });
