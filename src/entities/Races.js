@@ -2,6 +2,7 @@ import { DEFAULT_RACES } from '../data/races.js';
 
 /** @typedef {import('../types/race.js').RaceDef} RaceDef */
 /** @typedef {import('../types/race.js').RaceSnapshot} RaceSnapshot */
+/** @typedef {import('../types/race.js').RacePicks} RacePicks */
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
@@ -47,6 +48,31 @@ function snapshotRace(def) {
     traits: [...def.traits],
     ...(def.keepsSpeedInArmor ? { keepsSpeedInArmor: true } : {}),
     ...(def.hpPerLevel ? { hpPerLevel: def.hpPerLevel } : {}),
+    ...(def.abilityChoice
+      ? { abilityChoice: { ...def.abilityChoice, exclude: [...def.abilityChoice.exclude] } }
+      : {}),
+    ...(def.skillChoice ? { skillChoice: { ...def.skillChoice } } : {}),
+  };
+}
+
+/**
+ * The valid picks for a race's choices. Ability picks must be distinct and
+ * outside the race's exclude list, and skill picks must be distinct. Each
+ * list stops at the race's count, so extra or invalid picks drop out.
+ * @param {RaceDef} def
+ * @param {RacePicks} picks
+ * @returns {{ abilities: string[], skills: string[] }}
+ */
+export function validRacePicks(def, picks) {
+  const choice = def.abilityChoice;
+  const excluded = new Set(choice?.exclude ?? []);
+  const abilities = choice
+    ? [...new Set(picks.abilities ?? [])].filter((key) => !excluded.has(/** @type {any} */ (key)))
+    : [];
+  const skills = def.skillChoice ? [...new Set(picks.skills ?? [])] : [];
+  return {
+    abilities: abilities.slice(0, choice?.count ?? 0),
+    skills: skills.slice(0, def.skillChoice?.count ?? 0),
   };
 }
 
@@ -75,16 +101,29 @@ function statsWithoutRace(character) {
  * function is pure.
  * @param {Character} character
  * @param {string} raceId
+ * @param {RacePicks} [picks] the player's picks for the race's ability and
+ *   skill choices. The chosen abilities join the snapshot's
+ *   `abilityIncreases`, so a later race change takes them back off too.
  * @returns {Character}
  */
-export function withRace(character, raceId) {
+export function withRace(character, raceId, picks = {}) {
   const def = getRace(raceId);
   if (!def) return character;
   const stats = statsWithoutRace(character);
-  for (const [key, gain] of Object.entries(def.abilityIncreases)) {
+  const { abilities, skills } = validRacePicks(def, picks);
+  /** @type {Record<string, number>} */
+  const gains = { ...def.abilityIncreases };
+  const amount = def.abilityChoice?.amount ?? 0;
+  for (const key of abilities) gains[key] = (gains[key] ?? 0) + amount;
+  for (const [key, gain] of Object.entries(gains)) {
     stats[key] = (stats[key] ?? 10) + gain;
   }
-  return { ...character, race: def.name, raceId: def.id, raceTraits: snapshotRace(def), stats };
+  const raceTraits = {
+    ...snapshotRace(def),
+    abilityIncreases: gains,
+    ...(skills.length ? { chosenSkills: skills } : {}),
+  };
+  return { ...character, race: def.name, raceId: def.id, raceTraits, stats };
 }
 
 /**
@@ -123,5 +162,10 @@ export function resolveRace(character) {
   if (!def) return character.raceTraits ?? null;
   const snapshot = snapshotRace(def);
   const applied = character.raceTraits?.abilityIncreases;
-  return applied ? { ...snapshot, abilityIncreases: { ...applied } } : snapshot;
+  const chosen = character.raceTraits?.chosenSkills ?? [];
+  return {
+    ...snapshot,
+    ...(applied ? { abilityIncreases: { ...applied } } : {}),
+    ...(chosen.length ? { chosenSkills: [...chosen] } : {}),
+  };
 }

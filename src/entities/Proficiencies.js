@@ -183,7 +183,12 @@ export function assembleProficiencies(character, choices = {}) {
   const background = resolveBackground(character);
   return normalizeProficiencies({
     saves: merged(cls?.savingThrows ?? []),
-    skills: merged(race?.skills ?? [], background?.skills ?? [], choices.skills ?? []),
+    skills: merged(
+      race?.skills ?? [],
+      race?.chosenSkills ?? [],
+      background?.skills ?? [],
+      choices.skills ?? [],
+    ),
     // Expertise is a player's own pick, not a grant, so re-assembling the
     // lists keeps whatever the character already had. The normalizer drops
     // any entry whose skill the new lists no longer grant.

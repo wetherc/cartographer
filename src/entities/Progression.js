@@ -78,7 +78,7 @@ export const withClasses = deriving(setClassList);
 
 /** Assign a catalog race, then re-derive. A CON increase from the race moves HP.
  * See Races.withRace.
- * @type {(character: Character, raceId: string) => Character} */
+ * @type {(character: Character, raceId: string, picks?: import('../types/race.js').RacePicks) => Character} */
 export const withRace = deriving(setRace);
 
 /** Set a hand-typed race, then re-derive (dropping a catalog race drops its

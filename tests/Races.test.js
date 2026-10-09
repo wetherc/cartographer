@@ -6,6 +6,7 @@ import {
   withRace,
   withCustomRace,
   resolveRace,
+  validRacePicks,
 } from '../src/entities/Races.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 
@@ -146,4 +147,34 @@ test('an ability the character has no score for reads as 10 before the increase'
   assert.equal(c.stats.CON, 12); // 10 + 2
   assert.equal(c.stats.WIS, 11); // 10 + 1
   assert.equal(c.stats.STR, 14); // untouched
+});
+
+test('withRace adds chosen abilities and skills, and a race change takes them back', () => {
+  const base = createCharacter('c1', 'Mira', { STR: 10, DEX: 10, CHA: 10 });
+  const half = withRace(base, 'half-elf', {
+    abilities: ['STR', 'STR', 'DEX'],
+    skills: ['stealth'],
+  });
+  assert.deepEqual(half.raceTraits?.abilityIncreases, { CHA: 2, STR: 1, DEX: 1 });
+  assert.deepEqual(half.raceTraits?.chosenSkills, ['stealth']);
+  assert.deepEqual(resolveRace(half)?.chosenSkills, ['stealth']);
+  const elf = withRace(half, 'elf');
+  assert.equal(elf.stats.STR, 10);
+  assert.equal(elf.stats.CHA, 10);
+  assert.equal(elf.stats.DEX, 12);
+  assert.equal(elf.raceTraits?.chosenSkills, undefined);
+});
+
+test('validRacePicks drops picks for a race with no choice and caps the counts', () => {
+  const dwarf = /** @type {any} */ (getRace('dwarf'));
+  assert.deepEqual(validRacePicks(dwarf, { abilities: ['STR'], skills: ['stealth'] }), {
+    abilities: [],
+    skills: [],
+  });
+  const half = /** @type {any} */ (getRace('half-elf'));
+  assert.deepEqual(
+    validRacePicks(half, { abilities: ['CHA', 'STR', 'DEX', 'CON'], skills: ['a', 'b', 'c'] }),
+    { abilities: ['STR', 'DEX'], skills: ['a', 'b'] },
+  );
+  assert.deepEqual(validRacePicks(half, {}), { abilities: [], skills: [] });
 });

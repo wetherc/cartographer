@@ -2582,7 +2582,8 @@ feat that grants expertise.
 ### Creation and progression
 
 Creation picks a class, a race, and a background, and offers the skill
-choices of the class. From these three choices, the sheet assembles the
+choices of the class. A Half-Elf also picks two abilities other than CHA
+that gain +1 each, and two skills of any kind (Skill Versatility). From these three choices, the sheet assembles the
 proficiencies: saving throws, skills, weapons, armor, tools, and languages.
 Every list stays editable afterward.
 

@@ -5,8 +5,8 @@
  * ships exactly one (hill dwarf, high elf, lightfoot halfling, rock gnome).
  * Each entry is library-kind shaped (with a stable id and name), so the
  * catalog can later merge with custom library entries. Fixed ability
- * increases are numeric. Choice-based increases and everything narrative
- * stay as trait names.
+ * increases are numeric. The Half-Elf's floating increases and skill picks
+ * use `abilityChoice` and `skillChoice`. Everything else stays as trait names.
  * @type {RaceDef[]}
  */
 export const DEFAULT_RACES = [
@@ -121,12 +121,9 @@ export const DEFAULT_RACES = [
     weapons: [],
     tools: [],
     languages: ['Common', 'Elvish'],
-    traits: [
-      'Ability Score Increase (two others +1)',
-      'Fey Ancestry',
-      'Skill Versatility',
-      'Extra Language',
-    ],
+    abilityChoice: { count: 2, amount: 1, exclude: ['CHA'] },
+    skillChoice: { count: 2 },
+    traits: ['Fey Ancestry', 'Extra Language'],
   },
   {
     id: 'half-orc',

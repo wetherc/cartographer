@@ -548,6 +548,14 @@ definition. `resolveRace` uses the live catalog first and falls back to the
 stored `raceTraits` snapshot. A hand-typed race, or a race that the GM deleted
 from the catalog, therefore still loads and saves with its traits.
 
+A race can define an `abilityChoice` (a count of abilities, the gain for each,
+and the abilities it excludes) and a `skillChoice` (a count of skills). The
+Half-Elf has both. `withRace` takes the picks as a third argument and checks
+them with `validRacePicks`. The chosen abilities join the snapshot's
+`abilityIncreases`, so a later race change takes them back off the scores.
+The chosen skills go to the snapshot's `chosenSkills`, which `resolveRace`
+keeps and `assembleProficiencies` merges with the fixed race skills.
+
 ### Subclass casting
 
 A class membership (`ClassRef`) stores its subclass as a name. Each class in

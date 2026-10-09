@@ -61,6 +61,35 @@ function skillOptions(classId) {
 /** The HP a classless character starts with. This character has no hit die to derive HP from. */
 const CLASSLESS_MAX_HP = 10;
 
+/**
+ * The options, pick count, and caption of the race ability multiselect for
+ * a race id. A race with no ability choice gets no options.
+ * @param {string} raceId
+ * @returns {{ options: { value: string, label: string }[], count: number, label: string }}
+ */
+function raceAbilityChoice(raceId) {
+  const choice = getRace(raceId)?.abilityChoice;
+  if (!choice) return { options: [], count: 0, label: 'Race ability increases' };
+  const excluded = new Set(/** @type {string[]} */ (choice.exclude));
+  const options = ABILITY_SCORES.filter((key) => !excluded.has(key)).map((key) => ({
+    value: key,
+    label: key,
+  }));
+  const label = `Race ability increases (choose ${choice.count}, +${choice.amount} each)`;
+  return { options, count: choice.count, label };
+}
+
+/**
+ * The options, pick count, and caption of the race skill multiselect.
+ * @param {string} raceId
+ * @returns {{ options: { value: string, label: string }[], count: number, label: string }}
+ */
+function raceSkillChoice(raceId) {
+  const count = getRace(raceId)?.skillChoice?.count ?? 0;
+  const options = count ? SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })) : [];
+  return { options, count, label: `Race skills (choose ${count})` };
+}
+
 /** @returns {ModalField[]} the New character dialog's fields */
 export function characterFields() {
   return [
@@ -73,6 +102,28 @@ export function characterFields() {
       options: catalogOptions(RACE_LIST, 'Custom (type below)'),
     },
     { name: 'customRace', label: 'Custom race', value: '' },
+    // These two fields show only for a race with an ability or skill
+    // choice (the Half-Elf). characterFormChange fills their options.
+    {
+      name: 'raceAbilities',
+      label: 'Race ability increases',
+      type: 'multiselect',
+      value: '',
+      options: [],
+      full: true,
+      columns: true,
+      hidden: true,
+    },
+    {
+      name: 'raceSkills',
+      label: 'Race skills',
+      type: 'multiselect',
+      value: '',
+      options: [],
+      full: true,
+      columns: true,
+      hidden: true,
+    },
     {
       name: 'class',
       label: 'Class',
@@ -222,7 +273,18 @@ function applyStatMethod(form, rng) {
  * @param {() => number} [rng]
  */
 export function characterFormChange(name, form, rng = Math.random) {
-  if (name === 'race') form.setDisabled('customRace', form.get('race') !== '');
+  if (name === 'race') {
+    const raceId = form.get('race');
+    form.setDisabled('customRace', raceId !== '');
+    for (const [field, choice] of /** @type {const} */ ([
+      ['raceAbilities', raceAbilityChoice(raceId)],
+      ['raceSkills', raceSkillChoice(raceId)],
+    ])) {
+      form.setOptions(field, choice.options, choice.count);
+      form.setLabel(field, choice.label);
+      form.setHidden(field, choice.count === 0);
+    }
+  }
   if (name === 'class') {
     const choice = getClass(form.get('class'))?.skillChoice;
     form.setOptions('skills', skillOptions(form.get('class')), choice?.choose ?? 0);
@@ -279,7 +341,10 @@ export function buildCharacter(values, existingIds) {
 
   const race = getRace(values.race);
   if (race) {
-    character = withRace(character, race.id);
+    character = withRace(character, race.id, {
+      abilities: splitList(values.raceAbilities ?? ''),
+      skills: splitList(values.raceSkills ?? '').filter((id) => SKILL_IDS.includes(id)),
+    });
   } else if (values.customRace.trim()) {
     character = withCustomRace(character, values.customRace.trim());
   }

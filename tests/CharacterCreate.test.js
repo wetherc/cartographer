@@ -395,3 +395,50 @@ test('a score outside the buyable range captions the range instead of a budget',
   assert.equal(state['stat-STR'], '16');
   assert.equal(form.labels.statMethod, 'Ability scores (point buy uses 8-15)');
 });
+
+test('a Half-Elf pick shows the race ability and skill choices; a Dwarf hides them', () => {
+  /** @type {Record<string, string>} */
+  const state = { race: 'half-elf' };
+  const form = fakeForm(state);
+  characterFormChange('race', form);
+  assert.equal(form.hidden.raceAbilities, false);
+  assert.equal(form.hidden.raceSkills, false);
+  assert.equal(form.labels.raceAbilities, 'Race ability increases (choose 2, +1 each)');
+  assert.equal(form.labels.raceSkills, 'Race skills (choose 2)');
+  state.race = 'dwarf';
+  characterFormChange('race', form);
+  assert.equal(form.hidden.raceAbilities, true);
+  assert.equal(form.hidden.raceSkills, true);
+  assert.deepEqual(form.options, []);
+});
+
+test('the race ability options leave out the excluded CHA', () => {
+  const form = fakeForm({ race: 'half-elf' });
+  /** @type {Record<string, { value: string }[]>} */
+  const seen = {};
+  form.setOptions = (name, opts) => {
+    seen[name] = opts;
+  };
+  characterFormChange('race', form);
+  assert.deepEqual(
+    seen.raceAbilities.map((o) => o.value),
+    ['STR', 'DEX', 'CON', 'INT', 'WIS'],
+  );
+  assert.equal(seen.raceSkills.length > 10, true);
+});
+
+test('buildCharacter applies the Half-Elf ability and skill picks', () => {
+  const c = buildCharacter(
+    values({
+      race: 'half-elf',
+      raceAbilities: 'STR,CON,CHA',
+      raceSkills: 'stealth,arcana,not-a-skill',
+    }),
+    [],
+  );
+  assert.equal(c.stats.STR, 17);
+  assert.equal(c.stats.CON, 15);
+  assert.equal(c.stats.CHA, 10, 'only the fixed +2; CHA is not a valid pick');
+  assert.deepEqual(c.raceTraits?.abilityIncreases, { CHA: 2, STR: 1, CON: 1 });
+  assert.deepEqual(getProficiencies(c).skills.sort(), ['arcana', 'stealth']);
+});

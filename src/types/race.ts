@@ -3,17 +3,16 @@ import type { Ability } from './spell.js';
 /** A creature size category (SRD playable races are small or medium). */
 export type Size = 'small' | 'medium';
 
-/** A playable race's mechanical spine: fixed ability-score increases, size
- * and speed, darkvision, innate damage resistances, and the proficiencies
- * it grants, plus a trait-name scaffold for everything narrative or
- * choice-based, for example a half-elf's two floating +1s or a dwarf's
- * tool-proficiency pick. A character stores a race id plus a snapshot of
- * these applied traits, so a definition that later disappears from the
- * library still round-trips. */
+/** A playable race's mechanical fields: fixed ability-score increases, size
+ * and speed, darkvision, innate damage resistances, the proficiencies it
+ * grants, the ability and skill choices it offers, and trait names for
+ * everything else, for example a dwarf's tool-proficiency pick. A character
+ * stores a race id plus a snapshot of these applied traits, so a definition
+ * that later disappears from the library still round-trips. */
 export interface RaceDef {
   id: string;
   name: string;
-  /** Fixed ability increases. Choice-based increases live in `traits`. */
+  /** Fixed ability increases. Choice-based increases live in `abilityChoice`. */
   abilityIncreases: Partial<Record<Ability, number>>;
   size: Size;
   /** Walking speed in feet. */
@@ -36,6 +35,12 @@ export interface RaceDef {
   /** Extra maximum HP for each class level the character has (the Hill
    * Dwarf's Dwarven Toughness). Absent means none. */
   hpPerLevel?: number;
+  /** A floating ability increase: `count` different abilities, none of them
+   * in `exclude`, each gain `amount` (the Half-Elf: two others +1). */
+  abilityChoice?: { count: number; amount: number; exclude: Ability[] };
+  /** Extra skill proficiencies of the player's choice (the Half-Elf's Skill
+   * Versatility). */
+  skillChoice?: { count: number };
   /** Race trait names. These are display names only, not yet given a
    * mechanical effect (the same status as ClassDef.featuresByLevel). */
   traits: string[];
@@ -45,4 +50,14 @@ export interface RaceDef {
  * but the identity. Stored on the character when a catalog race is
  * assigned, so a definition that is later edited or removed leaves the
  * character playable as built. */
-export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'>;
+export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'> & {
+  /** The skills picked through `skillChoice`. `abilityIncreases` already
+   * contains the abilities picked through `abilityChoice`. */
+  chosenSkills?: string[];
+};
+
+/** The player's picks for a race's choices. */
+export interface RacePicks {
+  abilities?: string[];
+  skills?: string[];
+}

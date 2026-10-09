@@ -38,12 +38,18 @@ import { DEFAULT_FEATS } from '../data/feats.js';
  * `assembleProficiencies` call would drop what feats and features grant.
  * @param {string} id @param {string} name @param {Record<string, number>} stats
  * @param {{ raceId: string, race: string, background: string, classId: string,
- *   subclass?: string, skills: string[] }} origin
+ *   subclass?: string, skills: string[],
+ *   racePicks?: import('../types/race.js').RacePicks }} origin
  * @returns {Character}
  */
-function levelOne(id, name, stats, { raceId, race, background, classId, subclass, skills }) {
+function levelOne(
+  id,
+  name,
+  stats,
+  { raceId, race, background, classId, subclass, skills, racePicks },
+) {
   let c = createCharacter(id, name, stats, race);
-  c = withBackground(withRace(c, raceId), background);
+  c = withBackground(withRace(c, raceId, racePicks), background);
   c = withClasses(c, [{ classId, level: 1, ...(subclass ? { subclass } : {}) }]);
   c = withProficiencies(c, assembleProficiencies(c, { skills }));
   return withHitDice(withSpellSlots(withHP(c, classMaxHP(c) ?? 0)));
@@ -179,6 +185,7 @@ function mirelle() {
     { WIS: 15, CHA: 13, CON: 13, STR: 12 },
     {
       raceId: 'half-elf',
+      racePicks: { abilities: ['CON', 'WIS'], skills: ['perception', 'history'] },
       race: 'Half-elf',
       background: 'acolyte',
       classId: 'cleric',
