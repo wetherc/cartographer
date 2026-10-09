@@ -441,7 +441,7 @@ road, the road stays on top.
 
 | Control | What it does |
 | --- | --- |
-| Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A map with no tiles downloads nothing, and a message says so |
+| Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A margin on the top and left shows the column and row numbers. A map with no tiles downloads nothing, and a message says so |
 
 If a map is too large for 64 pixels per tile, Export PNG uses a smaller
 size and names the size it used. If no size fits, the app refuses the

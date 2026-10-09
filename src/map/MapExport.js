@@ -1,6 +1,7 @@
 import { MapRenderer, imageSrcForRef } from './MapRenderer.js';
 import { overlayList } from './TileGrid.js';
 import { downloadBlob } from '../storage/fileIO.js';
+import { MIN_LABELLED_TILE } from './CoordLabels.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -74,6 +75,42 @@ export const MAX_EXPORT_SIDE = 16_384;
 export const MIN_EXPORT_TILE_SIZE = 8;
 
 /**
+ * The margin, in pixels, that an export leaves on the top and left of the map
+ * for the coordinate labels. The live view uses the same margin at a pixel
+ * ratio of 1. Without it the labels draw on top of the first row and column
+ * of tiles, and the corner rule of `visibleCoordLabels` drops column 1 and
+ * row 1.
+ */
+export const EXPORT_LEAD = 64;
+
+/**
+ * The label margin an export at `tileSize` pixels per tile needs. Tiles too
+ * small to label get no margin, because no labels draw. This is a pure
+ * function.
+ * @param {number} tileSize
+ * @returns {number}
+ */
+export function exportLead(tileSize) {
+  return tileSize >= MIN_LABELLED_TILE ? EXPORT_LEAD : 0;
+}
+
+/**
+ * The canvas width and height of an export at `tileSize` pixels per tile,
+ * label margin included. This is a pure function.
+ * @param {MapNode} node
+ * @param {number} tileSize
+ * @returns {{ width: number, height: number, lead: number }}
+ */
+export function exportCanvasSize(node, tileSize) {
+  const lead = exportLead(tileSize);
+  return {
+    width: Math.max(1, node.width * tileSize + lead),
+    height: Math.max(1, node.height * tileSize + lead),
+    lead,
+  };
+}
+
+/**
  * The pixels per tile an export of this node can use, or 0 when even
  * `MIN_EXPORT_TILE_SIZE` asks for a canvas past the limits above. The answer
  * is never larger than `requested`: a node that fits keeps full resolution,
@@ -92,7 +129,15 @@ export function exportTileSize(node, requested = EXPORT_TILE_SIZE) {
   const bySide = Math.floor(MAX_EXPORT_SIDE / Math.max(1, width, height));
   const limit = Math.min(byArea, bySide);
   if (limit < MIN_EXPORT_TILE_SIZE) return 0;
-  return Math.max(1, Math.min(requested, limit));
+  let size = Math.max(1, Math.min(requested, limit));
+  // The label margin adds a few pixels to each side, so a size right at the
+  // limit steps down until the canvas with its margin fits.
+  while (size > 1) {
+    const { width: w, height: h } = exportCanvasSize(node, size);
+    if (w * h <= MAX_EXPORT_PIXELS && Math.max(w, h) <= MAX_EXPORT_SIDE) break;
+    size -= 1;
+  }
+  return size >= Math.min(requested, MIN_EXPORT_TILE_SIZE) ? size : 0;
 }
 
 /**
@@ -121,7 +166,8 @@ export function refsToDecode(refs, cache) {
 
 /**
  * Draw a node's full extent to a fresh canvas at `tileSize` pixels per tile,
- * with fog of war ignored. Tile images are preloaded into the renderer's
+ * with fog of war ignored. The map starts `exportLead` pixels in from the
+ * top and left, so every column and row label draws in that margin. Tile images are preloaded into the renderer's
  * cache first, so the single draw pass shows real art instead of
  * placeholders. An image that fails to load falls back to the renderer's
  * placeholder fill. Pass the live canvas's `imageCache` to reuse the art it
@@ -142,9 +188,10 @@ export function refsToDecode(refs, cache) {
 export async function renderNodeToCanvas(node, options = {}) {
   const tileSize = exportTileSize(node, options.tileSize ?? EXPORT_TILE_SIZE);
   if (!tileSize) return null;
+  const { width, height, lead } = exportCanvasSize(node, tileSize);
   const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, node.width * tileSize);
-  canvas.height = Math.max(1, node.height * tileSize);
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2d context unavailable.');
 
@@ -183,8 +230,8 @@ export async function renderNodeToCanvas(node, options = {}) {
     canvasHeight: canvas.height,
     node,
     regionGroups: options.regionGroups ?? [],
-    offsetX: 0,
-    offsetY: 0,
+    offsetX: lead,
+    offsetY: lead,
     scale: 1,
     revealAll: true,
     markerRange: 0,

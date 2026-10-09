@@ -11,7 +11,7 @@ import { toDisplay } from './TileCoords.js';
 export const COORD_SCALE = { factor: 0.3, min: 14, max: 42 };
 
 /** Tiles smaller than this, in buffer px, draw no coordinate digits. */
-const MIN_LABELLED_TILE = 20;
+export const MIN_LABELLED_TILE = 20;
 
 /**
  * The view fields that place the coordinate labels.

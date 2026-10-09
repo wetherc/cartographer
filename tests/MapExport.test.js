@@ -3,14 +3,18 @@ import assert from 'node:assert/strict';
 import {
   collectImageRefs,
   exceedsExportCap,
+  exportCanvasSize,
   exportFilename,
+  exportLead,
   exportTileSize,
   refsToDecode,
+  EXPORT_LEAD,
   EXPORT_TILE_SIZE,
   MAX_EXPORT_PIXELS,
   MAX_EXPORT_SIDE,
   MIN_EXPORT_TILE_SIZE,
 } from '../src/map/MapExport.js';
+import { coordLabelLayout, visibleCoordLabels } from '../src/map/CoordLabels.js';
 import { imageSrcForRef } from '../src/map/MapRenderer.js';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 
@@ -60,7 +64,8 @@ const extent = (width, height) => createMapNode('n', 'Node', null, width, height
 
 test('a node that fits keeps the full tile resolution', () => {
   assert.equal(exportTileSize(extent(1, 1)), EXPORT_TILE_SIZE);
-  assert.equal(exportTileSize(extent(64, 64)), EXPORT_TILE_SIZE);
+  // 63 tiles of 64 pixels plus the label margin is a 4,096 pixel side.
+  assert.equal(exportTileSize(extent(63, 63)), EXPORT_TILE_SIZE);
   assert.equal(exceedsExportCap(extent(64, 64)), false);
 });
 
@@ -92,4 +97,48 @@ test('exportTileSize never asks for more than the caller wanted', () => {
 test('a broken extent from an edited save exports nothing', () => {
   assert.equal(exportTileSize(extent(Number.NaN, 4)), 0);
   assert.equal(exportTileSize(extent(4, Number.POSITIVE_INFINITY)), 0);
+});
+
+test('an export leaves a label margin only when the tiles are labelled', () => {
+  assert.equal(exportLead(EXPORT_TILE_SIZE), EXPORT_LEAD);
+  assert.equal(exportLead(MIN_EXPORT_TILE_SIZE), 0, 'tiny tiles draw no labels');
+  assert.deepEqual(exportCanvasSize(extent(4, 3), 64), { width: 320, height: 256, lead: 64 });
+  assert.deepEqual(exportCanvasSize(extent(4, 3), 8), { width: 32, height: 24, lead: 0 });
+});
+
+test('the label margin counts toward the canvas side limit', () => {
+  // 256 tiles at 64 pixels fill the side limit exactly, so the margin pushes
+  // the tile size down one step.
+  const node = extent(256, 1);
+  const size = exportTileSize(node);
+  assert.equal(size, 63);
+  assert.ok(exportCanvasSize(node, size).width <= MAX_EXPORT_SIDE);
+});
+
+test('an export at full size labels column 1 and row 1', () => {
+  // Regression: an export drawn at offset 0 dropped the first label of each
+  // run and drew the rest over the first row and column of tiles.
+  const node = extent(5, 4);
+  const { width, height, lead } = exportCanvasSize(node, EXPORT_TILE_SIZE);
+  const view = {
+    node,
+    offsetX: lead,
+    offsetY: lead,
+    scale: 1,
+    canvasWidth: width,
+    canvasHeight: height,
+  };
+  const layout = coordLabelLayout(view, EXPORT_TILE_SIZE);
+  assert.ok(layout);
+  const { columns, rows } = visibleCoordLabels(view, layout);
+  assert.deepEqual(
+    columns.map((c) => c.text),
+    ['1', '2', '3', '4', '5'],
+  );
+  assert.deepEqual(
+    rows.map((r) => r.text),
+    ['1', '2', '3', '4'],
+  );
+  assert.ok(layout.colY < lead, 'column labels sit above the first row');
+  assert.ok(layout.rowX < lead, 'row labels sit left of the first column');
 });
