@@ -230,9 +230,10 @@ test('enter in authoring mode paints a one-cell stroke and ends it', () => {
     authoring: true,
     onStrokeCell: (...args) => strokes.push(args),
     onStrokeEnd: () => strokes.push('end'),
+    onCursorStroke: (...args) => strokes.push(['narrate', ...args]),
   });
   keyboard._onKeyDown(key('Enter'));
-  assert.deepEqual(strokes, [[2, 1, null, true], 'end']);
+  assert.deepEqual(strokes, [[2, 1, null, true], 'end', ['narrate', '2,1', null]]);
 });
 
 test('activation with no cursor cell does nothing', () => {

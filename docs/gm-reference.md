@@ -3243,8 +3243,10 @@ interest that the tooltip names: revealed, discovered if discoverable, and
 within detection range. It reads the notes in a GM tab only.
 
 A second live region names the cursor cell after each arrow key. It gives
-the column and row, the art, the point of interest, and whether the cell is
-explored.
+the column and row, the art, and the point of interest. In Play mode, an
+unexplored cell reads only as unexplored. In Build mode, Enter or Space on
+the cursor paints or erases the cell, and the same region names the result,
+for example "Painted Grass 1 at column 7, row 6".
 
 The ways out of a sub-region are real buttons. Tab past the map, and they
 show over it, each with its way out. For example: "Return to Barrow of the

@@ -143,6 +143,7 @@ export class MapCanvasKeyboard {
     if (host.authoring) {
       host.onStrokeCell?.(coords.x, coords.y, tile, true);
       host.onStrokeEnd?.();
+      host.onCursorStroke?.(host.cursorCellId, tile);
     } else {
       host.onCellClick?.(coords.x, coords.y, tile);
     }

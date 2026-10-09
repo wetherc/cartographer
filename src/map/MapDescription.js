@@ -1,6 +1,6 @@
 import { gridCellOf, parseCoords } from './MapGeometry.js';
 import { describeTile, toDisplay } from './TileCoords.js';
-import { getTile } from './TileGrid.js';
+import { getTile, overlayList } from './TileGrid.js';
 import { artStamp, exploredCount } from './TileIndex.js';
 import { capitalize } from '../util/text.js';
 
@@ -219,8 +219,9 @@ export function describeNode(node, party, options = {}) {
  * then what stands there. In Play mode (revealAll false) an unexplored cell
  * reports only that it is unexplored, so the cursor cannot read through the
  * fog, and a point of interest is named under the same rules as in
- * `describeNode`. In Build mode (revealAll true) every cell reports its art,
- * its point of interest, and its fog state. `labelFor` turns a tile's image
+ * `describeNode`. In Build mode (revealAll true) every cell reports its art
+ * and its point of interest. Build mode draws no fog, so the line names no
+ * fog state either. `labelFor` turns a tile's image
  * reference into the palette label, since this module does not keep the
  * palette.
  * @param {MapNode} node
@@ -237,6 +238,32 @@ export function describeCursor(node, tileId, options = {}) {
   const parts = [options.labelFor?.(tile.imageRef) ?? tile.imageRef];
   if (poiNamed(tile, options))
     parts.push(readablePoi(/** @type {POIType} */ (tile.metadata.poiType)));
-  if (revealAll) parts.push(tile.revealed ? 'explored' : 'unexplored');
   return `${where}: ${parts.join(', ')}.`;
+}
+
+/**
+ * Build the narration of a keyboard stroke in Build mode. Enter or Space
+ * paints or erases the cursor cell with no pointer movement, so a screen
+ * reader user hears the result here. `before` is the tile the cell had
+ * before the stroke. A cell that lost its tile reads as erased, and a cell
+ * whose art or overlays changed reads as painted with the new art. Any other
+ * stroke, such as an Inspect press or a region link, reads as the plain
+ * cursor line.
+ * @param {MapNode} node the node after the stroke
+ * @param {string} tileId
+ * @param {Tile | null} before
+ * @param {DescribeOptions & { labelFor?: (imageRef: string) => string | undefined }} [options]
+ * @returns {string}
+ */
+export function describeCursorEdit(node, tileId, before, options = {}) {
+  const where = describeTile(tileId);
+  const after = getTile(node, tileId) ?? null;
+  const label = (/** @type {string} */ ref) => options.labelFor?.(ref) ?? ref;
+  if (!after)
+    return before ? `Erased the tile at ${where}.` : describeCursor(node, tileId, options);
+  if (!before || before.imageRef !== after.imageRef)
+    return `Painted ${label(after.imageRef)} at ${where}.`;
+  const added = overlayList(after).filter((ref) => !overlayList(before).includes(ref));
+  if (added.length) return `Painted ${label(added[added.length - 1])} at ${where}.`;
+  return describeCursor(node, tileId, options);
 }

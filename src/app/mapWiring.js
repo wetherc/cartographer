@@ -417,6 +417,7 @@ export function wireMapView(app) {
     // The map description is about the node and the party, and a cursor move
     // changes neither.
     onCursorMove: (tileId) => narration?.cursorMoved(tileId),
+    onCursorStroke: (tileId, before) => narration?.cursorStroked(tileId, before),
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;

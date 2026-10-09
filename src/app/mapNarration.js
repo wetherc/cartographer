@@ -1,4 +1,9 @@
-import { describeCursor, describeNode, placeNoun } from '../map/MapDescription.js';
+import {
+  describeCursor,
+  describeCursorEdit,
+  describeNode,
+  placeNoun,
+} from '../map/MapDescription.js';
 import { linkTileTo } from '../map/FogOfWar.js';
 import { authoringWarning, needsLink } from '../map/MapExits.js';
 import { textButton } from '../ui/buttons.js';
@@ -106,6 +111,13 @@ export function mountMapNarration(app, canvas) {
   let lastPoints = '';
   /** @param {string} id */
   const markerVisible = (id) => canvas.markerVisible(id);
+  // Build mode describes every cell, and Play mode only what the fog shows.
+  const cursorOptions = () => ({
+    revealAll: state.mode === 'build',
+    markerVisible,
+    labelFor: (/** @type {string} */ imageRef) =>
+      palette.listAll().find((e) => e.imageRef === imageRef)?.label,
+  });
 
   return {
     /** Re-narrate the current map. Call this wherever the node, the party,
@@ -148,11 +160,19 @@ export function mountMapNarration(app, canvas) {
      * screen reader user knows what Enter acts on.
      * @param {string} tileId */
     cursorMoved(tileId) {
-      cursorStatus.textContent = describeCursor(navigator.getCurrentNode(), tileId, {
-        revealAll: state.mode === 'build',
-        markerVisible,
-        labelFor: (imageRef) => palette.listAll().find((e) => e.imageRef === imageRef)?.label,
-      });
+      cursorStatus.textContent = describeCursor(
+        navigator.getCurrentNode(),
+        tileId,
+        cursorOptions(),
+      );
+    },
+    /** Enter or Space on the cursor in Build mode paints or erases the cell
+     * with no cursor move, so the result is narrated here.
+     * @param {string} tileId
+     * @param {import('../types/map.js').Tile | null} before the tile before the stroke */
+    cursorStroked(tileId, before) {
+      const node = navigator.getCurrentNode();
+      cursorStatus.textContent = describeCursorEdit(node, tileId, before, cursorOptions());
     },
   };
 }

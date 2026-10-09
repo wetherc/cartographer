@@ -1,7 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeCursor, describeNode, placeNoun } from '../src/map/MapDescription.js';
-import { createMapNode, createTile, setTile, updateTileMetadata } from '../src/map/TileGrid.js';
+import {
+  describeCursor,
+  describeCursorEdit,
+  describeNode,
+  placeNoun,
+} from '../src/map/MapDescription.js';
+import {
+  createMapNode,
+  createTile,
+  getTile,
+  setTile,
+  updateTileMetadata,
+} from '../src/map/TileGrid.js';
+import { eraseTile } from '../src/map/TilePaint.js';
 import { linkTileTo, setTileRevealed } from '../src/map/FogOfWar.js';
 
 function node() {
@@ -157,11 +169,11 @@ test('describeCursor names the cell and what stands there', () => {
   const labelFor = (ref) => (ref === 'tavern.svg' ? 'Tavern' : undefined);
   assert.equal(
     describeCursor(node(), '2,1', { revealAll: true, labelFor }),
-    'Cursor at column 3, row 2: Tavern, Tavern, explored.',
+    'Cursor at column 3, row 2: Tavern, Tavern.',
   );
   assert.equal(
     describeCursor(node(), '1,0', { revealAll: true, labelFor }),
-    'Cursor at column 2, row 1: grass.svg, unexplored.',
+    'Cursor at column 2, row 1: grass.svg.',
     'an art reference with no label reads as the reference itself',
   );
 });
@@ -217,4 +229,47 @@ test('linkTileTo finds the tile that opens a child node', () => {
   vale = setTile(vale, createTile('2,1', 'assets/tiles/port/port-1.svg', { childNodeId: 'k' }));
   assert.equal(linkTileTo(vale, 'k')?.id, '2,1');
   assert.equal(linkTileTo(vale, 'nobody'), undefined);
+});
+
+test('describeCursor names no fog state in Build mode', () => {
+  // Regression: Build mode draws no fog, but the line said "unexplored".
+  assert.doesNotMatch(describeCursor(node(), '1,0', { revealAll: true }), /explored/);
+});
+
+test('describeCursorEdit names the art a keyboard stroke painted', () => {
+  const labelFor = (ref) => ({ 'road.svg': 'Road', 'tree.svg': 'Tree' })[ref];
+  const before = node();
+  const painted = setTile(before, createTile('3,2', 'road.svg'));
+  assert.equal(
+    describeCursorEdit(painted, '3,2', null, { revealAll: true, labelFor }),
+    'Painted Road at column 4, row 3.',
+  );
+  const repainted = setTile(before, createTile('0,0', 'road.svg'));
+  assert.equal(
+    describeCursorEdit(repainted, '0,0', getTile(before, '0,0') ?? null, { labelFor }),
+    'Painted Road at column 1, row 1.',
+  );
+  const old = /** @type {any} */ (getTile(before, '0,0'));
+  const overlaid = setTile(before, { ...old, overlayRef: 'tree.svg' });
+  assert.equal(
+    describeCursorEdit(overlaid, '0,0', old, { revealAll: true, labelFor }),
+    'Painted Tree at column 1, row 1.',
+  );
+});
+
+test('describeCursorEdit names an erase, and an unchanged cell as the cursor line', () => {
+  const before = node();
+  const tile = getTile(before, '0,0') ?? null;
+  const erased = eraseTile(before, '0,0');
+  assert.equal(describeCursorEdit(erased, '0,0', tile), 'Erased the tile at column 1, row 1.');
+  assert.equal(
+    describeCursorEdit(before, '3,2', null, { revealAll: true }),
+    'Cursor at column 4, row 3: empty.',
+    'an erase on an empty cell changes nothing',
+  );
+  assert.equal(
+    describeCursorEdit(before, '0,0', tile, { revealAll: true }),
+    'Cursor at column 1, row 1: grass.svg.',
+    'an Inspect press reads as the cursor line',
+  );
 });

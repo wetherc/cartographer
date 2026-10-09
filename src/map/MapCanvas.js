@@ -30,7 +30,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void, onExitClick?: (exit: import('../types/map.js').MapExit) => void, onExitArmed?: (exit: import('../types/map.js').MapExit | null) => void, onCursorMove?: (tileId: string) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void, onExitClick?: (exit: import('../types/map.js').MapExit) => void, onExitArmed?: (exit: import('../types/map.js').MapExit | null) => void, onCursorMove?: (tileId: string) => void, onCursorStroke?: (tileId: string, before: Tile | null) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -63,6 +63,10 @@ export class MapCanvas {
     /** Fires after a cursor key lands the keyboard cursor on a cell, with the
      * cell's tile id, so the wiring can narrate what the cursor stands on. */
     this.onCursorMove = options.onCursorMove;
+    /** Fires after Enter or Space authors a stroke on the cursor cell in
+     * Build mode, with the cell's tile id and its tile before the stroke, so
+     * the wiring can narrate what changed. */
+    this.onCursorStroke = options.onCursorStroke;
 
     /** @type {MapNode | null} */
     this.node = null;
