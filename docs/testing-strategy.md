@@ -15,18 +15,37 @@ inputs as arguments, including the random number generator and the current
 time, and returns new values. DOM glue builds elements, mounts them, and
 connects events.
 
-Pure modules get unit tests. Each `tests/*.test.js` file pairs with one
-module under `src/`. The tests call the functions and classes directly,
-with an injected random number generator or plain fixture data. They build
-no DOM, no canvas, and no mock of a browser API.
+Pure modules get unit tests. The tests call the functions and classes
+directly, with an injected random number generator or plain fixture data.
+They build no DOM and no canvas.
+
+Most files in `tests/` take the name of the module that they test, such as
+`tests/Conditions.test.js` for `src/entities/Conditions.js`. Other files
+are scenario files. A scenario file follows one feature across several
+modules, and its name is the name of the feature, such as
+`tests/acBuffWiring.test.js` or `tests/CrossTabSync.test.js`. So a module
+can have no test file of its own name and still have tests. Search `tests/`
+for the module name before you add a new file.
+
+The helpers in `tests/helpers/` stand in for the browser and for the
+running app:
+
+- `env.js` installs an in-memory `localStorage` (with an optional quota
+  that throws `QuotaExceededError`) and a small `window` that can deliver
+  a `storage` event. The storage suites use it to run the save, history,
+  and cross-tab paths under `node --test`.
+- `app.js` builds a stub `AppContext` with `stubApp`. The stub records
+  each action call, log line, and refresh, so a suite for a `src/app/`
+  module asserts on what a path did without a running app.
 
 Glue modules get a check in a browser instead. A mock of the DOM proves
 only that the code called the functions that the mock expected. It does not
 prove that a GM can see the panel or click the button, so a person looks at
 the map, the panels, and the dialogs.
 
-Because of this split, the project needs no test framework and no browser
-polyfill in its dependencies.
+Because of this split, the project needs no test framework, no browser
+polyfill, and no mock library in its dependencies. The stubs in `tests/helpers/` are
+plain JavaScript in the repository.
 
 ## The coverage total
 
@@ -58,6 +77,15 @@ rows pull the total down:
 A low score on one of these files is expected. A low score on any other
 file shows missing tests.
 
+The branch and function scores of a file mean little when its line score
+is low. Node counts only the branches and the functions that a test
+reached, so a file whose functions never run can show 100 percent of its
+branches. For example, a wiring module can show a line score under 10
+percent, a branch score of 100 percent, and a function score of 0 percent.
+This also lifts the branch total of the whole report well above the line
+total. Read the line score first, and trust the branch score only on a file
+whose lines the tests run.
+
 A high line score on a module that consists mostly of `el(...)` calls is
 not proof of a check. It shows that a test built the DOM, not that a test
 looked at what the DOM shows.
@@ -71,13 +99,18 @@ above the real score of the app code.
 
 Some modules wrap browser APIs that Node does not have. In
 `src/storage/SaveManager.js`, these are `trySaveToLocalStorage`,
-`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. They
-cannot get a unit test, even with a stub that replaces the DOM.
+`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`.
 
-The project adds no polyfill and no mock library for them. Each wrapper
-stays thin, and it calls pure functions that already have tests:
-`serialize` and `deserialize`. A person checks the wrapper in a real
-browser, where a save followed by a load is an end-to-end check.
+The two `localStorage` wrappers have unit tests. `tests/SaveManager.test.js`
+installs the in-memory `localStorage` from `tests/helpers/env.js`, saves a
+campaign, loads it back, and simulates a failed write. The stub does not
+know the real quota of a browser, so a person also checks a save and a load
+in a real browser.
+
+`downloadState` and `readStateFromFile` need a file download and a
+`File` object, and no helper stubs those. Each of them stays thin, and it
+calls the pure functions `serialize` and `deserialize`, which have tests.
+A person checks an export and an import in a real browser.
 
 The same rule applies inside `src/ui/`. The tests cover each pure helper in
 that directory where it lives: `fitDimensions` and `encodeAttempts` in

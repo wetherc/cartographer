@@ -283,9 +283,11 @@ pnpm bench -- --only=rehydrate-focus
 
 Some modules wrap browser APIs that Node does not have. In
 `src/storage/SaveManager.js`, these are `trySaveToLocalStorage`,
-`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. They have
-no unit tests, so check them in a real browser. Chromium has a working
-`localStorage`, so a save followed by a load is an end-to-end check.
+`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. The unit
+tests run the two `localStorage` wrappers over the in-memory stub in
+`tests/helpers/env.js`, and the other two have no unit tests. Check all
+four in a real browser. Chromium has a working `localStorage` with a real
+quota, so a save followed by a load is an end-to-end check.
 
 `src/storage/IndexedDbAssets.js` is also a browser-only wrapper. The unit
 tests of `AssetMirror.js` run over the in-memory store in
