@@ -1833,7 +1833,15 @@ concentrating on a spell:
 - a failed CON save or a drop to 0 HP in `applyToTarget`
 - a chip that stops the caster acting
 - a new concentration cast in `app/spellCastResolve.js`
-- a duration that runs out at the round wrap
+- a duration that runs out at the round wrap or as the game clock advances
+- a deleted caster, through `endCasterEffects(app, caster)`
+
+`endCasterEffects` runs on every delete path of a character or a creature,
+and on the foes that flee at the end of a fight. It asks
+`ImposedConditions.spellsHeldBy` for every spell of the caster that still has
+a chip or a summon in play, and sweeps each one. A new creature with the same
+name gets the same id, so without this sweep it would inherit the chips and
+summons of the deleted one.
 
 The sweep always runs after the write that it follows. Both writes change
 `state.characters` and `state.creatures`, so a copy stored before the sweep

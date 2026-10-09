@@ -15,6 +15,7 @@ import { describeTile } from '../map/TileCoords.js';
 import { clampInt } from '../util/num.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { rosterIds } from './combatants.js';
+import { endCasterEffects } from './combatantWrites.js';
 import { partyAward } from '../combat/FightEnd.js';
 import { locationFields, readLocation } from './locationFields.js';
 
@@ -151,6 +152,8 @@ export function rosterActions(app, { scope, selectCharacter }) {
       const ok = await confirmDelete(character.name, 'Their inventory is lost too.');
       if (!ok) return;
       state.characters = removeById(state.characters, id);
+      // Chips and summons from the character's spells go with the character.
+      endCasterEffects(app, character);
       // A deleted character cannot keep a slot in a running fight: nothing
       // resolves the id any more. Without this, the row renders as an
       // unknown combatant whose turn cannot be played.

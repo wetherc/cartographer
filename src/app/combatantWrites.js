@@ -6,7 +6,7 @@ import {
   outlasts,
   sameSlot,
 } from '../entities/Conditions.js';
-import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
+import { removeImposed, repeatSaves, spellsHeldBy } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
@@ -261,6 +261,21 @@ export function endSpellEffects(app, casterId, spellId) {
       'combat',
       `${logName(app, creature)} vanishes as ${spellNameOf(creature)} ends.`,
     );
+  }
+}
+
+/**
+ * End every spell effect of a caster that leaves the campaign: the chips its
+ * casts put on any entity, and the creatures they summoned. Each delete path
+ * calls this after it removes the caster, so the sweep never writes the
+ * caster back. The caster itself needs no cleanup, because it is gone.
+ * @param {AppContext} app
+ * @param {Character | Creature} caster the entity as it was before the delete
+ */
+export function endCasterEffects(app, caster) {
+  const { characters, creatures } = app.state;
+  for (const spellId of spellsHeldBy(caster, [...characters, ...creatures])) {
+    endSpellEffects(app, caster.id, spellId);
   }
 }
 

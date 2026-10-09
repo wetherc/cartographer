@@ -36,7 +36,7 @@ import {
   removeTemplate,
 } from './creatureForm.js';
 import { commitCreatures } from './combatants.js';
-import { logDefeatTransition, storeCreature } from './combatantWrites.js';
+import { endCasterEffects, logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -182,7 +182,9 @@ export function wireEncounterPanels(app, { onStartCombat }) {
       commitCreatures(app, { panel: false });
     },
     onDelete: (id) => {
+      const gone = state.creatures.find((c) => c.id === id);
       state.creatures = removeById(state.creatures, id);
+      if (gone) endCasterEffects(app, gone);
       app.actions.removeCombatant(id);
       commitCreatures(app, { panel: false });
     },

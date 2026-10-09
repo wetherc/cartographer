@@ -32,7 +32,7 @@ import { wireHandouts } from './handoutWiring.js';
 import { creatureForm } from './creatureForm.js';
 import { bringToParty, toggleCompanion } from './companions.js';
 import { commitCreatures } from './combatants.js';
-import { storeCreature } from './combatantWrites.js';
+import { endCasterEffects, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { addLethargy } from './lethargy.js';
 
@@ -147,7 +147,9 @@ export function wireStory(app) {
 
   /** The confirm-and-delete flow shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
+    const gone = state.creatures.find((c) => c.id === id);
     state.creatures = removeById(state.creatures, id);
+    if (gone) endCasterEffects(app, gone);
     app.actions.removeCombatant(id);
     commitCreatures(app);
   };

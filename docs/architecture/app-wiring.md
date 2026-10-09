@@ -769,6 +769,8 @@ resolves the id through `findCombatant` and stores through its `store`:
   longer stays in place (`Conditions.outlasts`).
 - `endSpellEffects` removes the chips and summons of a spell when the spell
   ends.
+- `endCasterEffects` runs `endSpellEffects` for every spell of a caster that
+  the GM deletes.
 - `retryImposedSaves` rolls the repeated saves that a combatant gets at the
   end of its turn.
 

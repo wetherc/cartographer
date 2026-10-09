@@ -5,6 +5,7 @@ import { removeById } from '../entities/Roster.js';
 import { clampInt } from '../util/num.js';
 import { standDown } from '../entities/CreatureMap.js';
 import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
+import { endCasterEffects } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../combat/FightEnd.js').FightEnd} FightEnd */
@@ -175,7 +176,9 @@ export function applyFightXP(app, end, values) {
  */
 function removeFled(app, fled) {
   if (fled.length === 0) return;
+  const gone = app.state.creatures.filter((c) => fled.some((foe) => foe.id === c.id));
   app.state.creatures = fled.reduce((list, foe) => removeById(list, foe.id), app.state.creatures);
+  for (const foe of gone) endCasterEffects(app, foe);
   commitCreatures(app);
   for (const foe of fled) app.actions.logEvent('combat', `${foe.name} flees.`);
 }

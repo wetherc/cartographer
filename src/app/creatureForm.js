@@ -15,6 +15,7 @@ import { creatureFields, creatureFieldsChange, readCreatureFields } from './crea
 import { gearOptions } from './gearFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
+import { endCasterEffects } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -146,6 +147,7 @@ export async function deleteCreature(app, creature) {
   const ok = await confirmDelete(creature.name);
   if (!ok) return false;
   state.creatures = removeById(state.creatures, creature.id);
+  endCasterEffects(app, creature);
   app.actions.removeCombatant(creature.id);
   commitCreatures(app);
   return true;
@@ -175,6 +177,7 @@ export async function clearDefeated(app, nodeId) {
   if (!ok) return false;
   const ids = new Set(gone.map((c) => c.id));
   state.creatures = state.creatures.filter((c) => !ids.has(c.id));
+  for (const foe of gone) endCasterEffects(app, foe);
   app.actions.logEvent('note', `Cleared ${gone.length} defeated ${noun}: ${tally}.`);
   commitCreatures(app);
   return true;

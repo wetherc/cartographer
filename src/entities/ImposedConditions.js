@@ -115,3 +115,28 @@ export function repeatSaves(
   const spent = results.flatMap((r) => r.save.rider?.spent ?? []);
   return { conditions: spendRiders(ended ? conditions : list, spent), results };
 }
+
+/**
+ * Every spell of one caster that still has an effect in play: the spell the
+ * caster concentrates on, each spell named by a chip that the caster put on
+ * any entity, and each spell that summoned a creature for the caster. A
+ * caster that leaves the campaign ends all of them, so no chip or summon
+ * keeps a source that names a missing caster. A later creature with the same
+ * name gets the same id, and without this sweep it would inherit those chips
+ * and summons. The list has no repeats.
+ * @param {import('../types/entities.js').Character | import('../types/creature.js').Creature} caster
+ * @param {readonly (import('../types/entities.js').Character | import('../types/creature.js').Creature)[]} entities
+ * @returns {string[]}
+ */
+export function spellsHeldBy(caster, entities) {
+  const ids = new Set();
+  if (caster.concentration) ids.add(caster.concentration.spellId);
+  for (const entity of entities) {
+    for (const c of entity.conditions) {
+      if (c.source?.casterId === caster.id) ids.add(c.source.spellId);
+    }
+    const summon = 'summonedBy' in entity ? entity.summonedBy : undefined;
+    if (summon?.casterId === caster.id) ids.add(summon.spellId);
+  }
+  return [...ids];
+}
