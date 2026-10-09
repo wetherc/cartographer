@@ -602,6 +602,16 @@ body {
   line-height: 1.5;
 }
 
+/* The browser's default placeholder gray is 3.41:1 on the dark field, under
+   the 4.5:1 that WCAG AA asks for text. Several fields have the placeholder
+   as their only hint, so it takes the muted text token, which
+   tests/Contrast.test.js checks on every surface. Firefox dims a placeholder
+   with opacity, which would cut the contrast again. */
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 /* Pin single-line controls to one explicit height so a native <select> and a
    text/number <input> sharing a form row line up. A bare <select> ignores
    line-height for its box metrics and renders ~2.5px shorter than an <input>

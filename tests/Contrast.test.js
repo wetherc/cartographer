@@ -67,6 +67,13 @@ test('base.css declares every surface and text token in both themes', () => {
   }
 });
 
+test('placeholders use the muted text token at full opacity', () => {
+  const css = readFileSync(CSS_PATH, 'utf8');
+  const rule = css.match(/(?:^|\n)::placeholder\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(rule, /color:\s*var\(--text-muted\)/);
+  assert.match(rule, /opacity:\s*1\b/);
+});
+
 for (const theme of /** @type {const} */ (['light', 'dark'])) {
   const palette = tokens[theme];
 
