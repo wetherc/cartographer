@@ -1,8 +1,14 @@
 import { textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { entriesAfter, isoTimestamp, stampLabel } from '../log/Travelogue.js';
+import { entriesAfter, isoTimestamp, LOG_KIND_LABELS, stampLabel } from '../log/Travelogue.js';
+import { buildKindFilter, buildNoteForm } from './TravelogTools.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
+
+/** Every entry kind, for the filter classes of the list. */
+const KINDS = /** @type {import('../types/log.js').LogEntryKind[]} */ (
+  Object.keys(LOG_KIND_LABELS)
+);
 
 /** One formatter for every row. A new `toLocaleTimeString` call builds a
  * formatter each time, which costs about 6 ms across a 200-row log. */
@@ -55,12 +61,36 @@ export function entryItem(entry, withRound = false) {
  * than the log has entries, it removes the rows whose entries are gone. A change of
  * `getRole` also rebuilds the list, because the two roles read different
  * lines (see `LogVisibility.entriesFor`).
+ *
+ * The note box above the list calls `onAddNote`, and `canAddNotes`
+ * decides on each update whether it shows. The kind chips hide rows through
+ * a class on the list, so a filter change moves no rows. **Copy as text**
+ * passes the entries that the filters show to `onCopy`.
  * @param {HTMLElement} container
- * @param {{ getEntries: () => LogEntry[], onClear: () => Promise<boolean> | boolean, getRole?: () => string }} callbacks
+ * @param {{
+ *   getEntries: () => LogEntry[],
+ *   onClear: () => Promise<boolean> | boolean,
+ *   getRole?: () => string,
+ *   onAddNote?: (text: string, gmOnly: boolean) => void,
+ *   canAddNotes?: () => boolean,
+ *   onCopy?: (entries: LogEntry[]) => void,
+ * }} callbacks
  * @returns {{ update: () => void }}
  */
 export function mountTravelogPanel(container, callbacks) {
   const empty = emptyState('No events logged yet.');
+  const filteredEmpty = emptyState('No entries of the kinds shown.');
+
+  /** @type {ReadonlySet<import('../types/log.js').LogEntryKind>} */
+  let hiddenKinds = new Set();
+  const noteForm = buildNoteForm((text, gmOnly) => callbacks.onAddNote?.(text, gmOnly));
+  const filters = buildKindFilter((hidden) => {
+    hiddenKinds = hidden;
+    for (const kind of KINDS)
+      list.classList.toggle(`travelog__list--hide-${kind}`, hidden.has(kind));
+    update();
+  });
+  const shownEntries = () => callbacks.getEntries().filter((e) => !hiddenKinds.has(e.kind));
 
   const list = el('ul', 'travelog__list u-col u-g1');
 
@@ -72,7 +102,24 @@ export function mountTravelogPanel(container, callbacks) {
     { icon: 'remove', variant: 'danger', className: 'travelog__clear' },
   );
 
-  container.appendChild(el('div', 'travelog', empty, list, clearButton));
+  const copyButton = textButton('Copy as text', () => callbacks.onCopy?.(shownEntries()), {
+    icon: 'export',
+    className: 'travelog__copy',
+    title: 'Copy the shown entries, oldest first, to paste into session notes',
+  });
+
+  container.appendChild(
+    el(
+      'div',
+      'travelog',
+      noteForm,
+      filters,
+      empty,
+      filteredEmpty,
+      list,
+      el('div', 'travelog__actions', copyButton, clearButton),
+    ),
+  );
 
   /** Id of the newest rendered entry. Null when the list renders empty. */
   let newestId = /** @type {string | null} */ (null);
@@ -96,10 +143,15 @@ export function mountTravelogPanel(container, callbacks) {
       }
     }
 
+    noteForm.hidden = !(callbacks.canAddNotes?.() ?? true);
     const hasEntries = list.children.length > 0;
+    const hasShown = hasEntries && entries.some((e) => !hiddenKinds.has(e.kind));
     empty.hidden = hasEntries;
-    list.hidden = !hasEntries;
+    filteredEmpty.hidden = !hasEntries || hasShown;
+    filters.hidden = !hasEntries;
+    list.hidden = !hasShown;
     clearButton.hidden = !hasEntries;
+    copyButton.hidden = !hasShown;
     newestId = entries.length ? entries[entries.length - 1].id : null;
   }
 

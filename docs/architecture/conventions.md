@@ -240,8 +240,12 @@ into a failed save.
 The travelogue panel builds its DOM skeleton once. After that, it prepends
 only the entries newer than the last rendered id (`entriesAfter` in
 `src/log/Travelogue.js`, a pure function). It rebuilds only when that anchor
-id is gone, which means that the log was cleared or replaced. The combat log
-uses the same `entriesAfter` call. The same approach fits any list that
+id is gone, which means that the log was cleared or replaced. The log trims
+each kind budget on its own, so a trimmed entry can sit in the middle of the
+list. When the panel has more rows than the log has entries, it removes the
+rows whose ids are gone. The kind filter chips hide rows with a class on the
+list, so a filter change moves no rows. The combat log uses the same
+`entriesAfter` call. The same approach fits any list that
 mostly grows at one end, and it costs less than clearing and rebuilding the
 list for each event.
 

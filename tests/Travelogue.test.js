@@ -6,7 +6,9 @@ import {
   entriesAfter,
   isoTimestamp,
   stampLabel,
+  logAsText,
   logBudget,
+  LOG_KIND_LABELS,
   TRAVELOG_LIMITS,
   TRAVELOG_FIGHT_LIMIT,
 } from '../src/log/Travelogue.js';
@@ -193,4 +195,32 @@ test('stampLabel reads the day and watch, and the round of a fight line', () => 
   assert.equal(stampLabel(fight, true), 'Round 2');
   assert.equal(stampLabel(createEntry('c', 'combat', 'C', 1, {}, { round: 4 })), 'Round 4');
   assert.equal(stampLabel(createEntry('d', 'note', 'D', 1, {}, { clock }), true), 'Day 3, Dusk');
+});
+
+test('logAsText writes one line per entry, oldest first, with the in-game time', () => {
+  const clock = { day: 2, watch: 1 };
+  const log = [
+    createEntry('a', 'travel', 'Entered the Keep.', 0, {}, { clock }),
+    createEntry('b', 'note', 'A note with no clock.', 0),
+    createEntry('c', 'note', 'A bad timestamp.', Number.NaN),
+  ];
+  assert.equal(
+    logAsText(log),
+    [
+      'Day 2, Morning: Entered the Keep.',
+      '1970-01-01T00:00:00.000Z: A note with no clock.',
+      'A bad timestamp.',
+    ].join('\n'),
+  );
+  assert.equal(logAsText([]), '');
+});
+
+test('every entry kind has a filter label', () => {
+  assert.deepEqual(Object.keys(LOG_KIND_LABELS).sort(), [
+    'combat',
+    'note',
+    'rest',
+    'roll',
+    'travel',
+  ]);
 });

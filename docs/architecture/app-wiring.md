@@ -836,7 +836,10 @@ including how the dice tray moves into the screen and back.
 ### storyWiring.js
 
 `storyWiring.js` owns the travelogue (it registers `logEvent`), NPCs,
-quests, and handouts. The handout part lives in `handoutWiring.js`, which
+quests, and handouts. The travelogue panel's note box logs a `note` entry
+through `logEvent`, with `{ gm: true }` for a GM-only note, and its
+**Copy as text** button writes `logAsText` of the shown entries to the
+clipboard. The handout part lives in `handoutWiring.js`, which
 `wireStory` calls. That module mounts the panel, builds the handout dialog,
 and registers `addHandoutAt` for the tile inspector's **New handout on this
 tile** button.
@@ -1039,7 +1042,9 @@ code sets, such as the Map view that `pickMapTile` shows for a pick.
 `diceWiring.js` owns the dice tray and the `rollDice` action, which a weapon
 attack or a spell uses to put its own roll through the tray. Every roll is
 logged to the travelogue. Each entry names the GM, the character that this
-tab is bound to, or "A player" when the tab is a spectator.
+tab is bound to, or "A player" when the tab is a spectator. When the GM
+ticks the tray's **Hidden roll** box, `trayRollLine` (`log/TrayRollLine.js`)
+makes the line GM-only, and a Player tab reads "The GM rolls in secret."
 
 ### shortcuts.js and onboarding.js
 

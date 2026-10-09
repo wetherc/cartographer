@@ -45,13 +45,76 @@
   color: var(--text);
 }
 
-.travelog__clear {
+.travelog__clear,
+.travelog__copy {
   font-size: var(--text-label);
+}
+
+.travelog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.travelog__note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.travelog__note-text {
+  resize: vertical;
+}
+
+.travelog__note-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.travelog__note-add {
+  font-size: var(--text-label);
+}
+
+.travelog__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.travelog__filter-chip {
+  padding: 0.1rem var(--space-2);
+  cursor: pointer;
+}
+
+/* A pressed chip shows its kind, and a released chip reads as switched off. */
+.travelog__filter-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--surface-raised);
+}
+
+.travelog__filter-chip[aria-pressed='false'] {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.travelog__list--hide-travel .travelog__item--travel,
+.travelog__list--hide-note .travelog__item--note,
+.travelog__list--hide-rest .travelog__item--rest,
+.travelog__list--hide-combat .travelog__item--combat,
+.travelog__list--hide-roll .travelog__item--roll {
+  display: none;
 }
 
 /* .btn sets display, which beats the hidden attribute, and an empty log has
    nothing to clear. */
-.travelog__clear[hidden] {
+.travelog__clear[hidden],
+.travelog__copy[hidden],
+.travelog__note[hidden],
+.travelog__filters[hidden] {
   display: none;
 }
 

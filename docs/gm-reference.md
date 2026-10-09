@@ -3021,7 +3021,16 @@ the round, such as "Round 2".
 The two counts are separate. A long fight or many dice rolls remove only
 older Roll and Combat entries, and the story entries stay.
 
-**Clear log** deletes every entry after a confirmation.
+The note box at the top of the Travelogue adds a Note entry of your own,
+such as a ruling or a name that the players made up. Type the text, and
+click **Add note** or press Ctrl+Enter (Cmd+Enter on a Mac). Tick **GM only**
+to keep the note out of every Player tab. The box shows only in a GM tab.
+
+| Control | What it does |
+| --- | --- |
+| Kind chips | Travel, Notes, Rests, Combat, and Rolls. Click a chip to hide or show the entries of that kind. The choice lasts until you reload the tab |
+| Copy as text | Copies the entries that the chips show to the clipboard, oldest first, one line each, such as "Day 1, Dawn: Entered the Keep." Paste it into your session notes |
+| Clear log | Deletes every entry after a confirmation |
 
 ### Dice tray
 

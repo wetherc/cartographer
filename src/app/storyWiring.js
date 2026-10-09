@@ -2,7 +2,7 @@ import { viewedPlacement } from './locationFields.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
-import { appendEntry, createEntry, TRAVELOG_LIMITS } from '../log/Travelogue.js';
+import { appendEntry, createEntry, logAsText, TRAVELOG_LIMITS } from '../log/Travelogue.js';
 import { entriesFor } from '../log/LogVisibility.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import { segSwitch } from '../ui/buttons.js';
@@ -101,6 +101,20 @@ export function wireStory(app) {
     // A Player tab reads the player line of a GM-only entry, or nothing.
     getEntries: () => entriesFor(state.travelog, state.role),
     getRole: () => state.role,
+    // A note from the GM is a story entry. A GM-only note has no player
+    // line, so a Player tab does not list it.
+    onAddNote: (text, gmOnly) => app.actions.logEvent('note', text, { gm: gmOnly }),
+    canAddNotes: () => isGM(state.role),
+    onCopy: async (entries) => {
+      try {
+        await navigator.clipboard.writeText(logAsText(entries));
+        app.toasts.show(
+          `Copied ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} as text.`,
+        );
+      } catch {
+        app.toasts.show('The browser did not allow a copy to the clipboard.');
+      }
+    },
     onClear: async () => {
       if (state.travelog.length === 0) return false;
       const ok = await confirmModal('Clear the travelogue? Its recorded events are lost.', {

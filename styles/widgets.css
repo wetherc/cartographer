@@ -134,7 +134,8 @@
   text-align: center;
 }
 
-/* The DC field and the Roll button share the last line of the tray. */
+/* The DC field, the Hidden roll box, and the Roll button share the last
+   line of the tray, and they wrap in a narrow column. */
 .dice-tray__footer {
   display: flex;
   align-items: center;

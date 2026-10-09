@@ -143,3 +143,33 @@ export function isoTimestamp(at) {
   const date = new Date(at);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+
+/**
+ * The name of each entry kind, as the filter chips of the travelogue panel
+ * show it. The order is the order of the chips.
+ * @type {Readonly<Record<LogEntryKind, string>>}
+ */
+export const LOG_KIND_LABELS = Object.freeze({
+  travel: 'Travel',
+  note: 'Notes',
+  rest: 'Rests',
+  combat: 'Combat',
+  roll: 'Rolls',
+});
+
+/**
+ * The entries as plain text, one line each, oldest first, for the GM to
+ * paste into session notes. Each line starts with the in-game time of the
+ * entry (see `stampLabel`), or with the ISO timestamp for an entry with no
+ * in-game time.
+ * @param {LogEntry[]} entries
+ * @returns {string}
+ */
+export function logAsText(entries) {
+  return entries
+    .map((entry) => {
+      const stamp = stampLabel(entry) ?? isoTimestamp(entry.at);
+      return stamp ? `${stamp}: ${entry.message}` : entry.message;
+    })
+    .join('\n');
+}
