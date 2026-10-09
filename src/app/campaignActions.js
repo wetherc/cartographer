@@ -272,6 +272,7 @@ export function wireCampaignActions(app) {
     }
     externalSaves.noteWritten(result.json, result.mark);
     patches.rebase();
+    patches.landed();
     reportHistory(result.history);
     refreshHistoryButtons();
     return true;

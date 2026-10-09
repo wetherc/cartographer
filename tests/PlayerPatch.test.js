@@ -9,8 +9,10 @@ import {
   PATCH_KEY_PREFIX,
   clearPatch,
   decodePatch,
+  discardPatches,
   encodePatch,
   onPlayerPatch,
+  storedPatches,
   writePatch,
 } from '../src/storage/PlayerPatch.js';
 import { wirePlayerPatches } from '../src/app/playerPatches.js';
@@ -57,15 +59,15 @@ test('a patch round-trips through its encoding', () => {
   assert.equal(decodePatch('{"n":1}'), null, 'a record without ops is not a patch');
 });
 
-test('writePatch stores under the tab key, and a full origin returns false', () => {
+test('writePatch stores each patch under its own key, and a full origin returns false', () => {
   const store = installLocalStorage();
   assert.equal(writePatch('abc', []), true);
-  assert.ok(store.has(`${PATCH_KEY_PREFIX}abc`));
-  const first = store.get(`${PATCH_KEY_PREFIX}abc`);
   writePatch('abc', []);
-  assert.notEqual(store.get(`${PATCH_KEY_PREFIX}abc`), first, 'equal ops still change the value');
-  clearPatch(`${PATCH_KEY_PREFIX}abc`);
-  assert.equal(store.has(`${PATCH_KEY_PREFIX}abc`), false);
+  const keys = [...store.keys()];
+  assert.equal(keys.length, 2, 'a second patch does not overwrite the first');
+  assert.ok(keys.every((k) => k.startsWith(`${PATCH_KEY_PREFIX}abc:`)));
+  clearPatch(keys[0]);
+  assert.equal(store.has(keys[0]), false);
 
   globalThis.localStorage.setItem = () => {
     throw new Error('QuotaExceededError');
@@ -105,7 +107,7 @@ test('each patch holds only the edits since the previous one', () => {
   const store = installLocalStorage();
   installWindow();
   const { app, patches } = tab('player');
-  const key = () => [...store.keys()].find((k) => k.startsWith(PATCH_KEY_PREFIX)) ?? '';
+  const key = () => [...store.keys()].filter((k) => k.startsWith(PATCH_KEY_PREFIX)).at(-1) ?? '';
 
   assert.equal(patches.send(), true);
   assert.equal(key(), '', 'no edit, no patch');
@@ -130,20 +132,70 @@ test('each patch holds only the edits since the previous one', () => {
   assert.equal(patches.send(), false, 'a failed write keeps the edit unsent');
 });
 
-test('the GM tab merges a patch into its own edits and removes the key', () => {
+test('the GM tab merges a patch into its own edits and removes the key once saved', () => {
   const store = installLocalStorage();
   const fire = installWindow();
   const gm = tab('gm');
   gm.app.state.splitParty = true; // the GM's own unsaved edit
-  const key = `${PATCH_KEY_PREFIX}p1`;
-  store.set(key, 'x');
+  const key = `${PATCH_KEY_PREFIX}p1:1`;
+  const value = encodePatch([{ p: ['quests', 'q1'], t: QUEST, i: 0 }], 1);
+  store.set(key, value);
 
-  fire('storage', storageEvent(key, encodePatch([{ p: ['quests', 'q1'], t: QUEST, i: 0 }], 1)));
+  fire('storage', storageEvent(key, value));
 
   assert.deepEqual(gm.app.state.quests, [QUEST]);
   assert.equal(gm.app.state.splitParty, true, 'the GM edit stays');
-  assert.equal(store.has(key), false);
   assert.equal(gm.merged(), 1);
+  assert.equal(store.has(key), true, 'the key stays until the save lands');
+  gm.patches.mergeQueued();
+  assert.equal(gm.merged(), 1, 'a merged patch does not merge again');
+  gm.patches.landed();
+  assert.equal(store.has(key), false);
+});
+
+test('a patch left in storage by a GM tab that reloaded merges on the next boot', () => {
+  const store = installLocalStorage();
+  installWindow();
+  store.set(`${PATCH_KEY_PREFIX}p1:2`, encodePatch([{ p: ['quests', 'q1'], f: QUEST, i: 0 }], 2));
+  store.set(`${PATCH_KEY_PREFIX}p1:1`, encodePatch([{ p: ['quests', 'q1'], t: QUEST, i: 0 }], 1));
+  store.set(`${PATCH_KEY_PREFIX}p0:1`, encodePatch([{ p: ['splitParty'], f: false, t: true }], 1));
+  store.set(`${PATCH_KEY_PREFIX}bad:1`, 'garbage');
+  const player = tab('player');
+  player.patches.mergeQueued();
+  assert.equal(player.merged(), 0, 'a Player tab leaves the patches to the GM tab');
+
+  const gm = tab('gm');
+  gm.patches.mergeQueued();
+  assert.equal(gm.merged(), 3);
+  assert.deepEqual(gm.app.state.quests, [], 'each tab applies in the order it wrote');
+  assert.equal(gm.app.state.splitParty, true);
+  assert.equal(store.has(`${PATCH_KEY_PREFIX}bad:1`), false, 'a key that is not a patch goes');
+  gm.patches.landed();
+  assert.equal(storedPatches().length, 0);
+});
+
+test('a tab that leaves the GM role sends its unsaved merges and drops their keys', () => {
+  const store = installLocalStorage();
+  const fire = installWindow();
+  const gm = tab('gm');
+  const key = `${PATCH_KEY_PREFIX}p1:1`;
+  const value = encodePatch([{ p: ['quests', 'q1'], t: QUEST, i: 0 }], 1);
+  store.set(key, value);
+  fire('storage', storageEvent(key, value));
+  gm.app.state.role = 'player';
+  assert.equal(gm.patches.send(), true);
+  assert.equal(store.has(key), false);
+  assert.equal(storedPatches().length, 1, 'the new patch has the quest');
+  assert.deepEqual(storedPatches()[0].ops, [{ p: ['quests', 'q1'], t: QUEST, i: 0 }]);
+});
+
+test('discardPatches removes every stored patch and nothing else', () => {
+  const store = installLocalStorage();
+  writePatch('a', []);
+  writePatch('b', []);
+  store.set('campaign-builder:save', 'x');
+  discardPatches();
+  assert.deepEqual([...store.keys()], ['campaign-builder:save']);
 });
 
 test('a player tab ignores another player tab patch', () => {
@@ -159,13 +211,18 @@ test('a player tab ignores another player tab patch', () => {
 });
 
 test('a patch that arrives in Build mode waits for Play mode, in order', () => {
-  installLocalStorage();
+  const store = installLocalStorage();
   const fire = installWindow();
   const gm = tab('gm');
   gm.app.state.mode = 'build';
-  const key = `${PATCH_KEY_PREFIX}p1`;
-  fire('storage', storageEvent(key, encodePatch([{ p: ['quests', 'q1'], t: QUEST, i: 0 }], 1)));
-  fire('storage', storageEvent(key, encodePatch([{ p: ['quests', 'q1'], f: QUEST, i: 0 }], 2)));
+  /** @param {number} n @param {any[]} ops */
+  const arrive = (n, ops) => {
+    const key = `${PATCH_KEY_PREFIX}p1:${n}`;
+    store.set(key, encodePatch(ops, n));
+    fire('storage', storageEvent(key, encodePatch(ops, n)));
+  };
+  arrive(1, [{ p: ['quests', 'q1'], t: QUEST, i: 0 }]);
+  arrive(2, [{ p: ['quests', 'q1'], f: QUEST, i: 0 }]);
   assert.deepEqual(gm.app.state.quests, []);
 
   gm.patches.mergeQueued();
@@ -200,7 +257,7 @@ test('a player patch never sends back a GM-only line it adopted, and keeps the f
   const store = installLocalStorage();
   installWindow();
   const { app, patches } = tab('player');
-  const key = () => [...store.keys()].find((k) => k.startsWith(PATCH_KEY_PREFIX)) ?? '';
+  const key = () => [...store.keys()].filter((k) => k.startsWith(PATCH_KEY_PREFIX)).at(-1) ?? '';
   // The GM tab's save brings a GM-only line, and the player tab adopts it.
   const secret = { id: 'g1', at: 1, kind: 'combat', message: 'Pool of 15 HP.', gm: true };
   app.state.travelog = [secret];

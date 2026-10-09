@@ -1,6 +1,6 @@
 import { campaignFromLiveState } from '../campaign/Campaigns.js';
 import { GM_LOCK_KEY, isLockActive, loadLock } from '../storage/GMLock.js';
-import { clearPatch, onPlayerPatch, writePatch } from '../storage/PlayerPatch.js';
+import { clearPatch, onPlayerPatch, storedPatches, writePatch } from '../storage/PlayerPatch.js';
 import { applyOps, diffState } from '../storage/StateDiff.js';
 import { isGM } from '../view/ViewRole.js';
 import { rehydrateCampaign } from './rehydrate.js';
@@ -22,11 +22,17 @@ import { rehydrateCampaign } from './rehydrate.js';
  * The GM tab merges only in Play and combat mode, for the reason that
  * `adoptExternalSave` gives: a re-hydrate in Build mode leaves the stroke
  * history and the tile inspector on nodes that are no longer live. A patch
- * that arrives in Build or Library mode waits in `queued`, and
- * `mergeQueued` applies it on the next mode change. Each patch applies on
- * its own, in arrival order, because `applyOps` runs all removals before all
- * insertions, and one combined list would drop an entry that a later patch
- * removed after an earlier one inserted it.
+ * that arrives in Build or Library mode waits in storage, and `mergeQueued`
+ * applies every stored patch on the next mode change or role change. Each
+ * patch applies on its own, in the order its tab wrote it, because
+ * `applyOps` runs all removals before all insertions, and one combined list
+ * would drop an entry that a later patch removed after an earlier one
+ * inserted it.
+ *
+ * A merged patch stays in storage until `landed` reports a save of the
+ * merged campaign. A reload (Undo, Redo, an adopted save) or a closed tab
+ * before that save then loses nothing, because the next GM tab to enter
+ * Play mode merges the stored patches again.
  * @param {AppContext} app
  * @param {{ buildCurrentState: () => CampaignState, onMerged: () => void }} hooks
  *   `onMerged` runs after a merge changed the live campaign, so the GM tab
@@ -35,27 +41,37 @@ import { rehydrateCampaign } from './rehydrate.js';
 export function wirePlayerPatches(app, { buildCurrentState, onMerged }) {
   const tabId = Math.random().toString(36).slice(2, 10);
   let base = buildCurrentState();
-  /** @type {DiffOp[][]} */
-  const queued = [];
+  /** Keys of the patches merged into the live campaign but not yet saved. */
+  const merged = new Set();
 
   const canMerge = () => app.state.mode === 'play' || app.state.mode === 'combat';
 
-  /** @param {DiffOp[]} ops */
-  function merge(ops) {
+  /**
+   * Merge one patch. A patch that cannot merge is removed, so it does not
+   * fail again on every mode change.
+   * @param {string} key
+   * @param {DiffOp[]} ops
+   */
+  function merge(key, ops) {
+    if (merged.has(key)) return;
     try {
       rehydrateCampaign(app, campaignFromLiveState(applyOps(buildCurrentState(), ops)));
     } catch (error) {
       console.warn('Could not merge a player tab edit.', error);
+      clearPatch(key);
       return;
     }
+    merged.add(key);
     onMerged();
   }
 
+  function dropMerged() {
+    for (const key of merged) clearPatch(key);
+    merged.clear();
+  }
+
   onPlayerPatch((ops, key) => {
-    if (!isGM(app.state.role)) return;
-    clearPatch(key);
-    if (canMerge()) merge(ops);
-    else queued.push(ops);
+    if (isGM(app.state.role) && canMerge()) merge(key, ops);
   });
 
   return {
@@ -71,16 +87,25 @@ export function wirePlayerPatches(app, { buildCurrentState, onMerged }) {
       const ops = diffState(base, next);
       if (ops.length > 0 && !writePatch(tabId, ops)) return false;
       base = next;
+      // A tab that left the GM role sends its unsaved merges inside this patch,
+      // so their own keys go, or the next GM tab would merge them twice.
+      dropMerged();
       return true;
     },
     /** Record that the live campaign now matches storage. */
     rebase() {
       base = buildCurrentState();
     },
-    /** Apply the patches that arrived outside Play and combat mode. */
+    /** Remove the merged patches, after a save of the live campaign landed. */
+    landed: dropMerged,
+    /**
+     * Apply the stored patches that this tab has not merged: those that
+     * arrived outside Play and combat mode, and those left by a GM tab that
+     * reloaded or closed before its save landed.
+     */
     mergeQueued() {
       if (!canMerge() || !isGM(app.state.role)) return;
-      for (const ops of queued.splice(0)) merge(ops);
+      for (const { key, ops } of storedPatches()) merge(key, ops);
     },
   };
 }

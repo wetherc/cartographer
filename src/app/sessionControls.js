@@ -43,6 +43,10 @@ export function wireSessionControls(app) {
   // over the same campaign data. Play is the live-session view, Build is
   // the campaign-authoring view, and Library edits the reusable template
   // collection that lives outside any campaign.
+  // False until the starting role has claimed or failed to claim the GM
+  // lock. Before that, a tab that opens as GM beside a live GM tab would
+  // merge the stored player patches although it ends in the Player view.
+  let roleSettled = false;
   const modeSwitch = segSwitch({
     ariaLabel: 'App mode',
     options: [
@@ -71,7 +75,7 @@ export function wireSessionControls(app) {
       app.actions.onModeChanged(mode);
       // A player tab's edit that arrived in Build or Library mode waits for
       // Play or combat mode.
-      app.actions.mergeQueuedPatches();
+      if (roleSettled) app.actions.mergeQueuedPatches();
       // The party panels skip their refresh while the combat screen covers
       // them, so they catch up here.
       if (leftCombat) app.actions.refreshSelectedCharacter();
@@ -191,11 +195,17 @@ export function wireSessionControls(app) {
       app.state.role = role;
       sessionStorage.setItem('campaign-builder:role', role);
       applyRole();
+      // A tab that takes over the GM role merges the patches still stored.
+      if (roleSettled) app.actions.mergeQueuedPatches();
     },
   });
   mustGetElement('role-switch-container').appendChild(roleSwitch.element);
   // Run the consequences for the starting role, exactly as a click does.
   roleSwitch.setValue(app.state.role);
+  // A GM tab merges the player patches that a GM tab left in storage when
+  // it reloaded or closed before its save landed.
+  roleSettled = true;
+  app.actions.mergeQueuedPatches();
 
   // A settled Player tab, for example a shared table display, can be
   // locked so a stray tap cannot flip it to GM once the GM tab closes and

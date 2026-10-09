@@ -14,17 +14,21 @@
  * only the fields the player touched. When both tabs change the same field,
  * the patch wins, because the GM tab applies it after its own edit.
  *
- * Each tab writes under its own key, so two player tabs cannot overwrite
- * each other's pending patch. The GM tab removes a key once it has read the
- * patch. The browser delivers the value in the `storage` event itself, so a
- * patch that replaced the key before the removal still arrives.
+ * Each patch has its own key, made from the writing tab's id and the
+ * patch's count, so no patch overwrites another that the GM tab has not
+ * merged. The GM tab removes a key only after a save that contains the merge
+ * lands. A patch that is still in storage when the GM tab reloads or closes
+ * is merged on the next boot of a GM tab (`storedPatches`).
  */
 
 import { removeStored, writeStored } from './Footprint.js';
 
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 
-/** The prefix of every patch key. The rest of the key is the writing tab's id. */
+/**
+ * The prefix of every patch key. The rest of the key is the writing tab's
+ * id, a colon, and the count of the patch in that tab.
+ */
 export const PATCH_KEY_PREFIX = 'campaign-builder:patch:';
 
 /**
@@ -67,7 +71,7 @@ export function decodePatch(raw) {
 export function writePatch(tabId, ops) {
   written += 1;
   try {
-    writeStored(PATCH_KEY_PREFIX + tabId, encodePatch(ops, written));
+    writeStored(`${PATCH_KEY_PREFIX}${tabId}:${written}`, encodePatch(ops, written));
     return true;
   } catch {
     return false;
@@ -75,7 +79,46 @@ export function writePatch(tabId, ops) {
 }
 
 /**
- * Remove a patch that the GM tab has read.
+ * The patches in storage, in the order each tab wrote them. A key whose
+ * value is not a patch is removed. The order between two tabs is by tab id,
+ * because storage keeps no write time.
+ * @returns {{ key: string, ops: DiffOp[] }[]}
+ */
+export function storedPatches() {
+  /** @type {{ key: string, ops: DiffOp[], tab: string, n: number }[]} */
+  const found = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(PATCH_KEY_PREFIX)) continue;
+    const rest = key.slice(PATCH_KEY_PREFIX.length);
+    const colon = rest.lastIndexOf(':');
+    const ops = decodePatch(localStorage.getItem(key) ?? '');
+    found.push({
+      key,
+      ops: ops ?? [],
+      tab: rest.slice(0, colon),
+      n: ops ? Number(rest.slice(colon + 1)) : NaN,
+    });
+  }
+  const bad = found.filter((p) => !Number.isFinite(p.n));
+  for (const { key } of bad) removeStored(key);
+  return found
+    .filter((p) => Number.isFinite(p.n))
+    .sort((a, b) => (a.tab === b.tab ? a.n - b.n : a.tab < b.tab ? -1 : 1))
+    .map(({ key, ops }) => ({ key, ops }));
+}
+
+/**
+ * Remove every stored patch. A campaign that replaces the live one (New,
+ * Load example, Import) drops the patches, because their ops name entities
+ * of the replaced campaign.
+ */
+export function discardPatches() {
+  for (const { key } of storedPatches()) removeStored(key);
+}
+
+/**
+ * Remove a patch that the GM tab has merged and saved.
  * @param {string} key
  */
 export function clearPatch(key) {

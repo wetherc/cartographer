@@ -21,6 +21,7 @@ import {
 } from '../storage/SaveNotices.js';
 import { replaceIsUndoable, saveCampaign } from '../storage/HistoryLog.js';
 import { mirrorActive } from '../storage/AssetMirror.js';
+import { discardPatches } from '../storage/PlayerPatch.js';
 import { confirmShortenedImport } from './shortenedLoadPrompts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -60,6 +61,9 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
       return;
     }
     const loss = historyLossMessage(historyLoss(result.history), '');
+    // Patches of player tabs name entities of the campaign that this one
+    // replaces, so the next GM boot does not merge them.
+    discardPatches();
     queueToastAfterReload([toastMessage, message, loss].filter(Boolean).join(' '));
     setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
     location.reload();

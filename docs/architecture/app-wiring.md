@@ -265,13 +265,19 @@ of the changes is lost when a tab reloads onto the other's save.
 
 While the GM lock is live, `playerPatches.js` diffs the player tab's state
 against the state that it last sent, saved, or adopted. It writes only those
-ops under the tab's own key (`storage/PlayerPatch.js`), through the 250 ms
-flush. The GM tab applies each patch to its live campaign through
-`rehydrateCampaign` and saves at once. The player tabs then adopt that save
-in the usual way.
+ops under a new key of its own (`storage/PlayerPatch.js`), through the 250 ms
+flush. The key names the tab and the count of the patch. The GM tab applies
+each patch to its live campaign through `rehydrateCampaign` and saves at
+once. The player tabs then adopt that save in the usual way.
 
-A patch that arrives while the GM tab is in Build or Library mode waits for
-the next switch to Play or combat mode (`mergeQueuedPatches`). With no GM tab
+The GM tab removes a patch key only after a save of the merged campaign
+lands (`landed`). A patch that arrives while the GM tab is in Build or
+Library mode stays in storage until the next switch to Play or combat mode
+(`mergeQueuedPatches`). The GM tab also merges the stored patches when it
+boots and when it takes the GM role. A GM tab that reloads (Undo, Redo, an
+adopted save) or closes before its save lands therefore loses no player
+edit. New, Load example, and Import remove every stored patch, because its
+ops name entities of the replaced campaign. With no GM tab
 open, a player tab writes the whole campaign, after the same storage check
 as a GM tab. If the GM tab saves before it merges a patch, a player tab that
 adopts that save by a full load shows its own edit again only after the
