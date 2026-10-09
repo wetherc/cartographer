@@ -50,6 +50,19 @@ function multiclassGrant(grant = {}) {
   return { armor: [], weaponCategories: [], weaponNamed: [], tools: [], ...grant };
 }
 
+/** The Fighter subclass that crits more often and adds half proficiency to
+ * physical checks. `Features.critRange` reads the two crit features, and
+ * `Checks.halfProficiency` reads Remarkable Athlete. */
+const CHAMPION = {
+  id: 'champion',
+  name: 'Champion',
+  features: {
+    3: ['Improved Critical'],
+    7: ['Remarkable Athlete'],
+    15: ['Superior Critical'],
+  },
+};
+
 /** The Fighter subclass that casts from the wizard list with INT, on the
  * third-caster slot table. */
 const ELDRITCH_KNIGHT = {
@@ -306,7 +319,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 3,
       subclassLabel: 'Martial Archetype',
-      subclasses: [{ id: 'champion', name: 'Champion' }, ELDRITCH_KNIGHT],
+      subclasses: [CHAMPION, ELDRITCH_KNIGHT],
       asiLevels: [4, 6, 8, 12, 14, 16, 19],
       multiclassPrereq: [{ STR: 13 }, { DEX: 13 }],
       multiclassGrant: multiclassGrant({

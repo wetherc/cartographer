@@ -532,6 +532,9 @@ export type AsiChoice =
       /** The extra hit points per class level the feat grants, which
        * `HitDice.classMaxHP` adds to the maximum. */
       hpPerLevel?: number;
+      /** The bonus to initiative the feat grants, which
+       * `Checks.initiativeBonus` adds. */
+      initiativeBonus?: number;
     };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).

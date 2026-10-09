@@ -40,6 +40,7 @@ export function featSummary(feat) {
     }
     if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
     if (effect.kind === 'hp') return `+${effect.perLevel} HP per level`;
+    if (effect.kind === 'initiative') return `+${effect.bonus} initiative`;
     return [
       effect.skills ? `${effect.skills.choose} skill${effect.skills.choose > 1 ? 's' : ''}` : '',
       effect.saves ? `${effect.saves.choose} save${effect.saves.choose > 1 ? 's' : ''}` : '',

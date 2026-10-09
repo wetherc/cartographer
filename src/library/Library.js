@@ -483,6 +483,11 @@ export function normalizeFeat(raw, id) {
           const perLevel = clampInt(e.perLevel, 0, 10, 0);
           return perLevel > 0 ? [{ kind: /** @type {'hp'} */ ('hp'), perLevel }] : [];
         }
+        if (e.kind === 'initiative') {
+          // A whole bonus from 1 to 10. Zero grants nothing.
+          const bonus = clampInt(e.bonus, 0, 10, 0);
+          return bonus > 0 ? [{ kind: /** @type {'initiative'} */ ('initiative'), bonus }] : [];
+        }
         const skills = normalizeChoice(e.skills, SKILL_IDS);
         const saves = normalizeChoice(e.saves, ABILITY_SCORES);
         const expertise = normalizeChoice(e.expertise, SKILL_IDS);

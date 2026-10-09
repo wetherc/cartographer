@@ -39,7 +39,9 @@ export type FeatEffect =
   | { kind: 'rider'; rider: RollRider }
   /** Raise the hit point maximum by `perLevel` for each class level the
    * taker has, now and at every later level (the Tough feat). */
-  | { kind: 'hp'; perLevel: number };
+  | { kind: 'hp'; perLevel: number }
+  /** Add `bonus` to the taker's initiative (the Alert feat). */
+  | { kind: 'initiative'; bonus: number };
 
 /**
  * Proficiency lists, one per kind, as a feat or class-feature record stores
@@ -73,6 +75,8 @@ export interface FeatStamp {
   rider?: RollRider;
   /** The extra hit points per class level that the feat grants. */
   hpPerLevel?: number;
+  /** The bonus to initiative that the feat grants. */
+  initiativeBonus?: number;
 }
 
 /** The checked part of a feat prerequisite. Every named part has to hold. */

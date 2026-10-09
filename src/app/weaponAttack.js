@@ -198,7 +198,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
   const attackerName = logName(app, attacker);
   const defenderName = logName(app, defender);
   const setup = prepareSwing({ attacker, defender, weapon, tweaks, rng });
-  const { ac, autoCrit, rider } = setup;
+  const { ac, autoCrit, critOn, rider } = setup;
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...setup.tweak.counts },
@@ -212,14 +212,15 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
   // A roll that hits can still miss when the defender raises its AC with a
   // reaction (Shield). The question comes before the log line, so the line
   // states the AC that the roll answered to in the end. A natural 20 hits
-  // whatever the AC, so it asks nothing.
-  const first = resolveAttack({ natural, total: result.total, ac, autoCrit });
-  const ward = first.hit && natural !== 20 ? pendingWard(app, defender.id, attacker.id) : null;
+  // whatever the AC, so it asks nothing. So does any natural roll in the
+  // attacker's crit range.
+  const first = resolveAttack({ natural, total: result.total, ac, autoCrit, critOn });
+  const ward = first.hit && natural < critOn ? pendingWard(app, defender.id, attacker.id) : null;
   /** @param {number} raised how much the defender's reaction raised its AC */
   const land = (raised) => {
     const warded = ac + raised;
     const { crit, hit, outcome } = raised
-      ? resolveAttack({ natural, total: result.total, ac: warded, autoCrit })
+      ? resolveAttack({ natural, total: result.total, ac: warded, autoCrit, critOn })
       : first;
     app.actions.logEvent(
       'combat',

@@ -2,26 +2,36 @@
  * The text of the initiative badge on the character sheet. Pure.
  */
 
+import { initiativeBonus } from '../entities/Checks.js';
+import { effectiveStats } from '../entities/Equipment.js';
 import { d20Penalty } from '../entities/Exhaustion.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
-import { effectiveStat } from '../entities/Stats.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * The badge label and its tooltip. The bonus is the DEX modifier of the
- * effective score plus the exhaustion penalty, the same terms that
- * `rollInitiative` uses, so the badge matches the roll in combat setup.
+ * The badge label and its tooltip. The bonus is `Checks.initiativeBonus`
+ * plus the exhaustion penalty, the same terms that `rollInitiative` uses, so
+ * the badge matches the roll in combat setup. The tooltip names the DEX
+ * modifier, the class features and feats on top of it, and exhaustion.
  * @param {Character} character
  * @returns {{ label: string, note: string }}
  */
 export function initiativeReadout(character) {
-  const dex = abilityModifier(effectiveStat(character, 'DEX').total);
+  const bonus = initiativeBonus(character);
+  const dex = abilityModifier(effectiveStats(character).DEX ?? 10);
   const tired = d20Penalty(character);
+  const extra = bonus - dex;
+  const terms = [
+    `DEX modifier ${formatModifier(dex)}`,
+    ...(extra ? [`features and feats ${formatModifier(extra)}`] : []),
+    ...(tired ? [`exhaustion ${tired}`] : []),
+  ];
   return {
-    label: `Init ${formatModifier(dex + tired)}`,
-    note: tired
-      ? `Initiative bonus: DEX modifier ${formatModifier(dex)}, exhaustion ${tired}`
-      : 'Initiative bonus (DEX modifier)',
+    label: `Init ${formatModifier(bonus + tired)}`,
+    note:
+      terms.length > 1
+        ? `Initiative bonus: ${terms.join(', ')}`
+        : 'Initiative bonus (DEX modifier)',
   };
 }

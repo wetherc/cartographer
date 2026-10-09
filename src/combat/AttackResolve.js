@@ -73,12 +73,16 @@ export function attackerProficientWith(attacker, weapon) {
  * `autoCrit` turns any hit into a critical one. A paralyzed or unconscious
  * defender does that to a melee attacker. It never turns a miss into a hit,
  * so a natural 1 and a total under AC still fail.
- * @param {{ natural: number, total: number, ac: number, autoCrit?: boolean }} roll
+ *
+ * `critOn` is the lowest natural roll that crits, 20 by default. A Champion
+ * fighter crits on 19 or 18 (see `Features.critRange`), and a natural roll in
+ * that range hits whatever the AC, as a natural 20 does.
+ * @param {{ natural: number, total: number, ac: number, autoCrit?: boolean, critOn?: number }} roll
  * @returns {{ crit: boolean, hit: boolean, outcome: string }}
  */
-export function resolveAttack({ natural, total, ac, autoCrit = false }) {
-  const hit = natural !== 1 && (natural === 20 || total >= ac);
-  const crit = hit && (natural === 20 || autoCrit);
+export function resolveAttack({ natural, total, ac, autoCrit = false, critOn = 20 }) {
+  const hit = natural !== 1 && (natural >= critOn || total >= ac);
+  const crit = hit && (natural >= critOn || autoCrit);
   const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
   return { crit, hit, outcome };
 }

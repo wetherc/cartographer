@@ -12,7 +12,7 @@
 import { deepFreeze } from '../util/deepFreeze.js';
 
 /** The effect kinds a feat can carry. @type {import('../types/feat.js').FeatEffect['kind'][]} */
-export const FEAT_EFFECT_KINDS = ['asi', 'proficiency', 'rider', 'hp'];
+export const FEAT_EFFECT_KINDS = ['asi', 'proficiency', 'rider', 'hp', 'initiative'];
 
 /** @type {Feat[]} */
 export const DEFAULT_FEATS = deepFreeze([
@@ -24,6 +24,14 @@ export const DEFAULT_FEATS = deepFreeze([
       'checks made to pass yourself off as someone else, and you can mimic the ' +
       'speech of a person you have heard.',
     effects: [{ kind: 'asi', abilities: ['CHA'] }],
+  },
+  {
+    id: 'alert',
+    name: 'Alert',
+    description:
+      'You gain +5 to initiative. You cannot be surprised while you are conscious, ' +
+      'and a creature you cannot see gains no advantage on attacks against you.',
+    effects: [{ kind: 'initiative', bonus: 5 }],
   },
   {
     id: 'athlete',

@@ -3,7 +3,7 @@ import { attackTweak, rollDamage } from '../dice/DiceRoller.js';
 import { attackAbility, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
-import { sneakAttackDice } from '../entities/Features.js';
+import { critRange, sneakAttackDice } from '../entities/Features.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { hitRiderNote, hitRiderParts, hitRiders } from '../entities/HitRiders.js';
@@ -65,6 +65,7 @@ import {
  *   cover: number,
  *   ac: number,
  *   autoCrit: boolean,
+ *   critOn: number,
  * }} SwingSetup
  */
 
@@ -174,6 +175,8 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     // A helpless defender turns any melee hit into a critical one, without a
     // natural 20.
     autoCrit: autoCrits(defender.conditions, { melee }),
+    // The lowest natural d20 that crits: 20, or less for a Champion.
+    critOn: critRange(attacker),
   };
 }
 

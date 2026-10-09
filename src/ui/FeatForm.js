@@ -92,6 +92,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   const profEffect = feat?.effects.find((e) => e.kind === 'proficiency');
   const riderEffect = feat?.effects.find((e) => e.kind === 'rider');
   const hpEffect = feat?.effects.find((e) => e.kind === 'hp');
+  const initEffect = feat?.effects.find((e) => e.kind === 'initiative');
 
   // --- Ability increase ------------------------------------------------------
   const asi = checkbox('Ability increase (+1)', !!asiEffect);
@@ -170,6 +171,13 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   });
   setTip(hpInput, 'Extra maximum HP for each class level the taker has. 0 for none.');
   const hpRow = fieldRow(labeled('HP per level', hpInput));
+  const initInput = numberField(initEffect?.bonus ?? 0, {
+    className: 'form__number',
+    min: 0,
+    max: 10,
+  });
+  setTip(initInput, 'Bonus the taker adds to initiative. 0 for none.');
+  const initRow = fieldRow(labeled('Initiative bonus', initInput));
 
   // A grid of options means nothing while its count is 0, and the rider and
   // ability controls mean nothing while their sections are off.
@@ -226,6 +234,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
           languages: splitList(languagesInput.value),
         },
         { kind: 'hp', perLevel: hpInput.value },
+        { kind: 'initiative', bonus: initInput.value },
         ...(rider.input.checked
           ? [
               {
@@ -262,6 +271,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       armorRow,
       toolsRow,
       hpRow,
+      initRow,
       fieldRow(rider.label),
       riderRow,
       riderRollsRow,

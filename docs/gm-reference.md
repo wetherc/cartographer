@@ -1810,6 +1810,10 @@ The app follows the 5e rules for the rolls in this section.
 - Armor that the character is not trained for gives disadvantage on every
   attack roll.
 - A natural 20 hits whatever the AC is, and every damage die rolls twice.
+- A Champion fighter scores a critical hit on a weapon attack with a
+  natural 19 or 20 from level 3 (Improved Critical), and with a natural 18
+  to 20 from level 15 (Superior Critical). Such a roll also hits whatever
+  the AC is.
 - A natural 1 always misses.
 - On a hit, the damage dice roll with the ability modifier added.
   Proficiency never adds to damage.
@@ -1901,7 +1905,10 @@ An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
 #### Initiative
 
-Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
+Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. A
+character adds more terms to it. Jack of All Trades (bard 2) adds half the
+proficiency bonus, rounded down. Remarkable Athlete (Champion 7) adds half,
+rounded up, and the larger of the two applies. The Alert feat adds 5. The
 default initiative value is 10 plus the modifier. On a tie, the combatant
 with the higher DEX modifier goes first, and then the name decides.
 
@@ -1911,6 +1918,7 @@ Initiative is a Dexterity check, and it rolls as one.
   poisoned or frightened combatant rolls two d20s and keeps the lower one.
 - Armor that the character is not trained for does the same.
 - Exhaustion takes 2 off the total for each level.
+- Feral Instinct (barbarian 7) gives advantage.
 
 The log line says what happened to each roll, for example: `Initiative
 rolled: Ser Aldric 17, Mirelle 6 (at disadvantage (dropped 15), Poisoned
@@ -2402,6 +2410,14 @@ A dot in front of each save or skill shows how trained the character is.
 | Ringed | Expertise, which doubles the proficiency bonus |
 
 A key under passive Perception shows the solid and the ringed dot.
+
+Some class features change these bonuses. Jack of All Trades (bard 2) adds
+half the proficiency bonus, rounded down, to every check without
+proficiency. Remarkable Athlete (Champion 7) adds half, rounded up, to a
+STR, DEX, or CON check without proficiency. Aura of Protection (paladin 6)
+adds the paladin's CHA modifier, at least +1, to its own saves, and the
+GM applies the aura to allies. Diamond Soul (monk 14) makes every save
+proficient, so every save shows the solid dot.
 
 Passive Perception is 10 plus the Perception bonus. Compare it against a
 hidden thing when nobody says they are looking.

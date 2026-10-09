@@ -10,10 +10,10 @@
  * because they are pure and can be read without a document.
  */
 
-import { checkBonus, saveBonus, passivePerception } from '../entities/Checks.js';
+import { checkBonus, saveBonus, passivePerception, proficientSave } from '../entities/Checks.js';
 import { stealthPenalty } from '../entities/Armor.js';
 import { formatModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
-import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
+import { isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
 import { SKILL_ABILITIES, SKILL_IDS, skillDescription, skillName } from '../data/skills.js';
 import { abilityDescription, abilityName } from '../data/abilities.js';
 import { bareButton, sectionLabel } from './buttons.js';
@@ -91,7 +91,7 @@ export function saveRows(character) {
     name: ability,
     ability,
     bonus: saveBonus(character, ability),
-    proficient: isProficientSave(character, ability),
+    proficient: proficientSave(character, ability),
     // Expertise doubles a skill proficiency. No save carries it.
     expert: false,
     // A save row shows the bare key, so the tooltip leads with the word.

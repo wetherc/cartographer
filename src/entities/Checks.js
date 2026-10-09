@@ -15,6 +15,8 @@ import { rollRiders } from './Riders.js';
 import { rollMode } from './ConditionEffects.js';
 import { riderSources } from './FeatChoices.js';
 import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
+import { hasFeature } from './Features.js';
+import { listASIChoices } from './LevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -44,7 +46,9 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  * What a character adds to a saving throw in one ability. This value is the
  * ability modifier, read from the equipment-adjusted scores so a
  * stat-boosting item counts. The value adds the proficiency bonus when the
- * class grants that save. An ability with no score for the character reads
+ * class grants that save, or in every save once the monk has Diamond Soul.
+ * A paladin with Aura of Protection adds its own CHA modifier, at least +1.
+ * An ability with no score for the character reads
  * as 10, the same default the rest of the stat code uses. Exhaustion takes 2
  * off for each of its levels, because a saving throw is a d20 test.
  *
@@ -57,8 +61,37 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  */
 export function saveBonus(character, ability) {
   const mod = abilityModifier(effectiveStats(character)[ability] ?? 10);
-  const proficient = isProficientSave(character, ability) ? characterProficiency(character) : 0;
-  return mod + proficient + d20Penalty(character);
+  const proficient = proficientSave(character, ability) ? characterProficiency(character) : 0;
+  return mod + proficient + auraBonus(character) + d20Penalty(character);
+}
+
+/**
+ * What Aura of Protection (paladin 6) adds to the paladin's own saves: the
+ * CHA modifier, at least +1. A character without the feature gets 0. The
+ * aura also covers allies within 10 feet, which the GM applies at the table.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function auraBonus(character) {
+  if (!hasFeature(character, AURA_OF_PROTECTION)) return 0;
+  return Math.max(1, abilityModifier(effectiveStats(character).CHA ?? 10));
+}
+
+/** The paladin feature that adds the CHA modifier to the paladin's saves. */
+const AURA_OF_PROTECTION = 'Aura of Protection';
+
+/** The monk feature that grants proficiency in every saving throw. */
+const DIAMOND_SOUL = 'Diamond Soul';
+
+/**
+ * Whether a character adds proficiency to a save in one ability: the class
+ * grants that save, or the character has Diamond Soul.
+ * @param {Character} character
+ * @param {string} ability
+ * @returns {boolean}
+ */
+export function proficientSave(character, ability) {
+  return isProficientSave(character, ability) || hasFeature(character, DIAMOND_SOUL);
 }
 
 /**
@@ -141,7 +174,7 @@ export function savingThrow(character, ability, dc, opts = {}) {
       ability,
       ...opts,
     }),
-    proficient: isProficientSave(character, ability),
+    proficient: proficientSave(character, ability),
   };
 }
 
@@ -176,7 +209,8 @@ export function checkAbility(key) {
  * What a character adds to an ability check. The value is the ability
  * modifier, read from the equipment-adjusted scores. It adds the proficiency
  * bonus once when the character is proficient in the skill, and a second time
- * when the character has expertise in it. A bare ability key is never
+ * when the character has expertise in it. A check without proficiency adds
+ * half the proficiency bonus instead, through {@link halfProficiency}. A bare ability key is never
  * proficient, because proficiency in 5e attaches to a skill and not to an
  * ability. A key that names neither a skill nor an ability reads as a score
  * of 10, the same default the rest of the stat code uses. Exhaustion takes 2
@@ -194,9 +228,57 @@ export function checkBonus(character, key) {
   const ability = checkAbility(key);
   const mod = abilityModifier((ability ? effectiveStats(character)[ability] : undefined) ?? 10);
   const tired = d20Penalty(character);
-  if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) return mod + tired;
+  if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) {
+    return mod + halfProficiency(character, ability) + tired;
+  }
   const bonus = characterProficiency(character);
   return mod + (hasExpertise(character, key) ? bonus * 2 : bonus) + tired;
+}
+
+/** The bard feature that adds half proficiency to checks without it. */
+const JACK_OF_ALL_TRADES = 'Jack of All Trades';
+
+/** The Champion feature that adds half proficiency, rounded up, to STR, DEX,
+ * and CON checks without proficiency. */
+const REMARKABLE_ATHLETE = 'Remarkable Athlete';
+
+/** The abilities whose checks Remarkable Athlete improves. */
+const ATHLETE_ABILITIES = ['STR', 'DEX', 'CON'];
+
+/**
+ * What a character adds to a check that does not use proficiency. Jack of
+ * All Trades adds half the proficiency bonus, rounded down, to every such
+ * check. Remarkable Athlete adds half, rounded up, to a STR, DEX, or CON
+ * check. The two do not stack, so the larger one applies. A character with
+ * neither feature adds 0.
+ * @param {Character} character
+ * @param {string | null} ability the ability of the check
+ * @returns {number}
+ */
+export function halfProficiency(character, ability) {
+  const half = characterProficiency(character) / 2;
+  const athlete =
+    ability && ATHLETE_ABILITIES.includes(ability) && hasFeature(character, REMARKABLE_ATHLETE);
+  if (athlete) return Math.ceil(half);
+  return hasFeature(character, JACK_OF_ALL_TRADES) ? Math.floor(half) : 0;
+}
+
+/**
+ * What a character adds to its initiative roll, before exhaustion. The value
+ * is the DEX modifier of the effective score, plus the half proficiency of
+ * Jack of All Trades or Remarkable Athlete (initiative is a DEX check), plus
+ * the bonus of a feat such as Alert. `InitiativeRoll.rollInitiative` adds the
+ * exhaustion penalty at roll time, and the sheet badge adds it to its label.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function initiativeBonus(character) {
+  const dex = abilityModifier(effectiveStats(character).DEX ?? 10);
+  const feats = listASIChoices(character).reduce(
+    (sum, choice) => sum + (choice.type === 'feat' ? (choice.initiativeBonus ?? 0) : 0),
+    0,
+  );
+  return dex + halfProficiency(character, 'DEX') + feats;
 }
 
 /**

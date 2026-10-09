@@ -7,14 +7,16 @@
  * dialog fills the whole column at once and does not go through the dice tray,
  * so this module throws its own d20s and names the die it dropped.
  *
- * The DEX modifier itself comes from the participant, which the roster stamped
- * when it read the stat block. This module adds nothing to it but the penalty.
+ * The modifier itself comes from the participant, which the roster stamped
+ * from `Checks.initiativeBonus` or the stat block. This module adds nothing to
+ * it but the penalty. Feral Instinct gives advantage.
  */
 
 import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import { droppedNote } from './AttackResolve.js';
+import { hasFeature } from '../entities/Features.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -42,13 +44,16 @@ export function initiativeSlant(entity) {
   // never untrained for what it wears.
   const badWear = unproficientWear(/** @type {Character} */ (roller));
   const wearSlant = badWear.length > 0 ? /** @type {const} */ ('disadvantage') : null;
+  // Feral Instinct (barbarian 7) gives advantage on every initiative roll.
+  const feral = hasFeature(roller, 'Feral Instinct') ? /** @type {const} */ ('advantage') : null;
   const penalty = d20Penalty(roller);
   const reasons = [];
   const chips = modeReasons(query);
   if (chips) reasons.push(chips);
   if (wearSlant) reasons.push(`not proficient with ${badWear.join(' and ')}, disadvantage`);
+  if (feral) reasons.push('Feral Instinct, advantage');
   if (penalty) reasons.push(`exhaustion ${exhaustionLevel(roller)} ${penalty}`);
-  return { mode: rollMode(query, [wearSlant]), penalty, reasons };
+  return { mode: rollMode(query, [wearSlant, feral]), penalty, reasons };
 }
 
 /**

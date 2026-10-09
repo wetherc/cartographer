@@ -10,13 +10,20 @@
  */
 
 import { droppedNote } from '../combat/AttackResolve.js';
-import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
+import {
+  auraBonus,
+  checkAbility,
+  checkBonus,
+  halfProficiency,
+  proficientSave,
+  saveBonus,
+} from '../entities/Checks.js';
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { characterProficiency } from '../entities/Multiclass.js';
-import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
+import { hasExpertise, isProficientSkill } from '../entities/Proficiencies.js';
 import { rollRiders } from '../entities/Riders.js';
 import { spendRollRiders } from './riderSpend.js';
 import { riderSources } from '../entities/FeatChoices.js';
@@ -38,8 +45,10 @@ import { article } from '../util/text.js';
  * word states expertise separately, so the doubling shows in the sentence as
  * well as in the number.
  *
- * A save is proficient or not. A skill can also carry expertise, which doubles
- * the bonus. A bare ability key is never proficient, because 5e attaches
+ * A save is proficient or not, and a paladin's Aura of Protection joins the
+ * save part. A skill can also carry expertise, which doubles the bonus, and a
+ * check without proficiency can take half proficiency (Jack of All Trades).
+ * A bare ability key is never proficient, because 5e attaches
  * proficiency to a skill and not to an ability. These are the same conditions
  * `checkBonus` applies, so the part below always sums back to the bonus.
  * @param {Character} character
@@ -49,11 +58,17 @@ import { article } from '../util/text.js';
 function proficiencyPart(character, event) {
   const bonus = characterProficiency(character);
   if (event.kind === 'save') {
-    if (!isProficientSave(character, event.key)) return { amount: 0, word: '' };
-    return { amount: bonus, word: `proficiency +${bonus}` };
+    const aura = auraBonus(character);
+    const prof = proficientSave(character, event.key) ? bonus : 0;
+    const words = [
+      ...(prof ? [`proficiency +${prof}`] : []),
+      ...(aura ? [`Aura of Protection +${aura}`] : []),
+    ];
+    return { amount: prof + aura, word: words.join(', ') };
   }
   if (!SKILL_IDS.includes(event.key) || !isProficientSkill(character, event.key)) {
-    return { amount: 0, word: '' };
+    const half = halfProficiency(character, checkAbility(event.key));
+    return { amount: half, word: half ? `half proficiency +${half}` : '' };
   }
   if (!hasExpertise(character, event.key)) return { amount: bonus, word: `proficiency +${bonus}` };
   return { amount: bonus * 2, word: `expertise +${bonus * 2}` };

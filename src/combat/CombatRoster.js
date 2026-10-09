@@ -7,7 +7,7 @@ import {
   ENCOUNTER_RADIUS,
 } from '../entities/CreatureMap.js';
 import { parseCoords } from '../map/MapGeometry.js';
-import { effectiveStats } from '../entities/Equipment.js';
+import { initiativeBonus } from '../entities/Checks.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { createParticipant } from './Initiative.js';
 
@@ -32,6 +32,17 @@ import { createParticipant } from './Initiative.js';
 function withDex(id, stats) {
   const mod = abilityModifier(stats?.DEX ?? 10);
   return createParticipant(id, 10 + mod, mod);
+}
+
+/**
+ * A character as a participant with its initiative bonus, which adds class
+ * feature and feat terms to the DEX modifier.
+ * @param {import('../types/entities.js').Character} character
+ * @returns {Participant}
+ */
+function characterParticipant(character) {
+  const bonus = initiativeBonus(character);
+  return createParticipant(character.id, 10 + bonus, bonus);
 }
 
 /**
@@ -143,7 +154,8 @@ export function fightInReach(order, creatures, position, radius) {
  * and the tiles around it), and any friendly or neutral creature on the
  * party's own tile. Hostile creatures line up as foes. Friendly and neutral
  * ones line up with the party. Each combatant carries its
- * DEX modifier. This modifier seeds the default value (10 + modifier, the
+ * initiative modifier: the DEX modifier, plus `Checks.initiativeBonus` terms
+ * for a character. This modifier seeds the default value (10 + modifier, the
  * passive baseline), adds to the d20 roll from Roll initiative, and shows
  * beside the name. The GM can edit every value by hand.
  * @param {import('../types/entities.js').Character[]} characters
@@ -159,9 +171,7 @@ export function combatRoster(characters, creatures, position) {
     c.disposition === 'hostile' ? !isDefeated(c) : isOnTile(c, position),
   );
   return [
-    ...characters
-      .filter((c) => inEncounter(c, position))
-      .map((c) => withDex(c.id, effectiveStats(c))),
+    ...characters.filter((c) => inEncounter(c, position)).map(characterParticipant),
     ...roster.map((c) => withDex(c.id, effectiveStatBlock(c))),
   ];
 }
@@ -189,9 +199,7 @@ export function inEncounter(character, position) {
  * @returns {import('../types/combat.js').Participant[]}
  */
 export function awayCharacters(characters, position) {
-  return characters
-    .filter((c) => !inEncounter(c, position))
-    .map((c) => withDex(c.id, effectiveStats(c)));
+  return characters.filter((c) => !inEncounter(c, position)).map(characterParticipant);
 }
 
 /**

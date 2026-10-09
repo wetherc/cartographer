@@ -239,6 +239,7 @@ export function takeFeat(character, feat) {
   const granted = grantDiff(merged, before);
   const rider = normalizeRider(stamp.rider);
   const hpPerLevel = Math.max(0, Math.floor(Number(stamp.hpPerLevel)) || 0);
+  const initiativeBonus = Math.max(0, Math.floor(Number(stamp.initiativeBonus)) || 0);
 
   const choices = getASIChoices(character);
   /** @type {AsiChoice} */
@@ -253,6 +254,7 @@ export function takeFeat(character, feat) {
     ...(granted ? { granted } : {}),
     ...(rider ? { rider } : {}),
     ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
+    ...(initiativeBonus > 0 ? { initiativeBonus } : {}),
   };
   return {
     ...character,

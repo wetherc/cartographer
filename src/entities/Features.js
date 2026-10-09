@@ -1,7 +1,7 @@
 /**
  * Readers over the class features that a character has unlocked.
  * `LevelUp.unlockedFeatures` lists those features as names, and the sheet
- * prints the list. This module is what turns two of those names into numbers
+ * prints the list. This module turns some of those names into numbers
  * that the combat paths can use.
  *
  * A feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
@@ -107,4 +107,16 @@ export function sneakAttackDice(character) {
   if (!classId) return 0;
   const level = Math.max(1, Math.floor(classLevelOf(asCharacter(character), classId)) || 1);
   return Math.ceil(level / 2);
+}
+
+/**
+ * The lowest natural d20 roll that crits on the character's weapon attacks.
+ * Improved Critical (Champion 3) gives 19, and Superior Critical (Champion
+ * 15) gives 18. Any other attacker crits on a natural 20 only.
+ * @param {Featured} character
+ * @returns {number} 18, 19, or 20
+ */
+export function critRange(character) {
+  if (hasFeature(character, 'Superior Critical')) return 18;
+  return hasFeature(character, 'Improved Critical') ? 19 : 20;
 }
