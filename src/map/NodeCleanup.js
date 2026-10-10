@@ -97,7 +97,10 @@ export function locationsAfterDelete(world, doomed, landing) {
 /**
  * Every location after the node `nodeId` shrinks to `width` by `height`.
  * Each location in that node outside the new bounds moves to the nearest
- * tile inside them, through `tileWithinBounds`. A handout bound to a tile
+ * tile inside them, through `tileWithinBounds`. `landingFor` then moves
+ * that tile off a wall, deep water, or an unpainted cell. The caller passes
+ * `EntryPoint.resolveEntryTile` bound to the resized node, so this function
+ * never reads a node. Without it, the nearest tile is kept as it is. A handout bound to a tile
  * outside the bounds binds to the whole node instead. Its tile is gone, and
  * a tile it never named is not a place the GM chose. Locations in other
  * nodes, and locations already inside the bounds, keep their identity.
@@ -105,9 +108,10 @@ export function locationsAfterDelete(world, doomed, landing) {
  * @param {string} nodeId
  * @param {number} width
  * @param {number} height
+ * @param {(tileId: string) => string} [landingFor]
  * @returns {WorldLocations}
  */
-export function locationsAfterShrink(world, nodeId, width, height) {
+export function locationsAfterShrink(world, nodeId, width, height, landingFor = (id) => id) {
   /**
    * @template {EncounterLocation} L
    * @param {L} location
@@ -116,7 +120,7 @@ export function locationsAfterShrink(world, nodeId, width, height) {
   const pull = (location) => {
     if (location.nodeId !== nodeId) return location;
     const tileId = tileWithinBounds(location.tileId, width, height);
-    return tileId ? { ...location, tileId } : location;
+    return tileId ? { ...location, tileId: landingFor(tileId) } : location;
   };
   return {
     party: pull(world.party),

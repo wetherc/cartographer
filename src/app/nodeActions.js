@@ -4,6 +4,7 @@ import { coerceNodeKind } from '../map/NodeKinds.js';
 import { MAX_MAP_EDGE, freshNodeId, mapSizeProblem } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
+import { resolveEntryTile } from '../map/EntryPoint.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { deleteNodeQuestion } from '../view/DeleteNodeText.js';
 import {
@@ -276,7 +277,11 @@ export function createNodeActions(app, env) {
     if (keyWarning) app.toasts.show(keyWarning);
 
     const before = currentLocations();
-    applyLocations(before, locationsAfterShrink(before, nodeId, width, height));
+    const resized = grid.getNode(nodeId);
+    const landingFor = resized
+      ? (/** @type {string} */ id) => resolveEntryTile(resized, id)
+      : undefined;
+    applyLocations(before, locationsAfterShrink(before, nodeId, width, height, landingFor));
     shrinkNodeLinks(app, nodeId, width, height);
     // Editing the node in view changes its extent or kind, so that view
     // must re-frame and re-filter the palette, and the selected tile can be

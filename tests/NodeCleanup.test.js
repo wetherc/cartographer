@@ -8,6 +8,7 @@ import {
   locationsAfterShrink,
 } from '../src/map/NodeCleanup.js';
 import { fillTiles } from './helpers/grid.js';
+import { resolveEntryTile } from '../src/map/EntryPoint.js';
 
 /** A painted parent with the child linked from a 2x2 block at (1,1)-(2,2). */
 function linkedParent(childId = 'child') {
@@ -188,4 +189,21 @@ test('locationsAfterShrink keeps the party identity when it stands in another no
     handouts: [],
   };
   assert.equal(locationsAfterShrink(world, 'n', 2, 2).party, world.party);
+});
+
+test('locationsAfterShrink moves a pulled location off a wall through landingFor', () => {
+  const wall = 'assets/tiles/interior/interior-wall-h.svg';
+  const node = fillTiles(createMapNode('n', 'Hall', null, 6, 6), (id, x) =>
+    createTile(id, x === 5 ? wall : 'assets/tiles/interior/interior-floor-1.svg'),
+  );
+  const world = {
+    party: { nodeId: 'n', tileId: '9,2' },
+    characters: [placed('a', { nodeId: 'n', tileId: '5,1' })],
+    creatures: [placed('g', { nodeId: 'n', tileId: '9,9' })],
+    handouts: [],
+  };
+  const after = locationsAfterShrink(world, 'n', 6, 6, (id) => resolveEntryTile(node, id));
+  assert.deepEqual(after.party, { nodeId: 'n', tileId: '4,2' });
+  assert.deepEqual(after.creatures[0].location, { nodeId: 'n', tileId: '4,5' });
+  assert.equal(after.characters[0], world.characters[0], 'a location inside the bounds stays');
 });

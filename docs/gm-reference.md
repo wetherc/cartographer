@@ -363,7 +363,9 @@ The environment tag is a description only. It has no effect on painting,
 generation, or rules.
 
 A smaller width or height that removes tiles asks first. **Cancel** on that
-confirm opens the settings again with the values you typed. In the same way,
+confirm opens the settings again with the values you typed. The party, a
+split character, or a placed creature that stood outside the new size moves
+to the nearest walkable tile inside it. In the same way,
 **Cancel** on the confirm that replaces every tile after **Generate map**
 opens the Generate dialog again with the same choices and seed.
 

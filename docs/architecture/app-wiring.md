@@ -507,8 +507,12 @@ that the node used. `deleteNode` refuses when no parent remains.
 - `locationsAfterDelete` recalls split characters inside the subtree,
   unplaces creatures there, and unbinds handouts from it.
 - `locationsAfterShrink` moves the party, split characters, and placed
-  creatures inside the new bounds through `tileWithinBounds`. A handout
-  bound to a tile outside the new bounds binds to the whole node instead.
+  creatures inside the new bounds through `tileWithinBounds`, and then
+  through the `landingFor` callback. `nodeActions.js` passes
+  `resolveEntryTile` bound to the resized node, so a pulled location that
+  lands on a wall, deep water, or an unpainted cell moves to the nearest
+  walkable tile. A handout bound to a tile outside the new bounds binds to
+  the whole node instead.
 
 `nodeActions.js` reads the live state into these functions and writes the
 answers back.
