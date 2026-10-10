@@ -46,3 +46,20 @@ export function endSpentCasts(app, before, after) {
   }
   for (const { casterId, spellId } of casts.values()) endIfSpent(app, casterId, spellId);
 }
+
+/**
+ * Run `endSpentCasts` over the one-roll rider chips only, such as Resistance.
+ * A write that also ends other chips, such as damage waking a target of
+ * Hypnotic Pattern, passes its whole before and after lists here, and only a
+ * used-up rider can end the caster's concentration.
+ * @param {AppContext} app
+ * @param {import('../types/entities.js').Condition[]} before the chips before the write
+ * @param {import('../types/entities.js').Condition[]} after the chips after the write
+ */
+export function endSpentRiders(app, before, after) {
+  endSpentCasts(
+    app,
+    before.filter((c) => c.rider?.once),
+    after,
+  );
+}

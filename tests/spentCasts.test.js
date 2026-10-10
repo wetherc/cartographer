@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { endIfSpent, endSpentCasts } from '../src/app/spentCasts.js';
 import { spendRollRiders } from '../src/app/riderSpend.js';
-import { createCharacter } from '../src/entities/Character.js';
+import { applyToTarget, retryImposedSaves } from '../src/app/combatantWrites.js';
+import { createCharacter, withHP } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';
 
@@ -72,4 +73,85 @@ test('endSpentCasts skips kept chips and chips with no cast', () => {
   const plain = { name: 'Blessed' };
   endSpentCasts(app, [kept, plain], [kept]);
   assert.equal(app.state.characters[0].concentration, concentrating);
+});
+
+const resistanceSource = { casterId: 'cleric', spellId: 'resistance', spellName: 'Resistance' };
+const resistance = {
+  name: 'Resistance',
+  rider: { rolls: ['save'], dice: 1, die: 'd4', once: true },
+  source: resistanceSource,
+};
+const onResistance = { ...concentrating, spellId: 'resistance', spellName: 'Resistance' };
+const onBless = { ...concentrating, spellId: 'bless', spellName: 'Bless' };
+
+/** A cleric concentrating on Resistance, beside the given combatants. */
+function warded(/** @type {{ characters?: any[], creatures?: any[] }} */ lists) {
+  const cleric = {
+    ...createCharacter('cleric', 'Cleric'),
+    concentration: onResistance,
+    conditions: [{ name: 'Concentrating' }],
+  };
+  return stubApp({
+    state: /** @type {any} */ ({
+      characters: [cleric, ...(lists.characters ?? [])],
+      creatures: lists.creatures ?? [],
+    }),
+  });
+}
+
+test('a creature concentration save that spends Resistance ends the caster concentration', () => {
+  const hag = {
+    ...createCreature('hag', 'Hag', { maxHP: 30 }),
+    concentration: onBless,
+    conditions: [{ name: 'Concentrating' }, resistance],
+  };
+  const app = warded({ creatures: [hag] });
+  applyToTarget(app, 'hag', 4, false);
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.ok(!app.state.creatures[0].conditions.some((c) => c.name === 'Resistance'));
+  assert.match(app.log.join('\n'), /Cleric stops concentrating on Resistance\./);
+});
+
+test('a character concentration save that spends Resistance ends the caster concentration', () => {
+  const wizard = {
+    ...withHP(createCharacter('wizard', 'Wizard'), 20),
+    concentration: onBless,
+    conditions: [{ name: 'Concentrating' }, resistance],
+  };
+  const app = warded({ characters: [wizard] });
+  applyToTarget(app, 'wizard', 4, false);
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.match(app.log.join('\n'), /Cleric stops concentrating on Resistance\./);
+});
+
+test('a repeated save that spends Resistance ends the caster concentration', () => {
+  // DC 99 always fails, so the Paralyzed chip stays and only the rider goes.
+  const held = {
+    name: 'Paralyzed',
+    source: {
+      casterId: 'hag',
+      spellId: 'hold-person',
+      spellName: 'Hold Person',
+      saveEnds: true,
+      saveDC: 99,
+      saveAbility: 'WIS',
+    },
+  };
+  const fighter = { ...createCharacter('fighter', 'Fighter'), conditions: [held, resistance] };
+  const app = warded({ characters: [fighter] });
+  retryImposedSaves(app, 'fighter');
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.deepEqual(
+    app.state.characters[1].conditions.map((c) => c.name),
+    ['Paralyzed'],
+  );
+});
+
+test('a cast chip that damage ends leaves the caster concentrating', () => {
+  const asleep = { name: 'Asleep', source: { ...resistanceSource, endsOnDamage: true } };
+  const wizard = { ...withHP(createCharacter('wizard', 'Wizard'), 20), conditions: [asleep] };
+  const app = warded({ characters: [wizard] });
+  applyToTarget(app, 'wizard', 4, false);
+  assert.equal(app.state.characters[1].conditions.length, 0);
+  assert.equal(app.state.characters[0].concentration, onResistance);
 });

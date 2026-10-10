@@ -21,6 +21,7 @@ import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { isLucky, raceSaveSlant } from '../entities/RaceTraits.js';
 import { settleChips } from './lethargyWrites.js';
+import { endSpentRiders } from './spentCasts.js';
 import { mapKeep } from '../util/mapKeep.js';
 import {
   combatantSaveBonus,
@@ -168,6 +169,8 @@ export function storeCreature(app, prev, next, store) {
   logHitEvents(app, logName(app, settled.creature), settled.events);
   store(settled.creature);
   if (settled.ended) endSpellEffects(app, settled.creature.id, settled.ended);
+  // A concentration save can use up a Resistance chip of another caster.
+  endSpentRiders(app, next.conditions, settled.creature.conditions);
 }
 
 /**
@@ -358,6 +361,7 @@ export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) 
   if (conditions !== found.entity.conditions) {
     storeConditions(app, found, conditions);
     app.actions.markDirty();
+    endSpentRiders(app, found.entity.conditions, conditions);
   }
   for (const { condition, save, ended } of results) {
     const ability = condition.source?.saveAbility;
@@ -467,6 +471,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // `state.characters`. Storing the damaged character here first puts
     // the pre-sweep copy back.
     if (result.ended) endSpellEffects(app, result.character.id, result.ended);
+    endSpentRiders(app, found.entity.conditions, result.character.conditions);
   }
 }
 
