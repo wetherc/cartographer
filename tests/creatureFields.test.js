@@ -1,11 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  creatureFields,
-  creatureFieldsChange,
-  readCreatureFields,
-} from '../src/view/forms/creatureFields.js';
+import { creatureFields, creatureFieldsChange } from '../src/view/forms/creatureFields.js';
+import { readCreatureFields } from '../src/view/forms/creatureRead.js';
 import { gearOptions } from '../src/view/forms/gearFields.js';
 import { applyFieldRules } from '../src/view/FieldRules.js';
 import { DEFAULT_CREATURE_HP, defaultEnemyGear } from '../src/entities/Creature.js';

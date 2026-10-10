@@ -842,7 +842,7 @@ as a `ModalField[]`. The specs that use no dialog and no `AppContext` sit in
 
 | Module | Defines |
 | --- | --- |
-| `view/forms/creatureFields.js` | The creature's fields, their live behavior (`creatureFieldsChange`), and `readCreatureFields`. One spec covers foes and townsfolk, because a blank level is the only difference |
+| `view/forms/creatureFields.js` | The creature's fields and their live behavior (`creatureFieldsChange`). `view/forms/creatureRead.js` has `readCreatureFields`. One spec covers foes and townsfolk, because a blank level is the only difference |
 | `view/forms/gearFields.js` | The weapon and armor picker options, and the read-back order of None, preset, and custom values |
 | `app/actionFields.js` | The Actions section of the creature dialog: the hidden list field, the summary line, and the list and action dialogs behind **Edit actions**. It opens dialogs, so it lives in `src/app/` |
 | `view/forms/statFields.js` | The stat-block fields and their range-limited read-back |

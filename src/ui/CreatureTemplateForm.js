@@ -1,8 +1,5 @@
-import {
-  creatureFields,
-  creatureFieldsChange,
-  readCreatureFields,
-} from '../view/forms/creatureFields.js';
+import { creatureFields, creatureFieldsChange } from '../view/forms/creatureFields.js';
+import { readCreatureFields } from '../view/forms/creatureRead.js';
 import { gearOptions } from '../view/forms/gearFields.js';
 import { buildSpecForm } from './SpecForm.js';
 

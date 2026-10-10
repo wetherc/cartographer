@@ -11,11 +11,8 @@ import {
   readLocation,
   viewedPlacement,
 } from './locationFields.js';
-import {
-  creatureFields,
-  creatureFieldsChange,
-  readCreatureFields,
-} from '../view/forms/creatureFields.js';
+import { creatureFields, creatureFieldsChange } from '../view/forms/creatureFields.js';
+import { readCreatureFields } from '../view/forms/creatureRead.js';
 import { gearOptions } from '../view/forms/gearFields.js';
 import { actionFormFields, actionsChange, readActions } from './actionFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
