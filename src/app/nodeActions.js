@@ -142,14 +142,14 @@ export function createNodeActions(app, env) {
   async function deleteNode(nodeId) {
     const node = grid.getNode(nodeId);
     if (!node) return;
-    const doomed = collectSubtreeIds([...grid.nodes.values()], nodeId);
-    if (doomed.size >= grid.nodes.size) {
+    const doomed = collectSubtreeIds(grid.allNodes(), nodeId);
+    if (doomed.size >= grid.nodeCount()) {
       await alertModal('Cannot delete the last node in the campaign.', {
         title: `Cannot delete ${node.name}`,
       });
       return;
     }
-    const landing = deleteLanding([...grid.nodes.values()], nodeId, doomed);
+    const landing = deleteLanding(grid.allNodes(), nodeId, doomed);
     // The party can move while the dialog is open (a save adopted from
     // another tab), so the check runs before the prompt and again after it.
     const stranded = () => doomed.has(partyTracker.getPosition().nodeId) && !landing;
@@ -199,7 +199,7 @@ export function createNodeActions(app, env) {
       app.actions.logEvent('travel', `The party moves to ${parent?.name ?? after.party.nodeId}.`);
     }
     if (removed.has(navigator.currentNodeId)) {
-      env.goToNode(deleteFallback(node, nodeExists, [...grid.nodes.keys()]));
+      env.goToNode(deleteFallback(node, nodeExists, grid.nodeIds()));
     } else {
       // The current node survived, but a link it drew can be gone.
       resyncMapViews(app, env);

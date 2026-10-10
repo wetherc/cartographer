@@ -121,7 +121,7 @@ export function questDetailCallbacks(app, { prompt = promptModal, confirm = conf
 
   /** Every map, labelled by its breadcrumb path. */
   const nodeOptions = () =>
-    [...app.grid.nodes.values()].map((n) => ({
+    app.grid.allNodes().map((n) => ({
       value: n.id,
       label: app.grid
         .getBreadcrumb(n.id)

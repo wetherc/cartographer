@@ -53,7 +53,7 @@ export function locationOptions(nodes, pathOf) {
 function mapChoices(app, unplacedLabel = 'Unplaced (appears everywhere)') {
   return [
     { value: '', label: unplacedLabel },
-    ...locationOptions([...app.grid.nodes.values()], (id) =>
+    ...locationOptions(app.grid.allNodes(), (id) =>
       app.grid
         .getBreadcrumb(id)
         .map((b) => b.name)

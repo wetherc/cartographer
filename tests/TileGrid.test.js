@@ -305,3 +305,12 @@ test('withNodeDefaults keeps a readable lock and drops a missing one', () => {
   assert.deepEqual(locked.lock, { requires: 'Key', open: false });
   assert.equal('lock' in withNodeDefaults(/** @type {any} */ ({ id: 'n', lock: 'x' })), false);
 });
+
+test('TileGrid lists its nodes, their ids, and their count', () => {
+  const grid = new TileGrid();
+  const world = grid.addNode(createMapNode('world', 'World', null, 2, 2));
+  const town = grid.addNode(createMapNode('town', 'Town', 'world', 2, 2));
+  assert.deepEqual(grid.allNodes(), [world, town]);
+  assert.deepEqual(grid.nodeIds(), ['world', 'town']);
+  assert.equal(grid.nodeCount(), 2);
+});

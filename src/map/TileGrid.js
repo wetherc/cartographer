@@ -436,6 +436,24 @@ export class TileGrid {
   }
 
   /**
+   * Every node in the registry, as a new array in insertion order.
+   * @returns {MapNode[]}
+   */
+  allNodes() {
+    return [...this.nodes.values()];
+  }
+
+  /** @returns {string[]} the id of every node, in insertion order */
+  nodeIds() {
+    return [...this.nodes.keys()];
+  }
+
+  /** @returns {number} how many nodes the registry has */
+  nodeCount() {
+    return this.nodes.size;
+  }
+
+  /**
    * Replace a node in the registry, for example after setTile or updateTileMetadata.
    * @param {MapNode} node
    */

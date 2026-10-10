@@ -42,7 +42,7 @@ export function wireSearch(app) {
           creatures: state.creatures,
           handouts: state.handouts,
           travelog: state.travelog,
-          nodes: [...app.grid.nodes.values()],
+          nodes: app.grid.allNodes(),
         },
         query,
         { gm: isGM(state.role), boundCharacterId: app.actions.getBoundCharacterId() },

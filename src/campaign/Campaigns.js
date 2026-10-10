@@ -37,13 +37,13 @@ import { buildExampleContent } from './ExampleContent.js';
  * Whether the live campaign holds nothing the GM could lose: one world node
  * with no tiles, and no characters. The onboarding overlay shows only for
  * such a campaign, and "Load example" skips its replace warning for it.
- * @param {{ nodes: Map<string, unknown> }} grid
+ * @param {{ nodeCount(): number }} grid
  * @param {{ tiles: readonly unknown[] }} currentNode
  * @param {readonly unknown[]} characters
  * @returns {boolean}
  */
 export function isBlankCampaign(grid, currentNode, characters) {
-  return grid.nodes.size === 1 && currentNode.tiles.length === 0 && characters.length === 0;
+  return grid.nodeCount() === 1 && currentNode.tiles.length === 0 && characters.length === 0;
 }
 
 /**
@@ -163,7 +163,7 @@ export function campaignFromLiveState(state) {
  */
 export function partyOnGrid(party, grid) {
   if (party && grid.getNode(party.nodeId)) return party;
-  const nodes = [...grid.nodes.values()];
+  const nodes = grid.allNodes();
   const root = nodes.find((node) => node.parentId === null) ?? nodes[0];
   if (!root) throw new Error('The campaign has no map nodes to put the party on.');
   return { nodeId: root.id, tileId: '0,0' };

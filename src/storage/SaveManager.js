@@ -96,7 +96,7 @@ export function readSaveMark() {
  */
 export function buildState(campaign) {
   return {
-    nodes: [...campaign.grid.nodes.values()],
+    nodes: campaign.grid.allNodes(),
     party: campaign.party ?? null,
     ...campaignFields(campaign),
     // This function writes the save, so the version it stamps is the format

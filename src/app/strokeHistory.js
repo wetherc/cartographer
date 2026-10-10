@@ -110,7 +110,7 @@ export function createStrokeHistory(app, env, { confirm = confirmModal } = {}) {
    * @param {EditSnapshot} entry
    */
   function plan(entry) {
-    const nodes = [...grid.nodes.values()];
+    const nodes = grid.allNodes();
     /** @type {Set<string>} */
     const doomed = new Set();
     for (const id of entry.created) {
@@ -163,7 +163,7 @@ export function createStrokeHistory(app, env, { confirm = confirmModal } = {}) {
       nodes: [],
       after: [],
       created: entry.removed.map((n) => n.id),
-      removed: [...grid.nodes.values()].filter((n) => doomed.has(n.id)),
+      removed: grid.allNodes().filter((n) => doomed.has(n.id)),
       party: null,
       partyAfter: null,
       recalled: state.characters

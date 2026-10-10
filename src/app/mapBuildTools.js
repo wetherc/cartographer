@@ -58,7 +58,7 @@ export function wireMapBuildTools(app, env, strokes, buildTabs) {
       tileSize: EXPORT_TILE_SIZE,
       regionGroups: findRegionGroups(node),
       getNodeName: (id) => grid.getNode(id)?.name,
-      imageCache: env.mapCanvas.renderer.imageCache,
+      imageCache: env.mapCanvas.imageCache,
     });
     if (!canvas) {
       toasts.show(`"${node.name}" is too large to export as PNG.`);

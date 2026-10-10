@@ -55,7 +55,7 @@ export function rehydrateCampaign(app, campaign) {
   // reason: the map caches (the `TileIndex` layout and its stamps,
   // `findRegionGroups`, `spanBlocks`) are keyed on node identity, so a node the save did not
   // change must stay the object those caches already know.
-  app.grid.replaceNodes(reconcile([...app.grid.nodes.values()], [...campaign.grid.nodes.values()]));
+  app.grid.replaceNodes(reconcile(app.grid.allNodes(), campaign.grid.allNodes()));
 
   const state = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (app.state));
   const loaded = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (campaign));

@@ -161,18 +161,13 @@ test('campaignFromLiveState wraps live objects without re-parsing or re-defaulti
 });
 
 test('a campaign with one empty node and no characters is blank', () => {
-  const grid = { nodes: new Map([['world', {}]]) };
+  const grid = { nodeCount: () => 1 };
   assert.equal(isBlankCampaign(grid, { tiles: [] }, []), true);
 });
 
 test('a painted tile, a second node, or a character makes the campaign not blank', () => {
-  const oneNode = { nodes: new Map([['world', {}]]) };
-  const twoNodes = {
-    nodes: new Map([
-      ['world', {}],
-      ['town', {}],
-    ]),
-  };
+  const oneNode = { nodeCount: () => 1 };
+  const twoNodes = { nodeCount: () => 2 };
   assert.equal(isBlankCampaign(oneNode, { tiles: [{}] }, []), false);
   assert.equal(isBlankCampaign(twoNodes, { tiles: [] }, []), false);
   assert.equal(isBlankCampaign(oneNode, { tiles: [] }, [{}]), false);

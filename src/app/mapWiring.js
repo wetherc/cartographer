@@ -345,7 +345,7 @@ export function wireMapView(app) {
   // role, but a filled tree would still put the name of every node, such as
   // an undiscovered dungeon, into the page for anyone who reads the DOM.
   const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
-    getNodes: () => (isGM(state.role) ? [...grid.nodes.values()] : []),
+    getNodes: () => (isGM(state.role) ? grid.allNodes() : []),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: goToNode,
     // The new map opens at once, and the tree opens the rows above it and
@@ -375,8 +375,8 @@ export function wireMapView(app) {
   const regionTree = mountWorldTree(mustGetElement('region-tree-container'), {
     getNodes: () =>
       isGM(state.role)
-        ? [...grid.nodes.values()]
-        : discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
+        ? grid.allNodes()
+        : discoveredNodes(grid.allNodes(), partyTracker.getPosition()),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: travel.teleportToNode,
   });

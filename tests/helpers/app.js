@@ -176,6 +176,9 @@ export function stubGrid(nodes) {
   return {
     nodes: byId,
     getNode: (/** @type {string} */ id) => byId.get(id),
+    allNodes: () => [...byId.values()],
+    nodeIds: () => [...byId.keys()],
+    nodeCount: () => byId.size,
     getBreadcrumb: (/** @type {string} */ id) => {
       const trail = [];
       for (

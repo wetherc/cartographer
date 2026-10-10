@@ -156,7 +156,7 @@ export function wireGenerateAction(app, env) {
       return preview.gen;
     };
 
-    const removed = linkedDescendants([...grid.nodes.values()], node);
+    const removed = linkedDescendants(grid.allNodes(), node);
     /** @type {GenerateChoice | null} the choice of the last dialog, kept when the GM cancels the replace confirm */
     let last = null;
     /** @type {GenerateChoice | null} */
@@ -172,7 +172,7 @@ export function wireGenerateAction(app, env) {
         maxLevels: levelsLeft(stack?.level ?? 1),
         nested: NESTED_ARCHETYPES,
         makeCandidate,
-        imageCache: env.mapCanvas.renderer.imageCache,
+        imageCache: env.mapCanvas.imageCache,
         returnFocus: generateBtn,
         archetype:
           last?.archetype ??

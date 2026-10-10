@@ -159,6 +159,15 @@ export class MapCanvas {
   }
 
   /**
+   * The decoded tile images of the renderer. The PNG export and the
+   * generator preview share it, so they do not decode the art again.
+   * @returns {Map<string, HTMLImageElement>}
+   */
+  get imageCache() {
+    return this.renderer.imageCache;
+  }
+
+  /**
    * Load a new MapNode. Frame its full extent in the view.
    * @param {MapNode} node
    */
