@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { questDetailCallbacks } from '../src/app/questDetail.js';
+import { questDetailCallbacks } from '../src/app/questDetailActions.js';
 import { askCompletion, completeQuest } from '../src/app/questCompletion.js';
 import { createQuest } from '../src/quest/Quests.js';
 import { addObjective } from '../src/quest/Objectives.js';

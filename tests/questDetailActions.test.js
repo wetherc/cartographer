@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { questDetailCallbacks, readPlaceLink } from '../src/app/questDetail.js';
+import { questDetailCallbacks, readPlaceLink } from '../src/app/questDetailActions.js';
 import { createQuest } from '../src/quest/Quests.js';
 import { creatureLink, placeLink } from '../src/quest/QuestLinks.js';
 import { stubApp, stubGrid } from './helpers/app.js';

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rollDeathSaveFor, stabilizeCharacter } from '../src/app/deathSaves.js';
+import { rollDeathSaveFor, stabilizeCharacter } from '../src/app/deathSaveRolls.js';
 import { roll } from '../src/dice/DiceRoller.js';
 import { createCharacter, damageCharacter, getHP, withHP } from '../src/entities/Character.js';
 import { stubApp as baseStubApp } from './helpers/app.js';

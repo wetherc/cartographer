@@ -19,7 +19,7 @@ import {
 } from '../src/entities/Invocations.js';
 import { longRest } from '../src/entities/Character.js';
 import { emptyProficiencies } from '../src/entities/Proficiencies.js';
-import { INVOCATIONS } from '../src/data/invocations.js';
+import { INVOCATIONS } from '../src/data/invocationCatalog.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
 /** A warlock of the given level, with Eldritch Blast unless told otherwise. */

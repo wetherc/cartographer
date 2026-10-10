@@ -19,7 +19,7 @@ import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { createMapNode } from '../src/map/TileGrid.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { revealAround, revealedCount } from '../src/map/FogOfWar.js';
-import { buildWorldTree } from '../src/map/WorldTree.js';
+import { buildWorldTree } from '../src/map/WorldTreeModel.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { buildState, serialize, deserialize } from '../src/storage/SaveManager.js';
 import { mulberry32 } from '../src/util/Rng.js';

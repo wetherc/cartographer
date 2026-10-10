@@ -229,18 +229,18 @@ test('style.css lists every sheet under styles/, and nothing missing', () => {
 /** The combat modules whose log and toast lines name a combatant. */
 const COMBAT_LOGGERS = [
   'app/combatantWrites.js',
-  'app/deathSaves.js',
+  'app/deathSaveRolls.js',
   'app/encounterWiring.js',
-  'app/exhaustion.js',
-  'app/healCure.js',
-  'app/lethargy.js',
+  'app/exhaustionWrites.js',
+  'app/healCurePrompt.js',
+  'app/lethargyWrites.js',
   'app/riderSpend.js',
   'app/shieldWard.js',
   'app/slay.js',
   'app/spellOutcomes.js',
   'app/tempHP.js',
-  'app/turnActions.js',
-  'app/turnEffects.js',
+  'app/turnActionsWiring.js',
+  'app/turnEffectsWiring.js',
   'app/weaponAttack.js',
 ];
 

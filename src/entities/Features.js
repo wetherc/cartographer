@@ -4,7 +4,7 @@
  * prints the list. This module turns some of those names into numbers
  * that the combat paths can use.
  *
- * A feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
+ * A feature in `featuresByLevel` (`data/classCatalog.js`) is a plain name or a
  * name with structured effects. One-time grants (proficiencies, expertise,
  * roll riders) go through the structured path in `FeatureGrants.js`. The
  * readers here cover the other kind: values that scale with the class level

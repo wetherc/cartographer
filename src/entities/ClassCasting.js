@@ -1,4 +1,4 @@
-import { DEFAULT_CLASSES } from '../data/classes.js';
+import { DEFAULT_CLASSES } from '../data/classCatalog.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').SubclassDef} SubclassDef */

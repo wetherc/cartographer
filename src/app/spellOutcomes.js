@@ -7,7 +7,7 @@ import { durationInRounds } from '../entities/SpellTiming.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { chipTiming } from '../entities/TurnEffects.js';
 import { currentParticipant } from '../combat/Initiative.js';
-import { spawnSummons } from './summons.js';
+import { spawnSummons } from './summonsWiring.js';
 import { defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, applyConditionToTarget } from './combatantWrites.js';
 import { targetSummary } from './spellTargets.js';
@@ -15,8 +15,8 @@ import { spendRollRiders } from './riderSpend.js';
 import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
 import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
-import { cureTarget } from './healCure.js';
-import { stabilizeCharacter } from './deathSaves.js';
+import { cureTarget } from './healCurePrompt.js';
+import { stabilizeCharacter } from './deathSaveRolls.js';
 import {
   paren,
   poolLine,

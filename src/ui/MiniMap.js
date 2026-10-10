@@ -1,11 +1,16 @@
 import { el } from './dom.js';
 import { INK } from '../map/CanvasInk.js';
-import { compassArea, miniMapStartsOpen, miniMapTileSize, paintTerrain } from '../map/MiniMap.js';
+import {
+  compassArea,
+  miniMapStartsOpen,
+  miniMapTileSize,
+  paintTerrain,
+} from '../map/MiniMapLayout.js';
 import { groupOutline } from '../map/RegionOutline.js';
 import { TileRaster } from '../map/TileRaster.js';
 import { tryWriteStored } from '../storage/Footprint.js';
 
-/** @typedef {import('../map/MiniMap.js').MiniMapView} MiniMapView */
+/** @typedef {import('../map/MiniMapLayout.js').MiniMapView} MiniMapView */
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /** The longest side of the mini-map, in CSS pixels. */

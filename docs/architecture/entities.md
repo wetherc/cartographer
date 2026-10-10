@@ -461,13 +461,13 @@ new value.
 
 ```
   data catalogs (plain data, no logic)
-    data/classes.js      hit die, proficiencies, skill choices, caster type,
-                         subclasses (with subclass casting),
-                         subclass level, ASI levels, features by level
-    data/races.js        races and their traits
-    data/backgrounds.js  backgrounds
-    data/skills.js       the ability of each of the 18 skills
-    data/feats.js        the built-in feat catalog
+    data/classCatalog.js       hit die, proficiencies, skill choices, caster type,
+                               subclasses (with subclass casting),
+                               subclass level, ASI levels, features by level
+    data/raceCatalog.js        races and their traits
+    data/backgroundCatalog.js  backgrounds
+    data/skills.js             the ability of each of the 18 skills
+    data/feats.js              the built-in feat catalog
           |
           v
   entity modules (pure logic over character values)
@@ -612,7 +612,7 @@ effect for it.
 ### Subclass casting
 
 A class membership (`ClassRef`) stores its subclass as a name. Each class in
-`data/classes.js` lists its catalog subclasses in `subclasses`, and each entry
+`data/classCatalog.js` lists its catalog subclasses in `subclasses`, and each entry
 has an `id` and a `name`. A subclass with a `casting` entry replaces these
 caster fields of its class: `casterType`, `spellAbility`, `spellListId`,
 `knownRule`, `cantripsKnown`, and the ritual flags. The Fighter's Eldritch
@@ -793,7 +793,7 @@ and `ui/CharacterProgress.js` places their buttons on the sheet.
 
 ### Class features
 
-A class feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
+A class feature in `featuresByLevel` (`data/classCatalog.js`) is a plain name or a
 `{ name, effects }` object (`ClassFeatureDef` in `types/class.ts`). The effects
 use the feat effect vocabulary from `types/feat.ts`. A plain name is for
 display only. `LevelUp.unlockedFeatures` collects the entries that the class
@@ -854,7 +854,7 @@ homebrew class that uses the same names gets the same rules.
 ### Eldritch invocations
 
 `entities/Invocations.js` defines the rules of the warlock's eldritch
-invocations and pact boon, and `data/invocations.js` lists the SRD
+invocations and pact boon, and `data/invocationCatalog.js` lists the SRD
 invocations. A character stores its picked ids in `invocations`, its boon
 in `pactBoon`, and the once-per-rest invocations it spent in
 `invocationUses`, which `Character.longRest` clears. `getInvocations`
@@ -1005,7 +1005,7 @@ save still heals. The library normalizer runs the same step on equipment
 templates. `HealDice.js` imports only the presets, because `Equipment.js`
 imports it and a path through the rules modules would form an import cycle.
 `Potions.potionHeals` reads the item's own field, so a renamed or custom
-item heals by its dice. `app/potions.drinkPotion` asks who drinks it, rolls the dice
+item heals by its dice. `app/potionsWiring.drinkPotion` asks who drinks it, rolls the dice
 through the tray, takes one potion off the stack with `removeItem`, and heals
 through `applyToTarget`. The inventory panel hands the use to the wiring
 through its `drink` hook, because a heal written during the panel's own
@@ -1019,13 +1019,13 @@ modifier" box. `castSpell` also takes a `healBonus`, a flat amount that a class
 feature adds to each target. `entities/HealingBonus.js` gives 2 + the slot level
 for a caster with Disciple of Life, on a heal of 1st level or higher that rolls
 dice and neither revives nor stabilizes. The feature comes from the
-`features` field of the Life Domain entry in `data/classes.js`, and
+`features` field of the Life Domain entry in `data/classCatalog.js`, and
 `LevelUp.unlockedFeatures` adds the features of a catalog subclass to the
 class features. The heal line ends in ", Disciple of Life +N". A heal effect with `revives` raises the dead, and it heals only
 a dead target (see [Damage and healing at 0 HP](#damage-and-healing-at-0-hp)).
 Revivify and Raise Dead ship with it, and the spell form offers it as the
 "Raises the dead" box. A heal effect with `stabilizes` heals nothing and
-stabilizes a dying character through `app/deathSaves.stabilizeCharacter`.
+stabilizes a dying character through `app/deathSaveRolls.stabilizeCharacter`.
 `HealTarget.healBlocked` gives any other target the reason `notDying`.
 Spare the Dying ships with it, and the spell form offers it as the
 "Stabilizes the dying" box. `SpellEntry.normalizeSpellEffect`, which both the
@@ -1225,7 +1225,7 @@ result to the action budget (see
 next turn of the holder. `Lethargy.endedEffects` compares the chip lists
 before and after a write, and a chip whose name and cast no longer appear
 has ended, so a count-down does not trigger it. Every chip writer in the
-wiring layer passes its write through `app/lethargy.js`: the turn sweep,
+wiring layer passes its write through `app/lethargyWrites.js`: the turn sweep,
 the round tick, the end of a concentration, a replacing cast, and the hand
 edits of the sheet and the creature panels.
 
@@ -1359,7 +1359,7 @@ The `helps` and `targetFree` functions in `src/app/spellTargets.js` read it.
 | `src/app/spellOutcomes.js` | Apply the outcomes in `applyOutcomes` | `exhaustive` call |
 | `src/view/SpellEffectText.js` | Describe the kind in `effectLine` | `exhaustive` call |
 
-The ward prompts (`src/app/shieldWard.js` and `src/app/damageWard.js`) and
+The ward prompts (`src/app/shieldWard.js` and `src/app/damageWardPrompt.js`) and
 `DamageWard.landingDamage` read only attack and save outcomes. A new kind that
 deals damage needs a branch there too, and no type check finds it.
 
@@ -1500,7 +1500,7 @@ because the app does not track money.
 
 A ritual cast takes ten minutes longer than a normal cast and spends no spell
 slot. The spell has to have `ritual: true`, and the caster has to have a class
-with the ritual-casting feature. `data/classes.js` gives that feature to the
+with the ritual-casting feature. `data/classCatalog.js` gives that feature to the
 bard, cleric, druid, and wizard. `Classes.hasRitualCasting(character)` is true
 when any caster class of the character has it.
 
@@ -1533,7 +1533,7 @@ covers.
 ## Known and prepared casters
 
 Each caster class manages its leveled spells as a prepared caster or as a
-known caster, and `data/classes.js` records the rule as `knownRule`.
+known caster, and `data/classCatalog.js` records the rule as `knownRule`.
 
 - A *prepared* caster (cleric, druid, paladin, wizard) keeps a larger book and
   readies a subset each day. Only the spellbook's `prepared` list is castable.
@@ -1698,7 +1698,7 @@ path reads the level of its roller:
   checks and saves.
 - `combat/WeaponSwing.js` and `app/spellCastResolve.js` for weapon and spell
   attacks, for a character or a creature.
-- `app/spellCastResolve.js`, `app/weaponAttack.js`, `app/channelDivinity.js`,
+- `app/spellCastResolve.js`, `app/weaponAttack.js`, `app/channelDivinityFlow.js`,
   and `CreatureHit.js` for saves against spells, hit riders, Turn Undead, and
   concentration.
 - `DeathSaves.deathSaveMode` for both death-save paths.
@@ -1709,7 +1709,7 @@ passive form of disadvantage.
 
 ### The sixth level
 
-`app/exhaustion.js` has the write that kills. `setCombatantExhaustion` sets the
+`app/exhaustionWrites.js` has the write that kills. `setCombatantExhaustion` sets the
 level of one combatant by id, logs what the level costs, and then applies the
 sixth level, which differs by the kind of combatant.
 
@@ -1730,7 +1730,7 @@ A revive removes one level, because a combatant that comes back at the sixth
 level would be alive and dead at the same time. `DeathSaves.clearDying` does
 this for a character, which covers a heal above 0 HP and a natural 20 on a
 death save. `Creature.heal` does it for a creature that the heal brings above
-0 HP. This rule is not in `app/exhaustion.js`, because a revive happens in more
+0 HP. This rule is not in `app/exhaustionWrites.js`, because a revive happens in more
 places than that module can see.
 
 A long rest removes one level through `Character.longRest`. A character at
@@ -1847,7 +1847,7 @@ rider raises the total past the DC. Otherwise, a total equal to the DC
 succeeds, as on every other save.
 
 A death save adds no ability modifier and no proficiency, so its bonus is 0.
-`app/deathSaves.js` rolls the riders of the character, such as Bless, and puts
+`app/deathSaveRolls.js` rolls the riders of the character, such as Bless, and puts
 them in the modifier of the tray. The roll names no ability, so the automatic
 failure that unconsciousness imposes on Strength and Dexterity saves does not
 apply to a death save.
@@ -1910,7 +1910,7 @@ The death save roll comes from a button, in the active column of the combat
 screen and on the character sheet, and not from the turn advance.
 `retryImposedSaves` rolls bookkeeping saves automatically, but a death save is
 the player's roll, and the dice tray shows only throws that someone asked for.
-`app/deathSaves.js` owns both buttons. It follows the same split as
+`app/deathSaveRolls.js` owns both buttons. It follows the same split as
 `app/checkRolls.js`: the riders roll in the app, the tray throws the only d20,
 and `judgeDeathSave` reads the result. The entities module has no roll
 function of its own, so the tray throws the only d20.
@@ -1997,7 +1997,7 @@ A round tick ends a chip at the top of a round, but several spells end at a
 turn of one combatant. Sunbeam blinds a creature until the start of the
 caster's next turn, and Acid Arrow burns a creature at the end of that
 creature's next turn. The rules live in `entities/TurnEffects.js` and
-`entities/SpellRepeat.js`, and `app/turnEffects.js` runs them at each turn
+`entities/SpellRepeat.js`, and `app/turnEffectsWiring.js` runs them at each turn
 boundary (see
 [The turn advance](combat.md#the-turn-advance)).
 
@@ -2172,7 +2172,7 @@ customizes it. `Library.activeCreatureByName` is the lookup. `castPlan`
 refuses a cast whose name matches no template, before the dialog opens and so
 before a slot is spent.
 
-`spawnSummons` in `app/summons.js` reads the template, builds one creature per
+`spawnSummons` in `app/summonsWiring.js` reads the template, builds one creature per
 count through `CreatureTemplate.fromTemplate`, and puts all of them on the party's
 tile. That tile is the only place that a cast can reach, because the app
 cannot measure the distance between two tokens. Each creature gets its own id.

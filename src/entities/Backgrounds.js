@@ -1,10 +1,10 @@
-import { DEFAULT_BACKGROUNDS } from '../data/backgrounds.js';
+import { DEFAULT_BACKGROUNDS } from '../data/backgroundCatalog.js';
 
 /** @typedef {import('../types/background.js').BackgroundDef} BackgroundDef */
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * The character backgrounds. The definitions live in data/backgrounds.js
+ * The character backgrounds. The definitions live in data/backgroundCatalog.js
  * (library-kind shaped, with a stable id and name per entry). This module
  * holds the logic that reads them, mirroring Classes.js. The character
  * stores no snapshot. A background's grants are proficiencies, and they

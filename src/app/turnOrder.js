@@ -6,7 +6,7 @@ import {
 } from '../combat/Initiative.js';
 import { skipsTurn } from '../combat/CombatView.js';
 import { describeCombatant, findCombatant } from './combatants.js';
-import { startTurnEffects } from './turnEffects.js';
+import { startTurnEffects } from './turnEffectsWiring.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */

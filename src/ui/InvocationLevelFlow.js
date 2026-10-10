@@ -10,7 +10,7 @@ import { arcanumOptions, pendingArcana } from '../entities/MysticArcanum.js';
 import { activeSpells } from '../library/Library.js';
 import { askTomeCantrips, askTomeRituals } from './TomeFlow.js';
 import { pendingTomeCantrips, pendingTomeRituals, tomeCantrips } from '../entities/PactTome.js';
-import { PACT_BOONS } from '../data/invocations.js';
+import { PACT_BOONS } from '../data/invocationCatalog.js';
 import { splitList } from '../util/text.js';
 
 /**

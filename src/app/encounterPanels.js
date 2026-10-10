@@ -27,7 +27,7 @@ import {
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
-import { addLethargy } from './lethargy.js';
+import { addLethargy } from './lethargyWrites.js';
 import {
   creatureForm,
   deleteCreature,
@@ -37,7 +37,7 @@ import {
 } from './creatureForm.js';
 import { commitCreatures } from './combatants.js';
 import { endCasterEffects, logDefeatTransition, storeCreature } from './combatantWrites.js';
-import { setCombatantExhaustion } from './exhaustion.js';
+import { setCombatantExhaustion } from './exhaustionWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 

@@ -4,12 +4,17 @@ import { bareButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { textField } from './formFields.js';
 import { markMenuButton, openContextMenu, toggleMenuFrom } from './ContextMenu.js';
-import { ancestorIds, buildWorldTree, filterWorldTree, matchesQuery } from '../map/WorldTree.js';
+import {
+  ancestorIds,
+  buildWorldTree,
+  filterWorldTree,
+  matchesQuery,
+} from '../map/WorldTreeModel.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 import { treeKeyAction } from '../view/TreeKeys.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
-/** @typedef {import('../map/WorldTree.js').WorldTreeNode} WorldTreeNode */
+/** @typedef {import('../map/WorldTreeModel.js').WorldTreeNode} WorldTreeNode */
 
 /** A world with at least this many nodes gets the search box above the tree. */
 const SEARCH_MIN_NODES = 12;

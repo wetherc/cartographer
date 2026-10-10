@@ -1716,7 +1716,7 @@ current node is never inside a closed branch, because a change of the current
 node opens every row that `ancestorIds` returns for it.
 
 A search uses `filterWorldTree`, which keeps each matching node and the path
-to it. Both functions are in `map/WorldTree.js` beside `buildWorldTree`, and
+to it. Both functions are in `map/WorldTreeModel.js` beside `buildWorldTree`, and
 both have unit tests. A matching row also shows the name of its parent, and
 `matchesQuery` decides which rows match. A generated world has many places
 with one name, such as five Temples, and the label "Temple, Ashogate" tells
@@ -1746,7 +1746,7 @@ delete does, focus moves to its parent row.
 ## The mini-map
 
 The mini-map is the small picture of the parent map in the top-left corner of
-the map. `src/map/MiniMap.js` computes what it shows, and `src/ui/MiniMap.js`
+the map. `src/map/MiniMapLayout.js` computes what it shows, and `src/ui/MiniMap.js`
 draws it.
 
 `miniMapView(node, parent, position, throughTileId)` returns the parent, the
@@ -1762,7 +1762,7 @@ crossing also uses. A painted block can have any outline, so the point then
 moves to the nearest cell of the block. When the party stands on the parent
 map itself, its own cell is the answer.
 
-`paintTerrain` in `src/map/MiniMap.js` draws each parent tile's base image
+`paintTerrain` in `src/map/MiniMapLayout.js` draws each parent tile's base image
 and overlays at a few pixels per tile, with fog for an unrevealed tile outside
 Build mode. It draws from the widget's own `TileRaster`, so each ref
 rasterizes once per tile size.

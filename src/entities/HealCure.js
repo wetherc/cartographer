@@ -3,7 +3,7 @@
  * ends (`removes`, Heal) and chips of which it ends one (`removesOneOf`,
  * Lesser Restoration and Greater Restoration). The name `Exhaustion` stands
  * for one level of exhaustion, which the app keeps as a number and not as a
- * chip. Every function here is pure. `app/healCure.js` asks the caster to
+ * chip. Every function here is pure. `app/healCurePrompt.js` asks the caster to
  * pick and writes the result.
  */
 

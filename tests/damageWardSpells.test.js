@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { wardSpellDamage } from '../src/app/damageWard.js';
+import { wardSpellDamage } from '../src/app/damageWardPrompt.js';
 import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { canSpend, spend } from '../src/combat/ActionBudget.js';

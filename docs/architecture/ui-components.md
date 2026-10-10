@@ -674,7 +674,7 @@ current level removes one level. Each pip is a button with its own
 accessible name, so the row works from the keyboard.
 
 `onSet` reports the new level, and the owner writes it. The write always
-goes through `app/exhaustion.js`, because the sixth level kills the
+goes through `app/exhaustionWrites.js`, because the sixth level kills the
 combatant and writes a log line.
 
 Without `canEdit`, the row shows plain glyphs and no controls, and it is

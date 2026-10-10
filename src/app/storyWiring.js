@@ -21,7 +21,7 @@ import {
   toggleQuestRevealed,
   toggleQuestStatus,
 } from '../quest/Quests.js';
-import { questDetailCallbacks } from './questDetail.js';
+import { questDetailCallbacks } from './questDetailActions.js';
 import { askCompletion, completeQuest, rewardFields } from './questCompletion.js';
 import { readReward } from '../quest/QuestReward.js';
 import { parseUnlocks } from '../quest/QuestUnlocks.js';
@@ -33,8 +33,8 @@ import { addFromLibrary, creatureForm } from './creatureForm.js';
 import { bringToParty, toggleCompanion } from './companions.js';
 import { commitCreatures } from './combatants.js';
 import { endCasterEffects, storeCreature } from './combatantWrites.js';
-import { setCombatantExhaustion } from './exhaustion.js';
-import { addLethargy } from './lethargy.js';
+import { setCombatantExhaustion } from './exhaustionWrites.js';
+import { addLethargy } from './lethargyWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 

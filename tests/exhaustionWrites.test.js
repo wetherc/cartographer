@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setCombatantExhaustion } from '../src/app/exhaustion.js';
+import { setCombatantExhaustion } from '../src/app/exhaustionWrites.js';
 import { createCharacter, withHP } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';

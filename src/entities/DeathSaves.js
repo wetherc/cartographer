@@ -180,7 +180,7 @@ function countFailures(state, count) {
  * level 3 or higher rolls it at disadvantage. A death save takes no ability
  * modifier and no proficiency, so it has no bonus of its own.
  *
- * `app/deathSaves.js` hands this mode to the dice tray.
+ * `app/deathSaveRolls.js` hands this mode to the dice tray.
  * @param {Character} character
  * @returns {'disadvantage' | null}
  */

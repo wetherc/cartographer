@@ -1,6 +1,6 @@
 import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { promptModal } from '../ui/Modal.js';
-import { offerResistance } from './legendaryResistance.js';
+import { offerResistance } from './legendaryResistancePrompt.js';
 import { spendResource } from '../entities/Character.js';
 import { classLevelOf } from '../entities/Multiclass.js';
 import { spellSaveDC } from '../entities/Classes.js';

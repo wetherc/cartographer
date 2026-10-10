@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { drinkPotion } from '../src/app/potions.js';
+import { drinkPotion } from '../src/app/potionsWiring.js';
 import { createCharacter, damageCharacter, getHP, withHP } from '../src/entities/Character.js';
 import { canSpend, spend } from '../src/combat/ActionBudget.js';
 import { stubApp } from './helpers/app.js';

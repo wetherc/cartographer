@@ -17,10 +17,10 @@ import {
 } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
 import { applyToTarget, endSpellEffects, setCombatantConditions } from './combatantWrites.js';
-import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
+import { rollDeathSaveFor, stabilizeCharacter } from './deathSaveRolls.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
-import { takeTurnAction, toggleBudget, turnActionsOf } from './turnActions.js';
+import { takeTurnAction, toggleBudget, turnActionsOf } from './turnActionsWiring.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 import { entriesFor } from '../log/LogVisibility.js';
 

@@ -8,7 +8,7 @@ import {
   miniMapTileSize,
   miniMapView,
   paintTerrain,
-} from '../src/map/MiniMap.js';
+} from '../src/map/MiniMapLayout.js';
 import { findRegionGroups } from '../src/map/RegionGroups.js';
 import { interiorArt } from '../src/map/TileKinds.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';

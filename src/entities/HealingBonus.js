@@ -8,7 +8,7 @@ import { hasFeature } from './Features.js';
  * slot level. It applies only to a spell of 1st level or higher that rolls
  * healing dice, so a cantrip, a revive, a stabilize, and a heal with no dice
  * (Lesser Restoration) get nothing. An upcast uses the slot it was cast with.
- * The feature comes from the Life Domain entry in `data/classes.js`, and a
+ * The feature comes from the Life Domain entry in `data/classCatalog.js`, and a
  * save stores the subclass by name ("Life Domain"), which the catalog match
  * accepts.
  * @param {import('./Features.js').Featured} caster

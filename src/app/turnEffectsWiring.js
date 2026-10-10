@@ -3,7 +3,7 @@ import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
 import { isGone } from '../combat/CombatView.js';
 import { isDying } from '../entities/DeathSaves.js';
-import { settleChips } from './lethargy.js';
+import { settleChips } from './lethargyWrites.js';
 import { endedLine, strongestPerName } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
 import { commitCreatures, defendedDamage, findCombatant, logName } from './combatants.js';

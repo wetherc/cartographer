@@ -1,4 +1,4 @@
-import { INVOCATIONS, PACT_BOONS } from '../data/invocations.js';
+import { INVOCATIONS, PACT_BOONS } from '../data/invocationCatalog.js';
 import { getSpellbook } from './CharacterSpellbook.js';
 import { classLevelOf } from './Multiclass.js';
 import { getProficiencies } from './Proficiencies.js';

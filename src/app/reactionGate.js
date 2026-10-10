@@ -8,7 +8,7 @@ import { castPlan } from './castPlan.js';
 
 /**
  * The checks that every reaction pause runs before it asks its question.
- * The Shield pause (`shieldWard.js`), the damage pause (`damageWard.js`),
+ * The Shield pause (`shieldWard.js`), the damage pause (`damageWardPrompt.js`),
  * and the Redirect Attack pause (`redirectWard.js`) all ask
  * `reactionCaster` whether the defender may react, and the two spell pauses
  * ask `reactionPlan` whether the defender can pay for the cast.

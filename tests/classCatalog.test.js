@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_CLASSES } from '../src/data/classes.js';
+import { DEFAULT_CLASSES } from '../src/data/classCatalog.js';
 import { FEAT_EFFECT_KINDS } from '../src/data/feats.js';
 import { SKILL_ABILITIES, SKILL_IDS, skillName } from '../src/data/skills.js';
 

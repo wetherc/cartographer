@@ -5,9 +5,9 @@ import { CHANNEL_DIVINITY_ID } from '../entities/PoolIds.js';
 /**
  * Pure rules of the cleric's Channel Divinity options in a fight. Turn Undead
  * needs cleric level 2. Preserve Life needs the feature of that name, which
- * the Life Domain entry in `data/classes.js` grants at cleric level 2. Both
+ * the Life Domain entry in `data/classCatalog.js` grants at cleric level 2. Both
  * spend one use of the Channel Divinity pool and the action. The wiring in
- * `app/channelDivinity.js` opens the dialog and rolls the saves.
+ * `app/channelDivinityFlow.js` opens the dialog and rolls the saves.
  */
 
 /** @typedef {import('./TurnActions.js').TurnAction} TurnAction */

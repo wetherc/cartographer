@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { takeTurnAction, toggleBudget, turnActionsOf } from '../src/app/turnActions.js';
+import { takeTurnAction, toggleBudget, turnActionsOf } from '../src/app/turnActionsWiring.js';
 import { budgetOf, canSpend, spend, surge, unspend } from '../src/combat/ActionBudget.js';
 import { turnActions } from '../src/combat/TurnActions.js';
 import { createCreature } from '../src/entities/Creature.js';

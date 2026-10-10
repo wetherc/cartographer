@@ -24,12 +24,12 @@ import {
   nearbyRadius,
 } from '../combat/CombatRoster.js';
 import { elapse } from '../entities/TimedEffects.js';
-import { addLethargy } from './lethargy.js';
+import { addLethargy } from './lethargyWrites.js';
 import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { wireTurnOrder } from './turnOrder.js';
-import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
+import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffectsWiring.js';
 import { focusMapCanvas } from './combatWiring.js';
 import {
   applyFightXP,

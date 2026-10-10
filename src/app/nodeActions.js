@@ -1,5 +1,5 @@
 import { tilesOutsideBounds } from '../map/TileGrid.js';
-import { collectSubtreeIds } from '../map/WorldTree.js';
+import { collectSubtreeIds } from '../map/WorldTreeModel.js';
 import { coerceNodeKind } from '../map/NodeKinds.js';
 import { MAX_MAP_EDGE, freshNodeId, mapSizeProblem } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';

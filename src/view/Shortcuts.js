@@ -1,5 +1,5 @@
 /**
- * Which app-wide action a keypress means. `app/shortcuts.js` keeps the
+ * Which app-wide action a keypress means. `app/shortcutsWiring.js` keeps the
  * listener, the test for whether the user is typing in a field (which needs
  * the real DOM), and the calls. This file holds the table of what each key
  * does, and the two places where it depends on mode and role.

@@ -1,4 +1,4 @@
-import { DEFAULT_RACES } from '../data/races.js';
+import { DEFAULT_RACES } from '../data/raceCatalog.js';
 
 /** @typedef {import('../types/race.js').RaceDef} RaceDef */
 /** @typedef {import('../types/race.js').RaceSnapshot} RaceSnapshot */
@@ -6,7 +6,7 @@ import { DEFAULT_RACES } from '../data/races.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * The playable races. The definitions live in data/races.js (library-kind
+ * The playable races. The definitions live in data/raceCatalog.js (library-kind
  * shaped, with a stable id and name per entry). This module holds the logic
  * that reads them, mirroring Classes.js.
  * @type {RaceDef[]}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { spellsOf, asTarget } from '../src/app/combatants.js';
-import { endFightEffects, startTurnEffects } from '../src/app/turnEffects.js';
+import { endFightEffects, startTurnEffects } from '../src/app/turnEffectsWiring.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { replaceById } from '../src/entities/Roster.js';

@@ -1,7 +1,7 @@
 import { advanceTurn, currentParticipant } from '../combat/Initiative.js';
 import { isGone, skipsTurn } from '../combat/CombatView.js';
 import { findCombatant } from './combatants.js';
-import { endTurnEffects, startTurnEffects } from './turnEffects.js';
+import { endTurnEffects, startTurnEffects } from './turnEffectsWiring.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -9,7 +9,7 @@ import { endTurnEffects, startTurnEffects } from './turnEffects.js';
 
 /**
  * Move the turn pointer to the next combatant who can act, and run the turn
- * boundaries on the way (see `turnEffects.js`).
+ * boundaries on the way (see `turnEffectsWiring.js`).
  *
  * The turn now ending runs its end-of-turn work first. That work can deal
  * damage, and damage can end a spell whose summons then leave the order, so

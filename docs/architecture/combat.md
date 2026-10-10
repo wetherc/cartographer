@@ -106,9 +106,9 @@ src/app/turnOrder.js ......... the GM's corrections to the order: Previous
                                turn, a new initiative value, and Delay
 src/ui/FightBar.js ........... the bar above the Play map that names the turn
                                and returns to the combat screen
-src/app/turnActions.js ....... takes a turn action, and the GM's pip
+src/app/turnActionsWiring.js . takes a turn action, and the GM's pip
                                override on the budget
-src/app/turnEffects.js ....... what the start and the end of one turn do:
+src/app/turnEffectsWiring.js . what the start and the end of one turn do:
                                repeated saves, later-turn damage, and
                                chips that end at a boundary
 src/app/combatEnd.js ......... the End combat confirmation and the XP award
@@ -175,7 +175,7 @@ cycle and stops where it started. The round counter and the timed effects
 then keep moving until the GM closes the fight.
 
 `app/turnAdvance.js` wraps the advance in `advancePastHeld`, which runs the
-turn boundaries that the advance passes (see `app/turnEffects.js`). The end
+turn boundaries that the advance passes (see `app/turnEffectsWiring.js`). The end
 of a turn rolls the repeated saves of the combatant, such as the save that
 ends Hold Person. It then deals the damage that the chips of the combatant
 leave for later turns, such as the acid of Acid Arrow, and counts the
@@ -368,7 +368,7 @@ such a button and adds the note to its tooltip and accessible name, as in
 offers the GM the waiver.
 
 Each pip is a toggle button with `aria-pressed`. A press calls
-`toggleBudget` in `src/app/turnActions.js`, which goes through the
+`toggleBudget` in `src/app/turnActionsWiring.js`, which goes through the
 `toggleBudget` action of encounterWiring. That action spends the cost with
 `spend` or gives it back with `unspend` from `ActionBudget.js`. Giving back
 the action also drops the swings it banked, so the next Attack action banks
@@ -397,7 +397,7 @@ With `secondWind` and `actionSurge`, the uses left in those pools, it adds
 the two fighter entries. Each of them names its `poolId`, and Action Surge
 has a `cost` of null, because it spends no part of the turn.
 
-`src/app/turnActions.js` is the app half. `turnActionsOf` reads the class
+`src/app/turnActionsWiring.js` is the app half. `turnActionsOf` reads the class
 levels of a character for Cunning Action, and a creature gets the standard
 actions only. `takeTurnAction` spends the cost through `spendBudget`, logs
 the line from `turnActionLine`, and for Dodge puts a Dodging chip on the
@@ -424,7 +424,7 @@ while `spare` is set.
 cleric level 2, and Preserve Life for a character with the feature of that
 name, which the Life Domain grants at level 2. It also has the pure rules:
 the Destroy Undead CR table, the Preserve Life budget and caps, and the
-check of a share-out. `src/app/channelDivinity.js` opens the dialog first
+check of a share-out. `src/app/channelDivinityFlow.js` opens the dialog first
 and spends the pool and the action only on confirm. Turn Undead rolls each
 save with `resolveSave` and puts a Turned chip on a failure, with
 `endsOnDamage` set and `spellName: 'Turn Undead'` in its source, so the
@@ -526,7 +526,7 @@ in `partyWiring.js` calls `restoreAllResistance`, which maps
 `restoreResistance` over the creatures and returns the same array when no
 creature changed.
 
-`app/legendaryResistance.js` asks the GM. `resistSpellSaves` runs in
+`app/legendaryResistancePrompt.js` asks the GM. `resistSpellSaves` runs in
 `resolveCast` after the Shield pause and before the damage reaction pause,
 so Absorb Elements sees the damage that a resisted save leaves. It returns
 null when no failed save belongs to a creature with a use left, and the
@@ -576,7 +576,7 @@ option in place of `confirmModal`, and a test passes its own answer there.
 ### The damage reaction pause
 
 The damage roll of a weapon hit, a spell attack hit, or a save spell is a
-second trigger that the app sees. `src/app/damageWard.js` offers the
+second trigger that the app sees. `src/app/damageWardPrompt.js` offers the
 defender a reaction spell whose buff chip resists a damage type in the
 damage, through `mods.resist` or a
 `resistChoice` pick list. `pendingDamageWard` uses the same gates as

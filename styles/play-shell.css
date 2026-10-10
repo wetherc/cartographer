@@ -148,7 +148,7 @@
 /* ==========================================================================
    Phone views: at phone width, Play mode shows one area at a time. A bar
    fixed to the bottom of the screen picks the area through
-   body[data-phone-view] (src/app/phoneViews.js). The Map view shows the map
+   body[data-phone-view] (src/app/phoneViewsWiring.js). The Map view shows the map
    with the Session tab under it. The Party view shows the roster and the
    dice tray. The Sheet, Story, and Log views show that sidebar tab alone.
    The bar replaces the sidebar tab strip and the Hide panels button there.

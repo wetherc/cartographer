@@ -2,7 +2,7 @@
  * Campaign-wide search for the header search box. This module is pure. It
  * takes the campaign records and the viewer, and returns the matches grouped
  * by kind, each with the place that a click on it opens. The widget in
- * `ui/CampaignSearch.js` draws the list, and `app/searchWiring.js` turns a
+ * `ui/CampaignSearchBox.js` draws the list, and `app/searchWiring.js` turns a
  * chosen match into a jump.
  *
  * A Player tab finds only what its role can read elsewhere in the app:

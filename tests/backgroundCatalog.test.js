@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_BACKGROUNDS } from '../src/data/backgrounds.js';
+import { DEFAULT_BACKGROUNDS } from '../src/data/backgroundCatalog.js';
 import { SKILL_ABILITIES } from '../src/data/skills.js';
 
 test('background ids are unique and match slugified names', () => {

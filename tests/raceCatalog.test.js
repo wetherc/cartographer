@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_RACES } from '../src/data/races.js';
+import { DEFAULT_RACES } from '../src/data/raceCatalog.js';
 import { SKILL_ABILITIES } from '../src/data/skills.js';
 
 const ABILITIES = new Set(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']);

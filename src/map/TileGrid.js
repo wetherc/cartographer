@@ -1,4 +1,4 @@
-import { collectSubtreeIds } from './WorldTree.js';
+import { collectSubtreeIds } from './WorldTreeModel.js';
 import { parseCoords } from './MapGeometry.js';
 import { readLock } from './NodeLock.js';
 import {

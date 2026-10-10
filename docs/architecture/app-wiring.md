@@ -527,7 +527,7 @@ It also mounts the full sheet (`ui/FullSheet.js`). The full sheet borrows the
 sheet card of the sidebar and moves it into a view the width of the page.
 The **Open full sheet** button of the card, the `onOpenSheet` action of a
 roster row menu, and the `openFull` handle that partyWiring passes to the
-sheet for its level-up banner all open it. The C shortcut in `shortcuts.js`
+sheet for its level-up banner all open it. The C shortcut in `shortcutsWiring.js`
 clicks the open or the back button. The party switcher of the full sheet
 selects a character through the same `selectCharacter` path as a roster row,
 and the `partyPanels` view calls `fullSheet.update()` so the switcher
@@ -556,13 +556,13 @@ The helper modules below contain the rest of the character flows:
 | `characterEdit.js` | The fields of the Edit character dialog and the pure functions that apply them: `applyBasics` for the name, scores, and proficiency lists, and `applyVitals` for HP and AC |
 | `raceEdit.js` | The race pick fields of the Edit character dialog and `applyRacePicks`, which moves a Half-Elf's floating increases or swaps a Dragonborn's ancestry resistance or a High Elf's cantrip, and `raceCantripOptions`, the wizard cantrip list that the New character dialog also offers |
 | `checkRolls.js` | Saving throws and ability checks rolled from the sheet |
-| `deathSaves.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
+| `deathSaveRolls.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
 | `luckyRoll.js` | `rollD20InTray`, which rolls a d20 selection in the dice tray and rolls it once more for a Lucky halfling who shows a natural 1. Weapon attacks and death saves use it |
-| `exhaustion.js` | The exhaustion write for a character or a creature, including the death at level 6 |
+| `exhaustionWrites.js` | The exhaustion write for a character or a creature, including the death at level 6 |
 | `slay.js` | The kill of a character or a creature with no damage roll, for Power Word Kill |
 | `passTime.js` | Spending game time on every timed effect, for the Time panel's Advance button, both rests, and a party walk. `passTravelTime` also logs and announces a walk that crosses into a new watch |
 
-`checkRolls.js` and `deathSaves.js` take the bonus from the pure rules in
+`checkRolls.js` and `deathSaveRolls.js` take the bonus from the pure rules in
 `entities/Checks.js` and `entities/DeathSaves.js`, but the dice tray throws
 the only d20. The rules modules can roll their own d20, and the tray also
 rolls to show a roll, so calling the rules module's roll throws two d20s and
@@ -660,9 +660,9 @@ the same code. The fight itself renders in combat mode, which
 | --- | --- |
 | `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and running the turn boundaries on the way |
 | `turnOrder.js` | The GM's corrections to a running order: Previous turn, a new initiative value for one combatant, and Delay. `encounterWiring.js` calls it with its `setCombat` |
-| `turnEffects.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
+| `turnEffectsWiring.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
 | `combatEnd.js` | The fight summary, the XP dialog that opens before the fight ends, the confirm for a fight with standing foes and no character to earn XP, and the award after the fight closes |
-| `summons.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
+| `summonsWiring.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
 | `shieldWard.js` | The pause before a hit lands on a defender that can raise its AC with a reaction (Shield), for a weapon swing and for an attack spell |
 | `reactionGate.js` | The checks that the Shield, damage, and Redirect Attack pauses share: whether the defender may react now (`reactionCaster`), and the self-cast plan of a reaction spell it can pay for (`reactionPlan`) |
@@ -921,7 +921,7 @@ The helper does the rest:
 
 #### Quest details
 
-The expanded GM row of a quest gets its callbacks from `questDetail.js`.
+The expanded GM row of a quest gets its callbacks from `questDetailActions.js`.
 These callbacks add, edit, check off, reorder, and remove objectives, and
 add and remove links. Each edit reads the quest again by id before it
 writes, because another tab can change the quest while a dialog is open.
@@ -1057,9 +1057,9 @@ was inside the menu. An action that opens a dialog moves focus into the
 dialog first, and the dialog keeps it. Escape and a pointer press outside
 the header also close the menu.
 
-### phoneViews.js
+### phoneViewsWiring.js
 
-`phoneViews.js` mounts the bottom bar of Play mode at phone width. It runs
+`phoneViewsWiring.js` mounts the bottom bar of Play mode at phone width. It runs
 after `sessionControls.js`, because it reads the sidebar tabs. The views
 and the tab that each one opens come from the pure `view/PhoneViews.js`.
 A press on a view sets `body[data-phone-view]` and clicks the view's tab,
@@ -1078,13 +1078,13 @@ tab is bound to, or "A player" when the tab is a spectator. When the GM
 ticks the tray's **Hidden roll** box, `trayRollLine` (`log/TrayRollLine.js`)
 makes the line GM-only, and a Player tab reads "The GM rolls in secret."
 
-### shortcuts.js and onboarding.js
+### shortcutsWiring.js and onboarding.js
 
-`shortcuts.js` owns the global keyboard shortcuts, and `onboarding.js` owns
+`shortcutsWiring.js` owns the global keyboard shortcuts, and `onboarding.js` owns
 the first-run overlay.
 
 The table of which key means what is in `src/view/Shortcuts.js`, so a test
-can check it without a keyboard. `shortcuts.js` keeps the listener, the
+can check it without a keyboard. `shortcutsWiring.js` keeps the listener, the
 test for whether the user is typing in a field (which needs real DOM
 elements), and the click or call that each action becomes. Save, Undo, and
 Redo click the header buttons, so a shortcut and a click run the same code.
@@ -1094,7 +1094,7 @@ the last stroke, and in every other mode it undoes the last save.
 
 ### searchWiring.js
 
-`searchWiring.js` mounts the header search box (`ui/CampaignSearch.js`) and
+`searchWiring.js` mounts the header search box (`ui/CampaignSearchBox.js`) and
 turns a chosen match into a jump. The matching is the pure
 `src/view/CampaignSearch.js`, which takes the campaign records and the viewer
 and returns the matches grouped by kind. A Player tab finds only what its

@@ -1,6 +1,6 @@
 /**
  * The damage type that a reaction spell would resist in one hit, for the
- * pause after a damage roll (`app/damageWard.js`). A buff whose chip resists
+ * pause after a damage roll (`app/damageWardPrompt.js`). A buff whose chip resists
  * types in `mods.resist`, or lets the caster pick one from `resistChoice`,
  * qualifies. Every function here is pure.
  */

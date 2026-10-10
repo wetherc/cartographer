@@ -20,7 +20,7 @@ import { healingBlockedBy } from '../entities/HealTarget.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { isLucky, raceSaveSlant } from '../entities/RaceTraits.js';
-import { settleChips } from './lethargy.js';
+import { settleChips } from './lethargyWrites.js';
 import { combatantSaveBonus, commitCreatures, findCombatant, hpOf, logName } from './combatants.js';
 
 /**

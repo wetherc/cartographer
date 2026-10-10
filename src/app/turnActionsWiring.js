@@ -16,7 +16,7 @@ import {
 } from '../entities/PoolIds.js';
 import { RAGE_ROUNDS, RAGING, rageLine, rageMods } from '../combat/Rage.js';
 import { channelActions } from '../combat/ChannelDivinity.js';
-import { preserveLife, turnUndead } from './channelDivinity.js';
+import { preserveLife, turnUndead } from './channelDivinityFlow.js';
 import { findCombatant } from './combatants.js';
 import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
 

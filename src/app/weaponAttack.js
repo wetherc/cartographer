@@ -31,7 +31,7 @@ import { resolveSave } from '../entities/Checks.js';
 import { hitSaveLine, hitSaveOf } from '../combat/HitSave.js';
 import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
-import { offerDamageWard, pendingDamageWard } from './damageWard.js';
+import { offerDamageWard, pendingDamageWard } from './damageWardPrompt.js';
 import { offerRedirect, pendingRedirect } from './redirectWard.js';
 import { resolveCast } from './spellCastResolve.js';
 import { attackDialog } from './attackFields.js';

@@ -4,7 +4,7 @@ import { castPlan } from '../src/app/castPlan.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { rosterTargets } from '../src/app/spellTargets.js';
 import { applyConditionToTarget, endSpellEffects } from '../src/app/combatantWrites.js';
-import { addLethargy } from '../src/app/lethargy.js';
+import { addLethargy } from '../src/app/lethargyWrites.js';
 import { advancePastHeld } from '../src/app/turnAdvance.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { armorClass } from '../src/entities/Armor.js';

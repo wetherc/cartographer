@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSummons } from '../src/app/summons.js';
+import { spawnSummons } from '../src/app/summonsWiring.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 
 /**

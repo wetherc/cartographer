@@ -8,7 +8,7 @@ import {
 } from '../map/EditHistory.js';
 import { revertEdit } from '../map/EditRevert.js';
 import { withoutDeadLinks } from '../map/TileGrid.js';
-import { collectSubtreeIds } from '../map/WorldTree.js';
+import { collectSubtreeIds } from '../map/WorldTreeModel.js';
 import { deleteLanding, locationsAfterDelete } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { restorePlacements } from '../party/CharacterTokens.js';

@@ -1,4 +1,4 @@
-import { PACT_BOONS } from '../data/invocations.js';
+import { PACT_BOONS } from '../data/invocationCatalog.js';
 
 /**
  * Coercers for the list and record fields of a loaded character or creature.

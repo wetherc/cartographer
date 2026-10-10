@@ -1,6 +1,6 @@
 import { clientRectToBuffer } from '../map/MapGeometry.js';
 import { revealAll } from '../map/FogOfWar.js';
-import { miniMapView } from '../map/MiniMap.js';
+import { miniMapView } from '../map/MiniMapLayout.js';
 import { mustGetElement } from '../ui/dom.js';
 import { mountMapControls } from '../ui/MapControls.js';
 import { mountMiniMap } from '../ui/MiniMap.js';

@@ -1,4 +1,4 @@
-import { collectSubtreeIds } from './WorldTree.js';
+import { collectSubtreeIds } from './WorldTreeModel.js';
 import { ENTRANCE_ART, entranceArtFor, relandedTile } from './NodeEdits.js';
 import { stairwayTo } from './MapExits.js';
 import { ensureChildLink } from './TilePaint.js';

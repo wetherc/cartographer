@@ -6,7 +6,7 @@ import {
   collectSubtreeIds,
   filterWorldTree,
   matchesQuery,
-} from '../src/map/WorldTree.js';
+} from '../src/map/WorldTreeModel.js';
 import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 
 /** @param {string} id @param {string|null} parentId */
@@ -47,7 +47,7 @@ test('buildWorldTree does not loop on a cyclic parentId chain', () => {
   // Both point at each other, neither is a true root; whichever is visited
   // first anchors the tree and the other becomes its child, once each.
   const ids = [];
-  /** @param {import('../src/map/WorldTree.js').WorldTreeNode} n */
+  /** @param {import('../src/map/WorldTreeModel.js').WorldTreeNode} n */
   function walk(n) {
     ids.push(n.node.id);
     n.children.forEach(walk);
@@ -113,7 +113,7 @@ test('ancestorIds stops on a parentId cycle', () => {
   assert.deepEqual(ancestorIds(nodes, 'a'), ['b', 'c']);
 });
 
-/** @param {import('../src/map/WorldTree.js').WorldTreeNode[]} roots @returns {unknown[]} */
+/** @param {import('../src/map/WorldTreeModel.js').WorldTreeNode[]} roots @returns {unknown[]} */
 function outline(roots) {
   return roots.map((r) => [r.node.name, outline(r.children)]);
 }

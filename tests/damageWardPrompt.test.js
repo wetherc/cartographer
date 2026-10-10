@@ -1,13 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pendingDamageWard } from '../src/app/damageWard.js';
+import { pendingDamageWard } from '../src/app/damageWardPrompt.js';
 import { rollWeaponAttack } from '../src/app/weaponAttack.js';
 import { canSpend, spend } from '../src/combat/ActionBudget.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { roll } from '../src/dice/DiceRoller.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createResource } from '../src/entities/Resource.js';
-import { wardType, wardTypes } from '../src/entities/DamageWard.js';
 import { emptyLibrary, setActiveLibrary } from '../src/library/Library.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 
@@ -119,21 +118,6 @@ async function swing(app, yes) {
   });
   return asked;
 }
-
-test('wardType picks the largest type the spell resists that the defender does not', () => {
-  const groups = [
-    { damageType: 'fire', rolls: [3], bonus: 0, subtotal: 3 },
-    { damageType: 'cold', rolls: [6], bonus: 0, subtotal: 6 },
-    { damageType: 'slashing', rolls: [8], bonus: 0, subtotal: 8 },
-  ];
-  assert.equal(wardType(ABSORB, groups, {}), 'cold');
-  assert.equal(wardType(ABSORB, groups, { resist: ['cold'] }), 'fire');
-  assert.equal(wardType(ABSORB, groups, { immune: ['cold', 'fire'] }), null);
-  assert.deepEqual(wardTypes({ ...ABSORB, effect: { kind: 'utility' } }), []);
-  assert.deepEqual(wardTypes({ ...ABSORB, effect: { kind: 'buff', mods: { resist: ['acid'] } } }), [
-    'acid',
-  ]);
-});
 
 test('casting the reaction after the damage roll halves the picked type', async () => {
   setActiveLibrary({ ...emptyLibrary(), spells: [ABSORB] });

@@ -1,4 +1,4 @@
-import { mountCampaignSearch } from '../ui/CampaignSearch.js';
+import { mountCampaignSearch } from '../ui/CampaignSearchBox.js';
 import { mustGetElement } from '../ui/dom.js';
 import { searchCampaign } from '../view/CampaignSearch.js';
 import { isGM } from '../view/ViewRole.js';

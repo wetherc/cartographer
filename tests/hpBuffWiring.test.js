@@ -8,7 +8,7 @@ import {
   applyToTarget,
   endSpellEffects,
 } from '../src/app/combatantWrites.js';
-import { startTurnEffects } from '../src/app/turnEffects.js';
+import { startTurnEffects } from '../src/app/turnEffectsWiring.js';
 import { passTime } from '../src/app/passTime.js';
 import { grantTempTo } from '../src/app/tempHP.js';
 import { getHP } from '../src/entities/Character.js';

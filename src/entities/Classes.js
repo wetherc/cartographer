@@ -3,7 +3,7 @@ import { abilityModifier } from './Modifiers.js';
 import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
 import { characterProficiency, getClasses } from './Multiclass.js';
 import { casterDefFor, isCasterRef, subclassDef } from './ClassCasting.js';
-import { DEFAULT_CLASSES } from '../data/classes.js';
+import { DEFAULT_CLASSES } from '../data/classCatalog.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
 import { hasAncientSecrets, tomeCantrips, tomeRituals } from './PactTome.js';
@@ -17,7 +17,7 @@ import { raceCantrips } from './Races.js';
 /** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 
 /**
- * The playable classes. The definitions themselves live in data/classes.js
+ * The playable classes. The definitions themselves live in data/classCatalog.js
  * (library-kind shaped, with a stable id and name per entry). This module
  * holds the logic that reads them.
  * @type {ClassDef[]}

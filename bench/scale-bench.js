@@ -27,7 +27,7 @@ import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { createMapNode } from '../src/map/TileGrid.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { revealAround } from '../src/map/FogOfWar.js';
-import { buildWorldTree } from '../src/map/WorldTree.js';
+import { buildWorldTree } from '../src/map/WorldTreeModel.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import {
   buildState,

@@ -11,7 +11,7 @@ import {
   setInvocations,
   setPactBoon,
 } from '../entities/Invocations.js';
-import { PACT_BOONS } from '../data/invocations.js';
+import { PACT_BOONS } from '../data/invocationCatalog.js';
 import { splitList } from '../util/text.js';
 import { askArcana, choosePendingWarlockPicks } from './InvocationLevelFlow.js';
 import { buildTomeRows, progressRow } from './TomeFlow.js';
