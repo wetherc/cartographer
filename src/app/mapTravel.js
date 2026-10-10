@@ -21,6 +21,7 @@ import { createSightingLog } from './mapSightings.js';
 import { createTeleport } from './mapTeleport.js';
 import { passLock } from './lockGuard.js';
 import { isLocked } from '../map/NodeLock.js';
+import { tileAt } from '../map/TileIndex.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -170,6 +171,23 @@ export function createMapTravel(app, env, dialogs) {
   }
 
   /**
+   * Discover each point of interest a walk steps onto, in walk order, and
+   * then the tile it ends on. The first tile of the path is where the walk
+   * starts, so it does not count.
+   * @param {readonly string[]} path the tiles walked through, start first
+   * @param {import('../types/map.js').Tile} tile the tile the walk ends on
+   * @param {string} [nodeId] the node of the walk; the node in view by default
+   */
+  function discoverAlong(path, tile, nodeId = navigator.getCurrentNode().id) {
+    const node = grid.getNode(nodeId);
+    for (const id of path.slice(1)) {
+      const step = node && id !== tile.id ? tileAt(node, id) : undefined;
+      if (step) discoverTile(step, nodeId);
+    }
+    discoverTile(tile, nodeId);
+  }
+
+  /**
    * Which single character this tab's clicks move, or null when the clicks
    * move the whole party instead. Individual movement exists only while the
    * GM's split-party toggle is on. The GM moves whoever is selected in the
@@ -206,7 +224,7 @@ export function createMapTravel(app, env, dialogs) {
     const before = navigator.getCurrentNode();
     grid.updateNode(partyTracker.reveal(before, [...path, tile.id], [character]));
     noteSightings(before);
-    discoverTile(tile);
+    discoverAlong(path, tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.syncPartyMarker();
     env.regionTree.update();
@@ -267,7 +285,7 @@ export function createMapTravel(app, env, dialogs) {
     return findPath(node, at.tileId, tile.id, { revealedOnly: !isGM(state.role) });
   }
 
-  const { spendWalk, walkTo, confirmMoveHere } = createWalkGate(
+  const { walkCost, spendWalk, walkTo, confirmMoveHere } = createWalkGate(
     app,
     { clickSubject, walkPath, travelTo, walkParty },
     dialogs,
@@ -376,7 +394,7 @@ export function createMapTravel(app, env, dialogs) {
           }
           // A linked tile can be a discoverable point of interest, such as a
           // cave mouth over a dungeon.
-          discoverTile(tile, parent.id);
+          discoverAlong(path ?? [], tile, parent.id);
           // Remember which parent tile this entry was through, so the ways
           // out and the return landing read the block this traveler came in
           // by. Read the subject back off the roster, because the move above
@@ -432,8 +450,10 @@ export function createMapTravel(app, env, dialogs) {
       const onDoor = at.tileId === tile.id;
       if (at.nodeId === here.id && (onDoor || path)) {
         if (!onDoor && path) {
-          if (!subject && gm) spendWalk(tile, path);
+          // Reveal with the sight of the watch the walk starts in.
           grid.updateNode(partyTracker.reveal(here, path));
+          discoverAlong(path, tile);
+          if (!subject && gm) spendWalk(tile, path);
         }
         exitToParent(exit);
         return;
@@ -454,12 +474,16 @@ export function createMapTravel(app, env, dialogs) {
    * @param {readonly string[] | null | undefined} path
    */
   function walkParty(tile, path) {
-    if (path !== undefined) spendWalk(tile, path);
+    // Count the time before the move, because a forced move counts from the
+    // party's tile. Spend it after the move, so the walk reveals its path
+    // with the sight of the watch it starts in, as the walk into a child does.
+    const minutes = path === undefined ? 0 : walkCost(tile, path);
     const before = navigator.getCurrentNode();
     partyTracker.moveTo(before.id, tile.id, path ?? []);
     state.characters = recallAll(state.characters);
+    if (path !== undefined) app.actions.passTravelTime(minutes);
     noteSightings(before);
-    discoverTile(tile);
+    discoverAlong(path ?? [], tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.syncPartyMarker();
     app.actions.markDirty(); // party position and fog changed

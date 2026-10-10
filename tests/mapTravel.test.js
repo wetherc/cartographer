@@ -9,6 +9,7 @@ import {
   updateTileMetadata,
 } from '../src/map/TileGrid.js';
 import { MapNavigator } from '../src/map/MapNavigator.js';
+import { tileAt } from '../src/map/TileIndex.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
@@ -897,4 +898,44 @@ test('a kept lock moves nobody when the view changes while the GM decides', asyn
   gm.navigator.goTo('other');
   await settle();
   assert.deepEqual(gm.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,1' });
+});
+
+test('a party walk discovers each point of interest along its path, in walk order', async () => {
+  const { grid, navigator, log, clickTile } = world();
+  const marked = updateTileMetadata(navigator.getCurrentNode(), '2,3', {
+    discoverable: true,
+    poiType: 'shrine',
+  });
+  grid.updateNode(updateTileMetadata(marked, '2,2', { discoverable: true, poiType: 'cave' }));
+  clickTile('2,1');
+  await settle();
+  const top = grid.getNode('world');
+  assert.equal(top && tileAt(top, '2,3')?.metadata.discovered, true);
+  assert.deepEqual(log, ['Discovered shrine.', 'Discovered cave.']);
+});
+
+test('a party walk reveals its path before it spends the time of the walk', async () => {
+  const w = world();
+  /** @type {any[]} */
+  const seen = [];
+  w.app.actions.passTravelTime = () => {
+    seen.push(w.partyTracker.getPosition().tileId);
+    return true;
+  };
+  w.clickTile('2,1');
+  await settle();
+  assert.deepEqual(seen, ['2,1'], 'the clock moves once the party stands on the new tile');
+});
+
+test('a split-party walk discovers a point of interest the character steps over', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const w = world({ splitParty: true, characters: [hero], selected: 'hero' });
+  w.grid.updateNode(
+    updateTileMetadata(w.navigator.getCurrentNode(), '1,5', {
+      discoverable: true,
+      poiType: 'well',
+    }),
+  );
+  w.clickTile('0,5');
+  assert.deepEqual(w.log, ['Discovered well.']);
 });

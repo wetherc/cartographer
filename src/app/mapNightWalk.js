@@ -97,6 +97,20 @@ export function createWalkGate(app, deps, dialogs) {
   const depthOf = (node) => grid.getBreadcrumb(node.id).length - 1;
 
   /**
+   * The game minutes of a whole-party walk to the tile, in the node in view.
+   * Call this before the party moves, because a forced move counts from the
+   * party's tile.
+   * @param {import('../types/map.js').Tile} tile
+   * @param {readonly string[] | null} path
+   * @param {import('../types/map.js').MapNode} [node] the node of the walk
+   */
+  function walkCost(tile, path, node = navigator.getCurrentNode()) {
+    return path
+      ? walkMinutes(node, depthOf(node), path)
+      : travelMinutes(node, depthOf(node), walkSteps(tile, path));
+  }
+
+  /**
    * Spend the game time of a whole-party walk to the tile, in the node in
    * view. Call this before the party moves, because a forced move counts
    * from the party's tile.
@@ -105,10 +119,7 @@ export function createWalkGate(app, deps, dialogs) {
    * @param {import('../types/map.js').MapNode} [node] the node of the walk
    */
   function spendWalk(tile, path, node = navigator.getCurrentNode()) {
-    const minutes = path
-      ? walkMinutes(node, depthOf(node), path)
-      : travelMinutes(node, depthOf(node), walkSteps(tile, path));
-    app.actions.passTravelTime(minutes);
+    app.actions.passTravelTime(walkCost(tile, path, node));
   }
 
   /**
@@ -195,5 +206,5 @@ export function createWalkGate(app, deps, dialogs) {
     answerWalk(choice, view.id, tile, warning);
   }
 
-  return { spendWalk, walkTo, confirmMoveHere };
+  return { walkCost, spendWalk, walkTo, confirmMoveHere };
 }
