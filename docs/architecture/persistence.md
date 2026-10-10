@@ -894,7 +894,8 @@ field is unchanged.
 
 Undo and redo work from a log of invertible deltas against the persisted
 save, in `storage/HistoryLog.js`. A delta records only what one save changed,
-not the whole campaign.
+not the whole campaign. `storage/HistoryRecords.js` reads and writes the
+index and the stored records of the log.
 
 `saveCampaign` is the one save path. It writes the campaign, then appends one
 delta. The `diffState` function of `storage/StateDiff.js` produces that delta
