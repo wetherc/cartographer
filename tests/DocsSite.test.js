@@ -147,3 +147,20 @@ test('headingIds follows the GFM id rules', () => {
   );
   assert.deepEqual([...ids], ['a-code-title', 'hit-riders-and-the-pact-weapon', 'same', 'same-1']);
 });
+
+/**
+ * The text from the `## Features` heading up to the next `## ` heading.
+ * @param {string} text
+ */
+function featuresSection(text) {
+  const start = text.indexOf('\n## Features\n');
+  const end = text.indexOf('\n## ', start + 1);
+  return text.slice(start, end);
+}
+
+test('docs/index.md repeats the README feature list, with links relative to docs/', () => {
+  const readme = featuresSection(readFileSync(join(ROOT, 'README.md'), 'utf8'));
+  const index = featuresSection(readFileSync(join(ROOT, 'docs/index.md'), 'utf8'));
+  assert.ok(readme.includes('### World building'));
+  assert.equal(index, readme.replaceAll('](docs/', ']('));
+});

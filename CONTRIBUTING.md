@@ -129,6 +129,7 @@ The files that only the site uses are in `site/`, which has the same layout as t
 
 When you add a document, add it to `site/_data/docs_nav.yml`. `tests/DocsSite.test.js` fails when a page is missing from the sidebar, when a sidebar entry has no page, or when a relative link or a heading anchor has no target.
 
+The home page of the site, `docs/index.md`, repeats the Features section of `README.md`. When you change one, copy the change to the other, with each `docs/` link path written relative to `docs/`. The same test fails when the two sections differ.
 To see the site before a deploy, start Docker and run this command:
 
 ```bash
