@@ -41,8 +41,14 @@ export function keyHolder(characters, lock) {
   const want = lock.requires?.toLowerCase();
   if (!want) return null;
   return (
-    characters.find((c) => (c.inventory ?? []).some((i) => i.name.trim().toLowerCase() === want)) ??
-    null
+    characters.find((c) =>
+      (c.inventory ?? []).some(
+        (i) =>
+          String(i.name ?? '')
+            .trim()
+            .toLowerCase() === want,
+      ),
+    ) ?? null
   );
 }
 

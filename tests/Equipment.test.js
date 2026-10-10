@@ -842,3 +842,9 @@ test('a two-handed weapon closes the off hand and clears it when wielded', () =>
   assert.equal(equipBlocker(hero, 'chest', hero.inventory[1]), 'slot');
   assert.equal(getEquipped(equip(wielding, 'mainHand', null), 'mainHand'), null);
 });
+
+test('migrateItem turns a name that is not a string into text', () => {
+  assert.equal(migrateItem(/** @type {any} */ ({ name: null, type: 'gear' })).name, '');
+  assert.equal(migrateItem(/** @type {any} */ ({ type: 'gear' })).name, '');
+  assert.equal(migrateItem(/** @type {any} */ ({ name: 42, type: 'gear' })).name, '42');
+});

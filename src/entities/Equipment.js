@@ -319,11 +319,14 @@ export function getEquipped(character, slot) {
  * Normalize an inventory item from any era. Pre-weight-class body armor
  * carried a flat acBonus on top of 10 + DEX. This reads as light armor, with
  * full DEX scaling and the same total, and a base AC of 10 + the old bonus.
+ * A name that is not a string, from a hand-edited import, reads as text, so
+ * name lookups such as the key of a locked map do not throw.
  * This function is pure. Unchanged items return the same reference.
  * @param {InventoryItem} item
  * @returns {InventoryItem}
  */
 export function migrateItem(item) {
+  if (typeof item.name !== 'string') item = { ...item, name: String(item.name ?? '') };
   if (item.type === 'armor' && item.baseAC === undefined) {
     const { acBonus, ...rest } = item;
     return { ...rest, armorWeight: item.armorWeight ?? 'light', baseAC: 10 + (acBonus ?? 0) };

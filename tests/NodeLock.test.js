@@ -148,3 +148,11 @@ test('Key item is enabled only while Lock names a lock', () => {
     true,
   );
 });
+
+test('keyHolder skips an item whose name is missing or not a string', () => {
+  const lock = { requires: 'Warding Key', open: false };
+  const odd = /** @type {any} */ ({ name: 'Odd', inventory: [{ name: null }, { name: 7 }, {}] });
+  const aldric = /** @type {any} */ ({ name: 'Aldric', inventory: [item('Warding Key')] });
+  assert.equal(keyHolder([odd, aldric], lock), aldric);
+  assert.equal(keyHolder([odd], lock), null);
+});
