@@ -360,6 +360,10 @@ The gesture layers live beside `mapWiring.js`, each in its own file:
 - `mapExitTravel.js` handles the ways out of the node in view: a return to
   the parent node, and a walk across a border into the region beside it.
   `mapTravel.js` builds it and gives it the click helpers they share.
+- `moveEncounter.js` checks for an encounter after a move onto another map
+  (`triggerEncounterAfterMove`), at the position of the character that moved
+  or of the whole party. The zoom into a child, the return to the parent, and
+  the border crossing all use it.
 - `mapTeleport.js` handles a Play-mode pick in the World panel. A GM pick
   of another node asks whether to view that map or to teleport the party.
 - `mapSightings.js` logs "Sighted" and the name of a sub-map when a move

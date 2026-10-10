@@ -10,6 +10,7 @@ import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { isGM } from '../view/ViewRole.js';
 import { passLock } from './lockGuard.js';
+import { triggerEncounterAfterMove } from './moveEncounter.js';
 import { isLocked } from '../map/NodeLock.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -102,14 +103,7 @@ export function createExitTravel(app, env, travel) {
     travel.noteSightings(parentBefore);
     app.actions.markDirty();
     travel.refreshLocationPanels();
-    if (subject) {
-      // Re-read the roster. The move above replaced the character object.
-      const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
-      app.actions.maybeTriggerEncounter(
-        characterPosition(moved, partyTracker.getPosition()),
-        subject.name,
-      );
-    } else app.actions.maybeTriggerEncounter();
+    triggerEncounterAfterMove(app, subject);
   }
 
   /**
@@ -208,12 +202,7 @@ export function createExitTravel(app, env, travel) {
     travel.noteSightings(targetBefore);
     app.actions.markDirty();
     travel.refreshLocationPanels();
-    if (moved) {
-      app.actions.maybeTriggerEncounter(
-        characterPosition(moved, partyTracker.getPosition()),
-        moved.name,
-      );
-    } else app.actions.maybeTriggerEncounter();
+    triggerEncounterAfterMove(app, moved);
   }
 
   return { exitToParent, veilCrossing };

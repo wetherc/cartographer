@@ -20,6 +20,7 @@ import { createExitTravel } from './mapExitTravel.js';
 import { createSightingLog } from './mapSightings.js';
 import { createTeleport } from './mapTeleport.js';
 import { passLock } from './lockGuard.js';
+import { triggerEncounterAfterMove } from './moveEncounter.js';
 import { isLocked } from '../map/NodeLock.js';
 import { tileAt } from '../map/TileIndex.js';
 
@@ -427,14 +428,7 @@ export function createMapTravel(app, env, dialogs) {
         // ways out of the child itself.
         env.syncExits();
         refreshLocationPanels();
-        if (subject) {
-          // Re-read the roster. The move above replaced the character object.
-          const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
-          app.actions.maybeTriggerEncounter(
-            characterPosition(moved, partyTracker.getPosition()),
-            subject.name,
-          );
-        } else if (gm) app.actions.maybeTriggerEncounter();
+        triggerEncounterAfterMove(app, subject);
       }
       return;
     }
