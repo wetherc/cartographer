@@ -93,9 +93,15 @@ export function defensesOf(entity, { nonmagical = false } = {}) {
 
 /**
  * The damage a target takes from one hit, after a save's halving and its
- * defenses. `notes` names each defense that changed a type, for the log. A
- * hit that no defense touches halves its whole total, which keeps the result
- * equal to a hit on a target with no defenses at all.
+ * defenses. `notes` names each defense that changed a type, for the log.
+ *
+ * A save halves the damage of the whole effect, so the halving keeps its
+ * fraction until the end. The types that no defense touches add up first and
+ * round down once, the same as a hit on a target with no defenses at all. A
+ * type that a defense touches takes its half, then resistance or
+ * vulnerability, and rounds down once on its own. On a save, 7 bludgeoning
+ * and 13 cold give 10 with no defenses, 6 with cold resistance (3.5 and
+ * 3.25), and 16 with cold vulnerability (3.5 and 13).
  * @param {DamageGroup[]} groups the hit's damage, one group per type
  * @param {DamageDefenses} defenses
  * @param {{ halve?: boolean }} [options] `halve` is a successful save against
@@ -103,32 +109,33 @@ export function defensesOf(entity, { nonmagical = false } = {}) {
  * @returns {{ total: number, notes: string[] }}
  */
 export function applyDefenses(groups, defenses, { halve = false } = {}) {
-  const touched = groups.filter((g) => KEYS.some((key) => defenses[key].includes(g.damageType)));
-  if (touched.length === 0) {
-    const sum = groups.reduce((n, g) => n + g.subtotal, 0);
-    return { total: halve ? Math.floor(sum / 2) : sum, notes: [] };
-  }
+  const share = halve ? 0.5 : 1;
   /** @type {string[]} */
   const notes = [];
+  let plain = 0;
   let total = 0;
   for (const g of groups) {
-    let taken = halve ? Math.floor(g.subtotal / 2) : g.subtotal;
     const type = g.damageType;
+    if (!KEYS.some((key) => defenses[key].includes(type))) {
+      plain += g.subtotal * share;
+      continue;
+    }
     if (defenses.immune.includes(type)) {
       notes.push(`immune to ${type}`);
       continue;
     }
+    let taken = g.subtotal * share;
     if (defenses.resist.includes(type)) {
-      taken = Math.floor(taken / 2);
+      taken /= 2;
       notes.push(`resists ${type}`);
     }
     if (defenses.vulnerable.includes(type)) {
       taken *= 2;
       notes.push(`vulnerable to ${type}`);
     }
-    total += taken;
+    total += Math.floor(taken);
   }
-  return { total, notes };
+  return { total: total + Math.floor(plain), notes };
 }
 
 /**

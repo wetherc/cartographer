@@ -397,8 +397,12 @@ the list falls back to the first type in it.
 damage roll. It returns the total damage taken and a note for each defense
 that changed a type. `halve` means a successful save against a spell that
 deals half damage, and the function applies it before the defenses, which is
-the 5e order. When no defense applies, the function halves the whole total and
-not each type, so a spell with two damage types rounds down once.
+the 5e order. The half keeps its fraction until the end. The types that no
+defense touches add up and round down once together, so a spell with two
+damage types and no defenses rounds down once. Each type that a defense
+touches takes its half, then resistance or vulnerability, and rounds down on
+its own. On a save, 7 bludgeoning and 13 cold give 10 with no defenses, 6
+with cold resistance, and 16 with cold vulnerability.
 
 `combatants.defendedDamage` finds the target by id and calls `applyDefenses`.
 The weapon path, the spell attack path (once for each ray), and the save path

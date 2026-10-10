@@ -69,6 +69,22 @@ test('a saved half comes before resistance', () => {
   assert.equal(applyDefenses([group('fire', 5)], none).total, 5);
 });
 
+test('a save halves the whole effect, and a defense on one type rounds that type alone', () => {
+  const hit = [group('bludgeoning', 7), group('cold', 13)];
+  const save = { halve: true };
+  assert.equal(applyDefenses(hit, none, save).total, 10, '3.5 + 6.5');
+  const resisted = applyDefenses(hit, { ...none, resist: ['cold'] }, save);
+  assert.deepEqual(resisted, { total: 6, notes: ['resists cold'] }, '3.5 rounds to 3, 3.25 to 3');
+  const vulnerable = applyDefenses(hit, { ...none, vulnerable: ['cold'] }, save);
+  assert.equal(vulnerable.total, 16, 'the half of 13 keeps its fraction, so it doubles to 13');
+  const pooled = [group('fire', 5), group('cold', 5), group('acid', 4)];
+  assert.equal(
+    applyDefenses(pooled, { ...none, resist: ['acid'] }, save).total,
+    5 + 1,
+    'the untouched halves add up before they round, as with no defenses',
+  );
+});
+
 test('defenseNote and defensesSummary read for the log and the stat block', () => {
   assert.equal(defenseNote(['resists fire', 'resists fire'], 4), ' (resists fire, takes 4)');
   assert.equal(defenseNote([], 4), '');

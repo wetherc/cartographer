@@ -646,7 +646,10 @@ A weapon or spell hit checks the damage defenses of the defender first.
 
 Each damage type in the hit changes separately. For a spell with half
 damage on a successful save, the save halves first, and the defenses apply
-after that.
+after that. The app rounds down only at the end. The types with no defense
+add up and round down together, and each type with a defense rounds down on
+its own. For example, a save against 7 bludgeoning and 13 cold deals 10 with
+no defenses, 6 with cold resistance, and 16 with cold vulnerability.
 
 A character resists the damage types of its race, such as fire for a
 tiefling. A creature takes its three lists from the creature dialog. A
