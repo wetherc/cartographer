@@ -1,6 +1,6 @@
 import { setTip } from './Tooltip.js';
 import { labeled, fieldRow, checkbox, numberField, select } from './formFields.js';
-import { DIE_SIZES } from '../entities/Equipment.js';
+import { DIE_SIZES } from '../entities/DamageParts.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 

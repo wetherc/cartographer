@@ -10,7 +10,7 @@
  * takes the full cold half of a spell that deals both.
  */
 
-import { DAMAGE_TYPES } from './Equipment.js';
+import { DAMAGE_TYPES } from './DamageParts.js';
 import { hasCondition } from './Conditions.js';
 
 /** @typedef {import('../types/creature.js').DamageDefenses} DamageDefenses */

@@ -343,7 +343,7 @@ a form or a file go through `clampInt`.
 For a value that has several such fields, add a named normalizer beside the
 constants it checks against. Do not copy the coercion into each reader. For
 example, the library importer and the item form's damage editor both call
-`Equipment.normalizeDamagePart`, so one function checks the supported die
+`DamageParts.normalizeDamagePart`, so one function checks the supported die
 sizes and damage types.
 
 ### Danger styling

@@ -1,5 +1,5 @@
 import { normalizeHitRider } from './HitRiders.js';
-import { DAMAGE_TYPES, DIE_SIZES, normalizeDamagePart } from './Equipment.js';
+import { DAMAGE_TYPES, DIE_SIZES, normalizeDamagePart } from './DamageParts.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';

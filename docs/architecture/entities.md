@@ -982,7 +982,7 @@ A weapon's damage and a spell's damage or healing use the same type, a list of
 an optional flat `bonus` on that term (the `1d4+1` of Magic Missile). An absent
 bonus means no bonus, so a stored term without the field needs no repair.
 
-`Equipment.normalizeDamagePart` is the only validator. It repairs a term with a
+`DamageParts.normalizeDamagePart` is the only validator. It repairs a term with a
 bonus and a term without one differently:
 
 - A term with a bonus can roll no dice. The app writes a fixed amount this way,

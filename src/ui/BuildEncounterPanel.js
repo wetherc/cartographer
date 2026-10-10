@@ -5,7 +5,7 @@ import { crLabel } from '../data/challenge.js';
 import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
-import { formatDamage } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { enemyArmorLabel } from '../entities/EnemyArmor.js';
 import { actionSummary } from '../entities/CreatureActions.js';
 import { mountListPanel } from './listPanel.js';

@@ -18,7 +18,8 @@
  * which only the wiring layer can see.
  */
 
-import { equippedWeapons, formatDamage, getEquipped } from '../entities/Equipment.js';
+import { equippedWeapons, getEquipped } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { getPactPool, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
 import { isCaster, toCaster } from '../entities/Caster.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';

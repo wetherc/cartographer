@@ -1,6 +1,6 @@
 import { countNoun } from '../util/text.js';
 import { hitRiderSummary } from '../entities/HitRiders.js';
-import { formatDamage } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
 import { modsSummary } from '../entities/ChipMods.js';

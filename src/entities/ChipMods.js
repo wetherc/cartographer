@@ -1,6 +1,6 @@
 import { clampInt } from '../util/num.js';
 import { ABILITY_SCORES, formatModifier } from './Modifiers.js';
-import { DAMAGE_TYPES } from './Equipment.js';
+import { DAMAGE_TYPES } from './DamageParts.js';
 import { conditionKey, strongestPerName, uniqueNames } from './Conditions.js';
 
 /**

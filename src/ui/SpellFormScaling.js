@@ -1,7 +1,7 @@
 import { setTip } from './Tooltip.js';
 import { labeled, fieldRow, checkbox, numberField } from './formFields.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
-import { HEALING_TYPE } from '../entities/Equipment.js';
+import { HEALING_TYPE } from '../entities/DamageParts.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 

@@ -8,7 +8,7 @@
 
 import { promptModal } from '../ui/Modal.js';
 import { ABILITY_NAMES } from '../data/abilities.js';
-import { DAMAGE_TYPES, DIE_SIZES } from '../entities/Equipment.js';
+import { DAMAGE_TYPES, DIE_SIZES } from '../entities/DamageParts.js';
 import { actionList, actionSummary, RECHARGE_FACES } from '../entities/CreatureActions.js';
 import { slugify, capitalize } from '../util/text.js';
 

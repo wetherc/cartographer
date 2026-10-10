@@ -1,5 +1,5 @@
 import { chipRider, riderSummary } from '../entities/Riders.js';
-import { formatDamage } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { modsSummary } from '../entities/ChipMods.js';
 import { capitalize } from '../util/text.js';
 

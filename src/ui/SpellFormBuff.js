@@ -2,7 +2,7 @@ import { setTip } from './Tooltip.js';
 import { el } from './dom.js';
 import { labeled, fieldRow, numberField, checkbox, select, textField } from './formFields.js';
 import { CONDITIONS } from '../entities/Conditions.js';
-import { DAMAGE_TYPES, DIE_SIZES } from '../entities/Equipment.js';
+import { DAMAGE_TYPES, DIE_SIZES } from '../entities/DamageParts.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { buildSlantControls } from './SpellFormSlants.js';
 import { buildResistControls } from './SpellFormChipMods.js';

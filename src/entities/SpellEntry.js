@@ -1,4 +1,4 @@
-import { HEALING_TYPES } from './Equipment.js';
+import { HEALING_TYPES } from './DamageParts.js';
 import { clampInt } from '../util/num.js';
 import {
   MAX_TARGET_COUNT,

@@ -5,7 +5,7 @@ import { CLASS_LIST } from '../entities/Classes.js';
 import { setTip } from './Tooltip.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { classNames, el } from './dom.js';
-import { HEALING_TYPE } from '../entities/Equipment.js';
+import { HEALING_TYPE } from '../entities/DamageParts.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import { buildLaterTurnControls } from './SpellFormLater.js';
 import { buildOnHitControls } from './SpellFormOnHit.js';

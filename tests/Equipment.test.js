@@ -18,20 +18,22 @@ import {
   itemACBonus,
   effectiveStats,
   pruneEquipment,
-  DIE_SIZES,
-  DAMAGE_TYPES,
-  formatDamage,
   filterItems,
   groupItemsByType,
   isConsumable,
   equippedWeapons,
   equippedIndex,
-  normalizeDamagePart,
-  HEALING_TYPES,
   isSpellFocus,
   carriesSpellFocus,
   armorTraits,
 } from '../src/entities/Equipment.js';
+import {
+  DIE_SIZES,
+  DAMAGE_TYPES,
+  formatDamage,
+  normalizeDamagePart,
+  HEALING_TYPES,
+} from '../src/entities/DamageParts.js';
 import { armorClass } from '../src/entities/Armor.js';
 import {
   WEAPON_PRESETS,

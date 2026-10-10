@@ -1,4 +1,4 @@
-import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
+import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/DamageParts.js';
 import { setTip } from './Tooltip.js';
 import { iconButton, removableChip, textButton } from './buttons.js';
 import { el } from './dom.js';

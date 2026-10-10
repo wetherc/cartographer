@@ -1,5 +1,5 @@
 import { spellLevelName } from '../entities/SpellView.js';
-import { formatDamage } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { riderText } from '../entities/Riders.js';
 import { crLabel } from '../data/challenge.js';
 import { countNoun, capitalize } from '../util/text.js';

@@ -24,7 +24,7 @@ import {
 } from '../../entities/Modifiers.js';
 import { creatureProficiencyFields } from '../../entities/Proficiencies.js';
 import { defenseFields } from '../../entities/DamageDefenses.js';
-import { DAMAGE_TYPES } from '../../entities/Equipment.js';
+import { DAMAGE_TYPES } from '../../entities/DamageParts.js';
 import { CONCENTRATING, CONDITIONS } from '../../entities/Conditions.js';
 import { CREATURE_TYPES, creatureTypeFields } from '../../entities/CreatureType.js';
 import {

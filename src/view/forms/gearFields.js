@@ -1,5 +1,5 @@
 import { activeWeapons, activeArmors, activeEnemyArmor } from '../../library/Library.js';
-import { formatDamage } from '../../entities/Equipment.js';
+import { formatDamage } from '../../entities/DamageParts.js';
 import { copyEnemyWeapon } from '../../entities/EquipmentPresets.js';
 import { enemyArmorLabel } from '../../entities/EnemyArmor.js';
 

@@ -55,7 +55,7 @@ export interface CreatureProficiencies {
 }
 
 /** The damage types a creature resists, is vulnerable to, and is immune to.
- * Each list holds lowercase names from `Equipment.DAMAGE_TYPES`. */
+ * Each list holds lowercase names from `DamageParts.DAMAGE_TYPES`. */
 export interface DamageDefenses {
   resist: string[];
   vulnerable: string[];

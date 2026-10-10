@@ -1,6 +1,6 @@
 import { classNames, el } from './dom.js';
 import { bareButton, sectionLabel, textButton } from './buttons.js';
-import { formatDamage } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { groupSpellsByLevel } from '../entities/SpellView.js';
 import { ACTION_COSTS, COST_LABELS } from '../combat/ActionBudget.js';
 import { attackNote, costNote, spellNote } from '../combat/SpentCost.js';

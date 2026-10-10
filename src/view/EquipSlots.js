@@ -1,11 +1,11 @@
 import {
   ARMOR_WEIGHTS,
   equipBlocker,
-  formatDamage,
   getEquipped,
   itemEffects,
   itemType,
 } from '../entities/Equipment.js';
+import { formatDamage } from '../entities/DamageParts.js';
 import { hasWeaponProperty } from '../entities/Weapons.js';
 
 /**
