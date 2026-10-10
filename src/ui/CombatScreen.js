@@ -8,6 +8,7 @@ import { mountCombatLog } from './CombatLog.js';
 import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
 import { mountCombatMap } from './CombatMap.js';
 import { buildTabs } from './Tabs.js';
+import { patchChildren } from './keyedChildren.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
@@ -153,6 +154,8 @@ export function mountCombatScreen(container, callbacks) {
   });
   const log = mountCombatLog();
   const board = el('div', 'combat-board');
+  const partyGroup = mountGroup('Party');
+  const foeGroup = mountGroup('Foes');
   const diceDock = el('div', 'combat-screen__dice-dock');
   // The borrowed dice tray sits under the log in the right column. On a wide
   // window each column scrolls on its own (see combat-shell.css), so a long
@@ -217,9 +220,9 @@ export function mountCombatScreen(container, callbacks) {
     const focused = document.activeElement;
     const inside = focused instanceof HTMLElement && root.contains(focused) ? focused : null;
     const previousKey = inside ? keyOf(inside) : null;
-    board.innerHTML = '';
     const view = callbacks.getView();
     if (!view) {
+      board.replaceChildren();
       ribbon.clear();
       column.clear();
       log.clear();
@@ -242,10 +245,9 @@ export function mountCombatScreen(container, callbacks) {
     // The turn's own card offers no reaction controls, so the board needs to
     // know whose turn it is.
     const activeId = view.rows[view.turnIndex]?.id ?? null;
-    board.append(
-      group('Party', party, selectedId, activeId),
-      group('Foes', foes, selectedId, activeId),
-    );
+    if (board.children.length === 0) board.append(partyGroup.element, foeGroup.element);
+    partyGroup.update(party, selectedId, activeId);
+    foeGroup.update(foes, selectedId, activeId);
     roveGroup(board, '.combatant-card--selectable', selectedId);
     log.update(callbacks.getLogEntries(), gm ? 'gm' : 'player');
     if (map && !map.element.hidden) map.update();
@@ -396,36 +398,59 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
+   * One side of the board: a heading and its cards. The section, the heading,
+   * and the card list stay in the document across renders. A card whose
+   * inputs are unchanged stays too, so a focused card or control keeps focus.
    * @param {string} label
-   * @param {CombatantRow[]} rows
-   * @param {string | null} selectedId
-   * @param {string | null} activeId
    */
-  function group(label, rows, selectedId, activeId) {
-    return el(
-      'section',
-      'combat-board__group',
-      el('h3', 'combat-board__heading', label),
-      rows.length === 0
-        ? el('p', 'combat-board__empty u-muted', 'Nobody on this side.')
-        : el(
-            'div',
-            'combat-board__cards',
-            ...rows.map((row) =>
+  function mountGroup(label) {
+    const cards = el('div', 'combat-board__cards');
+    const empty = el('p', 'combat-board__empty u-muted', 'Nobody on this side.');
+    const heading = el('h3', 'combat-board__heading', label);
+    const element = el('section', 'combat-board__group', heading);
+    /**
+     * @param {CombatantRow[]} rows
+     * @param {string | null} selectedId
+     * @param {string | null} activeId
+     */
+    function update(rows, selectedId, activeId) {
+      // Swap the list and the empty line only when the state flips, because
+      // moving the list takes focus away from a card in it.
+      const body = rows.length === 0 ? empty : cards;
+      if (element.lastElementChild !== body) element.replaceChildren(heading, body);
+      patchChildren(
+        cards,
+        rows.map((row) => {
+          const selection = {
+            selected: row.id === selectedId,
+            current: row.id === activeId,
+            loadout: loadoutOf(row.id),
+            reaction: reactionFor(row, activeId),
+            legendary: legendaryFor(row, activeId),
+          };
+          return {
+            key: row.id,
+            sig: JSON.stringify([
+              row,
+              selection.selected,
+              selection.current,
+              selection.loadout,
+              selection.reaction && [selection.reaction.weapons, selection.reaction.spells],
+              selection.legendary && [selection.legendary.left, selection.legendary.weapons],
+            ]),
+            build: () =>
               combatantCard(row, {
-                selected: row.id === selectedId,
-                current: row.id === activeId,
-                loadout: loadoutOf(row.id),
-                reaction: reactionFor(row, activeId),
-                legendary: legendaryFor(row, activeId),
+                ...selection,
                 onSelect: (id) => {
                   callbacks.onSelectTarget(id);
                   render();
                 },
               }),
-            ),
-          ),
-    );
+          };
+        }),
+      );
+    }
+    return { element, update };
   }
 
   render();

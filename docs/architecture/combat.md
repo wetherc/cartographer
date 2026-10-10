@@ -903,7 +903,7 @@ The board shows the two sides as labelled groups of cards
 conditions. The loadout in its compact form sits under the card in a closed
 **Gear** disclosure, because the card is a button and cannot contain another
 control. A module-level set keeps the ids of the open disclosures, so a
-disclosure stays open when the board rebuilds.
+disclosure stays open when a render replaces its card.
 `LoadoutBlock.js` draws both forms, so a card and the active column always
 describe a combatant the same way. The host trims each card to what the viewer
 can see.
@@ -1240,11 +1240,20 @@ damage line, and defeat as its row is added, because the list only gains rows.
 The ribbon and the board are one tab stop each. A roving tabindex anchors on
 the chip of the current turn and on the selected card, and the arrow keys move
 focus with wraparound. The keydown listeners attach once, at mount, to the
-persistent containers. They find the buttons on each keypress, because every
-render replaces the buttons.
+persistent containers. They find the buttons on each keypress, because a
+render can replace any of them.
 
-A rebuild replaces every control except the ribbon's control row, so without
-help, focus would fall to the page body after each rebuild. The ribbon builds
+The chips and the cards are patched by combatant id
+(`src/ui/keyedChildren.js`). Each chip and card has a signature string built
+from everything it draws: the row of the combatant, the current turn, the
+selection, and for a card its loadout, reaction, and legendary controls. A
+render keeps the element whose signature is unchanged and builds a new one
+for the rest, so a Next turn replaces only the chips and cards that it
+changed, such as those of the combatants whose turns end and begin. A focused chip or card that a render
+keeps stays focused, and the screen does not call `focus()`.
+
+A rebuild replaces every other control except the ribbon's control row, so
+without help, focus would fall to the page body after each rebuild. The ribbon builds
 Back to map, Previous turn, Next turn, and End combat again only when the GM
 role, the settled state, or the right to end the turn changes. A plain turn
 change updates the acting name and the Previous turn state in place, so a

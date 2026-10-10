@@ -2,8 +2,10 @@ import { classNames, el } from './dom.js';
 import { icon } from './icons.js';
 import { bareButton, textButton } from './buttons.js';
 import { downState } from '../view/DeathSaveView.js';
+import { patchChildren } from './keyedChildren.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
+/** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 
 /**
  * The turn ribbon across the top of the combat screen. It shows one chip per
@@ -16,8 +18,8 @@ import { downState } from '../view/DeathSaveView.js';
  *
  * The chips form one tab stop. The current turn's chip anchors it, and the
  * arrow keys move focus through the rest. The keydown listener attaches once
- * here. It queries the chips on each keypress, because every render replaces
- * them.
+ * here. It queries the chips on each keypress, because a render replaces
+ * each chip whose name, initiative, turn, or down state changed.
  * @param {{
  *   onInspect: (id: string) => void,
  *   onLeave: () => void,
@@ -55,42 +57,20 @@ export function mountCombatRibbon(callbacks) {
   function render(view, gm, settled) {
     element.hidden = false;
     heading.textContent = `Round ${view.round}`;
-    chips.innerHTML = '';
-    view.rows.forEach((row, i) => {
-      const current = i === view.turnIndex;
-      const name = row.name ?? 'Unknown combatant';
-      const down = downState(row);
-      const label = chipName(row.name);
-      const button = bareButton(
-        [
-          row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
-          el(
-            'span',
-            'combat-ribbon__name',
-            el('span', 'combat-ribbon__base', label.base),
-            label.number && el('span', 'combat-ribbon__number', label.number),
-          ),
-          el('span', 'combat-ribbon__init', String(row.initiative)),
-        ],
-        () => callbacks.onInspect(row.id),
-        {
-          className: classNames([
-            'combat-ribbon__chip',
-            `combat-ribbon__chip--${row.side}`,
-            current && 'combat-ribbon__chip--current',
-            down?.kind === 'defeated' && 'combat-ribbon__chip--defeated',
-            down !== null && down.kind !== 'defeated' && 'combat-ribbon__chip--incapacitated',
-          ]),
-          ariaLabel:
-            `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
-            `${down ? `, ${down.label}` : ''}`,
-          title: name,
-        },
-      );
-      if (current) button.setAttribute('aria-current', 'true');
-      button.dataset.combatantId = row.id;
-      chips.appendChild(button);
-    });
+    // A chip whose name, initiative, turn, and down state are unchanged stays
+    // in the document, so a focused chip keeps focus across a refresh.
+    patchChildren(
+      chips,
+      view.rows.map((row, i) => {
+        const current = i === view.turnIndex;
+        const down = downState(row);
+        return {
+          key: row.id,
+          sig: JSON.stringify([row.name, row.side, row.initiative, current, down]),
+          build: () => buildChip(row, current, down),
+        };
+      }),
+    );
     roveGroup(element, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
     scrollToCurrent();
     // Ending a turn belongs to whoever is taking it. The GM can advance the
@@ -118,6 +98,46 @@ export function mountCombatRibbon(callbacks) {
     }
     now.textContent = acting ? `${acting.name ?? 'Unknown combatant'}'s turn` : '';
     if (previousButton) previousButton.disabled = view.round === 1 && view.turnIndex === 0;
+  }
+
+  /**
+   * One chip of the ribbon. A click inspects the combatant.
+   * @param {CombatantRow} row
+   * @param {boolean} current whether it is this combatant's turn
+   * @param {ReturnType<typeof downState>} down
+   */
+  function buildChip(row, current, down) {
+    const name = row.name ?? 'Unknown combatant';
+    const label = chipName(row.name);
+    const button = bareButton(
+      [
+        row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
+        el(
+          'span',
+          'combat-ribbon__name',
+          el('span', 'combat-ribbon__base', label.base),
+          label.number && el('span', 'combat-ribbon__number', label.number),
+        ),
+        el('span', 'combat-ribbon__init', String(row.initiative)),
+      ],
+      () => callbacks.onInspect(row.id),
+      {
+        className: classNames([
+          'combat-ribbon__chip',
+          `combat-ribbon__chip--${row.side}`,
+          current && 'combat-ribbon__chip--current',
+          down?.kind === 'defeated' && 'combat-ribbon__chip--defeated',
+          down !== null && down.kind !== 'defeated' && 'combat-ribbon__chip--incapacitated',
+        ]),
+        ariaLabel:
+          `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
+          `${down ? `, ${down.label}` : ''}`,
+        title: name,
+      },
+    );
+    if (current) button.setAttribute('aria-current', 'true');
+    button.dataset.combatantId = row.id;
+    return button;
   }
 
   /**
