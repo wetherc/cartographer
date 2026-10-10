@@ -1,3 +1,4 @@
+import { capitalize } from '../util/text.js';
 import { maxTargets, scalingSteps } from '../entities/CastScaling.js';
 import { helps, targetFree, targetLabel } from './spellTargets.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
@@ -239,7 +240,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       label: 'Resist',
       type: 'select',
       value: choice[0],
-      options: choice.map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) })),
+      options: choice.map((t) => ({ value: t, label: capitalize(t) })),
     });
   }
   // A spell whose projectiles hit automatically (Magic Missile) rolls no

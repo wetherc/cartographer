@@ -1,3 +1,4 @@
+import { COST_LABELS } from '../combat/ActionBudget.js';
 import { setTip } from './Tooltip.js';
 import { labeled, fieldRow, checkbox, textField, numberField, select } from './formFields.js';
 import {
@@ -14,9 +15,7 @@ import {
 /** How each casting-time kind reads in the picker. A counted kind also serves
  * as the caption over the amount field beside it. @type {Record<string, string>} */
 const CASTING_TIME_LABELS = {
-  action: 'Action',
-  bonus: 'Bonus action',
-  reaction: 'Reaction',
+  ...COST_LABELS,
   minutes: 'Minutes',
   hours: 'Hours',
   special: 'Special',

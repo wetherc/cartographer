@@ -1,3 +1,4 @@
+import { COST_LABELS } from '../combat/ActionBudget.js';
 import { setTip } from './Tooltip.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import { labeled, fieldRow, checkbox, select } from './formFields.js';
@@ -53,8 +54,8 @@ export function buildLaterTurnControls(spell) {
   const repeatCost = select(
     [
       { value: '', label: 'Same as casting time' },
-      { value: 'action', label: 'Action' },
-      { value: 'bonus', label: 'Bonus action' },
+      { value: 'action', label: COST_LABELS.action },
+      { value: 'bonus', label: COST_LABELS.bonus },
     ],
     repeat?.cost ?? '',
   );

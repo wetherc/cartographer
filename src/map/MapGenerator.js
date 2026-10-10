@@ -1,3 +1,4 @@
+import { capitalize } from '../util/text.js';
 import { generateWilds } from './GeneratorWilds.js';
 import { generateTown } from './GeneratorTown.js';
 import { generateDungeon } from './GeneratorInteriors.js';
@@ -30,7 +31,7 @@ export { GENERATOR_SIZES };
  */
 export const SIZE_OPTIONS = Object.entries(GENERATOR_SIZES).map(([value, n]) => ({
   value,
-  label: `${value[0].toUpperCase()}${value.slice(1)} (${n} x ${n})`,
+  label: `${capitalize(value)} (${n} x ${n})`,
 }));
 
 /**

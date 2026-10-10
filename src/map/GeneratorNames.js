@@ -1,3 +1,4 @@
+import { capitalize } from '../util/text.js';
 import { randInt } from './GeneratorRandom.js';
 
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
@@ -125,7 +126,7 @@ export function placeName(site, rng) {
     }
     const label = site.label.replace(/-/g, ' ');
     if (['house', 'cottage', 'farm'].includes(site.label)) return `The ${placeWord(rng)} ${label}`;
-    return `${label[0].toUpperCase()}${label.slice(1)}`;
+    return capitalize(label);
   }
   const patterns = PATTERNS[site.archetype] ?? PATTERNS.town;
   return patterns[randInt(rng, patterns.length)].replace('{w}', placeWord(rng));
