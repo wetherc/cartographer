@@ -98,6 +98,9 @@ export interface ClassDef {
   weaponCategories: WeaponCategory[];
   /** Specific weapon names granted beyond the categories (lowercase). */
   weaponNamed: string[];
+  /** Fixed tool proficiencies the first class grants, such as the Rogue's
+   * thieves' tools. Absent means none. */
+  tools?: string[];
   skillChoice: SkillChoice;
   /** The level the class picks its subclass at. */
   subclassLevel: number;

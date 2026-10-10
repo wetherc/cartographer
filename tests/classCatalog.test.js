@@ -131,7 +131,11 @@ test('Expertise is structured at Rogue 1 and 6 and Bard 3 and 10', () => {
       (e) => typeof e === 'object' && e.name === 'Expertise',
     );
     assert.ok(entry && typeof entry === 'object', `${classId} ${level} Expertise`);
-    assert.deepEqual(entry.effects, [{ kind: 'proficiency', expertise: { choose: 2, from: [] } }]);
+    // The Rogue's pick also offers thieves' tools.
+    const tools = classId === 'rogue' ? { tools: ["thieves' tools"] } : {};
+    assert.deepEqual(entry.effects, [
+      { kind: 'proficiency', expertise: { choose: 2, from: [], ...tools } },
+    ]);
   };
   expertiseAt('rogue', 1);
   expertiseAt('rogue', 6);

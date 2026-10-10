@@ -35,7 +35,7 @@ test('assembleProficiencies gathers fixed grants from class, race, and backgroun
     named: ['hand crossbow', 'longsword', 'rapier', 'shortsword', 'shortbow', 'longbow'],
   });
   assert.deepEqual(p.armor, ['light']);
-  assert.deepEqual(p.tools, ['gaming set', "thieves' tools"]);
+  assert.deepEqual(p.tools, ["thieves' tools", 'gaming set']);
   assert.deepEqual(p.languages, ['Common', 'Elvish']);
 });
 
@@ -93,6 +93,13 @@ test('normalizeProficiencies deduplicates every list and prunes expertise', () =
   assert.deepEqual(p.skills, ['stealth', 'arcana']);
   assert.deepEqual(p.expertise, ['stealth'], 'perception is not a granted skill');
   assert.deepEqual(p.tools, ["thieves' tools"]);
+});
+
+test("normalizeProficiencies keeps expertise in thieves' tools only with the tools", () => {
+  const tools = ["thieves' tools", 'gaming set'];
+  const kept = normalizeProficiencies({ expertise: [...tools], tools });
+  assert.deepEqual(kept.expertise, ["thieves' tools"], 'a gaming set cannot take expertise');
+  assert.deepEqual(normalizeProficiencies({ expertise: ["thieves' tools"] }).expertise, []);
 });
 
 test('withProficiencies prunes expertise whose skill proficiency was removed', () => {

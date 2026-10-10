@@ -172,14 +172,17 @@ pips and words as the combat screen.
 
 Expertise doubles the proficiency bonus for a skill. The Expertise features
 of the Rogue and the Bard grant it. When such a feature unlocks, a prompt
-offers the proficient skills.
+offers the proficient skills. The Rogue's prompt also offers thieves' tools,
+which the Rogue class grants at level 1. Expertise in thieves' tools shows
+in the class features list, and the app has no tool check to apply it to.
 
 The picks show in the class features list with a Change button. An
 unclaimed grant waits in the Progression block as a pending feature choice
 with a Choose button. The **Set expertise** button is a manual grant with
 no maximum, for a subclass or homebrew feature that the class catalog does
 not model. The button shows to the GM for any character with at least
-one skill proficiency, and it offers only the proficient skills. The line
+one skill proficiency, and it offers only the proficient skills, plus
+thieves' tools when the character has them. The line
 "No expertise chosen" shows only for a character with a class feature or a
 feat that grants expertise.
 

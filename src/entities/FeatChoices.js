@@ -2,6 +2,7 @@ import { ABILITY_SCORES } from './Modifiers.js';
 import { ABILITY_MAX, listASIChoices } from './LevelUp.js';
 import { grantedFromPicks } from './GrantLedger.js';
 import { featureRiders } from './FeatureGrants.js';
+import { SKILL_IDS } from '../data/skills.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/feat.js').Feat} Feat */
@@ -71,6 +72,26 @@ export function abilityPool(character, effect) {
 export function choicePool(choice, vocabulary, held) {
   const from = choice.from.length > 0 ? choice.from : vocabulary;
   return from.filter((id) => !held.includes(id));
+}
+
+/**
+ * The options an expertise pick offers: the proficient skills, including the
+ * ones `pickedSkills` adds in the same dialog, plus each tool the choice
+ * names that the character is proficient with (the Rogue's thieves' tools),
+ * minus what already has expertise. A non-empty `from` narrows the skills
+ * and does not limit the tools.
+ * @param {ProficiencyChoice} choice
+ * @param {import('../types/entities.js').Proficiencies} held
+ * @param {string[]} pickedSkills
+ * @returns {string[]}
+ */
+export function expertisePool(choice, held, pickedSkills) {
+  const known = [...held.skills, ...pickedSkills, ...held.tools];
+  const tools = choice.tools ?? [];
+  const skills = choicePool(choice, SKILL_IDS, held.expertise);
+  return [...skills, ...tools.filter((tool) => !held.expertise.includes(tool))].filter((id) =>
+    known.includes(id),
+  );
 }
 
 /**

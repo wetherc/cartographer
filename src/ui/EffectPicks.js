@@ -1,7 +1,7 @@
 import { promptModal } from './Modal.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
-import { abilityPool, choicePool } from '../entities/FeatChoices.js';
+import { abilityPool, choicePool, expertisePool } from '../entities/FeatChoices.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
 import { fightingStyle } from '../data/fightingStyles.js';
@@ -122,10 +122,7 @@ export async function gatherEffectPicks(title, effects, taker) {
   // just picked, minus what already has expertise.
   for (const [i, effect] of effects.entries()) {
     if (effect.kind !== 'proficiency' || !effect.expertise) continue;
-    const held = [...p.skills, ...picks.skills];
-    const pool = choicePool(effect.expertise, SKILL_IDS, p.expertise).filter((id) =>
-      held.includes(id),
-    );
+    const pool = expertisePool(effect.expertise, p, picks.skills);
     if (pool.length === 0) continue;
     if (pool.length <= effect.expertise.choose) {
       picks.expertise.push(...pool);

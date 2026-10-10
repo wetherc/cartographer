@@ -11,6 +11,9 @@ import type { ArmorProficiency } from './class.js';
 export interface ProficiencyChoice {
   choose: number;
   from: string[];
+  /** On an expertise choice, the tools the pick also offers when the
+   * character is proficient with them (the Rogue's thieves' tools). */
+  tools?: string[];
 }
 
 /**

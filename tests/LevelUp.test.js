@@ -307,7 +307,9 @@ test('unlockedFeatures carries the effects of a structured feature', () => {
     [1, 6],
   );
   for (const f of expertise) {
-    assert.deepEqual(f.effects, [{ kind: 'proficiency', expertise: { choose: 2, from: [] } }]);
+    assert.deepEqual(f.effects, [
+      { kind: 'proficiency', expertise: { choose: 2, from: [], tools: ["thieves' tools"] } },
+    ]);
   }
   const sneak = features.find((f) => f.name === 'Sneak Attack');
   assert.ok(sneak && !('effects' in sneak), 'a plain name carries no effects field');

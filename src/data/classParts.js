@@ -27,12 +27,24 @@ export function curve(breakpoints) {
 /** The standard ability-score-improvement levels most classes share. */
 export const ASI = [4, 8, 12, 16, 19];
 
-/** The Expertise feature the Bard and the Rogue grant twice each: double
- * proficiency on two skills the character is already proficient in. The
- * empty `from` means any proficient skill; the grant flow narrows the pool. */
+/** The Expertise feature the Bard grants twice: double proficiency on two
+ * skills the character is already proficient in. The empty `from` means any
+ * proficient skill; the grant flow narrows the pool. */
 export const EXPERTISE = {
   name: 'Expertise',
   effects: [{ kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } }],
+};
+
+/** The Expertise feature the Rogue grants twice. It also offers thieves'
+ * tools when the rogue is proficient with them. */
+export const ROGUE_EXPERTISE = {
+  name: 'Expertise',
+  effects: [
+    {
+      kind: /** @type {const} */ ('proficiency'),
+      expertise: { choose: 2, from: [], tools: ["thieves' tools"] },
+    },
+  ],
 };
 
 /** The Fighting Style feature of one class: a pick of one style from the

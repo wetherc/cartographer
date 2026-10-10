@@ -22,6 +22,11 @@ export const WEAPON_CATEGORIES = ['simple', 'martial'];
  * @type {import('../types/class.js').ArmorProficiency[]} */
 export const ARMOR_PROFICIENCIES = ['light', 'medium', 'heavy', 'shield'];
 
+/** The tools that can take expertise, beside the skills. The Rogue's
+ * Expertise offers thieves' tools.
+ * @type {readonly string[]} */
+export const EXPERTISE_TOOLS = Object.freeze(["thieves' tools"]);
+
 /** @returns {Proficiencies} every proficiency list empty */
 export function emptyProficiencies() {
   return {
@@ -69,8 +74,8 @@ export function normalizeWeaponProficiencies(weapons) {
 
 /**
  * Clean a written proficiency set: every list deduplicated, the weapon lists
- * sorted into their two namespaces, and expertise cut down to the skills the
- * set actually grants. Expertise doubles a proficiency, so it cannot exist
+ * sorted into their two namespaces, and expertise cut down to the skills, and
+ * the `EXPERTISE_TOOLS`, that the set actually grants. Expertise doubles a proficiency, so it cannot exist
  * without one, and this is the only place that invariant is enforced. Every
  * writer goes through here, so no caller has to prune by hand. A missing list
  * reads as empty. This function is pure.
@@ -79,13 +84,16 @@ export function normalizeWeaponProficiencies(weapons) {
  */
 export function normalizeProficiencies(proficiencies) {
   const skills = merged(proficiencies?.skills ?? []);
+  const tools = merged(proficiencies?.tools ?? []);
   return {
     saves: merged(proficiencies?.saves ?? []),
     skills,
-    expertise: merged(proficiencies?.expertise ?? []).filter((id) => skills.includes(id)),
+    expertise: merged(proficiencies?.expertise ?? []).filter(
+      (id) => skills.includes(id) || (EXPERTISE_TOOLS.includes(id) && tools.includes(id)),
+    ),
     weapons: normalizeWeaponProficiencies(proficiencies?.weapons),
     armor: merged(proficiencies?.armor ?? []),
-    tools: merged(proficiencies?.tools ?? []),
+    tools,
     languages: merged(proficiencies?.languages ?? []),
   };
 }
@@ -171,7 +179,8 @@ export function getProficiencies(character) {
  * gives skills and tools. The function cannot derive choice-based grants
  * (the class's skill picks and the background's bonus languages), so the
  * caller passes the player's picks in `choices`. A missing class, race, or
- * background contributes nothing. This function is pure and does not touch
+ * background contributes nothing. The class also gives its fixed tools, such
+ * as the Rogue's thieves' tools. This function is pure and does not touch
  * the character.
  * @param {Character} character
  * @param {{ skills?: string[], languages?: string[] }} [choices]
@@ -201,7 +210,7 @@ export function assembleProficiencies(character, choices = {}) {
       ...(race?.weapons ?? []),
     ]),
     armor: merged(cls?.armor ?? []),
-    tools: merged(race?.tools ?? [], background?.tools ?? []),
+    tools: merged(cls?.tools ?? [], race?.tools ?? [], background?.tools ?? []),
     languages: merged(race?.languages ?? [], choices.languages ?? []),
   });
 }

@@ -821,6 +821,11 @@ grant that the character already had from the GM, so undo cannot remove it.
 `featureRiders` adds the standing roll riders of a feature to
 `FeatChoices.riderSources`, which every roll site calls. The Rogue grants
 Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
+The Rogue's expertise choice also names `tools: ["thieves' tools"]`, so
+`FeatChoices.expertisePool` offers thieves' tools when the rogue holds them.
+`Proficiencies.EXPERTISE_TOOLS` lists the tools that can keep expertise, and
+`normalizeProficiencies` drops an expertise entry for any other tool, or for
+a tool the character does not hold.
 
 A second class-only effect, `{ kind: 'abilityRaise', abilities, amount, cap }`
 (`AbilityRaise` in `types/class.ts`), raises scores with no pick. Primal

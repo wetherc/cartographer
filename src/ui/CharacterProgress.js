@@ -5,7 +5,7 @@ import { classNames, el } from './dom.js';
 import { getClasses, pendingLevels } from '../entities/Multiclass.js';
 import { assignOptions, className } from '../entities/LevelAssign.js';
 import { pendingASISlots, listASIChoices } from '../entities/LevelUp.js';
-import { getProficiencies } from '../entities/Proficiencies.js';
+import { EXPERTISE_TOOLS, getProficiencies } from '../entities/Proficiencies.js';
 import { undoLastChoice, withExpertise, applyFeatureGrant } from '../entities/Progression.js';
 import { pendingFeatureGrants } from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
@@ -186,6 +186,8 @@ export function buildProgressSection(getCharacter, opts) {
   // ExpertiseSources.js), so a Fighter does not read "No expertise chosen".
   async function runExpertise() {
     const p = getProficiencies(getCharacter());
+    // Thieves' tools can take expertise too, once the character holds them.
+    const tools = EXPERTISE_TOOLS.filter((tool) => p.tools.includes(tool));
     const values = await promptModal(
       'Expertise',
       [
@@ -193,7 +195,7 @@ export function buildProgressSection(getCharacter, opts) {
           name: 'skills',
           label: 'Skills with a doubled proficiency',
           type: 'multiselect',
-          options: p.skills.map((id) => ({ value: id, label: skillName(id) })),
+          options: [...p.skills, ...tools].map((id) => ({ value: id, label: skillName(id) })),
           value: p.expertise.join(','),
         },
       ],

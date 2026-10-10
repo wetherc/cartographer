@@ -1,5 +1,10 @@
 import { ABILITY_SCORES } from './Modifiers.js';
-import { getProficiencies, normalizeProficiencies, ARMOR_PROFICIENCIES } from './Proficiencies.js';
+import {
+  getProficiencies,
+  normalizeProficiencies,
+  ARMOR_PROFICIENCIES,
+  EXPERTISE_TOOLS,
+} from './Proficiencies.js';
 import { normalizeRider } from './Riders.js';
 import { SKILL_IDS } from '../data/skills.js';
 
@@ -51,7 +56,7 @@ export function requestedGrants(granted) {
   return {
     skills: keep(source.skills, SKILL_IDS),
     saves: keep(source.saves, ABILITY_SCORES),
-    expertise: keep(source.expertise, SKILL_IDS),
+    expertise: keep(source.expertise, [...SKILL_IDS, ...EXPERTISE_TOOLS]),
     armor: /** @type {import('../types/class.js').ArmorProficiency[]} */ (
       keep(source.armor, ARMOR_PROFICIENCIES)
     ),

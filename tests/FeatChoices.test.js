@@ -4,6 +4,7 @@ import {
   availableFeats,
   abilityPool,
   choicePool,
+  expertisePool,
   buildStamp,
   featRiders,
   riderSources,
@@ -12,6 +13,7 @@ import { takeFeat } from '../src/entities/LevelUp.js';
 import { savingThrow, abilityCheck } from '../src/entities/Checks.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { DEFAULT_FEATS } from '../src/data/feats.js';
+import { emptyProficiencies } from '../src/entities/Proficiencies.js';
 
 function fighter(level = 4) {
   return {
@@ -66,6 +68,31 @@ test('choicePool offers the from list or the vocabulary, minus what is held', ()
   ]);
   const anySkill = choicePool({ choose: 3, from: [] }, ['a', 'b', 'c'], ['b']);
   assert.deepEqual(anySkill, ['a', 'c']);
+});
+
+test('expertisePool offers proficient skills and the named tools the character holds', () => {
+  const held = {
+    ...emptyProficiencies(),
+    skills: ['stealth', 'arcana'],
+    expertise: ['arcana'],
+    tools: ["thieves' tools"],
+  };
+  const rogue = { choose: 2, from: [], tools: ["thieves' tools"] };
+  assert.deepEqual(
+    [...expertisePool(rogue, held, ['insight'])].sort(),
+    ['insight', 'stealth', "thieves' tools"],
+    'arcana already has expertise',
+  );
+  const bard = { choose: 2, from: [] };
+  assert.deepEqual(
+    [...expertisePool(bard, held, [])].sort(),
+    ['stealth'],
+    'a skills-only pick leaves the tools out',
+  );
+  const done = { ...held, expertise: ["thieves' tools"] };
+  assert.equal(expertisePool(rogue, done, []).includes("thieves' tools"), false);
+  const noTools = { ...held, tools: [] };
+  assert.equal(expertisePool(rogue, noTools, []).includes("thieves' tools"), false);
 });
 
 test('buildStamp folds picks and fixed grants into one FeatStamp', () => {

@@ -58,6 +58,11 @@ test('mergeGrants joins several requests and prunes expertise without its skill'
   assert.deepEqual(merged.saves, ['DEX']);
 });
 
+test("requestedGrants keeps an expertise request in thieves' tools and drops other tools", () => {
+  const wanted = requestedGrants({ expertise: ["thieves' tools", 'gaming set', 'stealth'] });
+  assert.deepEqual(wanted.expertise, ["thieves' tools", 'stealth']);
+});
+
 test('grantRecords lists feats and claimed features, not ability increases', () => {
   const c = {
     ...fighter(),
