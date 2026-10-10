@@ -18,6 +18,18 @@ export function spellLevelLabel(level) {
 }
 
 /**
+ * The level of one spell: "Cantrip" for level 0, "Level N" otherwise. The
+ * compact form reads "LN", for a select option that also names the spell.
+ * @param {number} level
+ * @param {{ compact?: boolean }} [opts]
+ * @returns {string}
+ */
+export function spellLevelName(level, opts = {}) {
+  if (level === 0) return 'Cantrip';
+  return opts.compact ? `L${level}` : `Level ${level}`;
+}
+
+/**
  * Group spells by level for display. Each level present gets one entry, in
  * ascending order, and each entry carries its heading label and the level's
  * spells sorted by name. Duplicate ids collapse to one, so a known spell

@@ -1,3 +1,4 @@
+import { spellLevelName } from '../entities/SpellView.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { riderText } from '../entities/Riders.js';
 import { crLabel } from '../data/challenge.js';
@@ -18,7 +19,7 @@ import { countNoun, capitalize } from '../util/text.js';
  * @param {Spell} spell
  * @returns {string} */
 export function spellSummary(spell) {
-  const level = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
+  const level = spellLevelName(spell.level);
   return [
     `${level} ${capitalize(spell.school)}`,
     spell.effect.kind,

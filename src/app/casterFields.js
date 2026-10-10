@@ -1,3 +1,4 @@
+import { spellLevelName } from '../entities/SpellView.js';
 import { CLASS_LIST } from '../entities/Classes.js';
 import { castsAs, spellListOf, subclassDef } from '../entities/ClassCasting.js';
 import { classSpellLevelCap } from '../entities/SpellLearning.js';
@@ -106,7 +107,7 @@ export function spellPickerOptions(value = '', casterLevel = 1) {
       .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
       .map((s) => ({
         value: s.id,
-        label: `${s.level === 0 ? 'Cantrip' : `L${s.level}`} — ${s.name}`,
+        label: `${spellLevelName(s.level, { compact: true })} — ${s.name}`,
       }))
   );
 }

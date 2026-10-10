@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spellLevelLabel,
+  spellLevelName,
   groupSpellsByLevel,
   spellStatus,
   spellRule,
@@ -171,4 +172,11 @@ test('castableLeveledIds lists prepared spells for prepared-rule classes and kno
     },
   });
   assert.deepEqual(castableLeveledIds(multiclass), ['bless', 'heroism']);
+});
+
+test('spellLevelName names one spell level, in full or compact', () => {
+  assert.equal(spellLevelName(0), 'Cantrip');
+  assert.equal(spellLevelName(3), 'Level 3');
+  assert.equal(spellLevelName(0, { compact: true }), 'Cantrip');
+  assert.equal(spellLevelName(3, { compact: true }), 'L3');
 });

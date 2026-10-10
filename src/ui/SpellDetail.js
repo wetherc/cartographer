@@ -1,3 +1,4 @@
+import { spellLevelName } from '../entities/SpellView.js';
 import { effectSummary, hitLines, laterTurnLines } from '../view/SpellEffectText.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
@@ -43,7 +44,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
     className: 'modal--wide spell-detail',
     title: spell.name,
     build: (close) => {
-      const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
+      const levelText = spellLevelName(spell.level);
       const summary = effectSummary(spell, options.saveDC ?? null);
 
       // Falsy entries are the optional lines: no effect summary, no

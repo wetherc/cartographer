@@ -1,3 +1,4 @@
+import { spellLevelName } from '../entities/SpellView.js';
 import { crLabel } from '../data/challenge.js';
 import { capitalize } from '../util/text.js';
 
@@ -28,7 +29,7 @@ export function creatureTags(entry) {
 const LABELS = /** @type {Record<string, (value: string) => string>} */ ({
   class: capitalize,
   school: capitalize,
-  level: (v) => (v === '0' ? 'Cantrip' : `Level ${v}`),
+  level: (v) => spellLevelName(Number(v)),
   cr: (v) => `CR ${crLabel(Number(v))}`,
 });
 

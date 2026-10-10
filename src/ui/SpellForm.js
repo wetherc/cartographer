@@ -1,3 +1,4 @@
+import { spellLevelName } from '../entities/SpellView.js';
 import { capitalize } from '../util/text.js';
 import { SPELL_KINDS } from '../entities/SpellKinds.js';
 import { CLASS_LIST } from '../entities/Classes.js';
@@ -69,7 +70,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const levelSelect = select(
     ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((value) => ({
       value,
-      label: value === '0' ? 'Cantrip' : value,
+      label: spellLevelName(Number(value)),
     })),
     String(spell?.level ?? 0),
   );
