@@ -1,6 +1,7 @@
 import { spendRiders } from '../entities/Riders.js';
 import { findCombatant } from './combatants.js';
 import { storeConditions } from './combatantWrites.js';
+import { endSpentCasts } from './spentCasts.js';
 import { dropOnce, spentOnce } from '../entities/ChipSlants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -23,6 +24,7 @@ export function spendRollRiders(app, id, rider) {
   if (conditions === found.entity.conditions) return;
   storeConditions(app, found, conditions);
   app.actions.markDirty();
+  endSpentCasts(app, found.entity.conditions, conditions);
 }
 
 /**

@@ -23,6 +23,7 @@ import { riderSources } from '../entities/FeatChoices.js';
 import { currentParticipant } from '../combat/Initiative.js';
 import { findCombatant, logName } from './combatants.js';
 import { rollD20InTray } from './luckyRoll.js';
+import { endSpentCasts } from './spentCasts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -100,6 +101,7 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const next = { ...applied, conditions: spendRiders(applied.conditions, rider.spent) };
   found.store(next);
   app.actions.markDirty();
+  endSpentCasts(app, applied.conditions, next.conditions);
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} disadvantage` : '';
   const rode = rider.note ? `, ${rider.note}` : '';
   const luckyNote = lucky ? ', Lucky reroll' : '';

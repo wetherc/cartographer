@@ -672,6 +672,7 @@ the same code. The fight itself renders in combat mode, which
 | `combatEnd.js` | The fight summary, the XP dialog that opens before the fight ends, the confirm for a fight with standing foes and no character to earn XP, and the award after the fight closes |
 | `summonsWiring.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
+| `spentCasts.js` | Ending a caster's concentration when a roll uses up the last chip of the cast, such as Guidance or Resistance |
 | `shieldWard.js` | The pause before a hit lands on a defender that can raise its AC with a reaction (Shield), for a weapon swing and for an attack spell |
 | `reactionGate.js` | The checks that the Shield, damage, and Redirect Attack pauses share: whether the defender may react now (`reactionCaster`), and the self-cast plan of a reaction spell it can pay for (`reactionPlan`) |
 | `viewer.js` | `viewerOf`, the GM flag and the bound character id of this tab, which the combat cards, the loadout, the reaction checks, and the search filter read |
