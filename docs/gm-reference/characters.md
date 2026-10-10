@@ -180,7 +180,9 @@ feat that grants expertise.
 ## Creation and progression
 
 Creation picks a class, a race, and a background, and offers the skill
-choices of the class. A Half-Elf also picks two abilities other than CHA
+choices of the class. The class list leaves out a skill that the race or the
+background already gives, so an Acolyte Cleric picks two skills other than
+Insight and Religion. A Half-Elf also picks two abilities other than CHA
 that gain +1 each, and two skills of any kind (Skill Versatility). A
 Dragonborn picks the damage type of its Draconic Ancestry and resists that
 type. A Dwarf picks its tool proficiency from smith's tools, brewer's

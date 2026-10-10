@@ -54,9 +54,31 @@ function skillChoiceList(classId) {
   return choice.from.length ? choice.from : SKILL_IDS;
 }
 
-/** @param {string | undefined} classId @returns {{ value: string, label: string }[]} */
-function skillOptions(classId) {
-  return skillChoiceList(classId).map((id) => ({ value: id, label: skillName(id) }));
+/**
+ * The skills that the race and the background already give: the race's
+ * fixed skills, the race skill picks (the Half-Elf), and the background's
+ * two skills. A class pick of one of these adds nothing, because the
+ * proficiency lists drop duplicates.
+ * @param {{ race?: string, raceSkills?: string, background?: string }} values
+ * @returns {Set<string>}
+ */
+function grantedSkills(values) {
+  return new Set([
+    ...(getRace(values.race)?.skills ?? []),
+    ...(getRace(values.race)?.skillChoice ? splitList(values.raceSkills ?? '') : []),
+    ...(getBackground(values.background)?.skills ?? []),
+  ]);
+}
+
+/**
+ * The class skill picks still open, with the race and background skills
+ * left out.
+ * @param {string | undefined} classId
+ * @param {Set<string>} granted
+ * @returns {string[]}
+ */
+function openSkillChoices(classId, granted) {
+  return skillChoiceList(classId).filter((id) => !granted.has(id));
 }
 
 /** The HP a classless character starts with. This character has no hit die to derive HP from. */
@@ -307,7 +329,9 @@ function applyStatMethod(form, rng) {
 /**
  * Keep the dependent fields in step as the GM edits the form. A class pick
  * refilters the skill multiselect to that class's choices, capped and
- * captioned at its pick count. The stat method stamps its starting scores:
+ * captioned at its pick count. A class, race, race skill, or background
+ * pick also leaves out the skills that the race and background give, and a
+ * checked class skill that leaves the list is unchecked. The stat method stamps its starting scores:
  * the standard array through the pill grid, and point buy under a hard
  * budget. The form applies the `enabledWhen` rule of Custom race itself.
  * @param {string} name the changed field
@@ -329,9 +353,19 @@ export function characterFormChange(name, form, rng = Math.random) {
     form.setHidden('raceTool', !getRace(raceId)?.toolChoice?.length);
     form.setHidden('raceCantrip', !getRace(raceId)?.cantripChoice);
   }
-  if (name === 'class') {
-    const choice = getClass(form.get('class'))?.skillChoice;
-    form.setOptions('skills', skillOptions(form.get('class')), choice?.choose ?? 0);
+  if (['class', 'race', 'raceSkills', 'background'].includes(name)) {
+    const classId = form.get('class');
+    const choice = getClass(classId)?.skillChoice;
+    const granted = grantedSkills({
+      race: form.get('race'),
+      raceSkills: form.get('raceSkills'),
+      background: form.get('background'),
+    });
+    const options = openSkillChoices(classId, granted).map((id) => ({
+      value: id,
+      label: skillName(id),
+    }));
+    form.setOptions('skills', options, choice?.choose ?? 0);
     form.setLabel('skills', choice ? `Class skills (choose ${choice.choose})` : 'Class skills');
   }
   if (name === 'statMethod' || name === 'reroll') applyStatMethod(form, rng);
@@ -366,8 +400,8 @@ export function characterFormChange(name, form, rng = Math.random) {
  * Build the level 1 character that the submitted dialog values describe.
  * Assigning the race adds its ability increases to the typed scores. A
  * custom race is only a display string, with no ability increases.
- * Skill picks are filtered to the class's choice list and capped at its
- * count. Bonus languages are capped at the background's count. The
+ * Skill picks are filtered to the class's choice list, less the race and
+ * background skills, and capped at its count. Bonus languages are capped at the background's count. The
  * proficiency lists assemble from class, race, background, and those picks.
  * The HP pool derives from the class hit die and CON. A classed character
  * gets hit dice, and a caster gets spell slots. This function is pure.
@@ -405,7 +439,7 @@ export function buildCharacter(values, existingIds) {
   if (classDef) character = withClasses(character, [{ classId: classDef.id, level: 1 }]);
 
   const choice = classDef?.skillChoice;
-  const from = skillChoiceList(classDef?.id);
+  const from = openSkillChoices(classDef?.id, grantedSkills(values));
   const skills = splitList(values.skills)
     .filter((id) => from.includes(id))
     .slice(0, choice?.choose ?? 0);
