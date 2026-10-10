@@ -10,7 +10,8 @@ import {
   terrainKey,
   torusPieces,
 } from '../src/map/TerrainLayer.js';
-import { createMapNode } from '../src/map/TileGrid.js';
+import { createMapNode, createTile, getTile, setTile } from '../src/map/TileGrid.js';
+import { cellEdge } from '../src/map/MapGeometry.js';
 
 /** @param {number} x @param {number} y @param {number} w @param {number} h */
 const r = (x, y, w, h) => ({ x, y, w, h });
@@ -226,15 +227,15 @@ test('a pan paints only the strip that comes into view, plus the margin', () => 
   assert.equal(paints.length, 2);
 });
 
-test('a key change or invalidate paints the whole view again', () => {
+test('a fog mode change or invalidate paints the whole view again', () => {
   const { layer, paints, draw } = harness();
   draw(view());
   draw(view());
-  draw(view({ partyTileId: '2,2' }));
+  draw(view({ fogDim: true }));
   assert.equal(paints.length, 2);
   assert.equal(paints[1].w, 304);
   layer.invalidate();
-  draw(view({ partyTileId: '2,2' }));
+  draw(view({ fogDim: true }));
   assert.equal(paints.length, 3);
 });
 
@@ -282,4 +283,157 @@ test('without a node or a canvas the caller draws direct', () => {
     false,
   );
   assert.equal(new TerrainLayer().createCanvas(4, 4), null);
+});
+
+/**
+ * A software 2d canvas with one integer per pixel. It supports what the
+ * layer and the test paint below use: translate, one clip rect at a time,
+ * fillRect, clearRect, and a 1:1 drawImage.
+ * @param {number} width
+ * @param {number} height
+ */
+function pixelCanvas(width, height) {
+  const canvas = /** @type {any} */ ({ width, height, data: new Int32Array(width * height) });
+  let tx = 0;
+  let ty = 0;
+  /** @type {any} */
+  let clip = null;
+  /** @type {any} */
+  let path = null;
+  /** @type {any[]} */
+  const stack = [];
+  /** @param {number} x @param {number} y @param {number} w @param {number} h @param {number} v */
+  const fill = (x, y, w, h, v) => {
+    let area = intersect(r(x + tx, y + ty, w, h), r(0, 0, canvas.width, canvas.height));
+    if (area && clip) area = intersect(area, clip);
+    if (!area) return;
+    for (let py = area.y; py < area.y + area.h; py++) {
+      canvas.data.fill(v, py * canvas.width + area.x, py * canvas.width + area.x + area.w);
+    }
+  };
+  const ctx = /** @type {any} */ ({
+    fillStyle: 0,
+    save: () => stack.push({ tx, ty, clip }),
+    restore: () => ({ tx, ty, clip } = stack.pop()),
+    beginPath: () => {},
+    rect: (/** @type {number[]} */ ...a) => (path = r(a[0] + tx, a[1] + ty, a[2], a[3])),
+    clip: () => (clip = clip ? intersect(clip, path) : path),
+    translate: (/** @type {number} */ x, /** @type {number} */ y) => ((tx += x), (ty += y)),
+    clearRect: (/** @type {number[]} */ ...a) => fill(a[0], a[1], a[2], a[3], 0),
+    fillRect: (/** @type {number[]} */ ...a) => fill(a[0], a[1], a[2], a[3], ctx.fillStyle),
+    drawImage(/** @type {any} */ src, /** @type {number[]} */ ...a) {
+      const [sx, sy, w, h, dx, dy] = a;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          ctx.fillStyle = src.data[(sy + y) * src.width + sx + x];
+          ctx.fillRect(dx + x, dy + y, 1, 1);
+        }
+      }
+    },
+  });
+  canvas.getContext = () => ctx;
+  return canvas;
+}
+
+/**
+ * A stand-in for the terrain passes: each tile fills its cell with a value
+ * from its fog state and its distance to the party, and a revealed tile also
+ * draws a glow 3 px past its cell, as a POI outline does.
+ * @param {any} lctx
+ * @param {any} v
+ */
+function testPaint(lctx, v) {
+  const size = v.scale * 50;
+  const party = v.partyTileId.split(',').map(Number);
+  for (const tile of v.node.tiles) {
+    const [x, y] = tile.id.split(',').map(Number);
+    const sx = cellEdge(x, size, v.offsetX);
+    const sy = cellEdge(y, size, v.offsetY);
+    const w = cellEdge(x + 1, size, v.offsetX) - sx;
+    const h = cellEdge(y + 1, size, v.offsetY) - sy;
+    const near = (x - party[0]) ** 2 + (y - party[1]) ** 2 <= v.markerRange ** 2;
+    if (tile.revealed && near) {
+      lctx.fillStyle = 9;
+      lctx.fillRect(sx - 3, sy - 3, w + 6, h + 6);
+    }
+    lctx.fillStyle = (tile.revealed ? 2 : 1) + (near ? 4 : 0) + ((x + y) % 2) * 16;
+    lctx.fillRect(sx, sy, w, h);
+  }
+}
+
+/** A grid of fogged tiles, with a few revealed around the party. */
+function fogNode() {
+  const tiles = [];
+  for (let y = 0; y < 10; y++) {
+    for (let x = 0; x < 10; x++) {
+      tiles.push(
+        createTile(`${x},${y}`, 'grass', { revealed: Math.abs(x - 2) + Math.abs(y - 2) < 2 }),
+      );
+    }
+  }
+  return { ...NODE, tiles };
+}
+
+/**
+ * Draw `views` in turn through one layer, and return the screen pixels of
+ * the last frame and the number of paint calls.
+ * @param {any[]} views
+ */
+function screenAfter(views) {
+  const layer = new TerrainLayer({ createCanvas: pixelCanvas });
+  let paints = 0;
+  /** @type {any} */
+  let screen = null;
+  for (const v of views) {
+    screen = pixelCanvas(v.canvasWidth, v.canvasHeight);
+    const paint = (/** @type {any} */ lctx, /** @type {any} */ pv) => {
+      paints++;
+      testPaint(lctx, pv);
+    };
+    if (!layer.draw(screen.getContext(), v, v.scale * 50, paint)) {
+      testPaint(screen.getContext(), v);
+    }
+  }
+  return { pixels: screen.data, paints };
+}
+
+test('a step repaints only its dirty cells, to the same pixels as a full paint', () => {
+  const node = fogNode();
+  let next = node;
+  for (const id of ['3,2', '4,2', '3,3', '4,1']) {
+    next = setTile(next, { ...getTile(next, id), revealed: true });
+  }
+  const base = { scale: 0.73, markerRange: 2, canvasWidth: 300, canvasHeight: 260 };
+  const before = view({ ...base, node, partyTileId: '2,2', offsetX: -7, offsetY: -3 });
+  const after = view({ ...base, node: next, partyTileId: '3,2', offsetX: -7, offsetY: -3 });
+  const stepped = screenAfter([before, before, after]);
+  const fresh = screenAfter([after, after]);
+  // The step paints its dirty rect only: one paint for the first view, one for the step.
+  assert.equal(stepped.paints, 2);
+  assert.deepEqual(stepped.pixels, fresh.pixels);
+  // A pan after the step still matches.
+  const panned = { ...after, offsetX: -40, offsetY: -20 };
+  assert.deepEqual(
+    screenAfter([before, before, after, panned]).pixels,
+    screenAfter([panned, panned]).pixels,
+  );
+});
+
+test('a reveal with no party move repaints the glow it spills on the cells beside it', () => {
+  const node = fogNode();
+  const next = setTile(node, { ...getTile(node, '3,3'), revealed: true });
+  const base = { scale: 0.73, markerRange: 2, partyTileId: '2,2', offsetX: -7, offsetY: -3 };
+  const before = view({ ...base, node });
+  const after = view({ ...base, node: next });
+  const stepped = screenAfter([before, before, after]);
+  assert.equal(stepped.paints, 2);
+  assert.deepEqual(stepped.pixels, screenAfter([after, after]).pixels);
+});
+
+test('a dirty rect outside the valid rect paints nothing', () => {
+  const { paints, draw } = harness();
+  draw(view({ partyTileId: '9,9', markerRange: 1 }));
+  draw(view({ partyTileId: '9,9', markerRange: 1 }));
+  draw(view({ partyTileId: '9,8', markerRange: 1 }));
+  assert.equal(paints.length, 1);
 });

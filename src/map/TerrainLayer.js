@@ -16,8 +16,10 @@
  * already drawn where it is. The frame then copies the view out of the layer
  * in up to four pieces, one per side of the wrap.
  *
- * A change to anything the terrain passes read empties the valid rect, and
- * the next frame draws just the view. A zoom frame draws straight onto the
+ * A party step or a paint stroke repaints only the cells it can change (see
+ * TerrainDirty.js) inside the valid rect. Any other change to what the
+ * terrain passes read empties the valid rect, and the next frame draws just
+ * the view. A zoom frame draws straight onto the
  * map canvas: a pinch changes the scale on every frame, so a cached copy
  * would never be read.
  *
@@ -27,6 +29,7 @@
  */
 
 import { createOffscreenCanvas } from './CanvasFactory.js';
+import { dirtyCells } from './TerrainDirty.js';
 /** @typedef {{ x: number, y: number, w: number, h: number }} Rect */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 
@@ -172,6 +175,8 @@ export function torusPieces(rect, width, height) {
   return out;
 }
 
+/** @typedef {ReturnType<typeof terrainKey>} TerrainKey */
+
 /**
  * The view fields the terrain passes read, apart from the scale, which
  * `TerrainLayer.draw` handles on its own. The node, its region groups, and
@@ -249,9 +254,13 @@ export class TerrainLayer {
       return false;
     }
     const key = terrainKey(view);
+    /** @type {import('./TerrainDirty.js').CellRect[]} */
+    let dirty = [];
     if (!sameKey(this.key, key)) {
+      const cells = this.key && this.valid ? dirtyCells(this.key, key) : null;
+      if (cells) dirty = cells;
+      else this.valid = null;
       this.key = key;
-      this.valid = null;
     }
     // The margin is how far a pan reaches past the view before it draws
     // again. A quarter of the shorter side gives a pan about that many
@@ -260,7 +269,6 @@ export class TerrainLayer {
     const margin = Math.round(Math.min(view.canvasWidth, view.canvasHeight) / 4);
     if (!this._fit(view.canvasWidth + margin * 2, view.canvasHeight + margin * 2)) return false;
     const layer = /** @type {HTMLCanvasElement} */ (this.canvas);
-    const lctx = /** @type {CanvasRenderingContext2D} */ (this.ctx);
 
     // One cell of slack around the map and around each drawn strip. A POI
     // glow spills past its cell by less than that, and a strip drawn without
@@ -273,6 +281,20 @@ export class TerrainLayer {
       h: Math.round(node.height * size) + border * 2,
     };
     const view0 = { x: -view.offsetX, y: -view.offsetY, w: view.canvasWidth, h: view.canvasHeight };
+    // Cell edges at offset 0 are the map pixels of the layer. Each rect
+    // covers whole cells, so it cuts no block image and no POI outline that
+    // starts outside it.
+    for (const cells of this.valid ? dirty : []) {
+      const x = Math.round(cells.minX * size);
+      const y = Math.round(cells.minY * size);
+      const rect = intersect(/** @type {Rect} */ (this.valid), {
+        x,
+        y,
+        w: Math.round((cells.maxX + 1) * size) - x,
+        h: Math.round((cells.maxY + 1) * size) - y,
+      });
+      if (rect) this._paint(rect, view, border, paint);
+    }
     const target = intersect(view0, extent);
     if (!target) return true;
 
@@ -281,24 +303,7 @@ export class TerrainLayer {
       : target;
     const next = intersect(grown, extent) ?? target;
     const todo = this.valid ? subtract(next, this.valid) : [next];
-    for (const rect of todo) {
-      for (const piece of torusPieces(rect, layer.width, layer.height)) {
-        lctx.save();
-        lctx.beginPath();
-        lctx.rect(piece.lx, piece.ly, piece.w, piece.h);
-        lctx.clip();
-        lctx.clearRect(piece.lx, piece.ly, piece.w, piece.h);
-        lctx.translate(piece.lx - border, piece.ly - border);
-        paint(lctx, {
-          ...view,
-          offsetX: border - piece.x,
-          offsetY: border - piece.y,
-          canvasWidth: piece.w + border * 2,
-          canvasHeight: piece.h + border * 2,
-        });
-        lctx.restore();
-      }
-    }
+    for (const rect of todo) this._paint(rect, view, border, paint);
     this.valid = next;
 
     for (const piece of torusPieces(target, layer.width, layer.height)) {
@@ -315,6 +320,36 @@ export class TerrainLayer {
       );
     }
     return true;
+  }
+
+  /**
+   * Clear a rect of map pixels in the layer and paint the terrain into it.
+   * The paint view reaches `border` past the rect, so a POI glow from a cell
+   * just outside still spills in, and the clip cuts it at the rect edge.
+   * @param {Rect} rect
+   * @param {MapView} view
+   * @param {number} border
+   * @param {(ctx: CanvasRenderingContext2D, view: MapView) => void} paint
+   */
+  _paint(rect, view, border, paint) {
+    const layer = /** @type {HTMLCanvasElement} */ (this.canvas);
+    const lctx = /** @type {CanvasRenderingContext2D} */ (this.ctx);
+    for (const piece of torusPieces(rect, layer.width, layer.height)) {
+      lctx.save();
+      lctx.beginPath();
+      lctx.rect(piece.lx, piece.ly, piece.w, piece.h);
+      lctx.clip();
+      lctx.clearRect(piece.lx, piece.ly, piece.w, piece.h);
+      lctx.translate(piece.lx - border, piece.ly - border);
+      paint(lctx, {
+        ...view,
+        offsetX: border - piece.x,
+        offsetY: border - piece.y,
+        canvasWidth: piece.w + border * 2,
+        canvasHeight: piece.h + border * 2,
+      });
+      lctx.restore();
+    }
   }
 
   /**

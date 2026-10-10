@@ -217,6 +217,7 @@ The canvas code is split so that each file owns one concern:
     +-- MapRenderer ......... terrain / fog / grid / region passes
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- TerrainLayer ..... terrain pixels kept across a pan
+    |     |     +-- TerrainDirty ... the cells a step or stroke repaints
     |     +-- MapMarkers ....... party, encounter, NPC, handout, token markers
     |     +-- MapDecorations ... cursor, selection, POI,
     |     |                      coordinate chrome
@@ -356,8 +357,16 @@ The copy from the CPU layer onto the map canvas costs about 2 ms a frame.
 
 `terrainKey` lists what the terrain passes read: the node, the region
 groups, the fog mode, the marker range, the party tile, and the token tiles.
-A change to any of them drops the cache, and the next frame fills just the
-view. A paint stroke or a party step therefore costs one normal draw. A
+When only tiles or anchors change, as on a paint stroke or a party step,
+`dirtyCells` (`src/map/TerrainDirty.js`) finds the cells whose pixels can
+differ, and the layer repaints only those cells. The changed tiles are the
+tile objects that differ by identity, because `withTilesReplaced` shares
+every unchanged tile. Each changed tile, and the marker range around an
+anchor that moved, grows by one cell for the frontier fog and the POI glow,
+and then to the whole of any span block or region group that it touches.
+A change to the fog mode, the marker range, the node id or size, or more
+than 128 tiles at once drops the cache, and the next frame fills just the
+view. A
 change of scale draws the passes straight onto the map canvas instead,
 because a pinch changes the scale on every frame and would never read a
 cached copy. A tile image that finishes loading drops the cache too, because
