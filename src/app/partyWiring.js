@@ -5,7 +5,7 @@ import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { applyToTarget, endSpellEffects } from './combatantWrites.js';
-import { addLethargy } from './lethargyWrites.js';
+import { addLethargy, settleChips } from './lethargyWrites.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaveRolls.js';
 import { setCombatantExhaustion } from './exhaustionWrites.js';
@@ -291,6 +291,9 @@ export function wireParty(app, reloadView = null) {
     // The Level up button of the sheet's banner opens the full sheet, where
     // the progression section is.
     () => fullSheet.open(),
+    // A hand edit of the chips settles HP buffs and adds the lethargy that a
+    // removed Haste leaves, the same as the creature and NPC panels.
+    (character, conditions) => settleChips(app, character, conditions),
   );
 
   // The Spellbook tab manages learn, prepare, and forget actions for the

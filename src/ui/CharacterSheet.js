@@ -135,6 +135,10 @@ function customPools(character) {
  *   first, so the GM lands on the Progression section of the full sheet,
  *   where the improvement and feature choices are. Without it, the banner
  *   stays in the card it was built in.
+ * @param {((character: Character, conditions: import('../types/entities.js').Condition[]) => Character) | null} [settleChips]
+ *   Settles a hand edit of the condition chips: the HP that a chip such as Aid
+ *   raised, and the lethargy that a removed Haste leaves. The lethargy write
+ *   logs, which the sheet cannot do. Without it, the sheet settles the HP alone.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -149,6 +153,7 @@ export function mountCharacterSheet(
   exhaustion = null,
   hpStep = null,
   openFull = null,
+  settleChips = null,
 ) {
   let current = initial;
   // The HP amount field is rebuilt on each render. This value refills it,
@@ -562,6 +567,7 @@ export function mountCharacterSheet(
       commit,
       getPermissions,
       onConcentrationEnd: spells?.onConcentrationEnd,
+      settleChips,
       exhaustion,
       deathSaves,
     });

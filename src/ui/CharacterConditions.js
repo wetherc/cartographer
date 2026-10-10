@@ -27,6 +27,7 @@ import { el } from './dom.js';
  *     held: import('../types/entities.js').ConcentrationState,
  *   ) => void,
  *   exhaustion: { onSet: (level: number) => void } | null | undefined,
+ *   settleChips?: ((character: Character, conditions: import('../types/entities.js').Condition[]) => Character) | null,
  *   deathSaves: { onRoll: () => void, onStabilize: () => void } | null | undefined,
  * }} ctx
  * @returns {{ element: HTMLElement, write: () => void }}
@@ -57,11 +58,14 @@ export function buildConditionsSection(character, ctx) {
     // Removing the Concentrating chip by hand means the spell ended, so
     // the state behind it must end too. Without this, the chip and the held
     // spell can disagree. A chip such as Stunned that leaves the character
-    // unable to act ends the spell the same way.
+    // unable to act ends the spell the same way. The host settles the HP
+    // buffs and the lethargy that a removed Haste leaves.
     onChange: (next) => {
       const held = live();
       const kept = hasCondition(next, CONCENTRATING);
-      const withConditions = settleHPBuffs({ ...held, conditions: next });
+      const withConditions = ctx.settleChips
+        ? ctx.settleChips(held, next)
+        : settleHPBuffs({ ...held, conditions: next });
       if (held.concentration && (!kept || !canAct(next))) endConcentration(withConditions);
       else commit(withConditions);
     },
