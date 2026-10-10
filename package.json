@@ -32,6 +32,9 @@
     }
   },
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",

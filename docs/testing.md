@@ -186,6 +186,10 @@ reach 100 percent. [Testing strategy](testing-strategy.md) lists the files
 where a low number is expected. A low number on any other file shows
 missing tests.
 
+On Node 22 the run also prints `ExperimentalWarning: glob is an experimental
+feature`, because Node treats the `--test-coverage-exclude='tests/**'` pattern
+as an experimental glob. The warning does not fail the run.
+
 ## Check a change in the browser
 
 The unit tests build no DOM and no canvas. A change to rendering, layout,

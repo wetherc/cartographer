@@ -13,7 +13,7 @@ This guide tells you how to set up the development tools, run the app and its ch
 
 ## Prerequisites
 
-- Node.js 22 or later. The browser benchmark uses the `WebSocket` global that Node 22 added.
+- Node.js 22 or later, as `engines.node` in `package.json` states. The browser benchmark uses the `WebSocket` global that Node 22 added.
 - pnpm 11. The `devEngines` field in `package.json` names the version, and pnpm downloads it if yours does not match.
 - Google Chrome, only if you run `pnpm bench`.
 
