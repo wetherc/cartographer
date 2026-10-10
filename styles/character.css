@@ -664,16 +664,6 @@
   font-size: var(--text-label);
 }
 
-/* Fixed-value readouts in the add form (a shield's non-negotiable +2 AC),
-   sized to sit level with the neighboring inputs. */
-.item-form__note {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  font-family: var(--font-mono);
-  color: var(--text);
-}
-
 /* The line under the AC row that marks a helmet, gloves, or greaves piece as a
    house rule. */
 .item-form__house-rule {
@@ -718,13 +708,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
-  font-size: var(--text-label);
-}
-
-/* The player-tab hint under the "Playing as" picker. It is for the GM who
-   sets a player tab up, so the Player view hides it (see shell.css). */
-.party-binding-hint {
-  margin: 0 0 var(--space-2);
   font-size: var(--text-label);
 }
 
