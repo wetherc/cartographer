@@ -26,6 +26,7 @@ import { isDefeated } from '../entities/Creature.js';
 import { isGM, seesThroughFog } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
 import { watchPixelRatio } from '../ui/pixelRatio.js';
+import { deferMount } from '../util/deferMount.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/mapEnv.js').MapEnv} MapEnv */
@@ -278,7 +279,7 @@ export function wireMapView(app) {
 
   /** Show only the palette terrain that the current node's kind can use. */
   function syncPaletteKind() {
-    palettePanel.setKind(navigator.getCurrentNode().kind);
+    palettePanel?.setKind(navigator.getCurrentNode().kind);
   }
 
   /** Remove any Build-mode tile selection and its inspector and canvas
@@ -344,27 +345,30 @@ export function wireMapView(app) {
   // A Player tab gets an empty Build-rail tree. The rail is hidden in that
   // role, but a filled tree would still put the name of every node, such as
   // an undiscovered dungeon, into the page for anyone who reads the DOM.
-  const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
-    getNodes: () => (isGM(state.role) ? grid.allNodes() : []),
-    getCurrentId: () => navigator.getCurrentNode().id,
-    onSelect: goToNode,
-    // The new map opens at once, and the tree opens the rows above it and
-    // selects its row, so the GM sees where it went.
-    onAddChild: async (id) => {
-      const child = await nodeActions.addChildNode(id);
-      if (child) goToNode(child);
-    },
-    onEdit: (id) => nodeActions.editNode(id),
-    onDelete: (id) => nodeActions.deleteNode(id),
-    // Badge every unreachable or sealed node. Unlinking a tile flags the
-    // orphaned child node here, instead of only when the GM next views it.
-    // This check runs in Build mode only: the tree sits in a Build-only rail.
-    // Adding the check to the signature costs a world scan on every
-    // Play-mode party step.
-    getWarning: (node) =>
-      state.mode === 'build' ? authoringWarning(node, grid.getParent(node)) : null,
-    getLock: lockBadge,
-  });
+  // The tree mounts on the first switch to Build mode (showBuild below).
+  const worldTree = deferMount(() =>
+    mountWorldTree(mustGetElement('world-tree-container'), {
+      getNodes: () => (isGM(state.role) ? grid.allNodes() : []),
+      getCurrentId: () => navigator.getCurrentNode().id,
+      onSelect: goToNode,
+      // The new map opens at once, and the tree opens the rows above it and
+      // selects its row, so the GM sees where it went.
+      onAddChild: async (id) => {
+        const child = await nodeActions.addChildNode(id);
+        if (child) goToNode(child);
+      },
+      onEdit: (id) => nodeActions.editNode(id),
+      onDelete: (id) => nodeActions.deleteNode(id),
+      // Badge every unreachable or sealed node. Unlinking a tile flags the
+      // orphaned child node here, instead of only when the GM next views it.
+      // This check runs in Build mode only: the tree sits in a Build-only rail.
+      // Adding the check to the signature costs a world scan on every
+      // Play-mode party step.
+      getWarning: (node) =>
+        state.mode === 'build' ? authoringWarning(node, grid.getParent(node)) : null,
+      getLock: lockBadge,
+    }),
+  );
   env.worldTree = worldTree;
 
   // The Play-mode counterpart to the Build-mode world tree. It shows the same
@@ -433,22 +437,9 @@ export function wireMapView(app) {
   const tileTooltip = mountTileTooltip(document.body);
   env.tileTooltip = tileTooltip;
 
-  // The tooltip doubles as the palette's hover label, naming each image-only swatch.
-  const palettePanel = mountPalettePanel(
-    mustGetElement('palette-container'),
-    palette,
-    (brush) => {
-      env.activeBrush = brush;
-      syncToolChip();
-    },
-    tileTooltip,
-    {
-      list: () =>
-        grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
-      create: () => env.nodeActions.addChildNode(navigator.currentNodeId),
-    },
-  );
-  env.palettePanel = palettePanel;
+  /** @type {ReturnType<typeof mountPalettePanel> | null} mounted by showBuild below */
+  let palettePanel = null;
+  env.palettePanel = null;
 
   authoring.wireCanvasDrop(canvasEl);
 
@@ -463,7 +454,7 @@ export function wireMapView(app) {
   mapControls = chrome.mapControls;
   const { syncMapOccluders } = chrome;
   const toolChip = mountBuildToolChip(mapControls.element, () => {
-    const region = grid.getNode(palettePanel.regionPicker.getTarget() ?? '');
+    const region = grid.getNode(palettePanel?.regionPicker.getTarget() ?? '');
     return toolChipLabel(effectiveBrush(env.activeBrush, buildTab), region?.name ?? null);
   });
   // While the Region brush paints, the map draws the blocks of its target
@@ -472,9 +463,10 @@ export function wireMapView(app) {
     toolChip.sync();
     const painting =
       state.mode === 'build' && effectiveBrush(env.activeBrush, buildTab) === 'region';
-    mapCanvas.setHighlightRegion(painting ? palettePanel.regionPicker.getTarget() : null);
+    mapCanvas.setHighlightRegion(
+      painting ? (palettePanel?.regionPicker.getTarget() ?? null) : null,
+    );
   };
-  palettePanel.regionPicker.root.addEventListener('change', syncToolChip);
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.
   // The brush silently owns the left mouse button, so a key must give it back.
@@ -506,7 +498,7 @@ export function wireMapView(app) {
     // rest of the map. Build mode edits the whole map, so it fits it.
     if (mode === 'build') {
       mapCanvas.fit();
-      palettePanel.show();
+      palettePanel?.show();
     }
     syncToolChip();
     tileTooltip.hide();
@@ -565,6 +557,39 @@ export function wireMapView(app) {
   watchPixelRatio(resizeMapToViewport);
 
   syncEmptyMap = wireMapBuildTools(app, env, authoring, buildTabs).syncEmptyMap;
+
+  // The Build rail's palette, world tree, and foe and NPC lists contain about
+  // half of the page's elements, and only Build mode shows them. They mount
+  // on the first switch to Build mode, which sessionControls reports before
+  // onModeChanged. A Player tab cannot enter Build mode, so it never builds
+  // them. The tile inspector is small and mounts at startup.
+  app.actions.showBuild = () => {
+    if (!isGM(state.role)) return;
+    if (!palettePanel) {
+      // The tooltip doubles as the palette's hover label, naming each
+      // image-only swatch.
+      palettePanel = mountPalettePanel(
+        mustGetElement('palette-container'),
+        palette,
+        (brush) => {
+          env.activeBrush = brush;
+          syncToolChip();
+        },
+        tileTooltip,
+        {
+          list: () =>
+            grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
+          create: () => env.nodeActions.addChildNode(navigator.currentNodeId),
+        },
+      );
+      env.palettePanel = palettePanel;
+      palettePanel.regionPicker.root.addEventListener('change', syncToolChip);
+      syncPaletteKind();
+    }
+    worldTree.mount();
+    app.views.buildFoes.mount();
+    app.views.buildNPCs.mount();
+  };
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();

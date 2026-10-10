@@ -74,6 +74,7 @@ export function wireSessionControls(app) {
       document.body.classList.toggle('mode-library', mode === 'library');
       document.body.classList.toggle('mode-combat', mode === 'combat');
       if (mode === 'library') app.actions.showLibrary();
+      if (mode === 'build') app.actions.showBuild();
       app.actions.onModeChanged(mode);
       // A player tab's edit that arrived in Build or Library mode waits for
       // Play or combat mode.

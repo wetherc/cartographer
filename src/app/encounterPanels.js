@@ -38,6 +38,7 @@ import {
 import { commitCreatures } from './combatants.js';
 import { endCasterEffects, logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustionWrites.js';
+import { deferMount } from '../util/deferMount.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -241,40 +242,43 @@ export function wireEncounterPanels(app, { onStartCombat }) {
   // creatures staged in the node the GM is viewing, plus unplaced ones, and
   // lets the GM edit them without moving the party there. A new foe
   // defaults to the Build-mode selected tile of the viewed node, so the GM
-  // can select a tile and add a foe there directly.
-  app.views.buildFoes = mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
-    getEncounters: () =>
-      creaturesAt(state.creatures, {
-        nodeId: app.navigator.getCurrentNode().id,
-      }).filter((c) => c.disposition === 'hostile'),
-    onAdd: () =>
-      creatureForm(app, null, viewedPlacement(app), { disposition: 'hostile', level: 1 }),
-    onAddFromTemplate: () => addFromLibrary(app),
-    onRemoveTemplate: async () => {
-      if (await removeTemplate(app)) app.views.buildFoes.update();
-    },
-    templateCount: () => state.bestiary.length,
-    onClearDefeated: () => clearDefeated(app, app.navigator.getCurrentNode().id),
-    defeatedCount: () =>
-      clearableDefeated(state.creatures, state.combat, app.navigator.getCurrentNode().id).length,
-    onEdit: (creature) => creatureForm(app, creature, null),
-    onDelete: (creature) => deleteCreature(app, creature),
-    // Persist base stat edits from the Build rail's chips. The Play panel
-    // shows the same creature and picks up the change.
-    onUpdate: (edited) => {
-      const prev = state.creatures.find((c) => c.id === edited.id);
-      const next = prev ? addLethargy(app, prev, edited) : edited;
-      storeCreature(app, prev ?? next, next, (c) => {
-        state.creatures = replaceById(state.creatures, c);
-      });
-      app.views.encounterPanel.update();
-      app.actions.markDirty();
-    },
-    // Selecting a placed creature moves the map view to its staged location.
-    onFocus: (creature) => {
-      if (creature.location) app.actions.focusLocation(creature.location);
-    },
-  });
+  // can select a tile and add a foe there directly. The list mounts on the
+  // first switch to Build mode (mapWiring's showBuild).
+  app.views.buildFoes = deferMount(() =>
+    mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
+      getEncounters: () =>
+        creaturesAt(state.creatures, {
+          nodeId: app.navigator.getCurrentNode().id,
+        }).filter((c) => c.disposition === 'hostile'),
+      onAdd: () =>
+        creatureForm(app, null, viewedPlacement(app), { disposition: 'hostile', level: 1 }),
+      onAddFromTemplate: () => addFromLibrary(app),
+      onRemoveTemplate: async () => {
+        if (await removeTemplate(app)) app.views.buildFoes.update();
+      },
+      templateCount: () => state.bestiary.length,
+      onClearDefeated: () => clearDefeated(app, app.navigator.getCurrentNode().id),
+      defeatedCount: () =>
+        clearableDefeated(state.creatures, state.combat, app.navigator.getCurrentNode().id).length,
+      onEdit: (creature) => creatureForm(app, creature, null),
+      onDelete: (creature) => deleteCreature(app, creature),
+      // Persist base stat edits from the Build rail's chips. The Play panel
+      // shows the same creature and picks up the change.
+      onUpdate: (edited) => {
+        const prev = state.creatures.find((c) => c.id === edited.id);
+        const next = prev ? addLethargy(app, prev, edited) : edited;
+        storeCreature(app, prev ?? next, next, (c) => {
+          state.creatures = replaceById(state.creatures, c);
+        });
+        app.views.encounterPanel.update();
+        app.actions.markDirty();
+      },
+      // Selecting a placed creature moves the map view to its staged location.
+      onFocus: (creature) => {
+        if (creature.location) app.actions.focusLocation(creature.location);
+      },
+    }),
+  );
 
   /**
    * This is the Build-mode right-click menu for a tile of the viewed node.

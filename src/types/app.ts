@@ -67,16 +67,24 @@ export interface Updatable {
   update: () => void;
 }
 
+/** A panel that mounts on first use. `update` does nothing until `mount` runs. */
+export interface DeferredView extends Updatable {
+  mount: () => Updatable;
+  readonly mounted: boolean;
+}
+
 /** Mounted panels that other modules refresh. Each wiring module registers
  * its own entries during init. Every entry exists once wiring completes. */
 export interface AppViews {
   mapCanvas: MapCanvas;
   regionTree: Updatable;
   encounterPanel: Updatable;
-  /** Build-rail foe authoring list, scoped to the node in view. */
-  buildFoes: Updatable;
-  /** Build-rail NPC authoring list, scoped to the node in view. */
-  buildNPCs: Updatable;
+  /** Build-rail foe authoring list, scoped to the node in view. It mounts on
+   * the first switch to Build mode. */
+  buildFoes: DeferredView;
+  /** Build-rail NPC authoring list, scoped to the node in view. It mounts on
+   * the first switch to Build mode. */
+  buildNPCs: DeferredView;
   initiativePanel: Updatable;
   /** The combat mode's full-width board. */
   combatScreen: Updatable;
@@ -206,6 +214,8 @@ export interface AppActions {
   onModeChanged(mode: AppMode): void;
   // libraryWiring: mount the Library lists on the first visit to Library mode.
   showLibrary(): void;
+  // mapWiring: mount the Build rail on the first visit to Build mode.
+  showBuild(): void;
   onRoleChanged(role: ViewRole): void;
   // sessionControls
   setMode(mode: AppMode): void;

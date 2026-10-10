@@ -6,6 +6,7 @@ import type { mountPalettePanel, Brush } from '../ui/PalettePanel.js';
 import type { mountTileTooltip } from '../ui/TileTooltip.js';
 import type { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import type { mountWorldTree } from '../ui/WorldTree.js';
+import type { DeferredView } from './app.js';
 import type { createNodeActions } from '../app/nodeActions.js';
 
 /**
@@ -24,10 +25,12 @@ import type { createNodeActions } from '../app/nodeActions.js';
 export interface MapEnv {
   mapCanvas: MapCanvas;
   inspector: ReturnType<typeof mountTileInspector>;
-  palettePanel: ReturnType<typeof mountPalettePanel>;
+  /** Null until the first switch to Build mode mounts the palette. */
+  palettePanel: ReturnType<typeof mountPalettePanel> | null;
   tileTooltip: ReturnType<typeof mountTileTooltip>;
   breadcrumb: ReturnType<typeof mountBreadcrumb>;
-  worldTree: ReturnType<typeof mountWorldTree>;
+  /** The Build-rail tree. It mounts on the first switch to Build mode. */
+  worldTree: DeferredView;
   regionTree: ReturnType<typeof mountWorldTree>;
   nodeActions: ReturnType<typeof createNodeActions>;
   selectedTileId: string | null;

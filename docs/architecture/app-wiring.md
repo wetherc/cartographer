@@ -317,6 +317,17 @@ argument.
   and it returns `syncEmptyMap`, which `wireMapView` calls after each draw so
   the card shows only while the map in view has no tiles.
 
+The palette, the Build-rail world tree, and the foe and NPC authoring lists
+mount on the first switch to Build mode, through `app.actions.showBuild`,
+which `sessionControls.js` calls on that switch. They contain about half of
+the page's elements, and a Player tab cannot enter Build mode, so a Player
+tab never builds them. `encounterPanels.js` and `storyWiring.js` register
+the two lists as `deferMount` wrappers (`src/util/deferMount.js`), and
+`MapEnv.worldTree` is one too, so an `update` before the mount does nothing.
+`MapEnv.palettePanel` stays null until the mount, and each caller outside
+Build mode checks for null. The tile inspector is small and mounts at
+startup.
+
 The palette brush paints only while the Build rail shows the Paint tab.
 `MapEnv.buildTab` names the open tab, and `effectiveBrush` in
 `src/view/BuildTool.js` turns any other tab into Inspect. The tool chip

@@ -74,6 +74,7 @@ export const ACTION_NAMES = [
   'generateWorld',
   'onModeChanged',
   'showLibrary',
+  'showBuild',
   'onRoleChanged',
   'setMode',
   'mergeQueuedPatches',

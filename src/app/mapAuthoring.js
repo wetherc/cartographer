@@ -133,7 +133,7 @@ export function createMapAuthoring(app, env, options) {
    */
   function paintRegionCell(tileId) {
     const node = navigator.getCurrentNode();
-    const target = env.palettePanel.regionPicker.getTarget();
+    const target = env.palettePanel?.regionPicker.getTarget() ?? null;
     const updated = paintRegion(node, tileId, target, isInteriorId);
     if (updated === node) {
       const tile = getTile(node, tileId);
@@ -161,7 +161,7 @@ export function createMapAuthoring(app, env, options) {
   async function paintFirstRegion(tileId) {
     const id = await env.nodeActions.addChildNode(navigator.currentNodeId);
     if (!id) return;
-    env.palettePanel.regionPicker.pick(id);
+    env.palettePanel?.regionPicker.pick(id);
     snapshotEdit(navigator.getCurrentNode(), 'region stroke');
     paintRegionCell(tileId);
     settleAfterStroke();
@@ -197,7 +197,7 @@ export function createMapAuthoring(app, env, options) {
     const active = effectiveBrush(env.activeBrush, env.buildTab);
     // A whole drag counts as one stroke. One snapshot on the first cell
     // makes the stroke the unit of undo. Inspect mode does not change data.
-    if (first && active === 'region' && !env.palettePanel.regionPicker.hasRegions()) {
+    if (first && active === 'region' && env.palettePanel?.regionPicker.hasRegions() === false) {
       strokeHeld = true;
       void paintFirstRegion(id);
       return;
@@ -217,7 +217,7 @@ export function createMapAuthoring(app, env, options) {
       // type check.
       const brush = active;
       const overlay = isOverlayType(brush.type);
-      const scale = overlay ? 1 : env.palettePanel.getScale();
+      const scale = overlay ? 1 : (env.palettePanel?.getScale() ?? 1);
       // A scaled stamp is a single placement, not a stroke. Dragging at 2x
       // or 3x size creates overlapping blocks. Only the first cell paints.
       if (scale > 1 && !first) return;
@@ -343,7 +343,7 @@ export function createMapAuthoring(app, env, options) {
       const tileId = tileIdAt(coords.x, coords.y);
       snapshotEdit(navigator.getCurrentNode(), 'paint stroke');
       const overlay = isOverlayType(entry.type);
-      const scale = overlay ? 1 : env.palettePanel.getScale();
+      const scale = overlay ? 1 : (env.palettePanel?.getScale() ?? 1);
       const imageRef = palette.imageFor(entry, coords.x, coords.y);
       applyToTile(tileId, (node) => paintTile(node, tileId, imageRef, overlay, scale));
       settleAfterStroke();

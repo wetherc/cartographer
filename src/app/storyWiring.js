@@ -35,6 +35,7 @@ import { commitCreatures } from './combatants.js';
 import { endCasterEffects, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustionWrites.js';
 import { addLethargy } from './lethargyWrites.js';
+import { deferMount } from '../util/deferMount.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -232,18 +233,21 @@ export function wireStory(app) {
   // mob roster. It lists the non-hostile creatures placed in whatever node
   // the GM views, plus unplaced ones, and lets the GM edit them without
   // moving the party there. New NPCs default onto the Build-mode selected
-  // tile of the viewed node.
-  app.views.buildNPCs = mountNPCPanel(mustGetElement('build-npcs-container'), {
-    getNPCs: () => folkAt({ nodeId: app.navigator.getCurrentNode().id }),
-    getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
-    onDelete: deleteNPC,
-    onAdd: () => creatureForm(app, null, viewedPlacement(app), { disposition: 'neutral' }),
-    onAddFromTemplate: () => addFromLibrary(app, { disposition: 'neutral' }),
-    onEdit: (npc) => creatureForm(app, npc, null),
-    confirmDelete: confirmDeleteNPC,
-    getRole: () => state.role,
-    pinAdd: true, // Leads with "New NPC", to match the Foes subtab.
-  });
+  // tile of the viewed node. The list mounts on the first switch to Build
+  // mode (mapWiring's showBuild).
+  app.views.buildNPCs = deferMount(() =>
+    mountNPCPanel(mustGetElement('build-npcs-container'), {
+      getNPCs: () => folkAt({ nodeId: app.navigator.getCurrentNode().id }),
+      getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
+      onDelete: deleteNPC,
+      onAdd: () => creatureForm(app, null, viewedPlacement(app), { disposition: 'neutral' }),
+      onAddFromTemplate: () => addFromLibrary(app, { disposition: 'neutral' }),
+      onEdit: (npc) => creatureForm(app, npc, null),
+      confirmDelete: confirmDeleteNPC,
+      getRole: () => state.role,
+      pinAdd: true, // Leads with "New NPC", to match the Foes subtab.
+    }),
+  );
 
   const questList = wireEntityList(app, {
     key: 'quests',
