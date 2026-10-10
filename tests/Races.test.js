@@ -260,3 +260,15 @@ test('forgetting the race cantrip clears the race record', () => {
   const other = unlearnCantrip(elf, 'fire-bolt');
   assert.equal(other.raceTraits?.chosenCantrip, 'light');
 });
+
+test('withRace stops each increase at 20 and records the gain that landed', () => {
+  const dwarf = withRace(createCharacter('c1', 'Durnan'), 'dwarf');
+  const strong = { ...dwarf, stats: { ...dwarf.stats, STR: 20, CON: 23 } };
+  const dragon = withRace(strong, 'dragonborn');
+  assert.equal(dragon.stats.STR, 20);
+  assert.deepEqual(dragon.raceTraits?.abilityIncreases, { STR: 0, CHA: 1 });
+  const back = withRace(dragon, 'dwarf');
+  assert.equal(back.stats.STR, 20);
+  assert.equal(back.stats.CON, 21);
+  assert.deepEqual(back.raceTraits?.abilityIncreases, { CON: 0, WIS: 1 });
+});

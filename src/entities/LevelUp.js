@@ -1,7 +1,7 @@
 import { getClass, featureEntry } from './Classes.js';
 import { getClasses } from './Multiclass.js';
 import { subclassDef } from './ClassCasting.js';
-import { ABILITY_SCORES } from './Modifiers.js';
+import { ABILITY_MAX, ABILITY_SCORES } from './Modifiers.js';
 import { claimGrants, nextOrder, rebuildGrants } from './GrantLedger.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
@@ -25,8 +25,7 @@ import { memoizeByIdentity } from '../util/memoize.js';
  * the current state on demand.
  */
 
-/** The 5e limit for an ability score. An improvement cannot raise a score above this value. */
-export const ABILITY_MAX = 20;
+export { ABILITY_MAX };
 
 /** @param {Character} character @returns {AsiChoices} the choices by slot key */
 export function getASIChoices(character) {

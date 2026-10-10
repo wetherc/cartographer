@@ -14,6 +14,10 @@ export const ENEMY_TIERS = /** @type {CreatureTier[]} */ (['mob', 'legend']);
  * Character.js re-exports this so character code keeps its natural import. */
 export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
+/** The 5e limit for an ability score. An improvement or a race increase
+ * cannot raise a score above this value. */
+export const ABILITY_MAX = 20;
+
 /** The only stats an enemy carries: the six ability scores plus armor class.
  * Stat blocks are closed over this set. No custom stats exist. */
 export const STAT_KEYS = /** @type {StatKey[]} */ ([...ABILITY_SCORES, 'AC']);

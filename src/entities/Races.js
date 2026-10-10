@@ -1,4 +1,5 @@
 import { DEFAULT_RACES } from '../data/raceCatalog.js';
+import { ABILITY_MAX } from './Modifiers.js';
 
 /** @typedef {import('../types/race.js').RaceDef} RaceDef */
 /** @typedef {import('../types/race.js').RaceSnapshot} RaceSnapshot */
@@ -110,7 +111,9 @@ function statsWithoutRace(character) {
  * added to the character's scores. If a race is already assigned, the
  * function first removes its increases. This makes re-assigning idempotent,
  * and switching races swaps one set of bonuses for the other instead of
- * stacking them. An unknown id leaves the character unchanged. This
+ * stacking them. Each increase stops at `ABILITY_MAX`, and the snapshot
+ * records the gain that landed, so a later swap takes back that amount.
+ * An unknown id leaves the character unchanged. This
  * function is pure.
  * @param {Character} character
  * @param {string} raceId
@@ -129,7 +132,9 @@ export function withRace(character, raceId, picks = {}) {
   const amount = def.abilityChoice?.amount ?? 0;
   for (const key of abilities) gains[key] = (gains[key] ?? 0) + amount;
   for (const [key, gain] of Object.entries(gains)) {
-    stats[key] = (stats[key] ?? 10) + gain;
+    const before = stats[key] ?? 10;
+    stats[key] = Math.max(before, Math.min(ABILITY_MAX, before + gain));
+    gains[key] = stats[key] - before;
   }
   const snapshot = snapshotRace(def);
   const raceTraits = {
