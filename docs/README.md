@@ -38,6 +38,7 @@ describes how the site is built.
 | [Testing a change](testing.md) | Run the unit tests, the typecheck, the linter, and the browser checks |
 | [Adding a tile](adding-a-tile.md) | Draw a tile, register it, and check that it joins its neighbors |
 | [Adding a class mechanic](adding-a-class-mechanic.md) | Add a class feature: a sheet name, a scaling value, a pool, a turn action, or a level-up pick |
+| [Extending the app](how-to-extend.md) | Add a condition with a rule, a spell effect kind, a sidebar panel, or a campaign field |
 
 ## Reference
 

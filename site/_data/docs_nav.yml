@@ -27,6 +27,8 @@
       url: /docs/adding-a-tile.html
     - title: Adding a class mechanic
       url: /docs/adding-a-class-mechanic.html
+    - title: Extending the app
+      url: /docs/how-to-extend.html
 - section: Architecture
   pages:
     - title: Overview
