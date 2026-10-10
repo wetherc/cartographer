@@ -120,6 +120,11 @@ The config turns off `no-undef`. The typecheck already resolves each
 identifier with full knowledge of the DOM, so `no-undef` would only add
 false reports for browser globals.
 
+A source file over 500 lines gets a `max-lines` warning. A warning does
+not fail the lint or the pre-commit hook, so a long file lists in the
+output until someone splits it. The 5e catalogs in `src/data/` and the
+`src/campaign/Example*.js` content files are exempt.
+
 ## Enable the pre-commit hook
 
 Run this command once for each clone:

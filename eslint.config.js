@@ -50,6 +50,15 @@ export default [
   // CommonJS, so `require` and `module` are its imports.
   { files: ['scripts/**/*.{js,mjs,cjs}'], rules: { 'no-console': 'off' } },
   { files: ['scripts/**/*.cjs'], languageOptions: { sourceType: 'commonjs' } },
+  // A source file stays under 500 lines, so each module covers one
+  // responsibility. The rule warns and does not fail the lint. The 5e
+  // catalogs in src/data/ and the example campaign content are data tables,
+  // and their length follows the data.
+  {
+    files: ['src/**/*.js'],
+    ignores: ['src/data/**', 'src/campaign/Example*.js'],
+    rules: { 'max-lines': ['warn', 500] },
+  },
   // The pure directories do not import the DOM widgets in ui/ or the wiring
   // modules in app/. A pure module that did would need a browser to load, and
   // its unit tests under `node --test` would fail.
