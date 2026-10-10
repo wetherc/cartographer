@@ -167,10 +167,13 @@ test('damage wakes a sleeping creature or character, and the log says so', () =>
     [...five(8)],
   );
   assert.equal(pc(app, 'fighter').conditions[0].name, 'Unconscious');
+  assert.equal(pc(app, 'fighter').conditions[1].name, 'Prone');
   applyToTarget(app, 'goblin', 2, false);
   applyToTarget(app, 'fighter', 2, false);
-  assert.equal(creature(app, 'goblin').conditions.length, 0);
-  assert.equal(pc(app, 'fighter').conditions.length, 0);
+  // The sleeper wakes up still prone.
+  const names = (/** @type {any[]} */ list) => list.map((c) => c.name);
+  assert.deepEqual(names(creature(app, 'goblin').conditions), ['Prone']);
+  assert.deepEqual(names(pc(app, 'fighter').conditions), ['Prone']);
   assert.ok(app.log.includes('Goblin is no longer Unconscious (Sleep).'));
   assert.ok(app.log.includes('Fighter is no longer Unconscious (Sleep).'));
 });
@@ -179,7 +182,14 @@ test('a heal leaves the sleep in place', () => {
   const app = stubApp([foe('goblin', 7)]);
   resolve(app, plan(app, 'sleep', ['goblin']), { targets: 'goblin', slot: '1' }, five(8));
   applyToTarget(app, 'goblin', 2, true);
-  assert.equal(creature(app, 'goblin').conditions.length, 1);
+  assert.equal(creature(app, 'goblin').conditions.length, 2);
+});
+
+test('a sleeper immune to Prone falls unconscious without the Prone chip', () => {
+  const app = stubApp([foe('goblin', 7, { conditionImmunities: ['prone'] })]);
+  resolve(app, plan(app, 'sleep', ['goblin']), { targets: 'goblin', slot: '1' }, five(8));
+  const chips = creature(app, 'goblin').conditions.map((/** @type {any} */ c) => c.name);
+  assert.deepEqual(chips, ['Unconscious']);
 });
 
 test('Color Spray passes over a blinded target, and blinds until the end of the next turn', () => {

@@ -7,6 +7,9 @@ import {
   endedLine,
   outlasts,
   sameSlot,
+  PRONE,
+  UNCONSCIOUS,
+  withProne,
 } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves, spellsHeldBy } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
@@ -123,7 +126,12 @@ export function applyConditionToTarget(
     found.entity.conditions.filter((c) => conditionKey(c.name) === conditionKey(n)),
   );
   const kept = found.entity.conditions.filter((c) => !ended.includes(c));
-  const conditions = addCondition(kept, name, rounds, extras);
+  const added = addCondition(kept, name, rounds, extras);
+  // An unconscious creature falls prone, and the Prone chip stays when it
+  // wakes. A creature immune to Prone does not get it.
+  const prone =
+    conditionKey(name) === conditionKey(UNCONSCIOUS) && !isImmuneToCondition(found.entity, PRONE);
+  const conditions = prone ? withProne(added) : added;
   for (const c of ended) {
     app.actions.logEvent('combat', `${endedLine(found.label, c.name)}.`);
   }

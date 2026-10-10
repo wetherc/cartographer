@@ -663,7 +663,10 @@ amount with no damage type. No defense applies to it.
 ### Death saves
 
 A party character at 0 HP is dying, not dead. It gets a death-save tracker
-on the combat screen and on its sheet, and the Unconscious chip.
+on the combat screen and on its sheet, and the Unconscious and Prone chips.
+A heal takes off Unconscious, and Prone stays until you remove it when the
+character stands up. A cast that puts Unconscious on a target, such as
+Sleep, also adds Prone. An Unconscious chip that you add by hand does not.
 
 - The save is 1d20 against DC 10, with no ability modifier and no
   proficiency. A Bless chip still adds its die.

@@ -52,7 +52,7 @@ test('the sixth level kills a character through the death-save tracker', () => {
   assert.deepEqual(dead.deathSaves, { successes: 0, failures: 3, stable: false });
   assert.deepEqual(
     dead.conditions.map((/** @type {any} */ c) => c.name),
-    ['Unconscious'],
+    ['Unconscious', 'Prone'],
   );
   assert.deepEqual(app.log, ['Hero: Exhaustion 6: dead.', 'Hero dies of exhaustion.']);
 });
@@ -118,7 +118,7 @@ test('a character who dies of exhaustion drops the spell it held', () => {
   assert.equal(dead.concentration, null);
   assert.deepEqual(
     dead.conditions.map((/** @type {any} */ c) => c.name),
-    ['Unconscious'],
+    ['Unconscious', 'Prone'],
   );
   assert.equal(app.log.at(-1), 'Hero loses concentration on Bless.');
 });

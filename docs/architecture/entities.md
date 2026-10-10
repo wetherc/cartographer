@@ -1898,7 +1898,14 @@ The `Unconscious` chip goes on with the tracker and comes off with it, so no
 caller tracks both. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
 The chip gives an attacker advantage and makes a melee hit a critical hit,
 through the condition-effect table, so the crit rule needs no special case
-here.
+here. A plain `Prone` chip goes on beside it through `Conditions.withProne`,
+because an unconscious creature falls prone in 5e. With both chips, a melee
+attack has advantage, and a ranged attack has advantage from Unconscious and
+disadvantage from Prone, so it rolls normally. The Prone chip has no
+duration, so it stays when the character is healed, and the GM removes it
+when the character stands up. `applyConditionToTarget` in
+`app/combatantWrites.js` adds the same chip when a cast such as Sleep puts
+Unconscious on a target that is not immune to Prone.
 
 ### Where the rules run
 

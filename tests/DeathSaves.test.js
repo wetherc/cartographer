@@ -42,7 +42,7 @@ test('dropToDying starts the tracker and adds the chip, and does not restart it'
   assert.deepEqual(next.deathSaves, { successes: 0, failures: 0, stable: false });
   assert.deepEqual(
     next.conditions.map((c) => c.name),
-    ['Unconscious'],
+    ['Unconscious', 'Prone'],
   );
   const rolling = dying({ failures: 2 });
   assert.equal(dropToDying(rolling), rolling, 'a second call keeps the failures rolled');
@@ -63,6 +63,22 @@ test('clearDying removes the tracker and the chip, leaving other chips alone', (
   assert.equal(clearDying(standing), standing);
 });
 
+test('a character healed from 0 HP stays Prone, and a held Prone is not replaced', () => {
+  const healed = clearDying(dropToDying(createCharacter('hero', 'Hero')));
+  assert.deepEqual(
+    healed.conditions.map((c) => c.name),
+    ['Prone'],
+  );
+  const shoved = { ...createCharacter('hero', 'Hero'), conditions: addCondition([], 'Prone', 2) };
+  assert.deepEqual(
+    dropToDying(shoved).conditions.map((c) => [c.name, c.rounds]),
+    [
+      ['Prone', 2],
+      ['Unconscious', null],
+    ],
+  );
+});
+
 test('clearDying takes the fatal level of exhaustion off a revived character', () => {
   const next = clearDying(/** @type {any} */ ({ ...dying({ failures: 3 }), exhaustion: 6 }));
   assert.equal(next.deathSaves, null);
@@ -79,7 +95,7 @@ test('killOutright kills with the tracker and leaves HP alone', () => {
   assert.equal(isDead(next), true);
   assert.deepEqual(
     next.conditions.map((c) => c.name),
-    ['Unconscious'],
+    ['Unconscious', 'Prone'],
   );
   assert.equal(/** @type {any} */ (next).resources, before, 'exhaustion kills without damage');
   const dead = dying({ failures: 3 });

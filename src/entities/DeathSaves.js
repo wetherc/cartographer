@@ -14,7 +14,7 @@
  * again.
  */
 
-import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
+import { UNCONSCIOUS, addCondition, removeCondition, withProne } from './Conditions.js';
 import { atDeathLevel, easeExhaustion, exhaustionLevel, exhaustionSlant } from './Exhaustion.js';
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { restore as restorePool } from './Resource.js';
@@ -66,7 +66,7 @@ export function dropToDying(character) {
   return {
     ...character,
     deathSaves: { successes: 0, failures: 0, stable: false },
-    conditions: addCondition(character.conditions, UNCONSCIOUS),
+    conditions: withProne(addCondition(character.conditions, UNCONSCIOUS)),
   };
 }
 
@@ -106,7 +106,7 @@ export function killOutright(character) {
   return {
     ...character,
     deathSaves: { successes: 0, failures: DEATH_SAVE_LIMIT, stable: false },
-    conditions: addCondition(character.conditions, UNCONSCIOUS),
+    conditions: withProne(addCondition(character.conditions, UNCONSCIOUS)),
   };
 }
 

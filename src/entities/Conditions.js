@@ -18,6 +18,12 @@ export const CONCENTRATING = 'Concentrating';
 export const UNCONSCIOUS = 'Unconscious';
 
 /**
+ * The chip that 5e puts beside Unconscious, because an unconscious creature
+ * falls prone. `withProne` adds it.
+ */
+export const PRONE = 'Prone';
+
+/**
  * The standard 5e status conditions, plus concentration, offered as
  * suggestions in the UI. A condition is a free string, so the GM can add one
  * that is not listed here. This is only the pick-list.
@@ -40,7 +46,7 @@ export const CONDITIONS = [
   'Paralyzed',
   'Petrified',
   'Poisoned',
-  'Prone',
+  PRONE,
   'Restrained',
   'Stunned',
   UNCONSCIOUS,
@@ -285,6 +291,19 @@ export function conditionKey(name) {
 export function hasCondition(list, name) {
   const key = conditionKey(name);
   return (list ?? []).some((c) => conditionKey(c.name) === key);
+}
+
+/**
+ * Add the Prone chip that goes on with Unconscious. It is a plain chip with no
+ * cast and no duration, so it stays when the creature wakes or is healed, and
+ * the GM takes it off when the creature stands up. A list that has a Prone
+ * chip already comes back as the same array, so a timed or cast Prone stays
+ * as it is.
+ * @param {Condition[]} list
+ * @returns {Condition[]}
+ */
+export function withProne(list) {
+  return hasCondition(list, PRONE) ? list : addCondition(list, PRONE);
 }
 
 /**
