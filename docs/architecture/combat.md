@@ -134,9 +134,11 @@ encounter panels of `encounterPanels.js`. `wireFightState` returns its
 `setCombat` and `tickRound` as hooks, and the setup writes the new fight
 through them, so `state.combat` has one writer.
 
-A cross-tab rehydrate writes `state.combat` and nothing else. A follower tab
-whose fight ended in another tab therefore reads the ended fight from the
-same field on its next refresh. A second copy of the fight, such as a
+A cross-tab rehydrate replaces `state.combat` along with the other synced
+fields, without going through `setCombat`. The follower therefore does not
+rerun the end-of-fight effects (`endFightEffects`) that the writing tab
+already saved. A follower tab whose fight ended in another tab reads the
+ended fight from the same field on its next refresh. A second copy of the fight, such as a
 closure variable beside the state field, would miss that write and keep
 drawing the old order.
 
