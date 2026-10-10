@@ -3,12 +3,12 @@
  * function is pure.
  */
 
-/** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
 /** @typedef {import('../types/spell.js').Ability} Ability */
 /** @typedef {Ability | 'AC'} StatKey */
 
 /** The tiers an enemy can be authored at. Legends run above the normal stats for their level. */
-export const ENEMY_TIERS = /** @type {EnemyTier[]} */ (['mob', 'legend']);
+export const ENEMY_TIERS = /** @type {CreatureTier[]} */ (['mob', 'legend']);
 
 /** The six ability scores every creature carries, in conventional order.
  * Character.js re-exports this so character code keeps its natural import. */
@@ -106,7 +106,7 @@ export function signedTerm(value) {
  * A level-matched legend always beats a mob's stats. Every score stays
  * editable after creation.
  * @param {number} level
- * @param {EnemyTier} tier
+ * @param {CreatureTier} tier
  * @returns {Record<string, number>}
  */
 export function defaultEnemyStats(level, tier) {

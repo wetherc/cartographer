@@ -40,7 +40,7 @@ import { arrangeFields } from './creatureLayout.js';
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
 /** @typedef {import('../types/creature.js').Disposition} Disposition */
-/** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
 /** @typedef {import('./gearFields.js').GearOptions} GearOptions */
 
 /**
@@ -54,7 +54,7 @@ import { arrangeFields } from './creatureLayout.js';
  *   notes?: string,
  *   maxHP?: number,
  *   level?: number,
- *   tier?: EnemyTier,
+ *   tier?: CreatureTier,
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   defenses?: import('../types/creature.js').DamageDefenses,
@@ -70,8 +70,8 @@ import { arrangeFields } from './creatureLayout.js';
  *   legendaryResistance?: number,
  *   actions?: import('../types/creature.js').CreatureAction[],
  *   stats?: Record<string, number>,
- *   weapons?: import('../types/entities.js').EnemyWeapon[],
- *   armor?: import('../types/entities.js').EnemyArmor | null,
+ *   weapons?: import('../types/entities.js').CreatureWeapon[],
+ *   armor?: import('../types/entities.js').CreatureArmor | null,
  *   class?: string,
  *   casterLevel?: number,
  *   spellbook?: import('../types/entities.js').Spellbook,
@@ -427,7 +427,7 @@ function restampChange(restampStats) {
     if (statsTouched || (name !== 'level' && name !== 'tier')) return;
     const level = readLevel(form.get('level'));
     if (level === undefined) return;
-    const stats = defaultEnemyStats(level, /** @type {EnemyTier} */ (form.get('tier')));
+    const stats = defaultEnemyStats(level, /** @type {CreatureTier} */ (form.get('tier')));
     for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
   };
 }
@@ -465,7 +465,7 @@ function readLevel(raw) {
  *   notes: string,
  *   maxHP: number,
  *   level?: number,
- *   tier?: EnemyTier,
+ *   tier?: CreatureTier,
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   defenses?: import('../types/creature.js').DamageDefenses,
@@ -480,8 +480,8 @@ function readLevel(raw) {
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
- *   weapons: import('../types/entities.js').EnemyWeapon[],
- *   armor: import('../types/entities.js').EnemyArmor | null,
+ *   weapons: import('../types/entities.js').CreatureWeapon[],
+ *   armor: import('../types/entities.js').CreatureArmor | null,
  *   class?: string,
  *   casterLevel?: number,
  *   spellbook?: import('../types/entities.js').Spellbook,
@@ -520,7 +520,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     role: values.role.trim(),
     notes: values.notes.trim(),
     maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
-    ...(level === undefined ? {} : { level, tier: /** @type {EnemyTier} */ (values.tier) }),
+    ...(level === undefined ? {} : { level, tier: /** @type {CreatureTier} */ (values.tier) }),
     ...(stats ? { stats: readStats(STAT_KEYS, values) } : {}),
     ...readWeapons(values, gear),
     ...readCasterOptions(values),
@@ -530,7 +530,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
 /**
  * Put the on-hit save of the form on the read weapon, or take it off. A
  * blank ability, or a creature with no weapon, stores no save.
- * @param {{ weapon: import('../types/entities.js').EnemyWeapon | null, armor: import('../types/entities.js').EnemyArmor | null }} read
+ * @param {{ weapon: import('../types/entities.js').CreatureWeapon | null, armor: import('../types/entities.js').CreatureArmor | null }} read
  * @param {Record<string, string>} values
  */
 function withHitSave({ weapon, armor }, values) {

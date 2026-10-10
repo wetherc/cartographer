@@ -3,17 +3,17 @@ import { formatDamage } from '../entities/Equipment.js';
 import { copyEnemyWeapon } from '../entities/EquipmentPresets.js';
 import { enemyArmorLabel } from '../entities/EnemyArmor.js';
 
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
-/** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
+/** @typedef {import('../types/entities.js').CreatureArmor} CreatureArmor */
 
 /**
  * @typedef {{
  *   weaponChoices: ReturnType<typeof activeWeapons>,
- *   currentWeapon: EnemyWeapon | null | undefined,
- *   otherChoices: EnemyWeapon[],
+ *   currentWeapon: CreatureWeapon | null | undefined,
+ *   otherChoices: CreatureWeapon[],
  *   otherWeaponOptions: { value: string, label: string }[],
  *   currentOthers: string,
- *   currentArmor: EnemyArmor | null | undefined,
+ *   currentArmor: CreatureArmor | null | undefined,
  *   weaponOptions: { value: string, label: string }[],
  *   armorOptions: { value: string, label: string }[],
  * }} GearOptions
@@ -31,7 +31,7 @@ import { enemyArmorLabel } from '../entities/EnemyArmor.js';
  * weapons" picker lists every library weapon plus any hand-tuned extra the
  * creature carries, by list index, because a multiselect value has to be a
  * slug and a weapon name can contain a comma.
- * @param {{ weapons?: EnemyWeapon[], armor?: EnemyArmor | null } | null} current
+ * @param {{ weapons?: CreatureWeapon[], armor?: CreatureArmor | null } | null} current
  * @returns {GearOptions}
  */
 export function gearOptions(current) {
@@ -60,8 +60,8 @@ export function gearOptions(current) {
   ];
   const extras = current?.weapons?.slice(1) ?? [];
   const customExtras = extras.filter((w) => !weaponChoices.some((p) => p.name === w.name));
-  /** @type {EnemyWeapon[]} */
-  const otherChoices = [...customExtras, .../** @type {EnemyWeapon[]} */ (weaponChoices)];
+  /** @type {CreatureWeapon[]} */
+  const otherChoices = [...customExtras, .../** @type {CreatureWeapon[]} */ (weaponChoices)];
   const otherWeaponOptions = otherChoices.map((w, i) => ({
     value: `w${i}`,
     label: `${w.name} (${formatDamage(w.damage)})`,
@@ -89,7 +89,7 @@ export function gearOptions(current) {
  * @param {string} weaponValue
  * @param {string} armorValue
  * @param {GearOptions} options
- * @returns {{ weapon: EnemyWeapon | null, armor: EnemyArmor | null }}
+ * @returns {{ weapon: CreatureWeapon | null, armor: CreatureArmor | null }}
  */
 export function readGear(weaponValue, armorValue, options) {
   const preset = options.weaponChoices.find((p) => p.name === weaponValue);
@@ -105,10 +105,10 @@ export function readGear(weaponValue, armorValue, options) {
  * stored weapon list. The main weapon comes first, so it is the default in
  * the attack dialog. An extra that repeats the main weapon by name is
  * dropped. A library extra is copied, and a hand-tuned extra is kept as is.
- * @param {EnemyWeapon | null} main
+ * @param {CreatureWeapon | null} main
  * @param {string} others the comma-joined option values of the picker
  * @param {GearOptions} options
- * @returns {EnemyWeapon[]}
+ * @returns {CreatureWeapon[]}
  */
 export function readOtherWeapons(main, others, options) {
   const picked = others

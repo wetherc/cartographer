@@ -10,7 +10,7 @@ import { deathSaveStatus, downState } from '../view/DeathSaveView.js';
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
@@ -18,9 +18,9 @@ import { deathSaveStatus, downState } from '../view/DeathSaveView.js';
  * attack with one of its melee weapons, or a spell that casts as a reaction.
  * The host decides when to offer this and what belongs in the two lists.
  * @typedef {{
- *   weapons: (InventoryItem | EnemyWeapon)[],
+ *   weapons: (InventoryItem | CreatureWeapon)[],
  *   spells: Spell[],
- *   onAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onAttack: (weapon: InventoryItem | CreatureWeapon) => void,
  *   onCast: (spell: Spell) => void,
  * }} ReactionControl
  */
@@ -30,8 +30,8 @@ import { deathSaveStatus, downState } from '../view/DeathSaveView.js';
  * are left before its own turn, and one attack button per weapon.
  * @typedef {{
  *   left: number,
- *   weapons: (InventoryItem | EnemyWeapon)[],
- *   onAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   weapons: (InventoryItem | CreatureWeapon)[],
+ *   onAttack: (weapon: InventoryItem | CreatureWeapon) => void,
  * }} LegendaryControl
  */
 

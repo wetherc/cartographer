@@ -50,7 +50,7 @@ export const BASE_AC_LABEL = 'Base AC (no armor)';
  * picked the caption also names the AC that combat uses. With no armor the
  * caption is the plain `BASE_AC_LABEL`.
  * @param {Record<string, number>} stats the typed scores and AC
- * @param {import('../types/entities.js').EnemyArmor | null | undefined} armor
+ * @param {import('../types/entities.js').CreatureArmor | null | undefined} armor
  * @returns {string}
  */
 export function acFieldLabel(stats, armor) {

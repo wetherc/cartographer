@@ -134,8 +134,10 @@ records near it. The table gives the meaning of each word.
 | Encounter | The foes near the party. The Active tab lists the encounter group of the party's tile (`hostileGroup`), and the Nearby tab lists the other foes in range. | The **Encounters** card in Play, the Build **Encounters** tab, `views.encounterPanel`, `app/encounterPanels.js` |
 | Mob, Legend | The two tiers of a foe (`'mob'` and `'legend'`). A mob gets rank-and-file default stats for its level, and a legend gets higher ones. The tier only picks the defaults of a new foe. | The **Tier** select of the creature form, `ENEMY_TIERS` in `Modifiers.js` |
 
-Code names with "enemy", such as `EnemyArmor.js` and `defaultEnemyGear`, mean
-any creature, friendly or hostile.
+The gear and tier types use the `Creature` prefix (`CreatureWeapon`,
+`CreatureArmor`, and `CreatureTier`) because they apply to foes and NPCs
+alike. Other code names with "enemy", such as `EnemyArmor.js` and
+`defaultEnemyGear`, also mean any creature, friendly or hostile.
 
 ### Creature AC
 
@@ -379,7 +381,7 @@ passes `nonmagical`. `combatants.defendedDamage` passes it for a weapon hit
 whose weapon has no true `magical` field, and never for a spell, so a spell
 and a magic weapon get through Stoneskin. The `magical` field is a plain
 boolean on an inventory weapon, a library weapon template, and an
-`EnemyWeapon`. `assembleItem`, `normalizeLibrary`, and `copyEnemyWeapon`
+`CreatureWeapon`. `assembleItem`, `normalizeLibrary`, and `copyEnemyWeapon`
 keep it only when it is `true`, so any code that sets the field to `true`
 marks a weapon magical. `MagicWeapon.weaponIsMagical(attacker, weapon)`
 makes the call for a weapon hit. It also counts the pact weapon of a Pact

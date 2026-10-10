@@ -10,7 +10,7 @@ import { setTip } from './Tooltip.js';
 /** @typedef {import('../types/combat.js').ActionCost} ActionCost */
 /** @typedef {import('../combat/TurnActions.js').TurnAction} TurnAction */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
@@ -43,16 +43,16 @@ import { setTip } from './Tooltip.js';
  * button: the GM presses it to mark a cost used on something the app does
  * not model, or to free a cost spent by mistake.
  * @param {{
- *   weapons: (InventoryItem | EnemyWeapon)[],
+ *   weapons: (InventoryItem | CreatureWeapon)[],
  *   spells: Spell[],
- *   offhand?: (InventoryItem | EnemyWeapon)[],
+ *   offhand?: (InventoryItem | CreatureWeapon)[],
  *   turn?: TurnAction[],
  *   held?: string[],
  * }} actions
  * @param {{
- *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onWeaponAttack: (weapon: InventoryItem | CreatureWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
- *   onOffhandAttack?: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onOffhandAttack?: (weapon: InventoryItem | CreatureWeapon) => void,
  *   onTurnAction?: (action: TurnAction) => void,
  *   onToggleBudget?: (cost: ActionCost) => void,
  * }} callbacks

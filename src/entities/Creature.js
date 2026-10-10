@@ -27,10 +27,10 @@ import {
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/creature.js').Disposition} Disposition */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
-/** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
-/** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
+/** @typedef {import('../types/entities.js').CreatureArmor} CreatureArmor */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 
 /** The hit points a creature gets when nobody types a number: the 5e
@@ -65,7 +65,7 @@ export function isCreature(entity) {
  * loads.
  * @param {string} weaponName
  * @param {string} armorName
- * @returns {{ weapon: (typeof WEAPON_PRESETS)[number], armor: EnemyArmor }}
+ * @returns {{ weapon: (typeof WEAPON_PRESETS)[number], armor: CreatureArmor }}
  */
 function requireLoadout(weaponName, armorName) {
   const weapon = WEAPON_PRESETS.find((p) => p.name === weaponName);
@@ -99,8 +99,8 @@ const DEFAULT_LOADOUTS = {
  * fresh copies, so everything stays editable on the creature without
  * writing through to the presets.
  * @param {number} level
- * @param {EnemyTier} tier
- * @returns {{ weapon: EnemyWeapon, armor: EnemyArmor }}
+ * @param {CreatureTier} tier
+ * @returns {{ weapon: CreatureWeapon, armor: CreatureArmor }}
  */
 export function defaultEnemyGear(level, tier) {
   const lvl = Math.max(1, Math.floor(level) || 1);
@@ -215,7 +215,7 @@ function clampMaxHP(maxHP) {
  * always explicit, so no read path derives gear again.
  * @param {string} id
  * @param {string} name
- * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapons?: EnemyWeapon[], armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
+ * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapons?: CreatureWeapon[], armor?: CreatureArmor | null, level?: number, tier?: CreatureTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
  * @returns {Creature}
  */
 export function createCreature(id, name, options = {}) {
@@ -356,7 +356,7 @@ export function addStatModifier(creature, stat, delta, rounds) {
  * removes the level. Clearing both proficiency pickers removes the whole
  * proficiency record.
  * @param {Creature} creature
- * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, weapons?: EnemyWeapon[], armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: CreatureTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, weapons?: CreatureWeapon[], armor?: CreatureArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
  * @returns {Creature}
  */
 export function editCreature(creature, edits) {
@@ -500,10 +500,10 @@ export function isDefeated(creature) {
  * which an older save writes, as a list of one. Anything else is no weapon.
  * @param {unknown} weapons
  * @param {unknown} [legacy]
- * @returns {EnemyWeapon[]}
+ * @returns {CreatureWeapon[]}
  */
 export function weaponList(weapons, legacy) {
-  /** @param {unknown} w @returns {w is EnemyWeapon} */
+  /** @param {unknown} w @returns {w is CreatureWeapon} */
   const usable = (w) => typeof w === 'object' && w !== null && !Array.isArray(w);
   if (Array.isArray(weapons)) return weapons.filter(usable);
   return usable(legacy) ? [legacy] : [];

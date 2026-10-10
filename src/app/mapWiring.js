@@ -63,7 +63,7 @@ export function wireMapView(app) {
       syncToolChip();
     },
   });
-  // The Encounters tab's nested Mobs and NPCs strip splits the two rosters.
+  // The Encounters tab's nested Foes and NPCs strip splits the two rosters.
   wireTabs(mustGetElement('build-encounter-tabs'));
 
   // The gesture modules read this shared context. Each view field is

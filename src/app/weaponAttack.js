@@ -125,7 +125,7 @@ export function liveAttackSides(app, participant, defenderId) {
  * @param {{
  *   attacker: any,
  *   defender: CombatTarget,
- *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon,
+ *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon,
  *   tweaks?: AttackTweaks,
  *   rng?: () => number,
  *   ask?: import('./shieldWard.js').WardAsk,
@@ -189,7 +189,7 @@ export function rollWeaponAttack(
  * @param {{
  *   attacker: any,
  *   defender: CombatTarget,
- *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon,
+ *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon,
  *   tweaks: AttackTweaks,
  *   rng: () => number,
  *   ask?: import('./shieldWard.js').WardAsk,
@@ -325,7 +325,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
  * @param {AppContext} app
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
- * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
+ * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} weapon
  * @param {{
  *   defenderId?: string | null,
  *   offhand?: boolean,
@@ -403,7 +403,7 @@ export async function weaponAttack(
  * and Restrained slants a DEX save.
  * @param {AppContext} app
  * @param {string} defenderId
- * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
+ * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} weapon
  * @param {() => number} rng
  */
 export function rollHitSave(app, defenderId, weapon, rng) {

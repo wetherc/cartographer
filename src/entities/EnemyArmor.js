@@ -16,7 +16,7 @@ import { ARMOR_PRESETS } from './EquipmentPresets.js';
 import { abilityModifier } from './Modifiers.js';
 import { clampInt } from '../util/num.js';
 
-/** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
+/** @typedef {import('../types/entities.js').CreatureArmor} CreatureArmor */
 /** @typedef {import('../types/entities.js').ArmorWeight} ArmorWeight */
 
 /**
@@ -34,7 +34,7 @@ function weightOf(key) {
  * light when no preset matches. A base AC that is not a number reads as
  * 10, so a hand-edited value cannot turn AC into NaN.
  * @param {unknown} value
- * @returns {EnemyArmor | null}
+ * @returns {CreatureArmor | null}
  */
 export function coerceEnemyArmor(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -51,7 +51,7 @@ export function coerceEnemyArmor(value) {
  * How much worn armor moves AC away from the unarmored 10 + DEX. The result
  * is 0 with no armor. It can be negative, for example light armor with a
  * base AC under 10.
- * @param {EnemyArmor | null | undefined} armor
+ * @param {CreatureArmor | null | undefined} armor
  * @param {number} dex the creature's DEX score
  * @returns {number}
  */
@@ -66,7 +66,7 @@ export function enemyArmorDelta(armor, dex) {
 /**
  * A picker label for an armor choice, such as "Chain Shirt (AC 13 + DEX,
  * max 2)" or "Plate (AC 18)".
- * @param {EnemyArmor} armor
+ * @param {CreatureArmor} armor
  * @returns {string}
  */
 export function enemyArmorLabel(armor) {

@@ -304,7 +304,7 @@ export const CONSUMABLE_PRESETS = [
  * `EnemyArmor.js` states how the three set the creature's AC. Unknown names
  * return null.
  * @param {string} name
- * @returns {import('../types/entities.js').EnemyArmor | null}
+ * @returns {import('../types/entities.js').CreatureArmor | null}
  */
 export function enemyArmor(name) {
   const preset = ARMOR_PRESETS.find((p) => p.name === name);
@@ -432,7 +432,7 @@ export function coerceWeapon(raw) {
  * carries. A legacy value coerces to the current fields on the way through.
  * This function is pure.
  * @param {Record<string, any>} weapon
- * @returns {import('../types/entities.js').EnemyWeapon}
+ * @returns {import('../types/entities.js').CreatureWeapon}
  */
 export function copyEnemyWeapon(weapon) {
   const hitSave = normalizeHitSave(weapon.onHitSave);

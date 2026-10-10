@@ -13,7 +13,7 @@ import { weaponKind } from '../entities/Weapons.js';
 import { castingCost, parseCastingTime } from '../entities/SpellTiming.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/combat.js').Participant} Participant */
 
@@ -21,8 +21,8 @@ import { castingCost, parseCastingTime } from '../entities/SpellTiming.js';
  * The weapons an opportunity attack can swing: the melee ones. A bow shoots at
  * range and reaches nobody who walks past, so it stays out. A thrown melee
  * weapon stays in, because the swing itself is the melee one.
- * @param {(InventoryItem | EnemyWeapon)[]} weapons
- * @returns {(InventoryItem | EnemyWeapon)[]}
+ * @param {(InventoryItem | CreatureWeapon)[]} weapons
+ * @returns {(InventoryItem | CreatureWeapon)[]}
  */
 export function opportunityWeapons(weapons) {
   return weapons.filter((weapon) => weaponKind(weapon) === 'melee');

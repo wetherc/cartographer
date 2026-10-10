@@ -96,7 +96,7 @@ export function attackTraitFields(value) {
  * character reads its Extra Attack features, and a creature reads its
  * Multiattack count. The larger number wins, because the two never add up.
  * @param {any} attacker a character or a creature
- * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
+ * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} weapon
  * @returns {number}
  */
 export function swingsPerAction(attacker, weapon) {

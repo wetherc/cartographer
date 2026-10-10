@@ -41,7 +41,7 @@ import {
  */
 
 /** @typedef {import('./AttackTweaks.js').AttackTweaks} AttackTweaks */
-/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} Weapon */
+/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} Weapon */
 
 /**
  * Everything that the attack roll of one swing needs, worked out before the

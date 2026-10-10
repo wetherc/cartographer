@@ -578,7 +578,7 @@ let active = emptyLibrary();
  *   equipmentAll?: EquipmentTemplate[],
  *   equipmentByType?: Map<string, EquipmentTemplate[]>,
  *   weapons?: EquipmentTemplate[],
- *   armors?: import('../types/entities.js').EnemyArmor[],
+ *   armors?: import('../types/entities.js').CreatureArmor[],
  *   creatures?: { entry: CreatureTemplate, source: LibrarySource }[],
  *   creatureList?: CreatureTemplate[],
  *   spells?: { entry: Spell, source: LibrarySource }[],
@@ -640,19 +640,19 @@ export function activeWeapons() {
 
 /** Every merged body-armor template as an enemy armor choice: the name, the
  * base AC, and the weight class.
- * @returns {import('../types/entities.js').EnemyArmor[]} */
+ * @returns {import('../types/entities.js').CreatureArmor[]} */
 export function activeArmors() {
   return (cache.armors ??= activeEquipmentEntries()
     .map((e) => e.entry)
     .filter((e) => e.type === 'armor' && e.baseAC !== undefined)
-    .map((e) => /** @type {import('../types/entities.js').EnemyArmor} */ (coerceEnemyArmor(e))));
+    .map((e) => /** @type {import('../types/entities.js').CreatureArmor} */ (coerceEnemyArmor(e))));
 }
 
 /** A merged armor template as an enemy's worn armor, or null for an unknown
  * name. This function is the library-aware twin of enemyArmor in
  * Equipment.js.
  * @param {string} name
- * @returns {import('../types/entities.js').EnemyArmor | null} */
+ * @returns {import('../types/entities.js').CreatureArmor | null} */
 export function activeEnemyArmor(name) {
   // This copies the entry out. The merged list is memoized and shared, so
   // passing one of its elements directly to an encounter puts library

@@ -2,7 +2,7 @@ import { equippedIndex, equippedWeapons } from './Equipment.js';
 import { hasWeaponProperty, weaponKind } from './Weapons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} Weapon */
+/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} Weapon */
 
 /**
  * This module reads the fighting styles a character claimed through the

@@ -99,7 +99,10 @@ export const MIGRATIONS = {
       const { level, tier } = leveled(e);
       const stamp =
         e.weapon === undefined || e.armor === undefined
-          ? defaultEnemyGear(level, /** @type {import('../types/entities.js').EnemyTier} */ (tier))
+          ? defaultEnemyGear(
+              level,
+              /** @type {import('../types/entities.js').CreatureTier} */ (tier),
+            )
           : null;
       return {
         weapon: e.weapon === undefined ? stamp?.weapon : e.weapon,

@@ -19,8 +19,8 @@ import { budgetOf, canSpend } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
-/** @typedef {InventoryItem | EnemyWeapon} Weapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
+/** @typedef {InventoryItem | CreatureWeapon} Weapon */
 
 /**
  * Whether one weapon can take part in two-weapon fighting: a melee weapon with

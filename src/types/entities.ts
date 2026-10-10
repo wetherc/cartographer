@@ -196,7 +196,7 @@ export interface Condition {
 }
 
 /** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */
-export type EnemyTier = 'mob' | 'legend';
+export type CreatureTier = 'mob' | 'legend';
 
 /** A timed adjustment to one stat, applied on top of the base stat block for
  * a set number of combat rounds. */
@@ -217,7 +217,7 @@ export interface StatSource {
 
 /** An enemy's weapon. It carries enough of an InventoryItem's weapon fields
  * to drive the same attack math, without the full inventory model. */
-export interface EnemyWeapon {
+export interface CreatureWeapon {
   name: string;
   kind: WeaponKind;
   damage: DamagePart[];
@@ -246,7 +246,7 @@ export interface HitSave {
 /** An enemy's worn armor: a name, a base AC, and a weight class. The armor
  * replaces the 10 + DEX part of the creature's AC with the base AC plus the
  * DEX contribution its weight allows (`EnemyArmor.js`). */
-export interface EnemyArmor {
+export interface CreatureArmor {
   name: string;
   baseAC: number;
   armorWeight: ArmorWeight;

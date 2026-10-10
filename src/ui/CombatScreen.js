@@ -13,7 +13,7 @@ import { buildTabs } from './Tabs.js';
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
@@ -35,9 +35,9 @@ import { buildTabs } from './Tabs.js';
  *   getSelectedTargetId: () => string | null,
  *   onSelectTarget: (id: string) => void,
  *   getActions: () => {
- *     weapons: (InventoryItem | EnemyWeapon)[],
+ *     weapons: (InventoryItem | CreatureWeapon)[],
  *     spells: Spell[],
- *     offhand?: (InventoryItem | EnemyWeapon)[],
+ *     offhand?: (InventoryItem | CreatureWeapon)[],
  *     turn?: import('../combat/TurnActions.js').TurnAction[],
  *     held?: string[],
  *   },
@@ -45,15 +45,15 @@ import { buildTabs } from './Tabs.js';
  *   onToggleBudget?: (cost: import('../types/combat.js').ActionCost) => void,
  *   getLoadout: (id: string) => Loadout,
  *   getReaction: (id: string) => {
- *     weapons: (InventoryItem | EnemyWeapon)[],
+ *     weapons: (InventoryItem | CreatureWeapon)[],
  *     spells: Spell[],
  *   },
- *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
- *   onOffhandAttack: (weapon: InventoryItem | EnemyWeapon) => void,
- *   onOpportunityAttack: (id: string, weapon: InventoryItem | EnemyWeapon) => void,
+ *   onWeaponAttack: (weapon: InventoryItem | CreatureWeapon) => void,
+ *   onOffhandAttack: (weapon: InventoryItem | CreatureWeapon) => void,
+ *   onOpportunityAttack: (id: string, weapon: InventoryItem | CreatureWeapon) => void,
  *   onReactionCast: (id: string, spell: Spell) => void,
- *   getWeapons?: (id: string) => (InventoryItem | EnemyWeapon)[],
- *   onLegendaryAttack?: (id: string, weapon: InventoryItem | EnemyWeapon) => void,
+ *   getWeapons?: (id: string) => (InventoryItem | CreatureWeapon)[],
+ *   onLegendaryAttack?: (id: string, weapon: InventoryItem | CreatureWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,

@@ -2,9 +2,9 @@ import type {
   ConcentrationState,
   Condition,
   EncounterLocation,
-  EnemyArmor,
-  EnemyWeapon,
-  EnemyTier,
+  CreatureArmor,
+  CreatureWeapon,
+  CreatureTier,
   HPBuffFields,
   ResourcePool,
   Spellbook,
@@ -106,15 +106,15 @@ export interface Creature extends HPBuffFields {
   travelsWithParty?: boolean;
   /** What the creature can swing, in the order the attack dialog lists them.
    * An empty list means an unarmed creature. */
-  weapons: EnemyWeapon[];
+  weapons: CreatureWeapon[];
   /** What the creature wears, or null for an unarmored creature. Its
    * AC follows the rule in `EnemyArmor.js`. */
-  armor: EnemyArmor | null;
+  armor: CreatureArmor | null;
   /** Authoring level. It picks the default stats and gear for a new foe.
    * Absent on a creature that was never authored as a foe. */
   level?: number;
   /** Authoring tier. It has meaning only next to `level`. */
-  tier?: EnemyTier;
+  tier?: CreatureTier;
   /** Challenge rating, one of the steps in `data/challenge.js`. It sets the XP
    * the creature is worth and the proficiency bonus it rolls saves and checks
    * with. Absent means unrated: the creature falls back to its level for
@@ -204,10 +204,10 @@ export interface CreatureTemplate {
   disposition: Disposition;
   maxHP: number;
   stats: Record<string, number>;
-  weapons: EnemyWeapon[];
-  armor: EnemyArmor | null;
+  weapons: CreatureWeapon[];
+  armor: CreatureArmor | null;
   level?: number;
-  tier?: EnemyTier;
+  tier?: CreatureTier;
   cr?: number;
   proficiencies?: CreatureProficiencies;
   defenses?: DamageDefenses;

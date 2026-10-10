@@ -5,7 +5,7 @@
  * strings 'light' and 'heavy' also exist as armor weight classes, so the two
  * vocabularies stay in separate constants on purpose.
  *
- * The functions here read both an InventoryItem and an EnemyWeapon, the same
+ * The functions here read both an InventoryItem and a CreatureWeapon, the same
  * way `weaponAbility` did before them. They read only the current fields.
  * `coerceWeapon` in EquipmentPresets.js rewrites a legacy weapon before it
  * gets here.
@@ -14,7 +14,7 @@
 /** @typedef {import('../types/entities.js').WeaponKind} WeaponKind */
 /** @typedef {import('../types/entities.js').WeaponProperty} WeaponProperty */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 
 /**
  * The two weapon kinds, with form labels.
@@ -79,7 +79,7 @@ function feet(value, fallback) {
 
 /**
  * A weapon's kind. An absent `kind` reads as melee.
- * @param {InventoryItem | EnemyWeapon} weapon
+ * @param {InventoryItem | CreatureWeapon} weapon
  * @returns {WeaponKind}
  */
 export function weaponKind(weapon) {
@@ -88,7 +88,7 @@ export function weaponKind(weapon) {
 
 /**
  * Whether the weapon carries the given property flag.
- * @param {InventoryItem | EnemyWeapon} weapon
+ * @param {InventoryItem | CreatureWeapon} weapon
  * @param {WeaponProperty} property
  * @returns {boolean}
  */
@@ -101,7 +101,7 @@ export function hasWeaponProperty(weapon, property) {
  * weapon uses DEX. A finesse weapon uses the higher of the roller's STR and
  * DEX scores, with STR on a tie, because comparing raw scores compares
  * modifiers. Every other weapon uses STR.
- * @param {InventoryItem | EnemyWeapon} weapon
+ * @param {InventoryItem | CreatureWeapon} weapon
  * @param {Record<string, number>} stats the roller's ability scores
  * @returns {'STR' | 'DEX'}
  */
@@ -117,7 +117,7 @@ export function attackAbility(weapon, stats) {
  * The ability label for a weapon shown without a roller, in item badges and
  * pickers. A finesse weapon reads "STR/DEX" because the choice depends on
  * who holds it.
- * @param {InventoryItem | EnemyWeapon} weapon
+ * @param {InventoryItem | CreatureWeapon} weapon
  * @returns {string}
  */
 export function abilityLabel(weapon) {

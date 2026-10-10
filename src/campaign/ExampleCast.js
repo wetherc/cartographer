@@ -32,8 +32,8 @@ import { people } from './ExamplePeople.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
-/** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
-/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
 /** @typedef {import('./ExampleWorld.js').Place} Place */
 
 /**
@@ -48,8 +48,8 @@ import { people } from './ExamplePeople.js';
  * Its stat block AC is its natural armor.
  * @param {string} name @param {number} count @param {number} sides
  * @param {string} damageType
- * @param {EnemyWeapon['properties']} [properties] a finesse bite rolls with DEX
- * @returns {{ weapons: EnemyWeapon[], armor: null }}
+ * @param {CreatureWeapon['properties']} [properties] a finesse bite rolls with DEX
+ * @returns {{ weapons: CreatureWeapon[], armor: null }}
  */
 const natural = (name, count, sides, damageType, properties) => ({
   weapons: [
@@ -73,7 +73,7 @@ const SCIMITAR = {
   name: 'Scimitar',
   kind: /** @type {'melee'} */ ('melee'),
   category: /** @type {'martial'} */ ('martial'),
-  properties: /** @type {EnemyWeapon['properties']} */ (['finesse', 'light']),
+  properties: /** @type {CreatureWeapon['properties']} */ (['finesse', 'light']),
   damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
 };
 
@@ -177,7 +177,7 @@ const CULTIST_KIT = trained([], ['deception', 'religion']);
  * with the stat block extras (AC, and DEX for armored foes) a GM needs at the
  * table. Every enemy carries a challenge rating, which is what the
  * difficulty hint adds up.
- * @param {EnemyTier} tier
+ * @param {CreatureTier} tier
  */
 const foe =
   (tier) =>
@@ -223,7 +223,7 @@ const template = (id, name, hp, level, cr, extras, kit = {}) => ({
   maxHP: hp,
   stats: { ...defaultEnemyStats(level, 'mob'), ...extras },
   level,
-  tier: /** @type {EnemyTier} */ ('mob'),
+  tier: /** @type {CreatureTier} */ ('mob'),
   cr,
   creatureType: /** @type {const} */ ('humanoid'),
   ...gearOf(defaultEnemyGear(level, 'mob')),
@@ -232,7 +232,7 @@ const template = (id, name, hp, level, cr, extras, kit = {}) => ({
 
 /**
  * A default loadout as template gear: its one weapon as a list.
- * @param {{ weapon: EnemyWeapon, armor: import('../types/entities.js').EnemyArmor }} gear
+ * @param {{ weapon: CreatureWeapon, armor: import('../types/entities.js').CreatureArmor }} gear
  */
 const gearOf = ({ weapon, armor }) => ({ weapons: [weapon], armor });
 

@@ -8,7 +8,7 @@ import { getEquipped } from '../entities/Equipment.js';
 import { hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} Weapon */
+/** @typedef {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} Weapon */
 
 /**
  * Whether Sneak Attack can add its dice to a swing of this weapon. The 5e rule

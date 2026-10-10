@@ -321,7 +321,7 @@ export function targetArmorPenalty(app, id) {
  * nothing.
  * @param {AppContext} app
  * @param {string} id
- * @returns {(import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon)[]}
+ * @returns {(import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon)[]}
  */
 export function weaponsOf(app, id) {
   const found = findCombatant(app, id);

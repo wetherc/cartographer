@@ -31,7 +31,7 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
  *   attacker: any,
  *   defenders: CombatTarget[],
  *   participant: import('../types/combat.js').Participant,
- *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon,
+ *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon,
  *   defenderId: string | null,
  *   offhand: boolean,
  *   reaction: boolean,
