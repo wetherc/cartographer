@@ -297,10 +297,6 @@ body.role-player .dice-tray__hidden {
   background: var(--success);
 }
 
-.stat-bar__fill--mana {
-  background: var(--mana);
-}
-
 .stat-bar__fill--critical {
   background: var(--danger);
 }

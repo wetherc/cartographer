@@ -175,7 +175,7 @@ export function mountNearbyList(container, opts) {
     if (defeated) {
       button.appendChild(el('span', 'encounter-panel__distance u-muted', ''));
     } else {
-      const bar = buildStatBar(g, { modifier: 'hp', label: 'HP', compact: true, band: true });
+      const bar = buildStatBar(g, { label: 'HP', compact: true, band: true });
       const distance = distanceSpan(g);
       button.append(bar.element, distance);
       lines.set(g.key, (next) => {

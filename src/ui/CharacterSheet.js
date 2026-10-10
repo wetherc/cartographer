@@ -338,7 +338,6 @@ export function mountCharacterSheet(
       // bar the width of the card, then the damage and heal buttons with the
       // amount between them. A GM reads the bar from across the table.
       const bar = buildStatBar(hp, {
-        modifier: 'hp',
         label: 'HP',
         critical: true,
         bonus: character.bonusHP ?? 0,

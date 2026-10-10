@@ -36,7 +36,7 @@ function hpMeter(character) {
   if (!hp || hp.max <= 0) {
     return emptyStatBar();
   }
-  return buildStatBar(hp, { modifier: 'hp', label: 'HP', compact: true, band: true }).element;
+  return buildStatBar(hp, { label: 'HP', compact: true, band: true }).element;
 }
 
 /**

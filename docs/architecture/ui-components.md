@@ -597,8 +597,8 @@ site.
 ## Stat bars
 
 ```js
-buildStatBar(pool, { modifier, label, critical?, bonus?, showLabel?, compact?,
-                     band?, hero?, className? }) -> { element, update(pool, bonus) }
+buildStatBar(pool, { label, critical?, bonus?, showLabel?, compact?, band?,
+                     hero?, className? }) -> { element, update(pool, bonus) }
 ```
 
 `buildStatBar` in `src/ui/CharacterBars.js` draws a pool such as HP as a
@@ -1311,7 +1311,7 @@ layout (margins, grid placement) in the component's own class.
 | `.modal` and its parts | `base.css` | The native `<dialog>`, built through `Modal.js` |
 | `.sr-only` | `base.css` | Visually hidden, still announced |
 | `.disclosure`, `__chevron`, `--open` | `widgets.css` | A collapsible header, built through `Disclosure.js` |
-| `.stat-bar`, `__track`, `__fill` | `widgets.css` | A filled track, built through `buildStatBar`, with `__fill--mana` and `__fill--critical`, the `--compact` pill form, and the `data-band` fill colors |
+| `.stat-bar`, `__track`, `__fill` | `widgets.css` | A filled track, built through `buildStatBar`, with `__fill--critical`, the `--compact` pill form, and the `data-band` fill colors |
 | `.fact-line`, `__label`, `__value`, `--row` | `widgets.css` | A label with its value, built through `factLine` |
 
 ### Utilities

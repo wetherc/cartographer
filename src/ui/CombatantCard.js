@@ -271,7 +271,6 @@ function hpLine(hp, exact) {
   if (!exact) return el('div', 'combatant-card__hp-band', hpBand(hp.current, hp.max));
   // No label: the card has one bar, and the name above it says whose.
   return buildStatBar(hp, {
-    modifier: 'hp',
     label: 'HP',
     critical: true,
     showLabel: false,

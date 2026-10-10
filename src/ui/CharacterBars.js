@@ -38,10 +38,10 @@ export function emptyStatBar() {
  * the same pool. A tick of HP changes four properties instead of
  * rebuilding the line.
  * @param {{ current: number, max: number }} pool
- * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
+ * @param {{ label: string, critical?: boolean, bonus?: number,
  *   showLabel?: boolean, compact?: boolean, band?: boolean, hero?: boolean,
  *   className?: string }} opts
- *   modifier selects the fill color. critical turns on the low-fill red
+ *   critical turns on the low-fill red
  *   state. band colors the whole fill by remaining fraction instead, in
  *   three steps, for a bar read at a glance rather than watched. bonus
  *   appends a plus-N readout for temporary points on top of the pool, for
@@ -53,7 +53,7 @@ export function emptyStatBar() {
 export function buildStatBar(pool, opts) {
   const compact = Boolean(opts.compact);
   const showLabel = opts.showLabel ?? !compact;
-  const fill = el('span', `stat-bar__fill stat-bar__fill--${opts.modifier}`);
+  const fill = el('span', `stat-bar__fill`);
   // The numbers recede next to a label. Alone on a card, or over a compact
   // track, they are the readout, so they keep the body color.
   const text = el('span', classNames(['stat-bar__text', showLabel && 'u-muted']));

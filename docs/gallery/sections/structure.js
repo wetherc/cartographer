@@ -88,13 +88,9 @@ export const structureSection = {
       stack: true,
       raised: true,
       render: () => [
-        buildStatBar({ current: 24, max: 32 }, { modifier: 'hp', label: 'Hit points', band: true })
+        buildStatBar({ current: 24, max: 32 }, { label: 'Hit points', band: true }).element,
+        buildStatBar({ current: 12, max: 30 }, { label: 'Hit points', compact: true, band: true })
           .element,
-        buildStatBar({ current: 3, max: 9 }, { modifier: 'mana', label: 'Spell points' }).element,
-        buildStatBar(
-          { current: 12, max: 30 },
-          { modifier: 'hp', label: 'Hit points', compact: true, band: true },
-        ).element,
         emptyStatBar(),
       ],
     },
