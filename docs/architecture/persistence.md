@@ -1166,7 +1166,7 @@ The repository commits that file with an empty library, so the startup fetch
 never asks for a missing file. A GM's export overwrites the file, and Git
 ignores everything else under `library/`.
 
-`normalizeLibrary` (in `library/Library.js`) makes every load tolerant, and
+`normalizeLibrary` (in `library/LibraryNormalize.js`) makes every load tolerant, and
 it drops invalid entries instead of throwing an error. The library file has
 no version field. A file that has separate `bestiary` and `npcs` lists loads
 with both read into the one `creatures` list.
@@ -1201,7 +1201,7 @@ never a migration step:
 1. Update the type in `src/types/spell.ts` (or `feat.ts`). Make a new field
    optional or give it a stated default.
 2. Change `normalizeSpell` in `entities/SpellEntry.js` (or `normalizeFeat`
-   in `library/Library.js`) so that it accepts the new format, coerces the
+   in `library/LibraryNormalize.js`) so that it accepts the new format, coerces the
    old format into it, and keeps any original free text that it cannot
    interpret. A throw here fails the
    load of the whole library, and a dropped entry deletes a record that the

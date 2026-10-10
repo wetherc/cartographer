@@ -996,8 +996,8 @@ that changes a template's disposition moves it to the other subtab. "Add to
 campaign" opens the campaign's creature dialog, seeded from the template.
 
 The custom library is not campaign state, because it belongs to the GM and
-not to one campaign. `library/Library.js` has the built-in defaults, the
-pure merge logic, and a small registry of the active library in module
+not to one campaign. `library/LibraryMerge.js` has the built-in defaults and the
+pure merge logic, and `library/ActiveLibrary.js` has a small registry of the active library in module
 state. A custom entry whose name (and, for equipment, type) matches a
 default overrides the default in place. Every other custom entry is
 appended. Code that uses the presets reads that registry at call time,

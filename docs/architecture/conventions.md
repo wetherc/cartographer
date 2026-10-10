@@ -252,7 +252,7 @@ list for each event.
 
 The library's `active*` getters cache their merged lists of defaults and
 custom entries in module state. Only `setActiveLibrary`
-(`src/library/Library.js`) clears this cache, and every mutation path goes
+(`src/library/ActiveLibrary.js`) clears this cache, and every mutation path goes
 through it. The projections over these lists (entry-only lists, filters for
 each type, the spell id index) live in the same cache object, so a repeat
 call to a getter allocates nothing. Add a new derived collection to the same
