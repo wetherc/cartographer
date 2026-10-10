@@ -516,3 +516,29 @@ test('the barrow lies far from the keep and from each way in from the vale, off 
   }
   assert.equal(roadArms(barrow).length, 0);
 });
+
+test('the reduced SRD foes take the CR of their own numbers, so the hint rates them alone', () => {
+  const expected = {
+    'hill-harpy': [0.25, 'Trivial'],
+    'giant-scorpion': [0.5, 'Trivial'],
+    'winter-wolf': [1, 'Trivial'],
+    grelka: [2, 'Trivial'],
+    skalvyr: [4, 'Medium'],
+  };
+  for (const [id, [cr, rating]] of Object.entries(expected)) {
+    const foe = creature(id);
+    assert.equal(foe.cr, cr, id);
+    const spot = JSON.stringify(foe.location);
+    const group = campaign.creatures.filter((c) => JSON.stringify(c.location) === spot);
+    assert.deepEqual(
+      group.map((c) => c.id),
+      [id],
+      `${id} stands alone`,
+    );
+    assert.match(difficultyLine(campaign.characters, group), new RegExp(`^${rating}: `), id);
+  }
+  for (const id of ['harpy', 'giant-scorpion', 'winter-wolf']) {
+    const template = campaign.bestiary.find((t) => t.id === id);
+    assert.equal(template?.cr, creature(id === 'harpy' ? 'hill-harpy' : id).cr, id);
+  }
+});

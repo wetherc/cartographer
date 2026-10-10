@@ -277,9 +277,13 @@ function enemies(at) {
     }),
     mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, at('bogZombie1'), ZOMBIE, ROTTING),
     mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, at('bogZombie2'), ZOMBIE, ROTTING),
-    mob('hill-harpy', 'Harpy', 24, 2, 1, at('harpy'), HARPY, HARPY_KIT),
-    mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, at('scorpion'), SCORPION, SCORPION_KIT),
-    mob('winter-wolf', 'Winter Wolf', 34, 3, 3, at('winterWolf'), WINTER_WOLF, WINTER_KIT),
+    // These three have fewer hit points and attacks than their SRD blocks, so
+    // each takes the CR that the DMG calculation gives for its own numbers.
+    // The harpy has no Luring Song, and the scorpion has one claw and no sting.
+    // The winter wolf counts its Cold Breath on two targets in the first round.
+    mob('hill-harpy', 'Harpy', 24, 2, 0.25, at('harpy'), HARPY, HARPY_KIT),
+    mob('giant-scorpion', 'Giant Scorpion', 26, 3, 0.5, at('scorpion'), SCORPION, SCORPION_KIT),
+    mob('winter-wolf', 'Winter Wolf', 34, 3, 1, at('winterWolf'), WINTER_WOLF, WINTER_KIT),
     // The crew of the Gull, Corvin's lost boat, walk the Saltmere docks.
     mob('drowned-watchman-1', 'Drowned Sailor', 22, 2, 0.5, at('drowned1'), DROWNED, {
       ...DROWNING,
@@ -295,7 +299,10 @@ function enemies(at) {
       notes:
         'A spirit that the wardens bound to the silver of the vein. It sleeps while the vein wards are whole. The diggers of the Castellan broke them, and it killed the last shift. It knocks three times before it strikes. A character who reads the sigils in the notes of Tam Hollowell can bind it again with a DC 13 Arcana check instead of a fight.',
     }),
-    legend('grelka', 'Grelka the Mire Hag', 45, 4, 3, at('grelka'), GREEN_HAG, {
+    // A green hag at about half the SRD hit points. AC 17 and one claw of
+    // 2d8 + 4 at +6 give CR 2 by the DMG calculation, and alone she rates
+    // Trivial for the party. Her notes have her trade first and flee at half.
+    legend('grelka', 'Grelka the Mire Hag', 45, 4, 2, at('grelka'), GREEN_HAG, {
       creatureType: 'fey',
       ...natural('Claws', 2, 8, 'slashing'),
       ...trained([], ['arcana', 'deception', 'perception', 'stealth']),
@@ -330,7 +337,10 @@ function enemies(at) {
     }),
     mob('camp-goblin1', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
     mob('camp-goblin2', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
-    legend('skalvyr', 'Skalvyr the Wyvern', 68, 5, 6, at('skalvyr'), WYVERN, {
+    // A wyvern at 68 of the SRD 110 hit points. The DMG calculation counts the
+    // poison of the sting from the notes, about 46 damage a round, against
+    // 68 hit points at AC 13, and gives CR 4, a Medium fight alone.
+    legend('skalvyr', 'Skalvyr the Wyvern', 68, 5, 4, at('skalvyr'), WYVERN, {
       creatureType: 'dragon',
       multiattack: 2,
       ...natural('Stinger', 2, 6, 'piercing'),
@@ -448,9 +458,9 @@ export function exampleBestiary() {
     template('bandit', 'Bandit', 11, 1, 0.125, BANDIT),
     template('thornhold-guard', 'Thornhold Guard', 32, 3, 1, HOUSE_GUARD, HOUSE),
     template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, ZOMBIE, ROTTING),
-    template('harpy', 'Harpy', 24, 2, 1, HARPY, HARPY_KIT),
-    template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, SCORPION, SCORPION_KIT),
-    template('winter-wolf', 'Winter Wolf', 34, 3, 3, WINTER_WOLF, WINTER_KIT),
+    template('harpy', 'Harpy', 24, 2, 0.25, HARPY, HARPY_KIT),
+    template('giant-scorpion', 'Giant Scorpion', 26, 3, 0.5, SCORPION, SCORPION_KIT),
+    template('winter-wolf', 'Winter Wolf', 34, 3, 1, WINTER_WOLF, WINTER_KIT),
     template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 0.25, SKELETON, SKELETAL),
     template('drowned-sailor', 'Drowned Sailor', 22, 2, 0.5, DROWNED, DROWNING),
     template('pale-sworn', 'Pale-sworn Cultist', 9, 1, 0.125, CULTIST, {

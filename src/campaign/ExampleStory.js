@@ -140,7 +140,7 @@ export function exampleQuests(at) {
         ],
         links: [spot('odo'), who('hermit-odo'), who('skalvyr'), map('graypeak')],
         unlocks: ['the-barrow-king'],
-        reward: each(300),
+        reward: each(600),
       },
     ),
     quest(
