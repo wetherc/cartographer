@@ -1547,7 +1547,8 @@ known caster, and `data/classCatalog.js` records the rule as `knownRule`.
   `Classes.preparedLimit` sets the size of that list for each prepared-rule
   class: the spell-ability modifier plus the caster level, with a minimum of 1.
   The caster level is the class level for a cleric, druid, or wizard, and half
-  the class level, rounded down, for a paladin.
+  the class level, rounded down, for a paladin. A class with no spell slots
+  at its level adds nothing, so a paladin 1 prepares no spells.
 - A *known* caster (bard, ranger, sorcerer, warlock) casts every spell that it
   knows. The `known` list is castable directly, with no prepare step.
 

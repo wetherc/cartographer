@@ -321,6 +321,10 @@ function countPreparedAllowed(character) {
   return casterClassRefs(character).reduce((sum, ref) => {
     const def = casterDefFor(ref);
     if (def?.knownRule !== 'prepared') return sum;
+    // A class with no slots yet (a paladin 1, before Spellcasting at level 2)
+    // prepares nothing. This is the same test as `SpellLearning.classSpellLevelCap`
+    // returning 0, read here without the import cycle that module would form.
+    if (slotsForCaster(def.casterType, ref.level).length === 0) return sum;
     const mod = spellAbilityModifier(character, ref.classId);
     if (mod === null) return sum;
     return sum + Math.max(1, mod + casterLevelContribution(def.casterType, ref.level));

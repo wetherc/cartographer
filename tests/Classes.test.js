@@ -279,12 +279,13 @@ test('preparedLimit reads a half caster at half its class level', () => {
     ),
     8,
   );
-  // Paladin 1 with CHA 10: +0 plus floor(1 / 2) = 0, raised to the minimum of 1.
+  // Paladin 1 has no Spellcasting until level 2, so it prepares nothing, even
+  // with CHA 16.
   assert.equal(
     preparedLimit(
-      character({ level: 1, stats: { CHA: 10 }, classes: [{ classId: 'paladin', level: 1 }] }),
+      character({ level: 1, stats: { CHA: 16 }, classes: [{ classId: 'paladin', level: 1 }] }),
     ),
-    1,
+    0,
   );
   // Beside a cleric, each class reads its own caster level: WIS +3 plus 3,
   // then CHA +3 plus floor(4 / 2).
@@ -297,6 +298,16 @@ test('preparedLimit reads a half caster at half its class level', () => {
     ],
   });
   assert.equal(preparedLimit(gish), 11);
+  // A paladin 1 beside a cleric 3 adds nothing: WIS +3 plus 3.
+  const dip = character({
+    level: 4,
+    stats: { WIS: 16, CHA: 16 },
+    classes: [
+      { classId: 'cleric', level: 3 },
+      { classId: 'paladin', level: 1 },
+    ],
+  });
+  assert.equal(preparedLimit(dip), 6);
 });
 
 test('preparedLimit is 0 for a prepared caster with no score in its spell ability', () => {
