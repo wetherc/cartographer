@@ -129,7 +129,7 @@ function start() {
   // A Player tab bound to one character opens on that character's sheet, so
   // the player sees the map and their sheet side by side. A reload below
   // still restores the tab the player had open.
-  if (document.body.classList.contains('role-player') && app.actions.getBoundCharacterId()) {
+  if (app.state.role === 'player' && app.actions.getBoundCharacterId()) {
     document.getElementById('tab-character')?.click();
   }
   // The mode comes first, so a tab of the Build rail opens on a shown rail.

@@ -195,6 +195,7 @@ export function wireParty(app, reloadView = null) {
     card: mustGetElement('sheet-card'),
     getCharacters: () => state.characters,
     getSelectedId: scope.getSelectedId,
+    getMode: () => state.mode,
     onSelect: (id) => {
       selectCharacter(id);
       followCharacter(id);

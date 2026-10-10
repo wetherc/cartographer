@@ -25,7 +25,9 @@ import { el } from './dom.js';
  *   getCharacters: () => Character[],
  *   getSelectedId: () => string | null,
  *   onSelect: (id: string) => void,
- * }} opts card is the sheet card the view borrows from the sidebar.
+ *   getMode: () => import('../types/app.js').AppMode,
+ * }} opts card is the sheet card the view borrows from the sidebar, and
+ *   getMode reads the app mode, since Escape closes the view only in Play.
  * @returns {{ open: () => void, close: () => void, update: () => void, isOpen: () => boolean }}
  */
 export function mountFullSheet(container, opts) {
@@ -95,8 +97,7 @@ export function mountFullSheet(container, opts) {
    */
   function onKey(event) {
     if (event.key !== 'Escape' || event.defaultPrevented) return;
-    if (document.querySelector('dialog[open]') || !document.body.classList.contains('mode-play'))
-      return;
+    if (document.querySelector('dialog[open]') || opts.getMode() !== 'play') return;
     const target = /** @type {HTMLElement} */ (event.target);
     if (target.isContentEditable || target.matches?.('input, textarea, select')) return;
     event.preventDefault();
