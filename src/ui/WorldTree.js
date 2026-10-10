@@ -62,9 +62,12 @@ const SEARCH_MIN_NODES = 12;
  * @returns {{ update: () => void }}
  */
 export function mountWorldTree(container, opts) {
-  const search = textField('', { type: 'search', placeholder: 'Find a place' });
-  search.classList.add('world-tree__search');
-  search.setAttribute('aria-label', 'Find a place in the world');
+  const search = textField('', {
+    type: 'search',
+    placeholder: 'Find a place',
+    className: 'world-tree__search',
+    ariaLabel: 'Find a place in the world',
+  });
   search.hidden = true;
 
   const root = el('div', 'world-tree');
@@ -310,12 +313,10 @@ export function mountWorldTree(container, opts) {
         focusItem(item);
         toggleMenuFrom(button, menuItems(node));
       },
-      { className: 'world-tree__more' },
+      { className: 'world-tree__more', ariaLabel: label, title: label },
     );
     button.tabIndex = -1;
-    button.setAttribute('aria-label', label);
     markMenuButton(button);
-    setTip(button, label);
     menuOpeners.set(node.id, () => button.click());
     return button;
   }

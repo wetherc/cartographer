@@ -27,8 +27,7 @@ export function mountBuildEmptyMap(viewport, opts) {
     ),
   );
   const playTitle = el('p', 'map-empty__title');
-  const buildBtn = textButton('Open Build mode', opts.onBuild);
-  buildBtn.classList.add('map-empty__gm');
+  const buildBtn = textButton('Open Build mode', opts.onBuild, { className: 'map-empty__gm' });
   const playCard = el(
     'div',
     'map-empty__card map-empty__card--play u-col u-g2',
