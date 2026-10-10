@@ -156,6 +156,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
 export function mountListPanel(container, options) {
   const root = el('div', options.className);
   container.appendChild(root);
+  const needsPin = watchScrollPin(root);
 
   const placement = options.addPlacement ?? 'inline';
   /** @type {ListPanelClasses<T>} */
@@ -279,8 +280,11 @@ export function mountListPanel(container, options) {
     // sits in a scrolling ancestor instead, such as a sidebar tab panel. The
     // old height stays on the root through the rebuild, so the ancestor does
     // not clamp its own scroll position while the list is empty.
-    const { scrollTop } = root;
-    root.style.minHeight = `${root.offsetHeight}px`;
+    // Both reads force a layout after the DOM writes of the same task, so
+    // the pin runs only for a shown list with something scrolled.
+    const pin = needsPin();
+    const scrollTop = pin ? root.scrollTop : 0;
+    if (pin) root.style.minHeight = `${root.offsetHeight}px`;
     root.innerHTML = '';
     /** @type {RowContext<T>} */
     const ctx = { gm, render, action };
@@ -340,8 +344,10 @@ export function mountListPanel(container, options) {
     }
 
     restoreFocus(root, memo);
-    root.scrollTop = scrollTop;
-    root.style.minHeight = '';
+    if (pin) {
+      root.scrollTop = scrollTop;
+      root.style.minHeight = '';
+    }
   }
 
   function render() {
@@ -397,4 +403,40 @@ function sameRows(a, b) {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return false;
   return true;
+}
+
+/**
+ * Track, without a layout read in paint, whether a repaint of `root` needs
+ * the scroll pin. The pin is needed when the root is displayed and the root,
+ * an ancestor of it, or the page is scrolled away from the top.
+ *
+ * An IntersectionObserver reports a root inside a hidden tab with an empty
+ * box. A root that is only scrolled out of view keeps its width, so it still
+ * counts as displayed. Without IntersectionObserver the root always counts
+ * as displayed. A scroll listener in the capture phase sees the scroll of
+ * every ancestor, because a scroll event does not bubble.
+ * @param {HTMLElement} root
+ * @returns {() => boolean}
+ */
+function watchScrollPin(root) {
+  let displayed = true;
+  /** The scrolled elements around the root that are not at the top. @type {Set<Element>} */
+  const scrolled = new Set();
+  if (typeof IntersectionObserver === 'function') {
+    new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      displayed = entry.isIntersecting || entry.boundingClientRect.width > 0;
+    }).observe(root);
+  }
+  document.addEventListener(
+    'scroll',
+    (event) => {
+      const box = event.target === document ? document.scrollingElement : event.target;
+      if (!(box instanceof Element) || !box.contains(root)) return;
+      if (box.scrollTop > 0) scrolled.add(box);
+      else scrolled.delete(box);
+    },
+    { capture: true, passive: true },
+  );
+  return () => displayed && scrolled.size > 0;
 }
