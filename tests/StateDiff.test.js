@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   ID_KEYED,
-  applyOps,
   diffState,
   equalValues,
   invertOps,
   jsonLengthWithin,
   opsByteSize,
 } from '../src/storage/StateDiff.js';
+import { applyOps } from '../src/storage/StateApply.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { buildState } from '../src/storage/SaveManager.js';
 import { TilePalette } from '../src/map/TilePalette.js';

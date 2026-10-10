@@ -55,7 +55,8 @@
  * the index still names the previous step.
  */
 
-import { applyOps, diffState, invertOps } from './StateDiff.js';
+import { diffState, invertOps } from './StateDiff.js';
+import { applyOps } from './StateApply.js';
 import { compactOps, expandOps, historyForm, opsNameAssets } from './HistoryCodec.js';
 import { ASSET_PREFIX, restoreAssets } from './Assets.js';
 import { deserialize, packState } from './SaveManager.js';

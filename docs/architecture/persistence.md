@@ -902,7 +902,8 @@ plans cross-tab adoption.
 
 `saveCampaign` is the one save path. It writes the campaign, then appends one
 delta. The `diffState` function of `storage/StateDiff.js` produces that delta
-from the previous and new parsed states.
+from the previous and new parsed states. `applyOps` in
+`storage/StateApply.js` applies a delta to a state.
 
 An op records both its old value and its new value, so `invertOps` performs a
 swap. Undo and redo are the same walk, in opposite directions:

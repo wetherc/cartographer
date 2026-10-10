@@ -1,7 +1,8 @@
 import { campaignFromLiveState } from '../campaign/Campaigns.js';
 import { GM_LOCK_KEY, isLockActive, loadLock } from '../storage/GMLock.js';
 import { clearPatch, onPlayerPatch, storedPatches, writePatch } from '../storage/PlayerPatch.js';
-import { applyOps, diffState } from '../storage/StateDiff.js';
+import { diffState } from '../storage/StateDiff.js';
+import { applyOps } from '../storage/StateApply.js';
 import { isGM } from '../view/ViewRole.js';
 import { rehydrateCampaign } from './rehydrate.js';
 
