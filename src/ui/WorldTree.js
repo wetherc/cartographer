@@ -327,6 +327,8 @@ export function mountWorldTree(container, opts) {
   let currentId = null;
   /** @type {HTMLLIElement | null} */
   let currentRow = null;
+  /** @type {HTMLLIElement | null} the tree item that has tabIndex 0 */
+  let stopRow = null;
   /** True while the current row still needs to scroll into view. */
   let scrollPending = false;
 
@@ -356,6 +358,9 @@ export function mountWorldTree(container, opts) {
    */
   function markCurrent(id, nodes) {
     const next = rows.get(id) ?? null;
+    // A party step keeps the same current node and the same rows, so the
+    // tab stop cannot have moved. A rebuild clears stopRow.
+    const moved = id !== currentId || next !== currentRow || !stopRow;
     if (id !== currentId) {
       for (const ancestor of ancestorIds(nodes, id)) {
         collapsed.delete(ancestor);
@@ -373,7 +378,7 @@ export function mountWorldTree(container, opts) {
       currentRow = next;
     }
     currentId = id;
-    syncTabStop();
+    if (moved) syncTabStop();
     scrollToCurrent();
   }
 
@@ -403,6 +408,8 @@ export function mountWorldTree(container, opts) {
     toggles.clear();
     menuOpeners.clear();
     currentRow = null;
+    // Every new row starts with tabIndex -1.
+    stopRow = null;
 
     names = new Map(nodes.map((n) => [n.id, n.name]));
     const openPath = new Set(ancestorIds(nodes, opts.getCurrentId()));
@@ -461,16 +468,26 @@ export function mountWorldTree(container, opts) {
   /**
    * Put exactly one tree item in the tab order: the one that last had focus,
    * else the current node, else the first item. Tab then moves past the
-   * whole tree in one step instead of through every row.
+   * whole tree in one step instead of through every row. The function
+   * changes only the old and the new stop, because the tree updates on
+   * every party step and a world can have hundreds of rows.
    */
   function syncTabStop() {
-    const visible = visibleItems();
     const pick = (/** @type {string | null} */ id) => {
       const row = id ? rows.get(id) : undefined;
-      return row && visible.includes(row) ? row : undefined;
+      // Only a closed branch inside the tree counts. A hidden rail around
+      // the tree would otherwise move the stop off the current node.
+      const closedBranch = row?.closest('[hidden]');
+      return row && !(closedBranch && root.contains(closedBranch)) ? row : undefined;
     };
-    const stop = pick(tabStopId) ?? pick(currentId) ?? visible[0];
-    for (const row of rows.values()) row.tabIndex = row === stop ? 0 : -1;
+    // A top-level item is never inside a closed branch, so the first item
+    // in the markup is the first visible one.
+    const first = /** @type {HTMLLIElement | null} */ (root.querySelector('[role="treeitem"]'));
+    const stop = pick(tabStopId) ?? pick(currentId) ?? first;
+    if (stop === stopRow) return;
+    if (stopRow) stopRow.tabIndex = -1;
+    if (stop) stop.tabIndex = 0;
+    stopRow = stop;
   }
 
   root.addEventListener('focusin', (event) => {
