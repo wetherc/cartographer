@@ -54,6 +54,11 @@ export interface ActionBudget {
    * the Attack action specifically.
    */
   attacked: boolean;
+  /**
+   * Whether a weapon swing of the Attack action this turn used a light melee
+   * weapon. Two-weapon fighting needs it for the off-hand swing.
+   */
+  lightAttack: boolean;
   /** Whether Sneak Attack damage was already added once this turn. */
   sneak: boolean;
   /** Whether a dying character already rolled its death save this turn. */

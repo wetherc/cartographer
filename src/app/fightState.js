@@ -128,9 +128,10 @@ export function wireFightState(app) {
    * @param {string} id
    * @param {import('../types/combat.js').ActionCost
    *   | import('../types/combat.js').TurnFlag | 'attack' | 'legendary'} cost
-   * @param {{ attacksPerAction?: number, extraAction?: boolean, legendaryActions?: number }} [options] how
+   * @param {{ attacksPerAction?: number, extraAction?: boolean, lightAttack?: boolean, legendaryActions?: number }} [options] how
    *   many swings one Attack action buys for this combatant, and whether a
-   *   chip such as Haste gives it one more, for the 'attack' cost. The
+   *   chip such as Haste gives it one more, for the 'attack' cost. `lightAttack`
+   *   marks a swing with a light melee weapon for two-weapon fighting. The
    *   'legendary' cost reads `legendaryActions`, the creature's legendary
    *   actions per round.
    * @returns {boolean}
@@ -138,7 +139,7 @@ export function wireFightState(app) {
   app.actions.spendBudget = (
     id,
     cost,
-    { attacksPerAction = 1, extraAction = false, legendaryActions } = {},
+    { attacksPerAction = 1, extraAction = false, lightAttack = false, legendaryActions } = {},
   ) => {
     const combat = current();
     if (!combat) return true;
@@ -155,7 +156,7 @@ export function wireFightState(app) {
     const order = [...combat.order];
     order[index] =
       cost === 'attack'
-        ? spendAttack(participant, attacksPerAction, extraAction)
+        ? spendAttack(participant, attacksPerAction, extraAction, lightAttack)
         : cost === 'legendary'
           ? spendLegendary(participant, legendaryActions)
           : spend(participant, cost);

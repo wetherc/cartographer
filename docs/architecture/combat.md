@@ -288,7 +288,10 @@ through `CreatureAttacks.swingsPerAction`. `spendAttack` draws on the bank befor
 count is two or more draws on the bank (see
 [Hit riders and the pact weapon](#hit-riders-and-the-pact-weapon)). Each swing also sets
 `attacked`, because a cast spends the `action` flag too, and two-weapon
-fighting needs to know that the action went to the Attack action.
+fighting needs to know that the action went to the Attack action. A swing
+with a light melee weapon also sets `lightAttack`, which `weaponAttack.js`
+passes through `spendBudget`. Both marks reset with the rest of the budget
+at the start of the next turn, and giving the action back clears them.
 
 A chip with `mods.extraAction` (Haste) gives one more swing, which `extra`
 records. `spendAttack` and `attacksAvailable` take an `extraAction` flag, and
@@ -454,11 +457,13 @@ the turn of a `noActions` holder. The ward prompts ask `canReact`.
 `isLightMelee` reads the kind and the `light` property of one weapon.
 `offhandWeapons` returns the light melee weapons of a list, and it returns
 none unless the list has two of them. `canOffhand` adds the budget
-conditions: the Attack action is taken, and the bonus action is free.
+conditions: the Attack action swung a light melee weapon, and the bonus
+action is free.
 
-The test reads the `attacked` mark and not the `action` flag. In 5e, the
-off-hand swing is the second attack after a taken Attack action, so an action
-spent on a cast does not unlock it. The app does not model which hand holds
+The test reads the `attacked` and `lightAttack` marks and not the `action`
+flag. In 5e, the off-hand swing follows an Attack action made with a light
+melee weapon, so an action spent on a cast or on a longbow does not unlock
+it. The app does not model which hand holds
 which weapon. It offers both light melee weapons, and the GM picks the one
 that the second hand swings.
 

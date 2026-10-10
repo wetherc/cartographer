@@ -162,7 +162,12 @@ export interface AppActions {
   spendBudget(
     id: string,
     cost: ActionCost | TurnFlag | 'attack' | 'legendary',
-    options?: { attacksPerAction?: number; extraAction?: boolean; legendaryActions?: number },
+    options?: {
+      attacksPerAction?: number;
+      extraAction?: boolean;
+      lightAttack?: boolean;
+      legendaryActions?: number;
+    },
   ): boolean;
   // fightState: the GM's override on one cost of a turn. A free cost
   // becomes spent and a spent one becomes free. The return value is true

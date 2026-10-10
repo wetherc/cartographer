@@ -8,6 +8,7 @@ import {
 } from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
+import { isLightMelee } from '../combat/TwoWeapon.js';
 import {
   SWINGS,
   isWeakSwing,
@@ -160,6 +161,7 @@ export function rollWeaponAttack(
         ? {
             attacksPerAction: swingsPerAction(attacker, weapon),
             extraAction: hasExtraAction(attacker.conditions),
+            lightAttack: isLightMelee(weapon),
           }
         : swing.cost === 'legendary'
           ? { legendaryActions: attacker.legendaryActions }

@@ -54,7 +54,10 @@ test('offhandWeapons offers the light melee weapons once there are two of them',
 test('canOffhand waits for the Attack action to be taken and the bonus action to be free', () => {
   const weapons = [DAGGER, SHORTSWORD];
   assert.equal(
-    canOffhand(participant({ action: true, attacked: true, bonus: false }), weapons),
+    canOffhand(
+      participant({ action: true, attacked: true, lightAttack: true, bonus: false }),
+      weapons,
+    ),
     true,
     'the first swing has been taken and the bonus action is there to pay',
   );
@@ -69,16 +72,26 @@ test('canOffhand waits for the Attack action to be taken and the bonus action to
     'an action spent on a cast is not the Attack action',
   );
   assert.equal(
-    canOffhand(participant({ action: true, attacked: true, bonus: true }), weapons),
+    canOffhand(
+      participant({ action: true, attacked: true, lightAttack: true, bonus: true }),
+      weapons,
+    ),
     false,
     'something else already took the bonus action',
   );
   assert.equal(
-    canOffhand(participant({ action: true, attacked: true, bonus: false }), [DAGGER]),
+    canOffhand(participant({ action: true, attacked: true, lightAttack: true, bonus: false }), [
+      DAGGER,
+    ]),
     false,
     'one weapon offers no second hand',
   );
   assert.equal(canOffhand(participant(undefined), weapons), false, 'an unspent turn offers none');
+  assert.equal(
+    canOffhand(participant({ action: true, attacked: true, bonus: false }), weapons),
+    false,
+    'an Attack action spent on a longbow is not a light melee attack',
+  );
 });
 
 test('offhandDamageModifier drops a bonus and keeps a penalty', () => {

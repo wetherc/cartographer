@@ -36,6 +36,7 @@ export function freshBudget() {
     reaction: false,
     attacksLeft: 0,
     attacked: false,
+    lightAttack: false,
     sneak: false,
     deathSave: false,
     bonusSpell: false,
@@ -63,6 +64,7 @@ export function budgetOf(value) {
     reaction: used.reaction === true,
     attacksLeft: countOf(used.attacksLeft),
     attacked: used.attacked === true,
+    lightAttack: used.lightAttack === true,
     sneak: used.sneak === true,
     deathSave: used.deathSave === true,
     bonusSpell: used.bonusSpell === true,
@@ -128,7 +130,8 @@ export function unspend(participant, cost) {
   const used = budgetOf(participant.used);
   if (!used[cost]) return participant;
   const next = { ...used, [cost]: false };
-  if (cost === 'action') Object.assign(next, { attacksLeft: 0, attacked: false });
+  if (cost === 'action')
+    Object.assign(next, { attacksLeft: 0, attacked: false, lightAttack: false });
   // A bonus action or action given back takes its spell with it, so the
   // spell rule no longer limits the rest of the turn.
   if (cost === 'bonus') next.bonusSpell = false;
@@ -149,24 +152,28 @@ export function unspend(participant, cost) {
  * direct caller of this function reaches it.
  *
  * Every swing marks `attacked`, which is what tells the Attack action apart
- * from an action spent on a cast. Two-weapon fighting reads that mark.
+ * from an action spent on a cast. A swing with a light melee weapon also
+ * marks `lightAttack`, and the mark stays for the rest of the turn.
+ * Two-weapon fighting reads both marks.
  * @param {Participant} participant
  * @param {number} [attacksPerAction] how many swings one Attack action buys
  * @param {boolean} [extraAction] whether the combatant has an extra action
+ * @param {boolean} [light] whether this swing uses a light melee weapon
  * @returns {Participant}
  */
-export function spendAttack(participant, attacksPerAction = 1, extraAction = false) {
+export function spendAttack(participant, attacksPerAction = 1, extraAction = false, light = false) {
   const used = budgetOf(participant.used);
+  const marks = { attacked: true, lightAttack: used.lightAttack || light };
   if (used.attacksLeft > 0 && attacksPerAction >= 2) {
-    return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1, attacked: true } };
+    return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1, ...marks } };
   }
   if (used.action && extraAction && !used.extra) {
-    return { ...participant, used: { ...used, extra: true, attacked: true } };
+    return { ...participant, used: { ...used, extra: true, ...marks } };
   }
   const banked = Math.max(0, Math.floor(attacksPerAction) - 1);
   return {
     ...participant,
-    used: settle({ ...used, action: true, attacksLeft: banked, attacked: true }),
+    used: settle({ ...used, action: true, attacksLeft: banked, ...marks }),
   };
 }
 

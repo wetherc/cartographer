@@ -336,8 +336,10 @@ in a fight in the same way, and it offers the same box.
 
 A character with two light melee weapons equipped gets an **Off-hand
 (bonus action)** group in the action bar. An example is a dagger and a
-shortsword. The group shows after the character takes its Attack action,
-and only while the bonus action is unspent.
+shortsword. The group shows after the character swings a light melee weapon
+with its Attack action, and only while the bonus action is unspent. An
+Attack action spent only on a longbow or another weapon that is not light
+melee does not show it.
 
 The group offers both weapons, and you pick the one that the second hand
 swings. The off-hand swing rolls to hit like any other attack.

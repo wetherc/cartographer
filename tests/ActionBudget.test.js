@@ -44,6 +44,7 @@ test('freshBudget spends nothing', () => {
     reaction: false,
     attacksLeft: 0,
     attacked: false,
+    lightAttack: false,
     sneak: false,
     deathSave: false,
     bonusSpell: false,
@@ -78,6 +79,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       reaction: false,
       attacksLeft: 2,
       attacked: false,
+      lightAttack: false,
       sneak: false,
       deathSave: true,
       bonusSpell: false,
@@ -147,6 +149,15 @@ test('spendAttack draws on the bank without spending a second action', () => {
     attacksLeft: 1,
     attacked: true,
   });
+});
+
+test('spendAttack marks a light melee swing, and a later swing keeps the mark', () => {
+  const light = spendAttack(at(), 2, false, true);
+  assert.equal(budgetOf(light.used).lightAttack, true);
+  assert.equal(budgetOf(spendAttack(light, 2).used).lightAttack, true, 'a banked bow swing');
+  assert.equal(budgetOf(spendAttack(at(), 2).used).lightAttack, false);
+  const hasted = at({ action: true, attacked: true });
+  assert.equal(budgetOf(spendAttack(hasted, 1, true, true).used).lightAttack, true);
 });
 
 test('spendAttack past an empty bank spends another Attack action', () => {
@@ -243,6 +254,7 @@ test('refresh gives a whole turn back, reaction included', () => {
     reaction: true,
     attacksLeft: 1,
     attacked: true,
+    lightAttack: true,
     sneak: true,
   });
   assert.deepEqual(refresh(used).used, freshBudget());
@@ -272,7 +284,7 @@ test('unspend frees one cost, and freeing the action drops its banked swings', (
   assert.equal(unspend(fresh, 'bonus'), fresh, 'a free cost returns the same participant');
   assert.equal(budgetOf(unspend(at({ bonus: true }), 'bonus').used).bonus, false);
   const swung = unspend(
-    at({ action: true, attacksLeft: 1, attacked: true, bonus: true }),
+    at({ action: true, attacksLeft: 1, attacked: true, lightAttack: true, bonus: true }),
     'action',
   );
   assert.deepEqual(budgetOf(swung.used), { ...freshBudget(), bonus: true });

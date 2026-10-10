@@ -46,17 +46,19 @@ export function offhandWeapons(weapons) {
 
 /**
  * Whether the off-hand swing is available this turn: the combatant holds two
- * light melee weapons, already took the Attack action, and still holds the
- * bonus action. The `attacked` mark is the test, not the `action` flag alone:
- * an action spent on a cast is not the Attack action, and the rule wants the
- * attack.
+ * light melee weapons, already swung a light melee weapon with the Attack
+ * action, and still holds the bonus action. The `attacked` mark is the test,
+ * not the `action` flag alone: an action spent on a cast is not the Attack
+ * action, and the rule wants the attack. The `lightAttack` mark rules out an
+ * Attack action spent on a longbow or a greatsword.
  * @param {Participant} participant
  * @param {Weapon[]} weapons
  * @returns {boolean}
  */
 export function canOffhand(participant, weapons) {
   if (offhandWeapons(weapons).length === 0) return false;
-  return budgetOf(participant.used).attacked && canSpend(participant, 'bonus');
+  const used = budgetOf(participant.used);
+  return used.attacked && used.lightAttack && canSpend(participant, 'bonus');
 }
 
 /**
