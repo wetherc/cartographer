@@ -211,6 +211,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       multiclassPrereq: [{ CHA: 13 }],
       multiclassGrant: multiclassGrant({
         armor: ['light'],
+        tools: ['musical instrument'],
         skillChoice: { choose: 1, from: [] },
       }),
       featuresByLevel: {

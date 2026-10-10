@@ -143,6 +143,12 @@ test("a single-class character's newest level can move into a new class", () => 
   assert.deepEqual(p.armor, ['light']);
 });
 
+test('a level moved into bard grants one musical instrument', () => {
+  const c = withHitDice(withHP(classed([{ classId: 'fighter', level: 5 }], { CHA: 14 }), 44));
+  const next = assignLevel(c, 'bard');
+  assert.deepEqual(getProficiencies(next).tools, ['musical instrument']);
+});
+
 test('a level transfer between equal hit dice leaves HP alone', () => {
   const c = withHP(classed([{ classId: 'fighter', level: 3 }], { CHA: 14 }), 28);
   const next = assignLevel(c, 'paladin');
