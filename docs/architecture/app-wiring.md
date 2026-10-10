@@ -670,6 +670,7 @@ the same code. The fight itself renders in combat mode, which
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
 | `shieldWard.js` | The pause before a hit lands on a defender that can raise its AC with a reaction (Shield), for a weapon swing and for an attack spell |
 | `reactionGate.js` | The checks that the Shield, damage, and Redirect Attack pauses share: whether the defender may react now (`reactionCaster`), and the self-cast plan of a reaction spell it can pay for (`reactionPlan`) |
+| `viewer.js` | `viewerOf`, the GM flag and the bound character id of this tab, which the combat cards, the loadout, the reaction checks, and the search filter read |
 | `tempHP.js` | The grant of temporary hit points to a combatant by id, with its log line, for a buff cast and for the start of a turn |
 
 #### The creature dialog

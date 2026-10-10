@@ -16,6 +16,7 @@ import {
   turnKey,
 } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
+import { viewerOf } from './viewer.js';
 import { applyToTarget, endSpellEffects, setCombatantConditions } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaveRolls.js';
 import { weaponAttack } from './weaponAttack.js';
@@ -97,13 +98,7 @@ export function wireCombatScreen(app) {
     getView: () => {
       if (!state.combat) return null;
       return buildCombatView(state.combat, (id) => findCombatant(app, id), {
-        gm: isGM(state.role),
-        // partyWiring registers this and mounts later, so a reload with a
-        // fight running draws its first frame before the binding reader
-        // exists. That frame treats the tab as unbound, and the next
-        // refresh corrects it. InitiativePanel's canAttack makes the same
-        // allowance.
-        boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
+        ...viewerOf(app),
         // Two foes that share a name read as "Gray Wolf 1" and "Gray Wolf 2"
         // on the cards and the ribbon, the same labels the dialogs use.
         labels: combatLabels(
@@ -207,14 +202,7 @@ export function wireCombatScreen(app) {
     // player tab never assembles another player's prepared spells.
     getLoadout: (id) => {
       const found = findCombatant(app, id);
-      const access = loadoutAccess(
-        found,
-        {
-          gm: isGM(state.role),
-          boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
-        },
-        id,
-      );
+      const access = loadoutAccess(found, viewerOf(app), id);
       return buildLoadout(found, access === 'full' ? spellsOf(app, id) : [], access);
     },
     // What one combatant can spend a reaction on: a melee swing at whoever is

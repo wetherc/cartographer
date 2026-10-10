@@ -1,7 +1,7 @@
 import { canSpend } from '../combat/ActionBudget.js';
 import { isDowned, mayActOn } from '../combat/CombatView.js';
 import { canReact } from '../entities/ConditionEffects.js';
-import { isGM } from '../view/ViewRole.js';
+import { viewerOf } from './viewer.js';
 import { findCombatant } from './combatants.js';
 import { combatTargets, rosterTargets } from './spellTargets.js';
 import { castPlan } from './castPlan.js';
@@ -50,11 +50,7 @@ export function reactionCaster(app, defenderId, attackerId, { fight = false } = 
   if ((fight && !combat) || defenderId === attackerId) return null;
   const found = findCombatant(app, defenderId);
   if (!found || isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
-  const viewer = {
-    gm: isGM(app.state.role),
-    boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
-  };
-  if (!mayActOn(found, viewer, defenderId)) return null;
+  if (!mayActOn(found, viewerOf(app), defenderId)) return null;
   const participant = combat?.order.find((p) => p.id === defenderId) ?? null;
   if (combat && (!participant || !canSpend(participant, 'reaction'))) return null;
   return { id: defenderId, found, combat, participant };

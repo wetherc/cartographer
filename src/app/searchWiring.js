@@ -2,6 +2,7 @@ import { mountCampaignSearch } from '../ui/CampaignSearchBox.js';
 import { mustGetElement } from '../ui/dom.js';
 import { searchCampaign } from '../view/CampaignSearch.js';
 import { isGM } from '../view/ViewRole.js';
+import { viewerOf } from './viewer.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../view/CampaignSearch.js').SearchTarget} SearchTarget */
@@ -45,7 +46,7 @@ export function wireSearch(app) {
           nodes: app.grid.allNodes(),
         },
         query,
-        { gm: isGM(state.role), boundCharacterId: app.actions.getBoundCharacterId() },
+        viewerOf(app),
       ),
     onChoose: (result) => jump(result.target),
   });
