@@ -16,6 +16,7 @@ import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
 import { statFields, readStats } from './statFields.js';
+import { raceCantripLabel, raceCantripOptions } from './raceEdit.js';
 import {
   POINT_BUY_BUDGET,
   STANDARD_ARRAY,
@@ -96,8 +97,13 @@ function raceSkillChoice(raceId) {
   return { options, count, label: `Race skills (choose ${count})` };
 }
 
+/** The class list that a race cantrip pick offers. Only the High Elf has
+ * one (the wizard list), so the select keeps fixed options. */
+const CANTRIP_CLASS = RACE_LIST.find((r) => r.cantripChoice)?.cantripChoice?.classId ?? 'wizard';
+
 /** @returns {ModalField[]} the New character dialog's fields */
 export function characterFields() {
+  const cantrips = raceCantripOptions(CANTRIP_CLASS);
   return [
     { name: 'name', label: 'Name', value: '' },
     {
@@ -150,6 +156,14 @@ export function characterFields() {
       type: 'select',
       value: TOOL_PICKS[0],
       options: TOOL_PICKS.map((tool) => ({ value: tool, label: capitalize(tool) })),
+      hidden: true,
+    },
+    {
+      name: 'raceCantrip',
+      label: raceCantripLabel(CANTRIP_CLASS),
+      type: 'select',
+      value: cantrips[0]?.value ?? '',
+      options: cantrips,
       hidden: true,
     },
     {
@@ -313,6 +327,7 @@ export function characterFormChange(name, form, rng = Math.random) {
     }
     form.setHidden('raceResistance', !getRace(raceId)?.resistanceChoice?.length);
     form.setHidden('raceTool', !getRace(raceId)?.toolChoice?.length);
+    form.setHidden('raceCantrip', !getRace(raceId)?.cantripChoice);
   }
   if (name === 'class') {
     const choice = getClass(form.get('class'))?.skillChoice;
@@ -375,6 +390,11 @@ export function buildCharacter(values, existingIds) {
       skills: splitList(values.raceSkills ?? '').filter((id) => SKILL_IDS.includes(id)),
       resistance: values.raceResistance ?? '',
       tool: values.raceTool ?? '',
+      cantrip: raceCantripOptions(race.cantripChoice?.classId ?? '').some(
+        (o) => o.value === values.raceCantrip,
+      )
+        ? values.raceCantrip
+        : '',
     });
   } else if (values.customRace.trim()) {
     character = withCustomRace(character, values.customRace.trim());

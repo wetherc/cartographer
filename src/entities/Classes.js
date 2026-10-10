@@ -7,6 +7,7 @@ import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
 import { hasAncientSecrets, tomeCantrips, tomeRituals } from './PactTome.js';
+import { raceCantrips } from './Races.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -269,8 +270,9 @@ function casterProficiency(character) {
 /**
  * How many cantrips a character can know: each caster class's cantrip curve
  * read at its own class level, summed, plus the Book of Shadows cantrips of
- * a Pact of the Tome warlock, which do not count against the limit. Returns
- * 0 for a non-caster or a classless character.
+ * a Pact of the Tome warlock and the race cantrip of a High Elf, which do
+ * not count against the class limit. Returns 0 for a non-caster or a
+ * classless character with no race cantrip.
  *
  * This value is memoized on the character, like `preparedLimit`. The
  * spellbook panel asks for both limits once per listed spell, and
@@ -285,7 +287,7 @@ export const cantripLimit = memoizeByIdentity(countCantripsKnown);
 function countCantripsKnown(character) {
   return casterClassRefs(character).reduce(
     (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level, ref.subclass),
-    tomeCantrips(character).length,
+    tomeCantrips(character).length + raceCantrips(character).length,
   );
 }
 

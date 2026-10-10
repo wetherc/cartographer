@@ -470,3 +470,21 @@ test('a Dwarf pick shows the tool pick and buildCharacter adds the tool', () => 
   characterFormChange('race', elf);
   assert.equal(elf.hidden.raceTool, true);
 });
+
+test('an Elf pick shows the race cantrip and buildCharacter adds it for a non-caster', () => {
+  const form = fakeForm({ race: 'elf' });
+  characterFormChange('race', form);
+  assert.equal(form.hidden.raceCantrip, false);
+  const field = characterFields().find((f) => f.name === 'raceCantrip');
+  assert.equal(field?.label, 'Race cantrip (Wizard list)');
+  assert.ok(field?.options?.some((o) => o.value === 'fire-bolt'));
+  assert.ok(!field?.options?.some((o) => o.value === 'sacred-flame'), 'cleric only');
+  const c = buildCharacter(values({ race: 'elf', class: 'fighter', raceCantrip: 'fire-bolt' }), []);
+  assert.deepEqual(c.spellbook?.cantrips, ['fire-bolt']);
+  assert.equal(c.raceTraits?.chosenCantrip, 'fire-bolt');
+  const odd = buildCharacter(values({ race: 'elf', raceCantrip: 'sacred-flame' }), []);
+  assert.deepEqual(odd.spellbook?.cantrips, [], 'a cantrip off the wizard list drops');
+  const dwarf = fakeForm({ race: 'dwarf' });
+  characterFormChange('race', dwarf);
+  assert.equal(dwarf.hidden.raceCantrip, true);
+});

@@ -115,10 +115,15 @@ export function unlearnCantrip(character, spellId) {
   );
   // A forgotten Book of Shadows cantrip leaves the book too, so the same id
   // learned again from a class list counts as a class cantrip.
+  // A forgotten race cantrip leaves the race record for the same reason.
+  const traits = character.raceTraits;
+  const forgot = traits?.chosenCantrip === spellId;
+  const raceTraits = forgot ? { raceTraits: { ...traits, chosenCantrip: undefined } } : {};
   const tome = character.bookOfShadows;
-  if (!tome?.cantrips.includes(spellId)) return { ...character, spellbook: next };
+  if (!tome?.cantrips.includes(spellId)) return { ...character, spellbook: next, ...raceTraits };
   return {
     ...character,
+    ...raceTraits,
     spellbook: next,
     bookOfShadows: { ...tome, cantrips: tome.cantrips.filter((id) => id !== spellId) },
   };

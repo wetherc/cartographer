@@ -47,6 +47,10 @@ export interface RaceDef {
   /** The tools a player picks one proficiency from (the Dwarf's Tool
    * Proficiency). */
   toolChoice?: string[];
+  /** A cantrip the player picks from one class list (the High Elf: one
+   * wizard cantrip). The cantrip casts with that class's spell ability
+   * and does not count against the class cantrip limit. */
+  cantripChoice?: { classId: string };
   /** Race trait names. `entities/RaceTraits.js` gives a few of them an effect
    * on d20 rolls (Lucky, Brave, Fey Ancestry, Dwarven Resilience, Gnome
    * Cunning). The rest are display names only. */
@@ -66,6 +70,9 @@ export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'> & {
   chosenResistance?: string;
   /** The tool picked through `toolChoice`, also listed in `tools`. */
   chosenTool?: string;
+  /** The cantrip picked through `cantripChoice`, also in the spellbook
+   * cantrips with the choice class as its source. */
+  chosenCantrip?: string;
 };
 
 /** The player's picks for a race's choices. */
@@ -74,4 +81,5 @@ export interface RacePicks {
   skills?: string[];
   resistance?: string;
   tool?: string;
+  cantrip?: string;
 }

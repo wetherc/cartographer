@@ -21,6 +21,7 @@ test('currentRacePicks reads the floating increases and the stored picks', () =>
     skills: ['history'],
     resistance: '',
     tool: '',
+    cantrip: '',
   });
 });
 
@@ -68,4 +69,22 @@ test('applyRacePicks leaves the character alone when nothing changed', () => {
   assert.equal(applyRacePicks(halfElf, { raceAbilities: 'WIS,CON' }), halfElf);
   assert.equal(applyRacePicks(halfElf, {}), halfElf);
   assert.equal(applyRacePicks(base, { raceAbilities: 'STR' }), base);
+});
+
+test('an Elf gets a race cantrip field and applyRacePicks swaps the cantrip', () => {
+  const elf = withRace(base, 'elf', { cantrip: 'fire-bolt' });
+  assert.equal(currentRacePicks(elf).cantrip, 'fire-bolt');
+  const [field] = racePickFields(elf);
+  assert.equal(field.name, 'raceCantrip');
+  assert.equal(field.value, 'fire-bolt');
+  assert.equal(field.section, 'Race (Elf)');
+  assert.equal(field.options?.[0]?.label, 'None');
+  assert.ok(field.options?.some((o) => o.value === 'ray-of-frost'));
+  const next = applyRacePicks(elf, { raceCantrip: 'ray-of-frost' });
+  assert.deepEqual(next.spellbook?.cantrips, ['ray-of-frost']);
+  assert.equal(next.raceTraits?.chosenCantrip, 'ray-of-frost');
+  assert.equal(next.stats.INT, elf.stats.INT, 'the INT increase stays');
+  assert.equal(applyRacePicks(elf, { raceCantrip: 'fire-bolt' }), elf);
+  const none = applyRacePicks(elf, { raceCantrip: '' });
+  assert.deepEqual(none.spellbook?.cantrips, []);
 });

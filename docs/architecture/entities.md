@@ -585,7 +585,15 @@ keeps and `assembleProficiencies` merges with the fixed race skills.
 A `resistanceChoice` (the Dragonborn ancestry) lists damage types, and the
 picked one joins the snapshot's `resistances` as `chosenResistance`, where
 `defensesOf` reads it. A `toolChoice` (the Dwarf) works the same way, and the
-picked tool joins `tools` as `chosenTool`.
+picked tool joins `tools` as `chosenTool`. A `cantripChoice` (the High Elf) names a
+class list. `withRace` adds the picked cantrip to the spellbook cantrips
+with that class as its source, so `spellSaveDC` and `spellAttackBonus` read
+the class spell ability (INT) through `casterDefOf` even for a character
+with no caster class. The snapshot records it as `chosenCantrip`.
+`Races.raceCantrips` lists it while the book still has it, and
+`Classes.cantripLimit` adds that count, so the cantrip does not use a class
+cantrip. A race change or a new pick takes the old cantrip out of the book,
+and `unlearnCantrip` clears `chosenCantrip`.
 
 `entities/RaceTraits.js` turns some trait names into roll effects.
 `isLucky` makes `resolveD20` in Checks.js roll a natural 1 again on a

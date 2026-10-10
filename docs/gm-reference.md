@@ -2612,11 +2612,14 @@ choices of the class. A Half-Elf also picks two abilities other than CHA
 that gain +1 each, and two skills of any kind (Skill Versatility). A
 Dragonborn picks the damage type of its Draconic Ancestry and resists that
 type. A Dwarf picks its tool proficiency from smith's tools, brewer's
-supplies, and mason's tools. From these choices, the sheet assembles the proficiencies: saving
+supplies, and mason's tools. An Elf (the High Elf) picks one cantrip from the
+wizard list. The cantrip joins the spellbook, casts with INT, and does not
+count against a class cantrip limit, so a fighter elf casts it too. From these choices, the sheet assembles the proficiencies: saving
 throws, skills, weapons, armor, tools, and languages. Every list stays
 editable afterward. The Edit dialog of the character also changes the two
-Half-Elf ability picks and the Dragonborn ancestry, and the scores move to
-match.
+Half-Elf ability picks, the Dragonborn ancestry, and the High Elf cantrip,
+and the scores move to match. A High Elf that forgets its race cantrip in
+the Spellbook tab loses the pick, and the Edit dialog picks a new one.
 
 These race traits change rolls by themselves:
 
@@ -2635,8 +2638,8 @@ for, and to the save at the end of a turn that can end a spell's condition.
 A creature action, such as a breath weapon, is not magic, so Gnome Cunning
 does not help against it. A save that the GM calls at the table from the
 sheet still needs the advantage set by hand. The remaining race traits are text on the sheet,
-and the GM applies them: the Dragonborn Breath Weapon, Stonecunning, the
-High Elf cantrip, Trance, Naturally Stealthy, Halfling
+and the GM applies them: the Dragonborn Breath Weapon, Stonecunning,
+Trance, Naturally Stealthy, Halfling
 Nimbleness, Artificer's Lore, Tinker, Relentless Endurance,
 Savage Attacks, Hellish Resistance, Infernal Legacy, and Extra Language.
 

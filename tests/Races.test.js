@@ -7,8 +7,17 @@ import {
   withCustomRace,
   resolveRace,
   validRacePicks,
+  raceCantrips,
 } from '../src/entities/Races.js';
-import { createCharacter, withDefaults } from '../src/entities/Character.js';
+import {
+  createCharacter,
+  withDefaults,
+  learnCantrip,
+  unlearnCantrip,
+  spellSource,
+} from '../src/entities/Character.js';
+import { withClasses } from '../src/entities/Multiclass.js';
+import { cantripLimit, spellSaveDC, spellAttackBonus } from '../src/entities/Classes.js';
 
 test('getRace resolves known ids and rejects unknown or absent ones', () => {
   assert.equal(getRace('dwarf')?.name, 'Dwarf');
@@ -172,17 +181,19 @@ test('validRacePicks drops picks for a race with no choice and caps the counts',
     skills: [],
     resistance: null,
     tool: null,
+    cantrip: null,
   });
   const half = /** @type {any} */ (getRace('half-elf'));
   assert.deepEqual(
     validRacePicks(half, { abilities: ['CHA', 'STR', 'DEX', 'CON'], skills: ['a', 'b', 'c'] }),
-    { abilities: ['STR', 'DEX'], skills: ['a', 'b'], resistance: null, tool: null },
+    { abilities: ['STR', 'DEX'], skills: ['a', 'b'], resistance: null, tool: null, cantrip: null },
   );
   assert.deepEqual(validRacePicks(half, {}), {
     abilities: [],
     skills: [],
     resistance: null,
     tool: null,
+    cantrip: null,
   });
 });
 
@@ -194,4 +205,58 @@ test('a Dwarf tool pick joins the tools and outlasts a resolve', () => {
   const none = withRace(createCharacter('d', 'D'), 'dwarf', { tool: 'lute' });
   assert.equal(none.raceTraits?.chosenTool, undefined);
   assert.deepEqual(none.raceTraits?.tools, []);
+});
+
+test('a High Elf cantrip joins the spellbook as a wizard cantrip outside the limit', () => {
+  const fighter = withClasses(createCharacter('e', 'E', { INT: 14 }), [
+    { classId: 'fighter', level: 1 },
+  ]);
+  const elf = withRace(fighter, 'elf', { cantrip: 'fire-bolt' });
+  assert.equal(elf.raceTraits?.chosenCantrip, 'fire-bolt');
+  assert.equal(resolveRace(elf)?.chosenCantrip, 'fire-bolt');
+  assert.deepEqual(elf.spellbook?.cantrips, ['fire-bolt']);
+  assert.equal(elf.spellbook?.sources?.['fire-bolt'], 'wizard');
+  assert.deepEqual(raceCantrips(elf), ['fire-bolt']);
+  assert.equal(cantripLimit(elf), 1);
+  // INT 14 + 1 from the race is 15 (+2), and proficiency at level 1 is +2.
+  assert.equal(spellSaveDC(elf, spellSource(elf, 'fire-bolt') ?? undefined), 12);
+  assert.equal(spellAttackBonus(elf, 'wizard'), 4);
+});
+
+test('a new race cantrip pick replaces the old one, and a race change removes it', () => {
+  const elf = withRace(createCharacter('e', 'E'), 'elf', { cantrip: 'fire-bolt' });
+  const swapped = withRace(elf, 'elf', { cantrip: 'light' });
+  assert.deepEqual(swapped.spellbook?.cantrips, ['light']);
+  assert.deepEqual(swapped.spellbook?.sources, { light: 'wizard' });
+  const human = withRace(swapped, 'human');
+  assert.deepEqual(human.spellbook?.cantrips, []);
+  assert.equal(human.raceTraits?.chosenCantrip, undefined);
+  const custom = withCustomRace(swapped, 'Sea elf');
+  assert.deepEqual(custom.spellbook?.cantrips, []);
+});
+
+test('a race cantrip the character knows from a class stays a class cantrip', () => {
+  const wizard = learnCantrip(
+    withClasses(createCharacter('w', 'W'), [{ classId: 'wizard', level: 1 }]),
+    'fire-bolt',
+    'wizard',
+  );
+  const elf = withRace(wizard, 'elf', { cantrip: 'fire-bolt' });
+  assert.equal(elf.raceTraits?.chosenCantrip, undefined);
+  assert.deepEqual(elf.spellbook?.cantrips, ['fire-bolt']);
+  assert.equal(cantripLimit(elf), cantripLimit(wizard));
+  assert.equal(
+    validRacePicks(/** @type {any} */ (getRace('dwarf')), { cantrip: 'light' }).cantrip,
+    null,
+  );
+});
+
+test('forgetting the race cantrip clears the race record', () => {
+  const elf = withRace(createCharacter('e', 'E'), 'elf', { cantrip: 'light' });
+  const forgot = unlearnCantrip(elf, 'light');
+  assert.equal(forgot.raceTraits?.chosenCantrip, undefined);
+  assert.deepEqual(raceCantrips(forgot), []);
+  assert.equal(cantripLimit(forgot), 0);
+  const other = unlearnCantrip(elf, 'fire-bolt');
+  assert.equal(other.raceTraits?.chosenCantrip, 'light');
 });

@@ -54,6 +54,7 @@ function snapshotRace(def) {
     ...(def.skillChoice ? { skillChoice: { ...def.skillChoice } } : {}),
     ...(def.resistanceChoice ? { resistanceChoice: [...def.resistanceChoice] } : {}),
     ...(def.toolChoice ? { toolChoice: [...def.toolChoice] } : {}),
+    ...(def.cantripChoice ? { cantripChoice: { ...def.cantripChoice } } : {}),
   };
 }
 
@@ -62,10 +63,12 @@ function snapshotRace(def) {
  * outside the race's exclude list, and skill picks must be distinct. Each
  * list stops at the race's count, so extra or invalid picks drop out. The
  * resistance pick must be one of the race's `resistanceChoice` types, and
- * the tool pick one of its `toolChoice` tools.
+ * the tool pick one of its `toolChoice` tools. A race with a
+ * `cantripChoice` keeps any named cantrip, because the spell list lives in
+ * the library and the dialog offers only cantrips of that class.
  * @param {RaceDef} def
  * @param {RacePicks} picks
- * @returns {{ abilities: string[], skills: string[], resistance: string | null, tool: string | null }}
+ * @returns {{ abilities: string[], skills: string[], resistance: string | null, tool: string | null, cantrip: string | null }}
  */
 export function validRacePicks(def, picks) {
   const choice = def.abilityChoice;
@@ -82,6 +85,7 @@ export function validRacePicks(def, picks) {
         ? picks.resistance
         : null,
     tool: picks.tool && def.toolChoice?.includes(picks.tool) ? picks.tool : null,
+    cantrip: (def.cantripChoice && picks.cantrip) || null,
   };
 }
 
@@ -119,7 +123,7 @@ export function withRace(character, raceId, picks = {}) {
   const def = getRace(raceId);
   if (!def) return character;
   const stats = statsWithoutRace(character);
-  const { abilities, skills, resistance, tool } = validRacePicks(def, picks);
+  const { abilities, skills, resistance, tool, cantrip } = validRacePicks(def, picks);
   /** @type {Record<string, number>} */
   const gains = { ...def.abilityIncreases };
   const amount = def.abilityChoice?.amount ?? 0;
@@ -137,7 +141,8 @@ export function withRace(character, raceId, picks = {}) {
     abilityIncreases: gains,
     ...(skills.length ? { chosenSkills: skills } : {}),
   };
-  return { ...character, race: def.name, raceId: def.id, raceTraits, stats };
+  const base = { ...withoutRaceCantrip(character), race: def.name, raceId: def.id, stats };
+  return withRaceCantrip({ ...base, raceTraits }, cantrip, def.cantripChoice?.classId);
 }
 
 /**
@@ -150,7 +155,7 @@ export function withRace(character, raceId, picks = {}) {
  */
 export function withCustomRace(character, name) {
   return {
-    ...character,
+    ...withoutRaceCantrip(character),
     race: name,
     raceId: undefined,
     raceTraits: undefined,
@@ -179,11 +184,69 @@ export function resolveRace(character) {
   const chosen = character.raceTraits?.chosenSkills ?? [];
   const picked = character.raceTraits?.chosenResistance;
   const tool = character.raceTraits?.chosenTool;
+  const cantrip = character.raceTraits?.chosenCantrip;
   return {
     ...snapshot,
     ...(applied ? { abilityIncreases: { ...applied } } : {}),
     ...(chosen.length ? { chosenSkills: [...chosen] } : {}),
     ...(picked ? { resistances: [...snapshot.resistances, picked], chosenResistance: picked } : {}),
     ...(tool ? { tools: [...snapshot.tools, tool], chosenTool: tool } : {}),
+    ...(cantrip ? { chosenCantrip: cantrip } : {}),
+  };
+}
+
+/**
+ * The race cantrip that the character still knows, as a list of zero or one
+ * spell ids. `Classes.cantripLimit` adds it to the class limit, so the race
+ * cantrip does not use up a class cantrip.
+ * @param {{ raceTraits?: RaceSnapshot, spellbook?: import('../types/entities.js').Spellbook }} character
+ * @returns {string[]}
+ */
+export function raceCantrips(character) {
+  const id = character.raceTraits?.chosenCantrip;
+  return id && character.spellbook?.cantrips.includes(id) ? [id] : [];
+}
+
+/**
+ * The character with its race cantrip taken out of the spellbook, along
+ * with the source record of that cantrip. A character with no race cantrip
+ * comes back unchanged.
+ * @param {Character} character
+ * @returns {Character}
+ */
+function withoutRaceCantrip(character) {
+  const [id] = raceCantrips(character);
+  if (!id || !character.spellbook) return character;
+  const book = character.spellbook;
+  const sources = { ...book.sources };
+  delete sources[id];
+  return {
+    ...character,
+    spellbook: { ...book, cantrips: book.cantrips.filter((c) => c !== id), sources },
+  };
+}
+
+/**
+ * The character with a race cantrip added to the spellbook. The cantrip's
+ * source is the class of the race's `cantripChoice`, so the cast uses that
+ * class's spell ability (INT for the wizard list) even for a character with
+ * no caster class. A cantrip that the character already knows from a class
+ * stays a class cantrip, and the race records no pick.
+ * @param {Character} character
+ * @param {string | null} id
+ * @param {string | undefined} classId
+ * @returns {Character}
+ */
+function withRaceCantrip(character, id, classId) {
+  const book = character.spellbook ?? { cantrips: [], known: [], prepared: [] };
+  if (!id || !classId || book.cantrips.includes(id)) return character;
+  return {
+    ...character,
+    raceTraits: character.raceTraits && { ...character.raceTraits, chosenCantrip: id },
+    spellbook: {
+      ...book,
+      cantrips: [...book.cantrips, id],
+      sources: { ...book.sources, [id]: classId },
+    },
   };
 }

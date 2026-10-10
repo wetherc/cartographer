@@ -554,7 +554,7 @@ The helper modules below contain the rest of the character flows:
 | `rosterActions.js` | The roster's GM controls: place one character, edit its name, scores, proficiencies, HP, and AC, grant or award XP, and add or delete a character |
 | `characterCreate.js` | The fields of the New character dialog and `buildCharacter`, which turns the submitted values into a level 1 character. Both are free of DOM code |
 | `characterEdit.js` | The fields of the Edit character dialog and the pure functions that apply them: `applyBasics` for the name, scores, and proficiency lists, and `applyVitals` for HP and AC |
-| `raceEdit.js` | The race pick fields of the Edit character dialog and `applyRacePicks`, which moves a Half-Elf's floating increases or swaps a Dragonborn's ancestry resistance |
+| `raceEdit.js` | The race pick fields of the Edit character dialog and `applyRacePicks`, which moves a Half-Elf's floating increases or swaps a Dragonborn's ancestry resistance or a High Elf's cantrip, and `raceCantripOptions`, the wizard cantrip list that the New character dialog also offers |
 | `checkRolls.js` | Saving throws and ability checks rolled from the sheet |
 | `deathSaves.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
 | `luckyRoll.js` | `rollD20InTray`, which rolls a d20 selection in the dice tray and rolls it once more for a Lucky halfling who shows a natural 1. Weapon attacks and death saves use it |

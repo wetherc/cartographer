@@ -45,6 +45,7 @@ export const DEFAULT_RACES = [
     weapons: ['longsword', 'shortsword', 'shortbow', 'longbow'],
     tools: [],
     languages: ['Common', 'Elvish'],
+    cantripChoice: { classId: 'wizard' },
     traits: [
       'Keen Senses',
       'Fey Ancestry',
