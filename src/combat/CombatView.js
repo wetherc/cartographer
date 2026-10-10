@@ -156,8 +156,20 @@ export function hpOf(found) {
  * @returns {number}
  */
 export function acOf(found) {
-  if (found.kind === 'character') return armorClass(found.entity);
-  return effectiveStatBlock(found.entity).AC;
+  return acOfEntity(found.kind, found.entity);
+}
+
+/**
+ * The armor class of an entity of the given kind, as `acOf` reads it. A
+ * caller that tries out a changed copy of a combatant's entity, such as one
+ * with an extra chip, passes the copy here and needs no combatant record.
+ * @param {ResolvedCombatant['kind']} kind
+ * @param {Character | Creature} entity
+ * @returns {number}
+ */
+export function acOfEntity(kind, entity) {
+  if (kind === 'character') return armorClass(/** @type {Character} */ (entity));
+  return effectiveStatBlock(/** @type {Creature} */ (entity)).AC;
 }
 
 /**

@@ -1,6 +1,6 @@
 import { confirmModal } from '../ui/Modal.js';
 import { reactionSpells } from '../combat/Reactions.js';
-import { acOf } from '../combat/CombatView.js';
+import { acOf, acOfEntity } from '../combat/CombatView.js';
 import { buffCondition } from '../entities/Casting.js';
 import { blockerOf } from '../entities/ChipMods.js';
 import { createCondition } from '../entities/Conditions.js';
@@ -92,8 +92,8 @@ function buffChip(spell) {
  */
 export function wardRaise(found, spell) {
   const conditions = [...(found.entity.conditions ?? []), buffChip(spell)];
-  const next = /** @type {any} */ ({ ...found, entity: { ...found.entity, conditions } });
-  return acOf(next) - acOf(found);
+  const next = { ...found.entity, conditions };
+  return acOfEntity(found.kind, next) - acOf(found);
 }
 
 /**

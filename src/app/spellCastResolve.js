@@ -32,6 +32,14 @@ import { healingBonus } from '../entities/HealingBonus.js';
 import { isLucky, raceSaveSlant, spellRaceSave } from '../entities/RaceTraits.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/creature.js').Creature} Creature */
+/**
+ * Stores a caster's updated entity in its collection. The entity is of the
+ * kind the cast read, so a combatant's `store` (see `combatants.storeOf`)
+ * fits here.
+ * @typedef {(next: Character | Creature) => void} WriteBack
+ */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/cast.js').CastPlan} CastPlan */
 /** @typedef {import('../types/cast.js').CastOutcome} CastOutcome */
@@ -67,7 +75,7 @@ import { isLucky, raceSaveSlant, spellRaceSave } from '../entities/RaceTraits.js
  * @param {CastPlan} plan
  * @param {Record<string, string>} values the dialog's answers
  * @param {{
- *   writeBack: (next: any) => void,
+ *   writeBack: WriteBack,
  *   rng?: () => number,
  *   ask?: import('./shieldWard.js').WardAsk,
  *   prompt?: import('./redirectWard.js').RedirectPrompt,

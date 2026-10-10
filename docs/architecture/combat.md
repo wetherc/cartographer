@@ -563,9 +563,9 @@ an opt-out. The defender also needs an unspent reaction, the ability to
 act, no chip of that spell already, and a viewer who may act for it
 (`CombatView.mayActOn`). The damage and Redirect Attack pauses run the
 same checks through `reactionCaster` and `reactionPlan` in
-`src/app/reactionGate.js`. `wardRaise` measures how far the AC would go up by
-reading `acOf` with and without the candidate chip, so a floor such as
-Barkskin's 16 counts. Shield on a base AC of 12 under Barkskin raises the AC
+`src/app/reactionGate.js`. `wardRaise` measures how far the AC would go up.
+It reads `acOf` on the defender and `acOfEntity` on a copy of its entity
+with the candidate chip added, so a floor such as Barkskin's 16 counts. Shield on a base AC of 12 under Barkskin raises the AC
 from 16 to 17, and the ward offers +1 and only against a roll of 16. A spell
 with no real raise is offered only when its chip blocks the attacking spell.
 `offerWard` asks the question and casts the spell through `resolveCast` at

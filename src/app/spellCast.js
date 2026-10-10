@@ -78,8 +78,10 @@ export async function castSpellOutOfCombat(app, caster, spell, { prompt = prompt
     caster,
     spell,
     rosterTargets(app, spell, caster.id),
+    // The caster is a character, so the cast writes back a character.
     (next) => {
-      app.state.characters = replaceById(app.state.characters, next);
+      const character = /** @type {import('../types/entities.js').Character} */ (next);
+      app.state.characters = replaceById(app.state.characters, character);
       app.actions.refreshSelectedCharacter();
     },
     null,
@@ -93,13 +95,14 @@ export async function castSpellOutOfCombat(app, caster, spell, { prompt = prompt
  * takes the slot level, the target, and the situational modes, and
  * `resolveCast` rolls and applies the cast. The dialog is the only part of
  * the pipeline that needs a browser.
- * @template {import('../types/entities.js').Character
- *   | import('../types/creature.js').Creature} T
  * @param {AppContext} app
- * @param {T} entity the real combatant that casts the spell
+ * @param {import('../types/entities.js').Character
+ *   | import('../types/creature.js').Creature} entity the real combatant
+ *   that casts the spell
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} offered
- * @param {(next: T) => void} writeBack stores the updated entity
+ * @param {import('./spellCastResolve.js').WriteBack} writeBack stores the
+ *   updated entity
  * @param {string | null} [preferredTargetId] a target picked before the
  *   dialog opened, from the combat board selection. The dialog pre-fills
  *   this target where it is offered.

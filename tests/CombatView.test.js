@@ -8,6 +8,7 @@ import {
   skipsTurn,
   hpOf,
   acOf,
+  acOfEntity,
   mayActOn,
   buildCombatView,
   fightOutcome,
@@ -15,6 +16,7 @@ import {
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage, effectiveStatBlock } from '../src/entities/Creature.js';
 import { armorClass } from '../src/entities/Armor.js';
+import { createCondition } from '../src/entities/Conditions.js';
 import { dropToDying, stabilize } from '../src/entities/DeathSaves.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
@@ -550,4 +552,16 @@ test('buildCombatView shows a player exact HP for every party character and a ba
   assert.equal(player.rows[1].mayAct, false, 'exact HP does not let a player act for an ally');
   const gm = buildCombatView(combat, byId, { gm: true });
   assert.ok(gm.rows.every((r) => r.exactHP));
+});
+
+test('acOfEntity reads the AC of a bare entity by kind', () => {
+  const { hero, goblin } = fixtures();
+  assert.equal(acOfEntity('character', hero), acOf({ kind: 'character', entity: hero }));
+  assert.equal(acOfEntity('creature', goblin), acOf({ kind: 'creature', entity: goblin }));
+  // A changed copy with an extra AC chip reads without a combatant record.
+  const chip = createCondition('Shield', null, { mods: { ac: 5 } });
+  const shielded = { ...goblin, conditions: [...(goblin.conditions ?? []), chip] };
+  assert.equal(acOfEntity('creature', shielded), acOfEntity('creature', goblin) + 5);
+  const guarded = { ...hero, conditions: [...(hero.conditions ?? []), chip] };
+  assert.equal(acOfEntity('character', guarded), armorClass(hero) + 5);
 });
