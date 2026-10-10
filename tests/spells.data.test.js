@@ -88,3 +88,11 @@ test('every built-in spell comes back unchanged through the library normalizer',
     assert.deepEqual(out, spell, spell.id);
   }
 });
+
+test('every concentration spell with a timed duration reads "up to"', () => {
+  const timed = new Set(['rounds', 'minutes', 'hours', 'days']);
+  const missing = DEFAULT_SPELLS.filter(
+    (s) => s.concentration && timed.has(s.duration.kind) && !s.duration.upTo,
+  ).map((s) => s.id);
+  assert.deepEqual(missing, []);
+});

@@ -14,7 +14,7 @@ export const UTILITY_SPELLS = [
     castingTime: { kind: 'action' },
     range: 'Self',
     components: ['V', 'S'],
-    duration: { kind: 'minutes', amount: 10 },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
     concentration: true,
     ritual: true,
     description:
@@ -63,7 +63,7 @@ export const UTILITY_SPELLS = [
     range: '60 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'a bit of fleece', consumed: false },
-    duration: { kind: 'minutes', amount: 10 },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -94,7 +94,7 @@ export const UTILITY_SPELLS = [
     castingTime: { kind: 'action' },
     range: 'Self',
     components: ['V', 'S'],
-    duration: { kind: 'hours', amount: 1 },
+    duration: { kind: 'hours', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -111,7 +111,7 @@ export const UTILITY_SPELLS = [
     range: '60 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'a small leather loop or a piece of golden wire', consumed: false },
-    duration: { kind: 'minutes', amount: 10 },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -127,7 +127,7 @@ export const UTILITY_SPELLS = [
     castingTime: { kind: 'action' },
     range: 'Touch',
     components: ['V', 'S'],
-    duration: { kind: 'minutes', amount: 1 },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -144,7 +144,7 @@ export const UTILITY_SPELLS = [
     range: '120 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'a drop of molasses', consumed: false },
-    duration: { kind: 'minutes', amount: 1 },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -178,7 +178,7 @@ export const UTILITY_SPELLS = [
     range: '30 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'a bit of bat fur', consumed: false },
-    duration: { kind: 'hours', amount: 1 },
+    duration: { kind: 'hours', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -194,7 +194,7 @@ export const UTILITY_SPELLS = [
     castingTime: { kind: 'action' },
     range: '30 feet',
     components: ['V', 'S'],
-    duration: { kind: 'minutes', amount: 1 },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -211,7 +211,7 @@ export const UTILITY_SPELLS = [
     range: '90 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'three nut shells', consumed: false },
-    duration: { kind: 'minutes', amount: 1 },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -228,7 +228,7 @@ export const UTILITY_SPELLS = [
     range: '60 feet',
     components: ['V', 'S', 'M'],
     materials: { text: 'a caterpillar cocoon', consumed: false },
-    duration: { kind: 'hours', amount: 1 },
+    duration: { kind: 'hours', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:
@@ -248,7 +248,7 @@ export const UTILITY_SPELLS = [
       text: 'burning incense, soft clay, sulfur and phosphorus, or water and sand',
       consumed: false,
     },
-    duration: { kind: 'hours', amount: 1 },
+    duration: { kind: 'hours', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
     description:

@@ -56,7 +56,7 @@ export const INVOCATIONS = deepFreeze([
     level: 2,
     pact: 'tome',
     description:
-      'Your Book of Shadows holds two 1st-level ritual spells from any class list. You can cast them as rituals, and you can copy in more ritual spells of up to half your warlock level.',
+      'Your Book of Shadows holds two 1st-level ritual spells from any class list. You can cast them as rituals, and you can copy in more ritual spells of up to half your warlock level, rounded up.',
   },
   {
     id: 'chains-of-carceri',
