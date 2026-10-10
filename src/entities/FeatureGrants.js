@@ -38,6 +38,17 @@ export function getFeatureChoices(character) {
 }
 
 /**
+ * Whether an unlocked feature has an effect the grant flow claims. An ability
+ * raise (Primal Champion) applies on read and needs no record, so a feature
+ * with only raises never waits as a pending grant.
+ * @param {{ effects?: import('../types/class.js').ClassFeatureEffect[] }} feature
+ * @returns {boolean}
+ */
+export function needsGrant(feature) {
+  return (feature.effects ?? []).some((effect) => effect.kind !== 'abilityRaise');
+}
+
+/**
  * The structured features the character has unlocked but not yet claimed, in
  * unlock order. Each entry carries the effects the grant flow resolves.
  * @param {Character} character
@@ -48,7 +59,7 @@ export function pendingFeatureGrants(character) {
   /** @type {PendingFeature[]} */
   const pending = [];
   for (const feature of unlockedFeatures(character)) {
-    if (!feature.effects) continue;
+    if (!feature.effects || !needsGrant(feature)) continue;
     const entry = {
       classId: feature.classId,
       classLevel: feature.level,

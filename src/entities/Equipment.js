@@ -4,6 +4,7 @@ import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { formatModifier } from './Modifiers.js';
 import { formatDamage } from './DamageParts.js';
+import { abilityRaises, applyRaises } from './AbilityRaises.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -274,13 +275,16 @@ export function equippedWeapons(character) {
 }
 
 /**
- * The character's ability scores with equipped-item buffs folded in, for
- * example a ring's +2 STR. Unknown stats pass through untouched.
+ * The character's ability scores with class-feature raises and
+ * equipped-item buffs folded in, for example Primal Champion's +4 STR and a
+ * ring's +2 STR. The raises apply first, to the base scores, so the cap of a
+ * raise does not limit an item. Unknown stats pass through untouched.
  * @param {Character} character
  * @returns {Record<string, number>}
  */
 export function effectiveStats(character) {
-  const stats = { ...character.stats };
+  const raises = abilityRaises(character);
+  const stats = raises.length > 0 ? applyRaises(character.stats, raises) : { ...character.stats };
   for (const item of equippedItems(character)) {
     for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
       stats[stat] = (stats[stat] ?? 10) + delta;

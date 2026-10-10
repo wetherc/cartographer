@@ -822,6 +822,17 @@ grant that the character already had from the GM, so undo cannot remove it.
 `FeatChoices.riderSources`, which every roll site calls. The Rogue grants
 Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
 
+A second class-only effect, `{ kind: 'abilityRaise', abilities, amount, cap }`
+(`AbilityRaise` in `types/class.ts`), raises scores with no pick. Primal
+Champion at barbarian 20 raises STR and CON by 4, to at most 24.
+`FeatureGrants.needsGrant` leaves a feature with only raises out of the
+pending list. `entities/AbilityRaises.js` collects the raises from the
+catalog, and `Equipment.effectiveStats` applies them to the base scores
+before the item buffs. A level taken away removes the raise, because the
+raise is read from the class levels and has no record. The module reads the
+catalog directly, because an import of `LevelUp.js` from `Equipment.js`
+closes a cycle through `Classes.js`.
+
 The Fighting Style feature of the fighter (level 1), the paladin (level 2),
 and the ranger (level 2) carries one class-only effect,
 `{ kind: 'fightingStyle', from }` (`ClassFeatureEffect` in `types/class.ts`).

@@ -138,7 +138,9 @@ proficient, so every save shows the solid dot. Reliable Talent (rogue 11)
 counts a d20 face below 10 as a 10 on a check with a proficient skill. The
 tray still shows the face it rolled, and the log line names the lift, such as
 "Reliable Talent, 4 counts as 10". A save, an attack, and a check without
-proficiency get no lift.
+proficiency get no lift. Primal Champion (barbarian 20) raises STR and CON
+by 4, to at most 24. The raise shows in every score and bonus, and the
+base score in the stat editor stays as it is.
 
 Passive Perception is 10 plus the Perception bonus. Compare it against a
 hidden thing when nobody says they are looking.

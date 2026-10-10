@@ -14,7 +14,7 @@ import {
 import { featuresGained } from '../entities/LevelUp.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
 import { applyFeatureGrant } from '../entities/Progression.js';
-import { buildFeatureStamp } from '../entities/FeatureGrants.js';
+import { buildFeatureStamp, needsGrant } from '../entities/FeatureGrants.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
 import { askWarlockPicks } from './InvocationLevelFlow.js';
@@ -121,7 +121,7 @@ export async function assignLevelFlow(getCharacter, opts) {
   /** @type {FeatureStamp[]} */
   const stamps = [];
   for (const feature of gained) {
-    if (!feature.effects) continue;
+    if (!feature.effects || !needsGrant(feature)) continue;
     const stamp = await askFeatureStamp(preview, {
       classId: feature.classId,
       classLevel: feature.level,

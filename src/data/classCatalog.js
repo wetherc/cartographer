@@ -69,7 +69,12 @@ export const DEFAULT_CLASSES = deepFreeze(
         15: ['Persistent Rage'],
         17: ['Brutal Critical (3)'],
         18: ['Indomitable Might'],
-        20: ['Primal Champion'],
+        20: [
+          {
+            name: 'Primal Champion',
+            effects: [{ kind: 'abilityRaise', abilities: ['STR', 'CON'], amount: 4, cap: 24 }],
+          },
+        ],
       },
     },
     {

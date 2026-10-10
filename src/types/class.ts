@@ -157,7 +157,19 @@ export interface SubclassDef {
 
 /** One effect of a class feature: a feat effect, or the pick of one fighting
  * style id from `from` (see data/fightingStyles.js). No feat picks a style. */
-export type ClassFeatureEffect = FeatEffect | { kind: 'fightingStyle'; from: string[] };
+export type ClassFeatureEffect =
+  FeatEffect | { kind: 'fightingStyle'; from: string[] } | AbilityRaise;
+
+/** A standing raise of ability scores that a class feature grants, such as
+ * the +4 STR and CON, to at most 24, of Primal Champion. It needs no pick,
+ * so the feature never waits as a pending grant, and
+ * `Equipment.effectiveStats` applies it on read. */
+export interface AbilityRaise {
+  kind: 'abilityRaise';
+  abilities: Ability[];
+  amount: number;
+  cap: number;
+}
 
 /** A class feature with structured effects, in the same effect vocabulary
  * feats use. Effects the engine cannot model stay a plain name string. */
