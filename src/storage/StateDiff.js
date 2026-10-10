@@ -98,8 +98,8 @@ export function equalValues(a, b) {
   if (aKeys.length !== bKeys.length) return false;
   return aKeys.every((key) =>
     equalValues(
-      /** @type {Record<string, unknown>} */ (a)[key],
-      /** @type {Record<string, unknown>} */ (b)[key],
+      ownValue(/** @type {Record<string, unknown>} */ (a), key),
+      ownValue(/** @type {Record<string, unknown>} */ (b), key),
     ),
   );
 }
@@ -110,6 +110,36 @@ export function equalValues(a, b) {
  */
 function definedKeys(record) {
   return Object.keys(record).filter((key) => record[key] !== undefined);
+}
+
+/**
+ * The value of an own key, or undefined. A parsed save can contain an own
+ * `__proto__` key, and a plain read of that key on a record without it
+ * returns `Object.prototype`, which would diff as a change.
+ * @param {Record<string, unknown>} record
+ * @param {string} key
+ * @returns {unknown}
+ */
+function ownValue(record, key) {
+  return Object.prototype.hasOwnProperty.call(record, key) ? record[key] : undefined;
+}
+
+/**
+ * Store a value under an own key. A plain assignment to `__proto__` sets the
+ * prototype instead of storing the value, so that key is defined directly.
+ * @param {Record<string, unknown>} record
+ * @param {string} key
+ * @param {unknown} value
+ */
+function setOwn(record, key, value) {
+  if (key !== '__proto__') record[key] = value;
+  else
+    Object.defineProperty(record, key, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
 }
 
 /**
@@ -207,12 +237,12 @@ function diffValue(before, after, path, pattern, ops) {
 function diffRecord(before, after, path, pattern, ops) {
   const keys = new Set([...definedKeys(before), ...definedKeys(after)]);
   for (const key of keys) {
-    const inBefore = before[key] !== undefined;
-    const inAfter = after[key] !== undefined;
+    const was = ownValue(before, key);
+    const now = ownValue(after, key);
     const childPath = [...path, key];
-    if (inBefore && !inAfter) ops.push({ p: childPath, f: before[key] });
-    else if (!inBefore && inAfter) ops.push({ p: childPath, t: after[key] });
-    else diffValue(before[key], after[key], childPath, childPattern(pattern, key, false), ops);
+    if (was !== undefined && now === undefined) ops.push({ p: childPath, f: was });
+    else if (was === undefined && now !== undefined) ops.push({ p: childPath, t: now });
+    else diffValue(was, now, childPath, childPattern(pattern, key, false), ops);
   }
 }
 
@@ -433,12 +463,14 @@ function descend(node, op, index, pattern, context) {
   const list = idField ? /** @type {unknown[]} */ (copy) : null;
   const at = list ? indexOfId(list, /** @type {string} */ (idField), segment, context) : -1;
   if (list && at === -1) return copy;
-  const child = list ? list[at] : /** @type {Record<string, unknown>} */ (copy)[String(segment)];
+  const child = list
+    ? list[at]
+    : ownValue(/** @type {Record<string, unknown>} */ (copy), String(segment));
   if (!isRecord(child) && !Array.isArray(child)) return copy;
   const childAt = childPattern(pattern, segment, Boolean(idField));
   const updated = descend(child, op, index + 1, childAt, context);
   if (list) list[at] = updated;
-  else /** @type {Record<string, unknown>} */ (copy)[String(segment)] = updated;
+  else setOwn(/** @type {Record<string, unknown>} */ (copy), String(segment), updated);
   return copy;
 }
 
@@ -488,7 +520,7 @@ function write(container, segment, idField, pattern, op, context) {
   if (Array.isArray(container)) return; // A positional array is a leaf. Nothing addresses inside it.
   const record = /** @type {Record<string, unknown>} */ (container);
   if (!('t' in op)) delete record[String(segment)];
-  else record[String(segment)] = op.t;
+  else setOwn(record, String(segment), op.t);
 }
 
 /**

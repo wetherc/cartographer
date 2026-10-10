@@ -521,3 +521,33 @@ test('a combat action names one participant of the order, not the whole order', 
     [['combat', 'order']],
   );
 });
+
+test('an own __proto__ key diffs and applies as an own key', () => {
+  const quest = (/** @type {string} */ extra) => JSON.parse(`{"id":"q1","title":"Q"${extra}}`);
+  const plain = { quests: [quest('')] };
+  const owned = { quests: [quest(',"__proto__":{"x":1}')] };
+  const changed = { quests: [quest(',"__proto__":{"x":2}')] };
+  for (const [before, after] of [
+    [plain, owned],
+    [owned, plain],
+    [owned, changed],
+  ]) {
+    const ops = diffState(before, after);
+    assert.equal(ops.length, 1);
+    const applied = /** @type {any} */ (applyOps(before, ops));
+    assert.ok(equalValues(applied, after), 'the forward ops rebuild the after state');
+    assert.ok(equalValues(applyOps(applied, invertOps(ops)), before), 'the inverse restores it');
+    assert.equal(Object.getPrototypeOf(applied.quests[0]), Object.prototype);
+  }
+  assert.deepEqual(diffState(owned, owned), []);
+  assert.equal(equalValues(plain.quests[0], owned.quests[0]), false);
+  assert.equal(/** @type {any} */ ({}).x, undefined, 'Object.prototype stays clean');
+});
+
+test('a nested own __proto__ record is updated in place by its ops', () => {
+  const before = JSON.parse('{"bestiary":{"__proto__":{"hp":1,"ac":2}}}');
+  const after = JSON.parse('{"bestiary":{"__proto__":{"hp":5,"ac":2}}}');
+  const ops = diffState(before, after);
+  assert.deepEqual(ops, [{ p: ['bestiary', '__proto__', 'hp'], f: 1, t: 5 }]);
+  assert.ok(equalValues(applyOps(before, ops), after));
+});
