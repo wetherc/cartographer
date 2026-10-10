@@ -14,6 +14,8 @@
 import { crXP } from '../data/challenge.js';
 import { isDead } from './DeathSaves.js';
 import { effectiveLevel } from './Multiclass.js';
+import { MAX_LEVEL } from './Experience.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -85,7 +87,7 @@ function multiplierStep(count) {
 export function partyThresholds(characters) {
   const totals = [0, 0, 0, 0];
   for (const character of characters) {
-    const level = Math.min(20, effectiveLevel(character));
+    const level = clampInt(effectiveLevel(character), 1, MAX_LEVEL);
     const row = XP_THRESHOLDS[level - 1];
     for (let i = 0; i < totals.length; i += 1) totals[i] += row[i];
   }

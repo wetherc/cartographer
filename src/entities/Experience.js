@@ -6,6 +6,8 @@
  * scale.
  */
 
+import { clampInt } from '../util/num.js';
+
 /** The highest level a character reaches. */
 export const MAX_LEVEL = 20;
 
@@ -25,7 +27,7 @@ export const XP_THRESHOLDS = Object.freeze([
  * @returns {number}
  */
 export function xpForLevel(level) {
-  const index = Math.min(MAX_LEVEL, Math.max(1, Math.floor(level) || 1)) - 1;
+  const index = clampInt(level, 1, MAX_LEVEL) - 1;
   return XP_THRESHOLDS[index];
 }
 

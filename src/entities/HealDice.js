@@ -1,4 +1,5 @@
 import { CONSUMABLE_PRESETS } from './EquipmentPresets.js';
+import { clampInt } from '../util/num.js';
 
 /**
  * The heal dice that a consumable item stores. This module has no imports
@@ -26,7 +27,7 @@ export function coerceHeals(raw) {
   const s = whole(sides);
   if (!(n >= 1) || !HEAL_SIDES.includes(s)) return null;
   const b = whole(bonus ?? 0);
-  return { count: Math.min(n, 99), sides: s, bonus: Math.min(Math.max(b || 0, 0), 999) };
+  return { count: clampInt(n, 1, 99), sides: s, bonus: clampInt(b, 0, 999) };
 }
 
 /**
