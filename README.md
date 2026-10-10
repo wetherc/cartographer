@@ -36,7 +36,7 @@ A hosted build runs at <https://cartographer.tbmh.org>. The hosted build can be 
 - Paint a tiled map with the built-in tile art, or generate a map with the procedural generator and then edit it.
 - Nest maps in a hierarchy. A world contains regions, a region contains towns and dungeons, and a building contains its floors.
 - Link a tile to a child map, so the party can zoom from a region into a town.
-- Lock a map behind a key item. The party stops at the way in until a character carries the key or the GM unlocks it.
+- Lock a map behind a key item. The party stops at the way in. The GM sees who has the key and unlocks it.
 - Mark points of interest. Each tile has notes that only the GM sees.
 - Get a warning in Build mode when a map has no way in or out.
 - Export any map as a PNG image.
