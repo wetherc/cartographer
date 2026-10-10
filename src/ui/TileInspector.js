@@ -1,7 +1,7 @@
 import { emptyState, textButton } from './buttons.js';
 import { el, uniqueId } from './dom.js';
 import { icon } from './icons.js';
-import { labeled, select, setOptions, textareaField } from './formFields.js';
+import { checkbox, labeled, select, setOptions, textareaField } from './formFields.js';
 import { describeTile } from '../map/TileCoords.js';
 import { capitalize } from '../util/text.js';
 
@@ -75,15 +75,10 @@ export function mountTileInspector(container, opts) {
   const typeField = labeled('Marker', typeSelect, { className: 'tile-inspector__field' });
 
   // Discoverable
-  const discInput = el('input');
-  discInput.type = 'checkbox';
+  const { label: discField, input: discInput } = checkbox('Discoverable', false, {
+    className: 'tile-inspector__field tile-inspector__field--inline',
+  });
   discInput.addEventListener('change', () => opts.onChange({ discoverable: discInput.checked }));
-  const discField = el(
-    'label',
-    'tile-inspector__field tile-inspector__field--inline u-row u-g2 u-muted',
-    discInput,
-    ' Discoverable',
-  );
   // The hint names what the flag does, which the one word does not.
   const discHint = el('p', 'tile-inspector__hint u-muted', 'Hidden until the party steps here.');
   discHint.id = uniqueId('tile-inspector-disc-hint');

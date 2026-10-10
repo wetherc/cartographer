@@ -1,4 +1,4 @@
-import { textButton } from './buttons.js';
+import { bareButton, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
 import { checkbox } from './formFields.js';
@@ -303,9 +303,10 @@ export function mountPalettePanel(
     // A swatch that the node-kind filter hides waits until it shows.
     img.loading = 'lazy';
 
-    const swatch = el('button', 'palette__swatch palette__item', img);
-    swatch.type = 'button';
-    swatch.setAttribute('aria-label', label);
+    const swatch = bareButton([img], undefined, {
+      className: 'palette__swatch palette__item',
+      ariaLabel: label,
+    });
     swatch.draggable = true;
 
     if (tooltip) {

@@ -6,7 +6,7 @@
  * `party/CharacterTokens.js` tracks.
  */
 
-import { el } from '../ui/dom.js';
+import { checkbox } from '../ui/formFields.js';
 import { promptModal } from '../ui/Modal.js';
 import {
   isSplit,
@@ -31,16 +31,9 @@ import { describeTile } from '../map/TileCoords.js';
 export function wireSplitParty(app, { container, refreshRoster }) {
   const { state } = app;
 
-  const toggle = el('input');
-  toggle.type = 'checkbox';
-  toggle.checked = state.splitParty;
-  toggle.setAttribute('aria-label', 'Allow splitting the party');
-  const field = el(
-    'label',
-    'party-split u-row u-g2 u-muted',
-    toggle,
-    el('span', '', 'Allow splitting the party'),
-  );
+  const { label: field, input: toggle } = checkbox('Allow splitting the party', state.splitParty, {
+    className: 'party-split',
+  });
   container.appendChild(field);
 
   /** Refresh everything the switch changes: tokens, labels, and roster place buttons. */
