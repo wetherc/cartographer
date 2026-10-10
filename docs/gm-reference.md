@@ -1057,6 +1057,10 @@ Tiles can pass under the mini-map in either mode, and a click or a paint
 stroke there does nothing. Pan the map, or collapse the mini-map, to paint
 those tiles. On a narrow screen the mini-map starts collapsed.
 
+When the tiles are small, the coordinate digits label every second column or
+row (1, 3, 5, and so on), so that the numbers do not overlap. Zoom in to see
+every number. On very small tiles the map shows no coordinate digits.
+
 ### Party splitting
 
 The **Allow splitting the party** checkbox in the Party card lets each

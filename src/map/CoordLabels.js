@@ -10,8 +10,30 @@ import { toDisplay } from './TileCoords.js';
  */
 export const COORD_SCALE = { factor: 0.3, min: 14, max: 42 };
 
-/** Tiles smaller than this, in buffer px, draw no coordinate digits. */
-export const MIN_LABELLED_TILE = 20;
+/**
+ * Tiles smaller than this, in buffer px, draw no coordinate digits. Down to
+ * this size a run of labels at the smallest font needs to skip at most every
+ * second number on a map under 100 tiles across (see labelStride).
+ */
+export const MIN_LABELLED_TILE = 13;
+
+/** The space kept between two label plates, as a share of the font size. */
+const PLATE_GAP = 0.15;
+
+/**
+ * How many tiles apart the labels of one run draw. On small tiles a label
+ * plate can be larger than its tile, and the plates of neighbouring labels
+ * then overlap. The run labels every tile when the largest plate and a gap
+ * fit in one tile, every second tile when they fit in two, and so on. The
+ * first tile always has a label, so the run reads 1, 3, 5 at a stride of 2.
+ * @param {number} plate the largest plate in the run along the run, in buffer px
+ * @param {number} fontSize in buffer px
+ * @param {number} size the tile size in buffer px
+ * @returns {number}
+ */
+export function labelStride(plate, fontSize, size) {
+  return Math.max(1, Math.ceil((plate + fontSize * PLATE_GAP) / size));
+}
 
 /**
  * The view fields that place the coordinate labels.
@@ -110,7 +132,8 @@ export function coordLabelLayout(view, tileSize) {
  * Without this rule, a column run moved below the zoom toolbar draws over the
  * first row labels, and a row run moved right of the Build-mode mini-map draws
  * over the first column labels. A label whose plate overlaps a floating box,
- * such as the mini-map in Play mode, is left out too.
+ * such as the mini-map in Play mode, is left out too. Each run labels only
+ * every labelStride tiles, so no two plates in a run overlap on small tiles.
  * @param {CoordView} view
  * @param {CoordLayout} layout
  * @returns {{ columns: { text: string, x: number }[], rows: { text: string, y: number }[] }}
@@ -127,8 +150,11 @@ export function visibleCoordLabels(view, layout) {
   const hidden = (x, y, w, h) =>
     floats.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
   const rowHalf = layout.rows ? layout.rows.w / 2 : 0;
+  const widest = String(toDisplay(width - 1)).length * fontSize * 0.6 + fontSize * 0.5;
+  const colStride = labelStride(widest, fontSize, size);
+  const rowStride = labelStride(half * 2, fontSize, size);
   const columns = [];
-  for (let i = 0; i < width; i++) {
+  for (let i = 0; i < width; i += colStride) {
     const x = view.offsetX + (i + 0.5) * size;
     const text = String(toDisplay(i));
     const plateHalf = (text.length * fontSize * 0.6) / 2 + fontSize * 0.25;
@@ -137,7 +163,7 @@ export function visibleCoordLabels(view, layout) {
     columns.push({ text, x });
   }
   const rows = [];
-  for (let i = 0; i < height; i++) {
+  for (let i = 0; i < height; i += rowStride) {
     const y = view.offsetY + (i + 0.5) * size;
     if (y < 0 || y > view.canvasHeight || y - half < rowTop) continue;
     if (hidden(layout.rowX - rowHalf, y - half, rowHalf * 2, half * 2)) continue;

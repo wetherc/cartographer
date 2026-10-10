@@ -253,6 +253,14 @@ Each caller keeps its own scale, because the bounds depend on what the label
 is drawn over. Coordinate digits are large on empty canvas, and a character
 name stays small over tile art.
 
+The coordinate digits draw on tiles down to `MIN_LABELLED_TILE` (13 buffer
+pixels) in `CoordLabels.js`. Below about 26 pixels, a two-digit plate at the
+smallest font is wider than one tile. `labelStride` gives the number of
+tiles between two labels of a run, so that no two plates overlap, and
+`visibleCoordLabels` labels only those tiles. When a 32-tile region fits a
+small Build canvas, the column run reads 1, 3, 5, and so on. The row run has
+its own stride, because a row plate is only as tall as the font.
+
 ### Tile rasters
 
 For each tile, the draw pass draws a fog rectangle if the tile is not

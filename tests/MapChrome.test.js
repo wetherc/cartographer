@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { labelSize } from '../src/map/CanvasText.js';
-import { COORD_SCALE, coordLabelLayout, visibleCoordLabels } from '../src/map/CoordLabels.js';
+import {
+  COORD_SCALE,
+  MIN_LABELLED_TILE,
+  coordLabelLayout,
+  labelStride,
+  visibleCoordLabels,
+} from '../src/map/CoordLabels.js';
 import { edgeExitBand, exitBandDepth, exitBandGeometry } from '../src/map/ExitBands.js';
 import { fitSides, fitToExtent } from '../src/map/MapGeometry.js';
 import { createMapNode } from '../src/map/TileGrid.js';
@@ -18,7 +24,7 @@ test('labelSize keeps its bounds in CSS px on a dense screen', () => {
 
 test('coordLabelLayout returns null with no node or tiny tiles', () => {
   assert.equal(coordLabelLayout({ ...view, node: null }, 48), null);
-  assert.equal(coordLabelLayout({ ...view, node, scale: 0.3 }, 48), null);
+  assert.equal(coordLabelLayout({ ...view, node, scale: 0.25 }, 48), null);
 });
 
 test('coordLabelLayout places the digits off the top and left edges', () => {
@@ -69,7 +75,7 @@ test('a band with tiny tiles skips the digit gap', () => {
     targetNodeId: 'r',
     targetName: 'Saltmere',
   });
-  const small = { ...view, scale: 0.3 };
+  const small = { ...view, scale: 0.25 };
   const band = edgeExitBand(exit, exitBandGeometry(map, small, 48, exit));
   assert.equal(band.y, view.offsetY - 10 - 26);
 });
@@ -251,4 +257,37 @@ test('a floating box reserves no fit room and hides only the digits under it', (
   assert.ok(columns.every((c) => c.x > 170));
   assert.ok(rows.length > 0 && rows.length < 12);
   assert.ok(rows.every((r) => r.y > 190));
+});
+
+test('labelStride skips labels whose plates would overlap', () => {
+  assert.equal(labelStride(20, 14, 48), 1);
+  assert.equal(labelStride(23.8, 14, 20), 2);
+  assert.equal(labelStride(23.8, 14, 13), 2);
+  assert.equal(labelStride(32.2, 14, 13), 3);
+});
+
+test('small tiles label every second column and row, starting at 1', () => {
+  // A 32 x 32 region fitted at 29% has tiles of about 14 buffer px, where a
+  // two-digit plate at the 14 px font is wider than one tile.
+  const region = { width: 32, height: 32 };
+  const scale = 14 / 48;
+  const small = { ...view, node: region, scale, offsetX: 40, offsetY: 40 };
+  const layout = coordLabelLayout(small, 48);
+  assert.ok(layout);
+  const { columns, rows } = visibleCoordLabels(small, layout);
+  assert.deepEqual(
+    columns.slice(0, 6).map((c) => c.text),
+    ['1', '3', '5', '7', '9', '11'],
+  );
+  assert.equal(rows[1].text, '3');
+  // No two plates in a run overlap.
+  const plate = (/** @type {string} */ t) => t.length * 14 * 0.6 + 14 * 0.5;
+  for (let i = 1; i < columns.length; i++) {
+    const gap = columns[i].x - columns[i - 1].x;
+    assert.ok(gap >= (plate(columns[i].text) + plate(columns[i - 1].text)) / 2);
+  }
+  for (let i = 1; i < rows.length; i++) assert.ok(rows[i].y - rows[i - 1].y >= 14 * 1.2);
+  // Tiles one pixel under the threshold draw no labels.
+  const tiny = { ...small, scale: (MIN_LABELLED_TILE - 1) / 48 };
+  assert.equal(coordLabelLayout(tiny, 48), null);
 });
