@@ -65,19 +65,30 @@ tested change.
 UI widgets and wiring modules call *down* into the pure modules. The pure
 modules do not import from `ui/` or `app/`, so `node --test` covers most of
 the codebase with no browser. A `no-restricted-imports` rule in
-`eslint.config.js` fails the lint on such an import. A few files in the
-pure directories use a browser API directly, and the browser checks cover
-them:
+`eslint.config.js` fails the lint on such an import. Some files in the
+pure directories still use a browser API directly. A module of this kind
+loads under `node --test`, but a call into its browser code can throw
+there. A test installs a stub first, or the browser checks cover the file:
 
-- `map/TileRaster.js` and `map/MapExport.js` draw to an offscreen canvas.
-- `map/CanvasFactory.js` creates the offscreen canvas of the map caches.
-  It returns null when there is no `document`, so a cache under `node --test`
-  draws direct.
-- `storage/fileIO.js` starts a file download.
-- `storage/SaveStorage.js`, `storage/PlayerPatch.js`, and
-  `storage/GMLock.js` listen for the `storage` event of other tabs.
-- `view/CharacterClaim.js` stores the claim of a Player tab in
-  `sessionStorage` and reads `location`.
+- **The map canvas classes.** `map/MapCanvas.js`, `MapCanvasPointer.js`,
+  `MapCanvasKeyboard.js`, and `MapFollow.js` attach DOM event listeners,
+  and `MapCanvas.js` schedules frames with `requestAnimationFrame`.
+  `map/CanvasFactory.js` creates the offscreen canvas of the map caches,
+  such as `TerrainLayer.js` and `PoiGlow.js`. It returns null when there is
+  no `document`, so a cache under `node --test` draws direct.
+  `map/TileRaster.js` and `map/MapExport.js` load tile images and draw to an
+  offscreen canvas.
+- **The storage modules.** Most of `storage/` reads and writes
+  `localStorage`, and `IndexedDbAssets.js` uses IndexedDB. The modules that
+  follow other tabs (`SaveStorage.js`, `PlayerPatch.js`, and `GMLock.js`)
+  listen for the `storage` event on `window`. Their tests call
+  `installLocalStorage`, `installQuotaStorage`, or `installWindow` from
+  `tests/helpers/env.js` to put in-memory stubs on `globalThis`.
+- **One-off files.** `storage/fileIO.js` starts a file download.
+  `view/CharacterClaim.js` stores the claim of a Player tab in
+  `sessionStorage` and reads `location`. `view/FoldMemory.js` stores which
+  cards are folded in `localStorage`. `map/TileFreeze.js` reads `location`
+  to tell a local dev server from a deployed build.
 
 The [Conventions](architecture/conventions.md) guide describes the pattern
 in detail.
