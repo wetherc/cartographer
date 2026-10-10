@@ -14,7 +14,7 @@ const FOLD_KEY = 'campaign-builder:story-cards';
  *
  * Each count is the `data-row-count` that the list panel inside the card
  * writes on its root, so the rows of a folded group count too. A
- * MutationObserver on each card reads it again after the panel repaints.
+ * MutationObserver on that attribute reads it again after each repaint.
  * @param {HTMLElement} panel the Story tab panel
  * @param {{ id: string, label: string }[]} cards each card's element id and
  *   its name
@@ -63,19 +63,29 @@ export function mountStoryCards(panel, cards) {
     button.append(count);
     jump.appendChild(button);
 
+    /** @type {string | null} the count on screen */
+    let shown = null;
     const recount = () => {
-      const list = /** @type {HTMLElement | null} */ (
-        card.querySelector(':scope > [data-row-count]')
-      );
-      count.textContent = list?.dataset.rowCount ?? '0';
-      button.setAttribute('aria-label', `${spec.label}, ${count.textContent}`);
+      const value = list?.dataset.rowCount ?? '0';
+      if (value === shown) return;
+      shown = value;
+      count.textContent = value;
+      button.setAttribute('aria-label', `${spec.label}, ${value}`);
     };
-    recount();
-    new MutationObserver(recount).observe(card, {
-      childList: true,
-      subtree: true,
-      attributeFilter: ['data-row-count'],
-    });
+    // The list panel writes data-row-count on every paint. This observer
+    // watches only that attribute and not the rows under it, so a repaint
+    // queues one mutation record per card.
+    const counter = new MutationObserver(recount);
+    /** @type {HTMLElement | null} */
+    let list = null;
+    const findList = () => {
+      list = card.querySelector(':scope > [data-row-count]');
+      if (list) counter.observe(list, { attributeFilter: ['data-row-count'] });
+      recount();
+    };
+    findList();
+    // The panel root can mount after this function runs.
+    new MutationObserver(findList).observe(card, { childList: true });
   }
   panel.prepend(jump);
 }
