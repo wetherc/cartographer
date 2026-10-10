@@ -1690,6 +1690,9 @@ and CSS hides the box while the text is empty. When nothing leads to the node
 the parent on the Paint tab with the Region brush set to the node. Its writes are compared against the last
 text, because `syncExits` runs on every party step and every paint stroke,
 and an unchanged sentence would otherwise be announced again each time.
+Outside Build mode the sync returns at once, since the rail is hidden and a
+party step would otherwise search the node for exits on every step. A mode
+switch calls `reset()`, so the first sync in Build writes the sentence again.
 
 ### Warning badges in the world tree
 

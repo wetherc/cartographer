@@ -40,15 +40,25 @@ export function createBuildWarning(app, onLink) {
   });
   button.hidden = true;
   element.replaceChildren(text, button);
-  let last = '';
+  /** @type {string | null} null makes the next sync write the text */
+  let last = null;
+  let lastLabel = '';
   return {
     sync() {
+      // The rail is hidden outside Build mode. The checks below search the
+      // node for exits, and a party step in Play would run them for nothing.
+      // Entering Build calls reset() and then this function again.
+      if (app.state.mode !== 'build') return;
       const node = navigator.getCurrentNode();
       const parent = grid.getParent(node);
       const message = authoringWarning(node, parent) ?? '';
       link = parent && needsLink(node, parent) ? { parentId: parent.id, childId: node.id } : null;
-      button.hidden = !link;
-      if (parent) button.textContent = `Link from ${parent.name}`;
+      const label = link && parent ? `Link from ${parent.name}` : '';
+      if (label !== lastLabel) {
+        lastLabel = label;
+        button.hidden = !link;
+        button.textContent = label;
+      }
       // This element is a live region, and syncExits runs on every party step
       // and every paint stroke. An unconditional write re-announces an
       // unchanged sentence each time.
@@ -59,7 +69,7 @@ export function createBuildWarning(app, onLink) {
     /** A sentence set while the rail stayed hidden is never announced. A reset
      * makes the next sync write it again, once Build mode shows the rail. */
     reset() {
-      last = '';
+      last = null;
     },
   };
 }
