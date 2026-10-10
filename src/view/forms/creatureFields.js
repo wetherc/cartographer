@@ -8,39 +8,43 @@
  * own it there.
  */
 
-import { coerceCR, crOptions } from '../data/challenge.js';
-import { SKILL_IDS, skillName } from '../data/skills.js';
-import { DEFAULT_CREATURE_HP, defaultEnemyGear, dispositionOptions } from '../entities/Creature.js';
+import { coerceCR, crOptions } from '../../data/challenge.js';
+import { SKILL_IDS, skillName } from '../../data/skills.js';
+import {
+  DEFAULT_CREATURE_HP,
+  defaultEnemyGear,
+  dispositionOptions,
+} from '../../entities/Creature.js';
 import {
   ABILITY_SCORES,
   defaultEnemyStats,
   ENEMY_TIERS,
   normalizeStatBlock,
   STAT_KEYS,
-} from '../entities/Modifiers.js';
-import { creatureProficiencyFields } from '../entities/Proficiencies.js';
-import { defenseFields } from '../entities/DamageDefenses.js';
-import { DAMAGE_TYPES } from '../entities/Equipment.js';
-import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
-import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
+} from '../../entities/Modifiers.js';
+import { creatureProficiencyFields } from '../../entities/Proficiencies.js';
+import { defenseFields } from '../../entities/DamageDefenses.js';
+import { DAMAGE_TYPES } from '../../entities/Equipment.js';
+import { CONCENTRATING, CONDITIONS } from '../../entities/Conditions.js';
+import { CREATURE_TYPES, creatureTypeFields } from '../../entities/CreatureType.js';
 import {
   MAX_LEGENDARY,
   MAX_MULTIATTACK,
   SURPRISE_SIDES,
   attackTraitFields,
-} from '../entities/CreatureAttacks.js';
-import { normalizeHitSave } from '../combat/HitSave.js';
-import { clampInt } from '../util/num.js';
-import { capitalize, splitList } from '../util/text.js';
+} from '../../entities/CreatureAttacks.js';
+import { normalizeHitSave } from '../../combat/HitSave.js';
+import { clampInt } from '../../util/num.js';
+import { capitalize, splitList } from '../../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear, readOtherWeapons } from './gearFields.js';
 import { acLabelFromForm, readStats, statFields } from './statFields.js';
 import { arrangeFields } from './creatureLayout.js';
 
-/** @typedef {import('../types/modal.js').ModalField} ModalField */
-/** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
-/** @typedef {import('../types/creature.js').Disposition} Disposition */
-/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
+/** @typedef {import('../../types/modal.js').ModalField} ModalField */
+/** @typedef {import('../../types/modal.js').ModalFormHandle} ModalFormHandle */
+/** @typedef {import('../../types/creature.js').Disposition} Disposition */
+/** @typedef {import('../../types/entities.js').CreatureTier} CreatureTier */
 /** @typedef {import('./gearFields.js').GearOptions} GearOptions */
 
 /**
@@ -56,31 +60,31 @@ import { arrangeFields } from './creatureLayout.js';
  *   level?: number,
  *   tier?: CreatureTier,
  *   cr?: number,
- *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
- *   defenses?: import('../types/creature.js').DamageDefenses,
- *   creatureType?: import('../types/creature.js').CreatureType,
+ *   proficiencies?: import('../../types/creature.js').CreatureProficiencies,
+ *   defenses?: import('../../types/creature.js').DamageDefenses,
+ *   creatureType?: import('../../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
  *   multiattack?: number,
  *   packTactics?: boolean,
- *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
+ *   surpriseAttack?: import("../../types/creature.js").SurpriseAttack,
  *   multiattackDisadvantage?: number,
  *   redirectAttack?: boolean,
  *   turnResistance?: boolean,
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
- *   actions?: import('../types/creature.js').CreatureAction[],
+ *   actions?: import('../../types/creature.js').CreatureAction[],
  *   stats?: Record<string, number>,
- *   weapons?: import('../types/entities.js').CreatureWeapon[],
- *   armor?: import('../types/entities.js').CreatureArmor | null,
+ *   weapons?: import('../../types/entities.js').CreatureWeapon[],
+ *   armor?: import('../../types/entities.js').CreatureArmor | null,
  *   class?: string,
  *   casterLevel?: number,
- *   spellbook?: import('../types/entities.js').Spellbook,
+ *   spellbook?: import('../../types/entities.js').Spellbook,
  * } | null} CreatureSeed
  */
 
 /**
  * The three damage-type pickers: resistances, vulnerabilities, and immunities.
- * @param {import('../types/creature.js').DamageDefenses | undefined} defenses
+ * @param {import('../../types/creature.js').DamageDefenses | undefined} defenses
  * @returns {ModalField[]}
  */
 function defenseFieldList(defenses) {
@@ -467,24 +471,24 @@ function readLevel(raw) {
  *   level?: number,
  *   tier?: CreatureTier,
  *   cr?: number,
- *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
- *   defenses?: import('../types/creature.js').DamageDefenses,
- *   creatureType?: import('../types/creature.js').CreatureType,
+ *   proficiencies?: import('../../types/creature.js').CreatureProficiencies,
+ *   defenses?: import('../../types/creature.js').DamageDefenses,
+ *   creatureType?: import('../../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
  *   multiattack?: number,
  *   packTactics?: boolean,
- *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
+ *   surpriseAttack?: import("../../types/creature.js").SurpriseAttack,
  *   multiattackDisadvantage?: number,
  *   redirectAttack?: boolean,
  *   turnResistance?: boolean,
  *   legendaryActions?: number,
  *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
- *   weapons: import('../types/entities.js').CreatureWeapon[],
- *   armor: import('../types/entities.js').CreatureArmor | null,
+ *   weapons: import('../../types/entities.js').CreatureWeapon[],
+ *   armor: import('../../types/entities.js').CreatureArmor | null,
  *   class?: string,
  *   casterLevel?: number,
- *   spellbook?: import('../types/entities.js').Spellbook,
+ *   spellbook?: import('../../types/entities.js').Spellbook,
  * }}
  */
 export function readCreatureFields(values, gear, { stats = true } = {}) {
@@ -530,7 +534,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
 /**
  * Put the on-hit save of the form on the read weapon, or take it off. A
  * blank ability, or a creature with no weapon, stores no save.
- * @param {{ weapon: import('../types/entities.js').CreatureWeapon | null, armor: import('../types/entities.js').CreatureArmor | null }} read
+ * @param {{ weapon: import('../../types/entities.js').CreatureWeapon | null, armor: import('../../types/entities.js').CreatureArmor | null }} read
  * @param {Record<string, string>} values
  */
 function withHitSave({ weapon, armor }, values) {

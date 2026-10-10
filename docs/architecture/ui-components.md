@@ -821,7 +821,7 @@ Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
   `promptModal` and `buildSpecForm` apply the rule when the form opens and
   each time the named field changes, before they call `onChange`. The Key
   item of a map lock, the Custom race of a new character, and the dependent
-  fields of the creature form (`DEPENDS_ON` in `app/creatureLayout.js`) use
+  fields of the creature form (`DEPENDS_ON` in `view/forms/creatureLayout.js`) use
   it. The pure part is in `view/FieldRules.js`.
 - A field marked `advanced` goes into one collapsed `<details>` block,
   captioned by `options.advancedLabel` (default "More options"). The block
@@ -963,7 +963,7 @@ buildSpecForm({ fields, assemble, submitLabel, onSubmit,
 - `onChange` receives the same `ModalFormHandle`, so a rule such as "stamp
   the default stats again when the tier changes" runs in both.
 
-The spec itself is in `app/creatureFields.js` (see
+The spec itself is in `view/forms/creatureFields.js` (see
 [The app wiring layer](app-wiring.md)). Both surfaces build each control
 through `buildFieldControl` in `ui/FieldControl.js`, which covers every field
 kind. Its switch ends in a `never` check, so a kind added to `ModalField`

@@ -18,7 +18,7 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
-import { statFields } from './statFields.js';
+import { statFields } from '../view/forms/statFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/modal.js').ModalField} ModalField */

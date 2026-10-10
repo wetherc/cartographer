@@ -15,7 +15,7 @@ import { arcanumSpellIds } from '../entities/MysticArcanum.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
 import { labelsFor } from '../combat/DisplayNames.js';
-import { spellbookIds } from './casterFields.js';
+import { spellbookIds } from '../view/forms/casterFields.js';
 import { pruneCreatureLinks } from './questCleanup.js';
 import { readyActionSpells } from '../entities/CreatureActions.js';
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { gearOptions, readGear, readOtherWeapons } from '../src/app/gearFields.js';
+import { gearOptions, readGear, readOtherWeapons } from '../src/view/forms/gearFields.js';
 
 test('readGear defaults a preset missing kind and damage', () => {
   const options = {

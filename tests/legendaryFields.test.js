@@ -7,8 +7,8 @@ import {
 } from '../src/entities/CreatureAttacks.js';
 import { createCreature, editCreature, withDefaults } from '../src/entities/Creature.js';
 import { fromTemplate, toTemplate } from '../src/entities/CreatureTemplate.js';
-import { creatureFields, readCreatureFields } from '../src/app/creatureFields.js';
-import { gearOptions } from '../src/app/gearFields.js';
+import { creatureFields, readCreatureFields } from '../src/view/forms/creatureFields.js';
+import { gearOptions } from '../src/view/forms/gearFields.js';
 import { normalizeLibrary } from '../src/library/Library.js';
 import { STAT_KEYS } from '../src/entities/Modifiers.js';
 

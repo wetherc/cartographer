@@ -1,15 +1,15 @@
-import { spellLevelName } from '../entities/SpellView.js';
-import { CLASS_LIST } from '../entities/Classes.js';
-import { castsAs, spellListOf, subclassDef } from '../entities/ClassCasting.js';
-import { classSpellLevelCap } from '../entities/SpellLearning.js';
-import { activeSpells, activeSpellIndex } from '../library/Library.js';
-import { emptySpellbook } from '../entities/Character.js';
-import { casterLevelOf } from '../entities/Caster.js';
-import { clampInt } from '../util/num.js';
-import { splitList } from '../util/text.js';
+import { spellLevelName } from '../../entities/SpellView.js';
+import { CLASS_LIST } from '../../entities/Classes.js';
+import { castsAs, spellListOf, subclassDef } from '../../entities/ClassCasting.js';
+import { classSpellLevelCap } from '../../entities/SpellLearning.js';
+import { activeSpells, activeSpellIndex } from '../../library/Library.js';
+import { emptySpellbook } from '../../entities/Character.js';
+import { casterLevelOf } from '../../entities/Caster.js';
+import { clampInt } from '../../util/num.js';
+import { splitList } from '../../util/text.js';
 
-/** @typedef {import('../types/modal.js').ModalField} ModalField */
-/** @typedef {import('../types/entities.js').Spellbook} Spellbook */
+/** @typedef {import('../../types/modal.js').ModalField} ModalField */
+/** @typedef {import('../../types/entities.js').Spellbook} Spellbook */
 
 /**
  * The caster picker's option value for a class and subclass pair. A casting

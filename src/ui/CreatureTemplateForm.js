@@ -1,5 +1,9 @@
-import { creatureFields, creatureFieldsChange, readCreatureFields } from '../app/creatureFields.js';
-import { gearOptions } from '../app/gearFields.js';
+import {
+  creatureFields,
+  creatureFieldsChange,
+  readCreatureFields,
+} from '../view/forms/creatureFields.js';
+import { gearOptions } from '../view/forms/gearFields.js';
 import { buildSpecForm } from './SpecForm.js';
 
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -37,7 +41,7 @@ export function buildCreatureTemplateForm({
   // The gear pickers offer the merged library, plus a hand-tuned entry the
   // template already carries. This is the same list the campaign dialog uses.
   const gear = gearOptions(template);
-  /** @type {import('../app/creatureFields.js').CreatureSeed} */
+  /** @type {import('../view/forms/creatureFields.js').CreatureSeed} */
   const seed =
     template ?? (hostile ? { disposition: 'hostile', level: 1 } : { disposition: 'neutral' });
   return buildSpecForm({

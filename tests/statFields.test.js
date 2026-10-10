@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { statFields, readStats } from '../src/app/statFields.js';
+import { statFields, readStats } from '../src/view/forms/statFields.js';
 import { STAT_KEYS, ABILITY_SCORES } from '../src/entities/Modifiers.js';
 
 test('STAT_KEYS is the ability scores plus AC', () => {
@@ -37,7 +37,7 @@ test('readStats clamps each stat to a positive integer, defaulting garbage to 10
 });
 
 test('acFieldLabel names the AC in use only when armor is worn', async () => {
-  const { acFieldLabel, BASE_AC_LABEL } = await import('../src/app/statFields.js');
+  const { acFieldLabel, BASE_AC_LABEL } = await import('../src/view/forms/statFields.js');
   assert.equal(acFieldLabel({ AC: 15 }, null), BASE_AC_LABEL);
   const plate = { name: 'Plate', baseAC: 18, armorWeight: 'heavy' };
   assert.equal(acFieldLabel({ AC: 12, DEX: 14 }, plate), `${BASE_AC_LABEL}, AC in use 18`);

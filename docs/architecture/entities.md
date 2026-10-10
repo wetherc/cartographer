@@ -201,7 +201,7 @@ fight end still counts its experience points.
 
 ### Authoring
 
-One dialog edits the one model. `app/creatureFields.js` describes the fields,
+One dialog edits the one model. `view/forms/creatureFields.js` describes the fields,
 and `app/creatureForm.js` writes `state.creatures` through `createCreature`
 and `editCreature`. A blank level marks a townsperson, which stores no level
 and no tier, and its gear pickers start at None. A typed level fills the
@@ -423,7 +423,7 @@ Knight subclass at caster level 3 or more therefore gets slots. A template
 with no caster level is judged at level 20, because its spawn level is not
 known.
 
-In the creature form, `app/casterFields.js` offers each casting subclass as an
+In the creature form, `view/forms/casterFields.js` offers each casting subclass as an
 option such as "Fighter (Eldritch Knight)". The option value is
 `fighter:eldritch-knight` (`casterValue` and `parseCasterValue`).
 `readCasterOptions` raises a caster level under 3 to the subclass level. An

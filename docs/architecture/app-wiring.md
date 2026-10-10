@@ -828,15 +828,17 @@ cascade in a new module misses a refresh that the helpers already make.
 
 An entity that the GM can author in two places (a campaign creature in a
 dialog, a creature template in the Library rail) describes its fields once
-as a `ModalField[]`:
+as a `ModalField[]`. The specs that use no dialog and no `AppContext` sit in
+`src/view/forms/`, so `node --test` covers them with no browser:
 
 | Module | Defines |
 | --- | --- |
-| `creatureFields.js` | The creature's fields, their live behavior (`creatureFieldsChange`), and `readCreatureFields`. One spec covers foes and townsfolk, because a blank level is the only difference |
-| `gearFields.js` | The weapon and armor picker options, and the read-back order of None, preset, and custom values |
-| `actionFields.js` | The Actions section of the creature dialog: the hidden list field, the summary line, and the list and action dialogs behind **Edit actions** |
-| `statFields.js` | The stat-block fields and their range-limited read-back |
-| `casterFields.js` | The class, level, and spell pickers, and `refilterSpellsOnChange` |
+| `view/forms/creatureFields.js` | The creature's fields, their live behavior (`creatureFieldsChange`), and `readCreatureFields`. One spec covers foes and townsfolk, because a blank level is the only difference |
+| `view/forms/gearFields.js` | The weapon and armor picker options, and the read-back order of None, preset, and custom values |
+| `app/actionFields.js` | The Actions section of the creature dialog: the hidden list field, the summary line, and the list and action dialogs behind **Edit actions**. It opens dialogs, so it lives in `src/app/` |
+| `view/forms/statFields.js` | The stat-block fields and their range-limited read-back |
+| `view/forms/casterFields.js` | The class, level, and spell pickers, and `refilterSpellsOnChange` |
+| `view/forms/creatureLayout.js` | The section order of the creature form (`FIELD_SECTIONS`), its row breaks, and the fields that show only under another (`DEPENDS_ON`) |
 
 `promptModal` renders such a spec as a dialog, and `buildSpecForm` in
 `ui/SpecForm.js` renders it as a form that the Library panel shows in a dialog. A field, a default, a

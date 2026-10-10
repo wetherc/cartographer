@@ -15,7 +15,7 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { countNoun, capitalize, splitList, splitTrimmedList } from '../util/text.js';
-import { statFields, readStats } from './statFields.js';
+import { statFields, readStats } from '../view/forms/statFields.js';
 import { raceCantripLabel, raceCantripOptions } from './raceEdit.js';
 import {
   POINT_BUY_BUDGET,

@@ -100,7 +100,8 @@ src/
   log/            the travelogue
   dice/           dice roll logic
   library/        built-in templates merged with the GM's custom library
-  view/           view rules: stat bars, the shortcut table, theme, player lock
+  view/           view rules: stat bars, the shortcut table, theme, player lock,
+                  and the shared form field specs in view/forms/
   storage/        serialization, localStorage and file persistence, undo history
   util/           small helpers: clamping, memoizing, deep freeze, seeded random
   types/          .ts declaration files, no runtime code

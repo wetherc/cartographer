@@ -1,10 +1,10 @@
-import { activeWeapons, activeArmors, activeEnemyArmor } from '../library/Library.js';
-import { formatDamage } from '../entities/Equipment.js';
-import { copyEnemyWeapon } from '../entities/EquipmentPresets.js';
-import { enemyArmorLabel } from '../entities/EnemyArmor.js';
+import { activeWeapons, activeArmors, activeEnemyArmor } from '../../library/Library.js';
+import { formatDamage } from '../../entities/Equipment.js';
+import { copyEnemyWeapon } from '../../entities/EquipmentPresets.js';
+import { enemyArmorLabel } from '../../entities/EnemyArmor.js';
 
-/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
-/** @typedef {import('../types/entities.js').CreatureArmor} CreatureArmor */
+/** @typedef {import('../../types/entities.js').CreatureWeapon} CreatureWeapon */
+/** @typedef {import('../../types/entities.js').CreatureArmor} CreatureArmor */
 
 /**
  * @typedef {{

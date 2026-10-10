@@ -5,11 +5,11 @@
  * the two surfaces cannot drift apart.
  */
 
-import { clampInt } from '../util/num.js';
-import { effectiveStatBlock } from '../entities/Creature.js';
+import { clampInt } from '../../util/num.js';
+import { effectiveStatBlock } from '../../entities/Creature.js';
 import { readGear } from './gearFields.js';
 
-/** @typedef {import('../types/modal.js').ModalField} ModalField */
+/** @typedef {import('../../types/modal.js').ModalField} ModalField */
 
 /**
  * One number modal field per stat key, named `stat-<KEY>` and pre-filled
@@ -50,13 +50,13 @@ export const BASE_AC_LABEL = 'Base AC (no armor)';
  * picked the caption also names the AC that combat uses. With no armor the
  * caption is the plain `BASE_AC_LABEL`.
  * @param {Record<string, number>} stats the typed scores and AC
- * @param {import('../types/entities.js').CreatureArmor | null | undefined} armor
+ * @param {import('../../types/entities.js').CreatureArmor | null | undefined} armor
  * @returns {string}
  */
 export function acFieldLabel(stats, armor) {
   if (!armor) return BASE_AC_LABEL;
   const inUse = effectiveStatBlock(
-    /** @type {import('../types/creature.js').Creature} */ ({ stats, armor }),
+    /** @type {import('../../types/creature.js').Creature} */ ({ stats, armor }),
   ).AC;
   return `${BASE_AC_LABEL}, AC in use ${inUse}`;
 }

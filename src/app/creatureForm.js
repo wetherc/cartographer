@@ -11,8 +11,12 @@ import {
   readLocation,
   viewedPlacement,
 } from './locationFields.js';
-import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
-import { gearOptions } from './gearFields.js';
+import {
+  creatureFields,
+  creatureFieldsChange,
+  readCreatureFields,
+} from '../view/forms/creatureFields.js';
+import { gearOptions } from '../view/forms/gearFields.js';
 import { actionFormFields, actionsChange, readActions } from './actionFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
@@ -43,7 +47,7 @@ import { clampInt } from '../util/num.js';
  * @param {Creature | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
  *   placement preset for a new creature
- * @param {import('./creatureFields.js').CreatureSeed} [seed]
+ * @param {import('../view/forms/creatureFields.js').CreatureSeed} [seed]
  *   template or preset that fills a new creature's fields (ignored when
  *   editing)
  * @returns {Promise<Creature | null>}

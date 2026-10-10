@@ -5,9 +5,9 @@
  * `arrangeFields` puts them in this order.
  */
 
-import { STAT_KEYS } from '../entities/Modifiers.js';
+import { STAT_KEYS } from '../../entities/Modifiers.js';
 
-/** @typedef {import('../types/modal.js').ModalField} ModalField */
+/** @typedef {import('../../types/modal.js').ModalField} ModalField */
 
 /**
  * Put the blueprint fields under their section headings, then the caster
@@ -79,7 +79,7 @@ export function parentSet(parent, value) {
  * collapsed, because most creatures have none.
  * @type {[string, string[], boolean][]}
  */
-const FIELD_SECTIONS = [
+export const FIELD_SECTIONS = [
   [
     'Basics',
     ['name', 'role', 'disposition', 'creatureType', 'maxHP', 'level', 'tier', 'cr', 'notes'],
@@ -112,7 +112,7 @@ const FIELD_SECTIONS = [
 ];
 
 /** Fields that begin a row inside their section, so each pair stays together. */
-const ROW_BREAKS = new Set([
+export const ROW_BREAKS = new Set([
   'weapon',
   'hitSaveAbility',
   'surpriseCount',

@@ -10,8 +10,8 @@ import { prepareSwing, attackLine } from '../src/combat/WeaponSwing.js';
 import { readAttackTweaks } from '../src/combat/AttackTweaks.js';
 import { attackDialog } from '../src/app/attackFields.js';
 import { rollHitSave } from '../src/app/weaponAttack.js';
-import { creatureFields, readCreatureFields } from '../src/app/creatureFields.js';
-import { gearOptions } from '../src/app/gearFields.js';
+import { creatureFields, readCreatureFields } from '../src/view/forms/creatureFields.js';
+import { gearOptions } from '../src/view/forms/gearFields.js';
 import { STAT_KEYS } from '../src/entities/Modifiers.js';
 import { stubApp } from './helpers/app.js';
 

@@ -5,8 +5,8 @@ import {
   creatureFields,
   creatureFieldsChange,
   readCreatureFields,
-} from '../src/app/creatureFields.js';
-import { gearOptions } from '../src/app/gearFields.js';
+} from '../src/view/forms/creatureFields.js';
+import { gearOptions } from '../src/view/forms/gearFields.js';
 import { applyFieldRules } from '../src/view/FieldRules.js';
 import { DEFAULT_CREATURE_HP, defaultEnemyGear } from '../src/entities/Creature.js';
 import { defaultEnemyStats, STAT_KEYS } from '../src/entities/Modifiers.js';

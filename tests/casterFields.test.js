@@ -13,7 +13,7 @@ import {
   refilterSpellsOnChange,
   casterFields,
   NO_CASTER_TEXT,
-} from '../src/app/casterFields.js';
+} from '../src/view/forms/casterFields.js';
 
 test('casterFields seeds class, level, and pre-checked spells from a caster', () => {
   const fields = casterFields({
