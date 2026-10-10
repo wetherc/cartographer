@@ -1,5 +1,6 @@
 import { spendRiders } from '../entities/Riders.js';
 import { findCombatant } from './combatants.js';
+import { storeConditions } from './combatantWrites.js';
 import { dropOnce, spentOnce } from '../entities/ChipSlants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -20,8 +21,7 @@ export function spendRollRiders(app, id, rider) {
   if (!found) return;
   const conditions = spendRiders(found.entity.conditions, rider.spent);
   if (conditions === found.entity.conditions) return;
-  if (found.kind === 'character') found.store({ ...found.entity, conditions });
-  else found.store({ ...found.entity, conditions });
+  storeConditions(app, found, conditions);
   app.actions.markDirty();
 }
 
@@ -45,8 +45,7 @@ export function spendOnceChips(app, rollerId, targetId, query) {
     if (!found) continue;
     const conditions = dropOnce(found.entity.conditions, names);
     if (conditions === found.entity.conditions) continue;
-    if (found.kind === 'character') found.store({ ...found.entity, conditions });
-    else found.store({ ...found.entity, conditions });
+    storeConditions(app, found, conditions);
     app.actions.markDirty();
     app.actions.logEvent('combat', `${found.label}'s ${names.join(' and ')} ends.`);
   }

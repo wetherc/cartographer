@@ -22,7 +22,14 @@ import { hitEventLine } from '../combat/HitEventLines.js';
 import { isLucky, raceSaveSlant } from '../entities/RaceTraits.js';
 import { settleChips } from './lethargyWrites.js';
 import { mapKeep } from '../util/mapKeep.js';
-import { combatantSaveBonus, commitCreatures, findCombatant, hpOf, logName } from './combatants.js';
+import {
+  combatantSaveBonus,
+  commitCreatures,
+  findCombatant,
+  hpOf,
+  logName,
+  updateCombatant,
+} from './combatants.js';
 
 /**
  * The write paths that change a combatant: damage and healing, condition
@@ -164,16 +171,14 @@ export function storeCreature(app, prev, next, store) {
 }
 
 /**
- * Write a new condition list back to whatever holds the combatant. The two
- * branches do the same write. They are split because each store function
- * accepts only its own entity type.
+ * Write a new condition list back to whatever holds the combatant, and settle
+ * what an ended chip leaves behind (an Aid raise, Haste lethargy).
  * @param {AppContext} app
  * @param {Combatant} found
  * @param {import('../types/entities.js').Condition[]} conditions
  */
-function storeConditions(app, found, conditions) {
-  if (found.kind === 'character') found.store(settleChips(app, found.entity, conditions));
-  else found.store(settleChips(app, found.entity, conditions));
+export function storeConditions(app, found, conditions) {
+  updateCombatant(found, (entity) => settleChips(app, entity, conditions));
 }
 
 /**

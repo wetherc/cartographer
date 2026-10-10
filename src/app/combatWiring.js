@@ -15,7 +15,7 @@ import {
   nextInspection,
   turnKey,
 } from '../view/CombatSelection.js';
-import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
+import { combatLabels, findCombatant, spellsOf, updateCombatant, weaponsOf } from './combatants.js';
 import { viewerOf } from './viewer.js';
 import { applyToTarget, endSpellEffects, setCombatantConditions } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaveRolls.js';
@@ -281,8 +281,7 @@ export function wireCombatScreen(app) {
       const found = findCombatant(app, id);
       const held = found?.entity.concentration;
       if (!found || !held) return;
-      if (found.kind === 'character') found.store(dropConcentration(found.entity));
-      else found.store(dropConcentration(found.entity));
+      updateCombatant(found, dropConcentration);
       app.actions.markDirty();
       endSpellEffects(app, id, held.spellId);
     },

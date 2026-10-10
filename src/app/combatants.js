@@ -113,6 +113,27 @@ export function combatLabels(app, ids) {
 }
 
 /**
+ * The store of a resolved combatant, typed to take either kind of entity.
+ * Each store accepts only its own kind, so the caller writes back an entity
+ * of the kind it read from `found.entity`.
+ * @param {Combatant} found
+ * @returns {(next: Character | Creature) => void}
+ */
+export function storeOf(found) {
+  return /** @type {(next: Character | Creature) => void} */ (found.store);
+}
+
+/**
+ * Write `fn(found.entity)` back through the combatant's store. `fn` returns
+ * an entity of the kind it receives, as the generic entity helpers do.
+ * @param {Combatant} found
+ * @param {(entity: Character | Creature) => Character | Creature} fn
+ */
+export function updateCombatant(found, fn) {
+  storeOf(found)(fn(found.entity));
+}
+
+/**
  * Resolve a combat participant id to the entity that holds it: a party
  * character, then a creature, checked in that order. Also return a store
  * function that writes an updated copy back to the right collection and

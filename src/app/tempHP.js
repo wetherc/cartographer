@@ -1,5 +1,5 @@
 import { grantTempHP } from '../entities/HPBuffs.js';
-import { findCombatant } from './combatants.js';
+import { findCombatant, updateCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -28,8 +28,7 @@ export function grantTempTo(app, id, amount, from, { detail = '', quiet = false 
     app.actions.logEvent('combat', `${name} keeps ${had} temporary HP (${from} gives ${amount}).`);
     return false;
   }
-  const store = /** @type {(next: any) => void} */ (found.store);
-  store(grantTempHP(found.entity, amount, from));
+  updateCombatant(found, (entity) => grantTempHP(entity, amount, from));
   app.actions.markDirty();
   const roll = detail ? ` (${detail})` : '';
   app.actions.logEvent('combat', `${name} gains ${amount} temporary HP from ${from}${roll}.`);

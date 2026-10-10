@@ -3,7 +3,7 @@ import { reactionSpells } from '../combat/Reactions.js';
 import { buffCondition } from '../entities/Casting.js';
 import { defensesOf } from '../entities/DamageDefenses.js';
 import { landingDamage, wardType } from '../entities/DamageWard.js';
-import { logName, spellsOf } from './combatants.js';
+import { logName, spellsOf, storeOf } from './combatants.js';
 import { reactionCaster, reactionPlan } from './reactionGate.js';
 
 /**
@@ -33,7 +33,7 @@ import { reactionCaster, reactionPlan } from './reactionGate.js';
  *   spell: import('../types/spell.js').Spell,
  *   type: string,
  *   plan: import('../types/cast.js').CastPlan,
- *   store: (next: any) => void,
+ *   store: (next: import('../types/entities.js').Character | import('../types/creature.js').Creature) => void,
  * }} DamageWard
  */
 
@@ -67,7 +67,7 @@ export function pendingDamageWard(app, defenderId, attackerId, groups, options =
       spell,
       type,
       plan,
-      store: /** @type {(next: any) => void} */ (found.store),
+      store: storeOf(found),
     };
   }
   return null;

@@ -5,7 +5,7 @@ import { buffCondition } from '../entities/Casting.js';
 import { blockerOf } from '../entities/ChipMods.js';
 import { createCondition } from '../entities/Conditions.js';
 import { wardTurns, wardedOutcome } from '../entities/CastRolls.js';
-import { findCombatant, logName, spellsOf } from './combatants.js';
+import { findCombatant, logName, spellsOf, storeOf } from './combatants.js';
 import { reactionCaster, reactionPlan } from './reactionGate.js';
 
 /**
@@ -58,7 +58,7 @@ import { reactionCaster, reactionPlan } from './reactionGate.js';
  *   bonus: number,
  *   blocks: boolean,
  *   plan: CastPlan,
- *   store: (next: any) => void,
+ *   store: (next: import('../types/entities.js').Character | import('../types/creature.js').Creature) => void,
  * }} Ward
  */
 
@@ -136,7 +136,7 @@ export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
       bonus,
       blocks,
       plan,
-      store: /** @type {(next: any) => void} */ (found.store),
+      store: storeOf(found),
     };
   }
   return null;

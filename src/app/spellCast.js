@@ -1,6 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
 import { replaceById } from '../entities/Roster.js';
-import { findCombatant } from './combatants.js';
+import { findCombatant, storeOf } from './combatants.js';
 import {
   combatTargets,
   missingTarget,
@@ -58,15 +58,7 @@ export async function castSpellAction(
   const targets = combatTargets(app, combat, participant, spell);
   const found = findCombatant(app, participant.id);
   if (!found) return;
-  await runCast(
-    app,
-    found.entity,
-    spell,
-    targets,
-    /** @type {(next: any) => void} */ (found.store),
-    targetId,
-    prompt,
-  );
+  await runCast(app, found.entity, spell, targets, storeOf(found), targetId, prompt);
 }
 
 /**

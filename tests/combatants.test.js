@@ -10,6 +10,7 @@ import {
   targetConditions,
   targetFeatRiders,
   targetSaveBonus,
+  updateCombatant,
   weaponsOf,
 } from '../src/app/combatants.js';
 import {
@@ -1023,4 +1024,18 @@ test('retryImposedSaves gives a halfling advantage against Frightened', () => {
   const faces = [0.05, 0.9];
   retryImposedSaves(app, 'hero', { rng: () => faces.shift() ?? 0 });
   assert.deepEqual(app.state.characters[0].conditions, []);
+});
+
+test('updateCombatant writes the mapped entity back through the store', () => {
+  /** @type {any[]} */
+  const stored = [];
+  const entity = { id: 'c1', name: 'Wren', conditions: [] };
+  const found = /** @type {any} */ ({
+    kind: 'character',
+    entity,
+    label: 'Wren',
+    store: (/** @type {any} */ next) => stored.push(next),
+  });
+  updateCombatant(found, (e) => /** @type {any} */ ({ ...e, bonusHP: 3 }));
+  assert.deepEqual(stored, [{ ...entity, bonusHP: 3 }]);
 });
