@@ -1217,7 +1217,8 @@ never a migration step:
 4. If characters keep copies of the record, give `Character.withDefaults` the
    same default. Those copies are part of the campaign save, so `deserialize`
    covers them, not the library gate.
-5. Add `Library.test.js` cases. Check that the new format passes through
+5. Add cases to `LibraryNormalizeSpells.test.js` (spells and feats) or
+   `LibraryNormalize.test.js` (creatures and gear). Check that the new format passes through
    unchanged, that the old format coerces, and that garbage in the field
    coerces to the default.
 6. Do not add a `Migrations.js` step, and do not increase `CURRENT_VERSION`
