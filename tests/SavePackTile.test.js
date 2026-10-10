@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
-import { buildState, encodeHistoryNode, packState } from '../src/storage/SaveManager.js';
+import { buildState, packState } from '../src/storage/SaveManager.js';
+import { encodeHistoryNode } from '../src/storage/NodePack.js';
 import { packEntity } from '../src/storage/EntityPack.js';
 
 /**

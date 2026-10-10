@@ -305,7 +305,7 @@ same 2 hidden classes as tiles built in memory.
 Packing drops no field that the packer does not know about, and a packed tile
 never reaches live state:
 
-- `packTile` copies every field of the tile except the default-valued ones.
+- `packTile` (`storage/NodePack.js`) copies every field of the tile except the default-valued ones.
   It does not pick named fields into a new object. A `Tile` field added later
   therefore stays in a save, even when the packer does not know about it.
 - The copy skips fields as it builds, and it never deletes one. A `delete`
@@ -944,7 +944,7 @@ node into the smallest of three forms:
 
 - The plain ops.
 - One `node` op whose `f` and `t` are whole nodes in the save's own form
-  (`SaveManager.encodeHistoryNode`: packed tiles, then the tile codec). An
+  (`NodePack.encodeHistoryNode`: packed tiles, then the tile codec). An
   inserted or removed node always takes this form.
 - One `fog` op, used when every op of the node flips a tile's `revealed`
   flag. Its `t` lists the tile ids that the step reveals, and its `f` lists

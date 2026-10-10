@@ -291,7 +291,7 @@ export const SNIPPETS = {
   sameRows: { file: 'src/ui/listPanel.js', symbol: 'sameRows' },
   tile: { file: 'src/types/map.ts', symbol: 'Tile' },
   reveal: { file: 'src/map/FogOfWar.js', symbol: 'revealAround' },
-  packTile: { file: 'src/storage/SaveManager.js', symbol: 'packTile' },
+  packTile: { file: 'src/storage/NodePack.js', symbol: 'packTile' },
   memoize: { file: 'src/util/memoize.js', symbol: 'memoizeByIdentity' },
 };
 

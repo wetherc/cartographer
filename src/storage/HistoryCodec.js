@@ -14,7 +14,7 @@
  *
  * - the ops as `diffState` wrote them;
  * - one `node` op whose values are whole nodes in the save's own form
- *   (`SaveManager.encodeHistoryNode`: packed tiles, then the tile codec),
+ *   (`NodePack.encodeHistoryNode`: packed tiles, then the tile codec),
  *   which an inserted or a removed node always takes;
  * - one `fog` op, when every op of the node flips a tile's `revealed`
  *   flag. Its `t` lists the ids that the step reveals and its `f` the ids
@@ -37,7 +37,7 @@
  * of another schema version is discarded whole.
  */
 
-import { decodeHistoryNode, encodeHistoryNode } from './SaveManager.js';
+import { decodeHistoryNode, encodeHistoryNode } from './NodePack.js';
 import { jsonLengthWithin } from './StateDiff.js';
 import { stringList } from '../entities/LoadCoercion.js';
 import { ASSET_PREFIX, hoistAssets } from './Assets.js';
