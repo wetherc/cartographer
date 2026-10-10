@@ -70,7 +70,7 @@ export function withDefaults(handout) {
     body: handout.body ?? '',
     nodeId,
     tileId: nodeId !== null && typeof handout.tileId === 'string' ? handout.tileId : null,
-    revealed: handout.revealed ?? false,
+    revealed: handout.revealed === true,
     image: handout.image ?? null,
     audience: cleanAudience(handout.audience),
   };

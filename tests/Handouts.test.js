@@ -343,3 +343,14 @@ test('hiddenHandoutTiles lists each tile of the node with a hidden handout once'
   ];
   assert.deepEqual(hiddenHandoutTiles(all, 'world'), ['1,1']);
 });
+
+test('withDefaults reveals a handout only when the flag is exactly true', () => {
+  for (const flag of ['false', 'true', 1, {}, null]) {
+    const filled = withDefaults(/** @type {any} */ ({ id: 'h', title: 'T', revealed: flag }));
+    assert.equal(filled.revealed, false, `flag ${JSON.stringify(flag)}`);
+  }
+  assert.equal(
+    withDefaults(/** @type {any} */ ({ id: 'h', title: 'T', revealed: true })).revealed,
+    true,
+  );
+});
