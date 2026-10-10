@@ -1,5 +1,5 @@
 import { bareButton } from './buttons.js';
-import { classNames, el } from './dom.js';
+import { classNames, el, uniqueId } from './dom.js';
 
 /**
  * Wire an accessible tab strip that follows the ARIA tabs pattern. The
@@ -68,9 +68,6 @@ export function wireTabs(tablist, options = {}) {
   };
 }
 
-/** This keeps the generated ids of one strip separate from another's. */
-let stripCount = 0;
-
 /**
  * Build a tab strip and pair it with panels the caller has already
  * created. Most strips are written out in `index.html` and need only
@@ -92,8 +89,7 @@ let stripCount = 0;
  * @returns {{ tablist: HTMLElement, select: (id: string) => void }}
  */
 export function buildTabs(options) {
-  stripCount += 1;
-  const prefix = `tabs${stripCount}`;
+  const prefix = uniqueId('tabs');
   /** @param {string} id */
   const tabId = (id) => `${prefix}-tab-${id}`;
 

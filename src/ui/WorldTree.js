@@ -1,7 +1,7 @@
 import { icon } from './icons.js';
 import { setTip } from './Tooltip.js';
 import { bareButton, emptyState } from './buttons.js';
-import { el } from './dom.js';
+import { el, uniqueId } from './dom.js';
 import { textField } from './formFields.js';
 import { markMenuButton, openContextMenu, toggleMenuFrom } from './ContextMenu.js';
 import {
@@ -18,9 +18,6 @@ import { treeKeyAction } from '../view/TreeKeys.js';
 
 /** A world with at least this many nodes gets the search box above the tree. */
 const SEARCH_MIN_NODES = 12;
-
-/** Counts mounts, so the element ids of two trees on one page never clash. */
-let mountCount = 0;
 
 /**
  * Mount the world tree: a nested list that mirrors the MapNode hierarchy.
@@ -71,7 +68,7 @@ export function mountWorldTree(container, opts) {
   search.hidden = true;
 
   const root = el('div', 'world-tree');
-  const idPrefix = `world-tree-${++mountCount}`;
+  const idPrefix = uniqueId('world-tree');
   container.append(search, root);
 
   /** Node ids whose children are hidden. @type {Set<string>} */
@@ -93,8 +90,6 @@ export function mountWorldTree(container, opts) {
   let query = '';
   /** @type {Map<string, string>} node id to name, for the parent names in search results */
   let names = new Map();
-  /** Numbers the warning badges for their element ids. */
-  let warningCount = 0;
   /** @type {string | null} the tree item in the tab order */
   let tabStopId = null;
 
@@ -184,7 +179,7 @@ export function mountWorldTree(container, opts) {
    */
   function iconBadge(name, className, message, count) {
     const badge = el('span', className, icon(name, { size: 14 }), count);
-    badge.id = `${idPrefix}-badge-${++warningCount}`;
+    badge.id = uniqueId(`${idPrefix}-badge`);
     badge.setAttribute('role', 'img');
     badge.setAttribute('aria-label', message);
     setTip(badge, message);

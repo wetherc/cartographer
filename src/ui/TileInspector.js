@@ -1,5 +1,5 @@
 import { emptyState, textButton } from './buttons.js';
-import { el } from './dom.js';
+import { el, uniqueId } from './dom.js';
 import { icon } from './icons.js';
 import { labeled, select, setOptions, textareaField } from './formFields.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -11,9 +11,6 @@ import { capitalize } from '../util/text.js';
 
 /** @type {(POIType | '')[]} */
 const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'custom'];
-
-/** Numbers the hint ids, so two inspectors on one page never share one. */
-let hintCount = 0;
 
 /**
  * Mount the tile inspector: a form over a single tile's TileMetadata, with
@@ -89,7 +86,7 @@ export function mountTileInspector(container, opts) {
   );
   // The hint names what the flag does, which the one word does not.
   const discHint = el('p', 'tile-inspector__hint u-muted', 'Hidden until the party steps here.');
-  discHint.id = `tile-inspector-disc-hint-${++hintCount}`;
+  discHint.id = uniqueId('tile-inspector-disc-hint');
   discInput.setAttribute('aria-describedby', discHint.id);
 
   // Notes
