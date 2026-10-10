@@ -25,6 +25,7 @@
  */
 
 import { isRecord } from '../util/isRecord.js';
+import { mapKeep } from '../util/mapKeep.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
@@ -136,8 +137,7 @@ function mapGear(save, convert) {
  * @returns {unknown[]}
  */
 function mapList(list, convert) {
-  const mapped = list.map((piece) => (isRecord(piece) ? convert(piece) : piece));
-  return mapped.some((piece, i) => piece !== list[i]) ? mapped : list;
+  return mapKeep(list, (piece) => (isRecord(piece) ? convert(piece) : piece));
 }
 
 /**

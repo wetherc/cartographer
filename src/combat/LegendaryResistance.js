@@ -5,6 +5,7 @@
  * a long rest gives them all back.
  */
 import { coerceLegendary } from '../entities/CreatureAttacks.js';
+import { mapKeep } from '../util/mapKeep.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 
@@ -54,8 +55,7 @@ export function restoreResistance(creature) {
  * @returns {T[]}
  */
 export function restoreAllResistance(creatures) {
-  const rested = creatures.map(restoreResistance);
-  return rested.some((c, i) => c !== creatures[i]) ? rested : creatures;
+  return mapKeep(creatures, restoreResistance);
 }
 
 /**

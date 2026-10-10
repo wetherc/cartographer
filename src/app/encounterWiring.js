@@ -25,6 +25,7 @@ import {
 } from '../combat/CombatRoster.js';
 import { elapse } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargyWrites.js';
+import { mapKeep } from '../util/mapKeep.js';
 import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
@@ -320,7 +321,7 @@ export function wireEncounters(app) {
      * @returns {T[]}
      */
     const tickAll = (list) => {
-      const next = list.map((entity) => {
+      return mapKeep(list, (entity) => {
         const { entity: passed, ended } = elapse(entity, 1);
         // A Haste chip that runs out on the tick leaves before its caster's
         // concentration sweep can see it, so the tick adds the lethargy.
@@ -334,7 +335,6 @@ export function wireEncounters(app) {
         }
         return ticked;
       });
-      return next.some((entity, i) => entity !== list[i]) ? next : list;
     };
     state.characters = tickAll(state.characters);
     state.creatures = tickAll(state.creatures);

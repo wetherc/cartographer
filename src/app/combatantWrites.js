@@ -21,6 +21,7 @@ import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { isLucky, raceSaveSlant } from '../entities/RaceTraits.js';
 import { settleChips } from './lethargyWrites.js';
+import { mapKeep } from '../util/mapKeep.js';
 import { combatantSaveBonus, commitCreatures, findCombatant, hpOf, logName } from './combatants.js';
 
 /**
@@ -246,8 +247,8 @@ export function endSpellEffects(app, casterId, spellId) {
    * @returns {T[] | null}
    */
   const swept = (list) => {
-    const next = list.map(sweep);
-    return next.some((entity, i) => entity !== list[i]) ? next : null;
+    const next = mapKeep(list, sweep);
+    return next === list ? null : next;
   };
   const characters = swept(state.characters);
   const creatures = swept(state.creatures);

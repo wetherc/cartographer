@@ -9,6 +9,7 @@ import { grantTempTo } from './tempHP.js';
 import { commitCreatures, defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, retryImposedSaves } from './combatantWrites.js';
 import { refreshActions, rollRecharges } from '../entities/CreatureActions.js';
+import { mapKeep } from '../util/mapKeep.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -139,7 +140,7 @@ function sweepChips(app, rule) {
    * @returns {T[] | null}
    */
   const swept = (list) => {
-    const next = list.map((entity) => {
+    const next = mapKeep(list, (entity) => {
       const { conditions, ended } = rule(entity.conditions);
       if (conditions === entity.conditions) return entity;
       // A chip that only counted a boundary down still changes the list, so
@@ -148,7 +149,7 @@ function sweepChips(app, rule) {
       for (const c of ended) freed.push({ name: logName(app, entity), condition: c.name });
       return settleChips(app, entity, conditions, notes);
     });
-    return next.some((entity, i) => entity !== list[i]) ? next : null;
+    return next === list ? null : next;
   };
   const characters = swept(state.characters);
   const creatures = swept(state.creatures);

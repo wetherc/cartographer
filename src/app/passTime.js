@@ -2,6 +2,7 @@ import { advanceMinutes, formatClock, formatMinutes, watchesBetween } from '../t
 import { ROUNDS_PER_WATCH, elapse } from '../entities/TimedEffects.js';
 import { commitCreatures } from './combatants.js';
 import { endSpellEffects } from './combatantWrites.js';
+import { mapKeep } from '../util/mapKeep.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -36,13 +37,13 @@ export function passTime(app, watches) {
     }
     return result.entity;
   };
-  const characters = state.characters.map(pass);
-  const creatures = state.creatures.map(pass);
-  if (characters.some((c, i) => c !== state.characters[i])) {
+  const characters = mapKeep(state.characters, pass);
+  const creatures = mapKeep(state.creatures, pass);
+  if (characters !== state.characters) {
     state.characters = characters;
     app.actions.refreshSelectedCharacter();
   }
-  if (creatures.some((c, i) => c !== state.creatures[i])) {
+  if (creatures !== state.creatures) {
     state.creatures = creatures;
     commitCreatures(app, { dirty: false });
   }
