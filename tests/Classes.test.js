@@ -200,6 +200,31 @@ test('one ritual-casting class in a multiclass is enough', () => {
   );
 });
 
+test('with a spell id, only the class the spell was learned under grants a ritual cast', () => {
+  const classes = [
+    { classId: 'sorcerer', level: 3 },
+    { classId: 'cleric', level: 1 },
+  ];
+  const book = (sources) => ({ cantrips: [], known: [], prepared: [], sources });
+  const c = (sources) => character({ level: 4, classes, spellbook: book(sources) });
+  // A sorcerer Detect Magic has no ritual cast, while a cleric one does.
+  assert.equal(hasRitualCasting(c({ 'detect-magic': 'sorcerer' }), 'detect-magic'), false);
+  assert.equal(hasRitualCasting(c({ 'detect-magic': 'cleric' }), 'detect-magic'), true);
+  // With no recorded source, the first caster class decides.
+  assert.equal(hasRitualCasting(c({}), 'detect-magic'), false);
+  assert.equal(
+    hasRitualCasting(
+      character({ level: 4, classes: [...classes].reverse(), spellbook: book({}) }),
+      'detect-magic',
+    ),
+    true,
+  );
+  // Without a spell id, any ritual class counts.
+  assert.equal(hasRitualCasting(c({})), true);
+  // A character with no caster class has nothing to cast from.
+  assert.equal(hasRitualCasting(character({ class: 'fighter' }), 'detect-magic'), false);
+});
+
 test('hasPreparedCaster picks out the classes that prepare their spells', () => {
   assert.equal(hasPreparedCaster(character({ class: 'wizard' })), true);
   assert.equal(hasPreparedCaster(character({ class: 'cleric' })), true);

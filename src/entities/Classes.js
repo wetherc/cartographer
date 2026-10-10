@@ -165,16 +165,25 @@ export function casterClassRefs(character) {
 /**
  * Whether the character can cast rituals: true when any of its caster
  * classes has ritual casting (Bard, Cleric, Druid, Wizard), or when a
- * warlock has Book of Ancient Secrets. With `spellId`, the warlock counts
- * only for a ritual in its Book of Shadows. A ritual spell
- * is castable without a slot only by a caster whose class grants the
- * feature. This gates the cast dialog's ritual option.
+ * warlock has Book of Ancient Secrets. With `spellId`, only the class the
+ * spell was learned under counts (the first caster class when the book
+ * records none), so a sorcerer 3 / cleric 1 casts its sorcerer Detect
+ * Magic with a slot only. The warlock then counts only for a ritual in its
+ * Book of Shadows. This gates the cast dialog's ritual option.
  * @param {SpellCaster} character
  * @param {string} [spellId]
  * @returns {boolean}
  */
 export function hasRitualCasting(character, spellId) {
-  if (casterClassRefs(character).some((ref) => !!casterDefFor(ref)?.ritual)) return true;
+  const refs = casterClassRefs(character);
+  // The source is read off the book directly: CharacterSpellbook imports
+  // this module, so importing `spellSource` would form an import cycle.
+  const sourceId =
+    spellId === undefined
+      ? undefined
+      : (character.spellbook?.sources?.[spellId] ?? refs[0]?.classId);
+  const ritualRefs = sourceId === undefined ? refs : refs.filter((ref) => ref.classId === sourceId);
+  if (ritualRefs.some((ref) => !!casterDefFor(ref)?.ritual)) return true;
   if (!hasAncientSecrets(character)) return false;
   return spellId === undefined || tomeRituals(character).includes(spellId);
 }

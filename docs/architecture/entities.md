@@ -1505,7 +1505,11 @@ A ritual cast takes ten minutes longer than a normal cast and spends no spell
 slot. The spell has to have `ritual: true`, and the caster has to have a class
 with the ritual-casting feature. `data/classCatalog.js` gives that feature to the
 bard, cleric, druid, and wizard. `Classes.hasRitualCasting(character)` is true
-when any caster class of the character has it.
+when any caster class of the character has it. With a spell id, only the class
+that the spell was learned under counts (`spellbook.sources`, or the first
+caster class when the book records none). A sorcerer 3 / cleric 1 casts a
+sorcerer Detect Magic with a slot only, and the same spell learned as a cleric
+spell gets the ritual option.
 
 `Casting.castSpell` takes `{ ritual: true }`. The cast resolves at the spell's
 own level, because no slot is spent that could raise it, and returns
