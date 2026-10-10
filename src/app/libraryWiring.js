@@ -102,21 +102,16 @@ export function wireLibrary(app) {
    * panels too. The spellbook shows the catalog spells, so an edited or
    * removed entry must reach it as well.
    * Every caller is a user action or the promise callback for the file seed.
-   * Both run after all wiring completes, so the party action is registered
-   * and the four panel constants below are already assigned.
-   * Do not call this function during wiring. The panels are mounted after
-   * this function is defined, so an early call throws an error instead of
-   * skipping a refresh.
+   * Both run after all wiring completes, so the party action is registered.
+   * The lists update only once they are mounted. A list that mounts later
+   * reads the current library when it paints.
    */
   // Reset stays disabled while the library has no customizations, because
   // it would remove nothing.
   const resetButton = /** @type {HTMLButtonElement} */ (mustGetElement('library-reset-btn'));
   const refresh = () => {
     resetButton.disabled = isLibraryEmpty(custom);
-    equipmentPanel.update();
-    creaturePanel.update();
-    spellPanel.update();
-    featPanel.update();
+    for (const panel of panels ?? []) panel.update();
     app.actions.refreshSelectedCharacter();
   };
 
@@ -238,214 +233,228 @@ export function wireLibrary(app) {
 
   wireTabs(mustGetElement('library-tabs'));
 
-  // --- Equipment -----------------------------------------------------------
+  /**
+   * Mount the four lists. They hold about a quarter of the page's elements,
+   * and only Library mode shows them, so they mount on the first switch to
+   * Library mode rather than at startup. A Player tab cannot enter Library
+   * mode, so it never builds them.
+   */
+  const mountPanels = () => {
+    // --- Equipment -----------------------------------------------------------
 
-  const equipmentPanel = mountLibraryPanel(mustGetElement('library-equipment-container'), {
-    addLabel: 'New item',
-    subtabs: EQUIPMENT_SUBTABS,
-    getEntries: (subtab) => {
-      const merged = activeEquipmentEntries();
-      const category = EQUIPMENT_SUBTABS.find((s) => s.id === subtab) ?? EQUIPMENT_SUBTABS[0];
-      // Order entries by type within the subtab so the group headings stay
-      // contiguous. The merged order (defaults first, then custom entries)
-      // stays intact within each type. A heading that would repeat the tab
-      // label is skipped: a single-type subtab has no headings at all, and
-      // a multi-type subtab leaves its namesake type unheaded, so only the
-      // other types announce themselves.
-      return category.types.flatMap((type) => {
-        const group = TYPE_GROUPS[type] ?? type;
-        return merged
-          .filter(({ entry }) => entry.type === type)
+    const equipmentPanel = mountLibraryPanel(mustGetElement('library-equipment-container'), {
+      addLabel: 'New item',
+      subtabs: EQUIPMENT_SUBTABS,
+      getEntries: (subtab) => {
+        const merged = activeEquipmentEntries();
+        const category = EQUIPMENT_SUBTABS.find((s) => s.id === subtab) ?? EQUIPMENT_SUBTABS[0];
+        // Order entries by type within the subtab so the group headings stay
+        // contiguous. The merged order (defaults first, then custom entries)
+        // stays intact within each type. A heading that would repeat the tab
+        // label is skipped: a single-type subtab has no headings at all, and
+        // a multi-type subtab leaves its namesake type unheaded, so only the
+        // other types announce themselves.
+        return category.types.flatMap((type) => {
+          const group = TYPE_GROUPS[type] ?? type;
+          return merged
+            .filter(({ entry }) => entry.type === type)
+            .map(({ entry, source }) => ({
+              key: equipmentKey(entry),
+              name: entry.name,
+              summary:
+                itemSummary(/** @type {import('../types/entities.js').InventoryItem} */ (entry)) ||
+                entry.description ||
+                '',
+              source,
+              group: category.types.length > 1 && group !== category.label ? group : undefined,
+            }));
+        });
+      },
+      // The full item form appears inline in the rail. Editing a built-in
+      // default stores the result as an override. A new name creates a new
+      // custom entry.
+      buildEditor: (key, close) => {
+        const found = key
+          ? activeEquipmentEntries().find(({ entry }) => equipmentKey(entry) === key)
+          : null;
+        return buildItemForm({
+          item: found
+            ? /** @type {import('../types/entities.js').InventoryItem} */ ({
+                id: 'library',
+                quantity: 1,
+                notes: '',
+                ...found.entry,
+              })
+            : null,
+          template: true,
+          submitLabel: found ? 'Save' : 'Add',
+          onCancel: close,
+          onSubmit: (fields) => {
+            const { quantity: _quantity, notes: _notes, ...rest } = fields;
+            const entry = /** @type {EquipmentTemplate} */ (rest);
+            const newKey = equipmentKey(entry);
+            const target = activeEquipmentEntries().find((e) => equipmentKey(e.entry) === newKey);
+            if (renameConflict({ found, target, renamed: key !== newKey })) {
+              app.toasts.show(
+                `Another item is already named "${entry.name.trim()}". Choose a different name.`,
+                { level: 'error' },
+              );
+              return;
+            }
+            // A rename or a type change removes the old custom entry instead
+            // of leaving both. Renaming a default only adds the renamed copy.
+            // A rename onto the name and type of another entry is refused,
+            // because the upsert would replace that entry.
+            updateCustom((base) => {
+              const moved = key && key !== newKey;
+              const next = moved ? removeEntry(base.equipment, key, equipmentKey) : base.equipment;
+              return { ...base, equipment: upsertEntry(next, entry, equipmentKey) };
+            });
+            close();
+          },
+        });
+      },
+      onRemove: makeRemoveHandler('entry', (key) =>
+        updateCustom((base) => ({
+          ...base,
+          equipment: removeEntry(base.equipment, key, equipmentKey),
+        })),
+      ),
+    });
+
+    // --- Creatures -------------------------------------------------------------
+
+    const storeCreature = makeKeyedStore(
+      'creatures',
+      'creature',
+      activeCreatureEntries,
+      DEFAULT_CREATURES,
+    );
+
+    const creaturePanel = mountLibraryPanel(mustGetElement('library-creatures-container'), {
+      addLabel: 'New creature',
+      facets: [{ id: 'cr', label: 'Challenge rating', all: 'Any CR' }],
+      subtabs: CREATURE_SUBTABS,
+      getEntries: (subtab) =>
+        activeCreatureEntries()
+          .filter(({ entry }) => (entry.disposition === 'hostile') === (subtab === 'foes'))
           .map(({ entry, source }) => ({
-            key: equipmentKey(entry),
+            key: nameKey(entry),
             name: entry.name,
-            summary:
-              itemSummary(/** @type {import('../types/entities.js').InventoryItem} */ (entry)) ||
-              entry.description ||
-              '',
+            summary: creatureSummary(entry),
             source,
-            group: category.types.length > 1 && group !== category.label ? group : undefined,
-          }));
-      });
-    },
-    // The full item form appears inline in the rail. Editing a built-in
-    // default stores the result as an override. A new name creates a new
-    // custom entry.
-    buildEditor: (key, close) => {
-      const found = key
-        ? activeEquipmentEntries().find(({ entry }) => equipmentKey(entry) === key)
-        : null;
-      return buildItemForm({
-        item: found
-          ? /** @type {import('../types/entities.js').InventoryItem} */ ({
-              id: 'library',
-              quantity: 1,
-              notes: '',
-              ...found.entry,
-            })
-          : null,
-        template: true,
-        submitLabel: found ? 'Save' : 'Add',
-        onCancel: close,
-        onSubmit: (fields) => {
-          const { quantity: _quantity, notes: _notes, ...rest } = fields;
-          const entry = /** @type {EquipmentTemplate} */ (rest);
-          const newKey = equipmentKey(entry);
-          const target = activeEquipmentEntries().find((e) => equipmentKey(e.entry) === newKey);
-          if (renameConflict({ found, target, renamed: key !== newKey })) {
-            app.toasts.show(
-              `Another item is already named "${entry.name.trim()}". Choose a different name.`,
-              { level: 'error' },
-            );
-            return;
-          }
-          // A rename or a type change removes the old custom entry instead
-          // of leaving both. Renaming a default only adds the renamed copy.
-          // A rename onto the name and type of another entry is refused,
-          // because the upsert would replace that entry.
-          updateCustom((base) => {
-            const moved = key && key !== newKey;
-            const next = moved ? removeEntry(base.equipment, key, equipmentKey) : base.equipment;
-            return { ...base, equipment: upsertEntry(next, entry, equipmentKey) };
-          });
-          close();
-        },
-      });
-    },
-    onRemove: makeRemoveHandler('entry', (key) =>
-      updateCustom((base) => ({
-        ...base,
-        equipment: removeEntry(base.equipment, key, equipmentKey),
-      })),
-    ),
-  });
+            tags: creatureTags(entry),
+          })),
+      // The full creature form appears inline in the rail. The subtab picks
+      // the field spec for a new entry, and an existing entry's disposition
+      // picks it on edit. Editing a built-in default stores the result as an
+      // override. A new name creates a new custom entry.
+      buildEditor: (key, close, subtab) => {
+        const found = key
+          ? activeCreatureEntries().find(({ entry }) => nameKey(entry) === key)
+          : null;
+        return buildCreatureTemplateForm({
+          template: found?.entry ?? null,
+          hostile: found ? found.entry.disposition === 'hostile' : subtab === 'foes',
+          submitLabel: found ? 'Save' : 'Add',
+          onCancel: close,
+          onSubmit: (fields) => {
+            if (storeCreature(key, fields)) close();
+          },
+        });
+      },
+      onRemove: makeRemoveHandler('creature', (key) =>
+        updateCustom((base) => ({ ...base, creatures: removeEntry(base.creatures, key, nameKey) })),
+      ),
+      // Spawn a campaign creature from a template. The matching campaign
+      // dialog opens pre-filled from the template, with placement set to the
+      // party position by default.
+      spawnLabel: 'Add to campaign',
+      onSpawn: (key) => {
+        const found = activeCreatureEntries().find(({ entry }) => nameKey(entry) === key);
+        if (!found) return;
+        const position = { ...app.partyTracker.getPosition() };
+        creatureForm(app, null, position, found.entry);
+      },
+    });
 
-  // --- Creatures -------------------------------------------------------------
+    // --- Spells ----------------------------------------------------------------
 
-  const storeCreature = makeKeyedStore(
-    'creatures',
-    'creature',
-    activeCreatureEntries,
-    DEFAULT_CREATURES,
-  );
+    const storeSpell = makeKeyedStore('spells', 'spell', activeSpellEntries, DEFAULT_SPELLS);
 
-  const creaturePanel = mountLibraryPanel(mustGetElement('library-creatures-container'), {
-    addLabel: 'New creature',
-    facets: [{ id: 'cr', label: 'Challenge rating', all: 'Any CR' }],
-    subtabs: CREATURE_SUBTABS,
-    getEntries: (subtab) =>
-      activeCreatureEntries()
-        .filter(({ entry }) => (entry.disposition === 'hostile') === (subtab === 'foes'))
-        .map(({ entry, source }) => ({
-          key: nameKey(entry),
-          name: entry.name,
-          summary: creatureSummary(entry),
-          source,
-          tags: creatureTags(entry),
-        })),
-    // The full creature form appears inline in the rail. The subtab picks
-    // the field spec for a new entry, and an existing entry's disposition
-    // picks it on edit. Editing a built-in default stores the result as an
-    // override. A new name creates a new custom entry.
-    buildEditor: (key, close, subtab) => {
-      const found = key
-        ? activeCreatureEntries().find(({ entry }) => nameKey(entry) === key)
-        : null;
-      return buildCreatureTemplateForm({
-        template: found?.entry ?? null,
-        hostile: found ? found.entry.disposition === 'hostile' : subtab === 'foes',
-        submitLabel: found ? 'Save' : 'Add',
-        onCancel: close,
-        onSubmit: (fields) => {
-          if (storeCreature(key, fields)) close();
-        },
-      });
-    },
-    onRemove: makeRemoveHandler('creature', (key) =>
-      updateCustom((base) => ({ ...base, creatures: removeEntry(base.creatures, key, nameKey) })),
-    ),
-    // Spawn a campaign creature from a template. The matching campaign
-    // dialog opens pre-filled from the template, with placement set to the
-    // party position by default.
-    spawnLabel: 'Add to campaign',
-    onSpawn: (key) => {
-      const found = activeCreatureEntries().find(({ entry }) => nameKey(entry) === key);
-      if (!found) return;
-      const position = { ...app.partyTracker.getPosition() };
-      creatureForm(app, null, position, found.entry);
-    },
-  });
+    const spellPanel = mountLibraryPanel(mustGetElement('library-spells-container'), {
+      addLabel: 'New spell',
+      facets: [
+        { id: 'class', label: 'Class', all: 'All classes' },
+        { id: 'level', label: 'Level', all: 'All levels' },
+        { id: 'school', label: 'School', all: 'All schools' },
+      ],
+      getEntries: () =>
+        activeSpellEntries()
+          .slice()
+          .sort((a, b) => a.entry.level - b.entry.level || a.entry.name.localeCompare(b.entry.name))
+          .map(({ entry, source }) => ({
+            key: nameKey(entry),
+            name: entry.name,
+            summary: spellSummary(entry),
+            source,
+            tags: spellTags(entry),
+            group: entry.level === 0 ? 'Cantrips' : `Level ${entry.level}`,
+          })),
+      buildEditor: (key, close) => {
+        const found = key ? activeSpellEntries().find(({ entry }) => nameKey(entry) === key) : null;
+        return buildSpellForm({
+          spell: found?.entry ?? null,
+          submitLabel: found ? 'Save' : 'Add',
+          onCancel: close,
+          onSubmit: (fields) => {
+            if (storeSpell(key, fields)) close();
+          },
+        });
+      },
+      onRemove: makeRemoveHandler('spell', (key) =>
+        updateCustom((base) => ({ ...base, spells: removeEntry(base.spells, key, nameKey) })),
+      ),
+    });
 
-  // --- Spells ----------------------------------------------------------------
+    // --- Feats -----------------------------------------------------------------
 
-  const storeSpell = makeKeyedStore('spells', 'spell', activeSpellEntries, DEFAULT_SPELLS);
+    const storeFeat = makeKeyedStore('feats', 'feat', activeFeatEntries, DEFAULT_FEATS);
 
-  const spellPanel = mountLibraryPanel(mustGetElement('library-spells-container'), {
-    addLabel: 'New spell',
-    facets: [
-      { id: 'class', label: 'Class', all: 'All classes' },
-      { id: 'level', label: 'Level', all: 'All levels' },
-      { id: 'school', label: 'School', all: 'All schools' },
-    ],
-    getEntries: () =>
-      activeSpellEntries()
-        .slice()
-        .sort((a, b) => a.entry.level - b.entry.level || a.entry.name.localeCompare(b.entry.name))
-        .map(({ entry, source }) => ({
-          key: nameKey(entry),
-          name: entry.name,
-          summary: spellSummary(entry),
-          source,
-          tags: spellTags(entry),
-          group: entry.level === 0 ? 'Cantrips' : `Level ${entry.level}`,
-        })),
-    buildEditor: (key, close) => {
-      const found = key ? activeSpellEntries().find(({ entry }) => nameKey(entry) === key) : null;
-      return buildSpellForm({
-        spell: found?.entry ?? null,
-        submitLabel: found ? 'Save' : 'Add',
-        onCancel: close,
-        onSubmit: (fields) => {
-          if (storeSpell(key, fields)) close();
-        },
-      });
-    },
-    onRemove: makeRemoveHandler('spell', (key) =>
-      updateCustom((base) => ({ ...base, spells: removeEntry(base.spells, key, nameKey) })),
-    ),
-  });
-
-  // --- Feats -----------------------------------------------------------------
-
-  const storeFeat = makeKeyedStore('feats', 'feat', activeFeatEntries, DEFAULT_FEATS);
-
-  const featPanel = mountLibraryPanel(mustGetElement('library-feats-container'), {
-    addLabel: 'New feat',
-    getEntries: () =>
-      activeFeatEntries()
-        .slice()
-        .sort((a, b) => a.entry.name.localeCompare(b.entry.name))
-        .map(({ entry, source }) => ({
-          key: nameKey(entry),
-          name: entry.name,
-          summary: featSummary(entry),
-          source,
-        })),
-    buildEditor: (key, close) => {
-      const found = key ? activeFeatEntries().find(({ entry }) => nameKey(entry) === key) : null;
-      return buildFeatForm({
-        feat: found?.entry ?? null,
-        submitLabel: found ? 'Save' : 'Add',
-        onCancel: close,
-        onSubmit: (fields) => {
-          if (storeFeat(key, fields)) close();
-        },
-      });
-    },
-    onRemove: makeRemoveHandler('feat', (key) =>
-      updateCustom((base) => ({ ...base, feats: removeEntry(base.feats, key, nameKey) })),
-    ),
-  });
+    const featPanel = mountLibraryPanel(mustGetElement('library-feats-container'), {
+      addLabel: 'New feat',
+      getEntries: () =>
+        activeFeatEntries()
+          .slice()
+          .sort((a, b) => a.entry.name.localeCompare(b.entry.name))
+          .map(({ entry, source }) => ({
+            key: nameKey(entry),
+            name: entry.name,
+            summary: featSummary(entry),
+            source,
+          })),
+      buildEditor: (key, close) => {
+        const found = key ? activeFeatEntries().find(({ entry }) => nameKey(entry) === key) : null;
+        return buildFeatForm({
+          feat: found?.entry ?? null,
+          submitLabel: found ? 'Save' : 'Add',
+          onCancel: close,
+          onSubmit: (fields) => {
+            if (storeFeat(key, fields)) close();
+          },
+        });
+      },
+      onRemove: makeRemoveHandler('feat', (key) =>
+        updateCustom((base) => ({ ...base, feats: removeEntry(base.feats, key, nameKey) })),
+      ),
+    });
+    return [equipmentPanel, creaturePanel, spellPanel, featPanel];
+  };
+  /** The mounted lists, or null before the first visit to Library mode. */
+  let panels = /** @type {{ update: () => void }[] | null} */ (null);
+  app.actions.showLibrary = () => {
+    panels ??= mountPanels();
+  };
 
   // --- Library file controls -------------------------------------------------
 

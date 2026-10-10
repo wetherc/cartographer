@@ -73,6 +73,7 @@ export const ACTION_NAMES = [
   'redoStroke',
   'generateWorld',
   'onModeChanged',
+  'showLibrary',
   'onRoleChanged',
   'setMode',
   'mergeQueuedPatches',

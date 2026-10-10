@@ -1012,6 +1012,11 @@ import, reset, and the automatic load at startup. The creature list has two
 subtabs: Foes for the hostile templates, and People for the rest. An edit
 that changes a template's disposition moves it to the other subtab. "Add to
 campaign" opens the campaign's creature dialog, seeded from the template.
+The four lists mount on the first switch to Library mode, through
+`app.actions.showLibrary`, which `sessionControls.js` calls on that switch.
+They contain about a quarter of the page's elements, and a Player tab cannot
+enter Library mode, so a Player tab never builds them. `refresh` updates only
+the lists that are mounted.
 
 The custom library is not campaign state, because it belongs to the GM and
 not to one campaign. `library/LibraryMerge.js` has the built-in defaults and the

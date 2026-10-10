@@ -204,6 +204,8 @@ export interface AppActions {
   // the new world.
   generateWorld(): Promise<{ partyStart: boolean } | null>;
   onModeChanged(mode: AppMode): void;
+  // libraryWiring: mount the Library lists on the first visit to Library mode.
+  showLibrary(): void;
   onRoleChanged(role: ViewRole): void;
   // sessionControls
   setMode(mode: AppMode): void;
