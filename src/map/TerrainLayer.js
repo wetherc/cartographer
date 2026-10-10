@@ -26,6 +26,7 @@
  * layer offset and copied back lands on the same pixels as a direct draw.
  */
 
+import { createOffscreenCanvas } from './CanvasFactory.js';
 /** @typedef {{ x: number, y: number, w: number, h: number }} Rect */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 
@@ -209,15 +210,7 @@ export class TerrainLayer {
    * @param {{ createCanvas?: (width: number, height: number) => HTMLCanvasElement | null }} [options]
    */
   constructor(options = {}) {
-    this.createCanvas =
-      options.createCanvas ??
-      ((width, height) => {
-        if (typeof document === 'undefined') return null;
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        return canvas;
-      });
+    this.createCanvas = options.createCanvas ?? createOffscreenCanvas;
     /** @type {HTMLCanvasElement | null} */
     this.canvas = null;
     /** @type {CanvasRenderingContext2D | null} */

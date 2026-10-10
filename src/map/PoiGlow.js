@@ -16,6 +16,7 @@
  * Every side effect is injected, so the cache is testable without a DOM.
  */
 
+import { createOffscreenCanvas } from './CanvasFactory.js';
 import { INK } from './CanvasInk.js';
 
 /**
@@ -62,15 +63,7 @@ export class PoiGlow {
    * @param {{ createCanvas?: (width: number, height: number) => HTMLCanvasElement | null }} [options]
    */
   constructor(options = {}) {
-    this.createCanvas =
-      options.createCanvas ??
-      ((width, height) => {
-        if (typeof document === 'undefined') return null;
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        return canvas;
-      });
+    this.createCanvas = options.createCanvas ?? createOffscreenCanvas;
     /**
      * Sprites by outline size, in least recently used order: a hit moves its
      * entry to the end, and an insert past the limit drops the first entry.

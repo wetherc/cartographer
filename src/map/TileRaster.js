@@ -18,6 +18,7 @@
  * memory ceiling are testable without a DOM.
  */
 
+import { createOffscreenCanvas } from './CanvasFactory.js';
 import { isSafeImageRef } from '../storage/ImageRefs.js';
 
 /**
@@ -104,14 +105,7 @@ export class TileRaster {
      */
     this.enabled = options.enabled ?? true;
     this.createImage = options.createImage ?? (() => new Image());
-    this.createCanvas =
-      options.createCanvas ??
-      ((width, height) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        return canvas;
-      });
+    this.createCanvas = options.createCanvas ?? createOffscreenCanvas;
 
     /**
      * Decoded source images, keyed by ref. The PNG export and the generator

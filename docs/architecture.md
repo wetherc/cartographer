@@ -66,6 +66,9 @@ the codebase with no browser. A `no-restricted-imports` rule in
 browser API directly, and the browser checks cover them:
 
 - `map/TileRaster.js` and `map/MapExport.js` draw to an offscreen canvas.
+- `map/CanvasFactory.js` creates the offscreen canvas of the map caches.
+  It returns null when there is no `document`, so a cache under `node --test`
+  draws direct.
 - `storage/fileIO.js` starts a file download.
 - `storage/SaveManager.js`, `storage/PlayerPatch.js`, and
   `storage/GMLock.js` listen for the `storage` event of other tabs.
