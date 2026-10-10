@@ -2,7 +2,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, exitLabel } from './MapExits.js';
 import { edgeExitBands } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
-import { drawPlatedLabel } from './CanvasText.js';
+import { drawPlatedLabel, drawPlatedLabels } from './CanvasText.js';
 import { coordLabelLayout, visibleCoordLabels } from './CoordLabels.js';
 import { PoiGlow } from './PoiGlow.js';
 
@@ -10,6 +10,24 @@ import { PoiGlow } from './PoiGlow.js';
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 /** @typedef {import('../types/map.js').MapExit} MapExit */
 /** @typedef {import('./ExitBands.js').ExitBand} ExitBand */
+
+/**
+ * The style of a run of coordinate numbers. Pinned labels sit over map art, so
+ * they get a translucent dark pill behind the digits, and draw at reduced
+ * opacity. Unpinned labels float on the empty canvas around the grid and need
+ * neither.
+ * @param {number} fontSize
+ * @param {boolean} pinned
+ * @returns {import("./CanvasText.js").LabelOpts}
+ */
+function coordLabelOpts(fontSize, pinned) {
+  return {
+    fontSize,
+    color: INK.coordText,
+    plate: pinned ? 'pill' : null,
+    alpha: pinned ? 0.65 : 1,
+  };
+}
 
 /**
  * This class draws the decoration layer of the map render. It covers
@@ -44,27 +62,17 @@ export class MapDecorations {
     if (!view.node || !layout) return;
     const { fontSize, colY, rowX, colPinned, rowPinned } = layout;
     const { columns, rows } = visibleCoordLabels(view, layout);
-    for (const c of columns) this._drawCoordLabel(c.text, c.x, colY, fontSize, colPinned);
-    for (const r of rows) this._drawCoordLabel(r.text, rowX, r.y, fontSize, rowPinned);
-  }
-
-  /**
-   * Draw one coordinate number. Pinned labels sit over map art, so they get a
-   * translucent dark pill behind the digits, and draw at reduced opacity.
-   * Unpinned labels float on the empty canvas around the grid and need neither.
-   * @param {string} text
-   * @param {number} x
-   * @param {number} y
-   * @param {number} fontSize
-   * @param {boolean} pinned
-   */
-  _drawCoordLabel(text, x, y, fontSize, pinned) {
-    drawPlatedLabel(this.host.ctx, text, x, y, {
-      fontSize,
-      color: INK.coordText,
-      plate: pinned ? 'pill' : null,
-      alpha: pinned ? 0.65 : 1,
-    });
+    const ctx = this.host.ctx;
+    drawPlatedLabels(
+      ctx,
+      columns.map((c) => ({ text: c.text, x: c.x, y: colY })),
+      coordLabelOpts(fontSize, colPinned),
+    );
+    drawPlatedLabels(
+      ctx,
+      rows.map((r) => ({ text: r.text, x: rowX, y: r.y })),
+      coordLabelOpts(fontSize, rowPinned),
+    );
   }
 
   /**

@@ -68,6 +68,20 @@ export function labelFont(fontSize, weight = '600') {
  * @param {LabelOpts} opts
  */
 export function drawPlatedLabel(ctx, text, x, y, opts) {
+  drawPlatedLabels(ctx, [{ text, x, y }], opts);
+}
+
+/**
+ * Draw a run of labels that share one style. The font, alignment, and alpha
+ * are set once for the whole run, inside one save and restore, so a run of
+ * coordinate digits parses the font string once rather than once per label.
+ * Each label draws its plate and then its text, in list order, so a later
+ * plate covers an earlier label the same way separate calls would.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Iterable<{ text: string, x: number, y: number }>} items
+ * @param {LabelOpts} opts
+ */
+export function drawPlatedLabels(ctx, items, opts) {
   const {
     fontSize,
     color = INK.labelText,
@@ -85,23 +99,26 @@ export function drawPlatedLabel(ctx, text, x, y, opts) {
   ctx.font = labelFont(fontSize, weight);
   ctx.textAlign = align;
   ctx.textBaseline = baseline;
-  if (plate) {
-    const w = ctx.measureText(text).width + padX * 2;
-    const h = fontSize + padY * 2;
-    // The plate wraps the text where the text will land, so it follows the
-    // same alignment, and the padding falls outside the glyphs on every side.
-    let left = x - padX;
-    if (align === 'center') left = x - w / 2;
-    else if (align === 'right' || align === 'end') left = x - w + padX;
-    let top = y - padY;
-    if (baseline === 'middle') top = y - h / 2;
-    else if (baseline === 'bottom' || baseline === 'alphabetic') top = y - fontSize - padY;
-    ctx.fillStyle = plateColor;
-    ctx.beginPath();
-    ctx.roundRect(left, top, w, h, plate === 'pill' ? h / 4 : 0);
-    ctx.fill();
+  if (!plate) ctx.fillStyle = color;
+  const h = fontSize + padY * 2;
+  for (const { text, x, y } of items) {
+    if (plate) {
+      const w = ctx.measureText(text).width + padX * 2;
+      // The plate wraps the text where the text will land, so it follows the
+      // same alignment, and the padding falls outside the glyphs on every side.
+      let left = x - padX;
+      if (align === 'center') left = x - w / 2;
+      else if (align === 'right' || align === 'end') left = x - w + padX;
+      let top = y - padY;
+      if (baseline === 'middle') top = y - h / 2;
+      else if (baseline === 'bottom' || baseline === 'alphabetic') top = y - fontSize - padY;
+      ctx.fillStyle = plateColor;
+      ctx.beginPath();
+      ctx.roundRect(left, top, w, h, plate === 'pill' ? h / 4 : 0);
+      ctx.fill();
+      ctx.fillStyle = color;
+    }
+    ctx.fillText(text, x, y);
   }
-  ctx.fillStyle = color;
-  ctx.fillText(text, x, y);
   ctx.restore();
 }

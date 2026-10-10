@@ -247,7 +247,10 @@ max }, pixelRatio)` scales a font from the tile size on screen. The bounds
 are in CSS pixels, and `pixelRatio` converts them to buffer pixels, so a
 label on a 2x screen never draws under `min` CSS pixels. `drawPlatedLabel(ctx,
 text, x, y, opts)` sets the font and alignment, draws the pill or rectangle
-behind the text, and restores the context.
+behind the text, and restores the context. `drawPlatedLabels(ctx, items,
+opts)` draws a run of labels in one style, and sets the font and alignment
+once for the run. The coordinate digits and the region names draw this way,
+so a frame does not parse the font string once per label.
 
 Each caller keeps its own scale, because the bounds depend on what the label
 is drawn over. Coordinate digits are large on empty canvas, and a character

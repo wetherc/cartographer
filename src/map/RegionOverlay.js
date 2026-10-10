@@ -1,7 +1,7 @@
 import { blockRect, cellEdge, newBlockRect } from './MapGeometry.js';
 import { groupOutline, regionSlots } from './RegionOutline.js';
 import { INK } from './CanvasInk.js';
-import { drawPlatedLabel, labelFont } from './CanvasText.js';
+import { drawPlatedLabels, labelFont } from './CanvasText.js';
 import {
   regionBorderWidth,
   regionCellBoxes,
@@ -101,8 +101,10 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
   const measure = (/** @type {string} */ name) => ctx.measureText(name).width;
   const labels = regionNameLayout(view, revealedIds, tileSize, getNodeName, blockedIds, measure);
   ctx.restore();
-  for (const { name, box } of labels) {
-    drawPlatedLabel(ctx, name, box.x + padX, box.y + padY, {
+  drawPlatedLabels(
+    ctx,
+    labels.map(({ name, box }) => ({ text: name, x: box.x + padX, y: box.y + padY })),
+    {
       fontSize,
       weight: '400',
       align: 'left',
@@ -112,6 +114,6 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
       color: INK.regionLabelText,
       padX,
       padY,
-    });
-  }
+    },
+  );
 }
