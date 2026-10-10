@@ -237,6 +237,7 @@ export function takeFeat(character, feat) {
     ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
     ...(initiativeBonus > 0 ? { initiativeBonus } : {}),
     ...(stamp.concentrationAdvantage === true ? { concentrationAdvantage: true } : {}),
+    ...(stamp.hitDieFloor === true ? { hitDieFloor: true } : {}),
   };
   return {
     ...character,

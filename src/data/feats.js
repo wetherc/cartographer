@@ -19,6 +19,7 @@ export const FEAT_EFFECT_KINDS = [
   'hp',
   'initiative',
   'concentrationAdvantage',
+  'hitDieFloor',
 ];
 
 /** @type {Feat[]} */
@@ -55,7 +56,7 @@ export const DEFAULT_FEATS = deepFreeze([
     description:
       'Your Constitution rises by 1. When you roll a Hit Die to regain hit ' +
       'points, you regain at least twice your Constitution modifier.',
-    effects: [{ kind: 'asi', abilities: ['CON'] }],
+    effects: [{ kind: 'asi', abilities: ['CON'] }, { kind: 'hitDieFloor' }],
   },
   {
     id: 'grappler',

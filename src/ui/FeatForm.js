@@ -183,6 +183,14 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
     feat?.effects.some((e) => e.kind === 'concentrationAdvantage') ?? false,
   );
   setTip(concentration.label, 'Advantage on the CON save that keeps concentration after damage');
+  const hitDieFloor = checkbox(
+    'Hit die minimum',
+    feat?.effects.some((e) => e.kind === 'hitDieFloor') ?? false,
+  );
+  setTip(
+    hitDieFloor.label,
+    'A spent hit die heals at least twice the CON modifier, and at least 2',
+  );
 
   // A grid of options means nothing while its count is 0, and the rider and
   // ability controls mean nothing while their sections are off.
@@ -241,6 +249,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
         { kind: 'hp', perLevel: hpInput.value },
         { kind: 'initiative', bonus: initInput.value },
         ...(concentration.input.checked ? [{ kind: 'concentrationAdvantage' }] : []),
+        ...(hitDieFloor.input.checked ? [{ kind: 'hitDieFloor' }] : []),
         ...(rider.input.checked
           ? [
               {
@@ -279,6 +288,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       hpRow,
       initRow,
       fieldRow(concentration.label),
+      fieldRow(hitDieFloor.label),
       fieldRow(rider.label),
       riderRow,
       riderRollsRow,

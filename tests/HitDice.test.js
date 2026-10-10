@@ -29,6 +29,10 @@ import { withSpellSlots } from '../src/entities/SpellSlots.js';
 import { assignLevel } from '../src/entities/LevelAssign.js';
 import { createResource } from '../src/entities/Resource.js';
 import { dropToDying, killOutright } from '../src/entities/DeathSaves.js';
+import { buildStamp } from '../src/entities/FeatChoices.js';
+import { takeFeat } from '../src/entities/LevelUp.js';
+import { DEFAULT_FEATS } from '../src/data/feats.js';
+import { normalizeFeat } from '../src/library/Library.js';
 
 /** @param {number} [con] */
 function fighter(con = 10) {
@@ -409,4 +413,29 @@ test('a long rest restores half of the total hit dice, largest dice first', () =
   const mixed = spendResource(spendResource(duo, 'hit-dice-d10', 1), 'hit-dice-d6', 3);
   assert.deepEqual(dice(restoreHitDice(mixed.resources)), { 'hit-dice-d10': 3, 'hit-dice-d6': 2 });
   assert.deepEqual(restoreHitDice([]), [], 'no hit dice, nothing to restore');
+});
+
+test('spendHitDie with Durable heals at least twice CON, and at least 2', () => {
+  const durable = buildStamp(/** @type {any} */ (DEFAULT_FEATS.find((f) => f.id === 'durable')), {
+    abilities: ['CON'],
+  });
+  assert.equal(durable.hitDieFloor, true);
+  /** @param {number} con */
+  const hurt = (con) =>
+    spendResource(
+      withHitDice(withHP({ ...fighter(con), classes: [{ classId: 'fighter', level: 4 }] }, 40)),
+      'hp',
+      30,
+    );
+  // CON 13 + 1 = 14 after the feat, so a roll of 1 heals 4 rather than 1 + 2.
+  const taken = takeFeat(hurt(13), durable);
+  assert.equal(Object.values(taken.asiChoices ?? {})[0]?.hitDieFloor, true);
+  assert.equal(spendHitDie(taken, null, () => 0).healed, 4);
+  assert.equal(spendHitDie(hurt(14), null, () => 0).healed, 3);
+  // A negative CON modifier still heals at least 2.
+  const frail = takeFeat(hurt(7), { ...durable, increases: {} });
+  assert.equal(spendHitDie(frail, null, () => 0).healed, 2);
+  assert.equal(spendHitDie(hurt(7), null, () => 0).healed, 0);
+  const custom = normalizeFeat({ name: 'D', effects: [{ kind: 'hitDieFloor' }] }, 'd');
+  assert.deepEqual(custom.effects, [{ kind: 'hitDieFloor' }]);
 });

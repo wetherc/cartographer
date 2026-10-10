@@ -135,6 +135,8 @@ export function normalizeFeat(raw, id) {
         if (e.kind === 'concentrationAdvantage') {
           return [{ kind: /** @type {'concentrationAdvantage'} */ ('concentrationAdvantage') }];
         }
+        if (e.kind === 'hitDieFloor')
+          return [{ kind: /** @type {'hitDieFloor'} */ ('hitDieFloor') }];
         if (e.kind === 'hp') {
           // A whole number of HP per level, 1 to 10. Zero grants nothing.
           const perLevel = clampInt(e.perLevel, 0, 10, 0);

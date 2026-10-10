@@ -134,6 +134,7 @@ export function buildStamp(feat, picks) {
     0,
   );
   const concentration = feat.effects.some((e) => e.kind === 'concentrationAdvantage');
+  const hitDieFloor = feat.effects.some((e) => e.kind === 'hitDieFloor');
   return {
     name: feat.name,
     featId: feat.id,
@@ -143,5 +144,6 @@ export function buildStamp(feat, picks) {
     ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
     ...(initiativeBonus > 0 ? { initiativeBonus } : {}),
     ...(concentration ? { concentrationAdvantage: true } : {}),
+    ...(hitDieFloor ? { hitDieFloor: true } : {}),
   };
 }

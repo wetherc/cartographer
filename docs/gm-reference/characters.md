@@ -278,7 +278,7 @@ of a fight does not heal by mistake.
 
 | Rest | Hit dice |
 | --- | --- |
-| Short rest | The Short rest dialog asks how many dice each hurt character spends. Each die heals the roll plus the CON modifier, and spending stops at full HP |
+| Short rest | The Short rest dialog asks how many dice each hurt character spends. Each die heals the roll plus the CON modifier, and spending stops at full HP. With the Durable feat, each die heals at least twice the CON modifier, and at least 2 |
 | Long rest | Restores half of the total hit dice, at least one, largest dice first. For example, Fighter 3 / Wizard 3 with every die spent gets three dice back |
 
 ## Fighting styles

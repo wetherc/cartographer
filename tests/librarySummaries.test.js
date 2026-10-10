@@ -52,6 +52,7 @@ test('featSummary names each effect kind', () => {
     featSummary(feat([{ kind: 'concentrationAdvantage' }])),
     'advantage on concentration saves',
   );
+  assert.equal(featSummary(feat([{ kind: 'hitDieFloor' }])), 'hit die minimum');
   assert.equal(featSummary(feat([{ kind: 'hp', perLevel: 2 }])), '+2 HP per level');
   assert.equal(featSummary(feat([{ kind: 'initiative', bonus: 5 }])), '+5 initiative');
   assert.match(

@@ -286,7 +286,9 @@ export function syncHitDice(character) {
 /**
  * Spend one hit die for healing, the short-rest mechanic. The function rolls
  * the die, adds the CON modifier so the heal is never negative, restores
- * that much HP, and marks the die spent. The `die` parameter picks which
+ * that much HP, and marks the die spent. A feat with the `hitDieFloor`
+ * effect (Durable) raises the heal to at least twice the CON modifier, and
+ * to at least 2. The `die` parameter picks which
  * pool to use. When `die` is omitted, the function spends the first pool
  * with a die left. A legacy sizeless pool rolls the primary class's die. A
  * character with no matching charged pool, or no resolvable die size,
@@ -306,10 +308,22 @@ export function spendHitDie(character, die = null, rng = Math.random) {
   const size = pool ? (hitDieOfPool(pool) ?? hitDieFor(character)) : null;
   if (!pool || size === null || isDead(character)) return { character, healed: 0, rolled: 0 };
   const rolled = 1 + Math.floor(rng() * size);
-  const healed = Math.max(0, rolled + conModifierOf(character));
+  const con = conModifierOf(character);
+  const healed = Math.max(hasHitDieFloor(character) ? Math.max(2 * con, 2) : 0, rolled + con);
   const resources = updateById(character.resources, pool.id, (r) => spend(r, 1));
   const next = restoreResource({ ...character, resources }, HP_RESOURCE_ID, healed);
   return { character: next, healed, rolled };
+}
+
+/**
+ * Whether a taken feat sets a minimum on hit-die healing (Durable).
+ * @param {Character} character
+ * @returns {boolean}
+ */
+function hasHitDieFloor(character) {
+  return Object.values(character.asiChoices ?? {}).some(
+    (choice) => choice?.type === 'feat' && choice.hitDieFloor === true,
+  );
 }
 
 /** @param {Character} character @returns {number} */

@@ -559,6 +559,9 @@ export type AsiChoice =
       /** True when the feat gives advantage on the CON save that keeps
        * concentration after damage (War Caster). */
       concentrationAdvantage?: boolean;
+      /** True when a spent hit die heals at least twice the CON modifier,
+       * and at least 2 (Durable). `HitDice.spendHitDie` reads it. */
+      hitDieFloor?: boolean;
     };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).

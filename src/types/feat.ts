@@ -44,7 +44,10 @@ export type FeatEffect =
   | { kind: 'initiative'; bonus: number }
   /** Advantage on the CON save that keeps concentration after damage (the
    * War Caster feat). */
-  | { kind: 'concentrationAdvantage' };
+  | { kind: 'concentrationAdvantage' }
+  /** A spent hit die heals at least twice the CON modifier, and at least 2
+   * (the Durable feat). */
+  | { kind: 'hitDieFloor' };
 
 /**
  * Proficiency lists, one per kind, as a feat or class-feature record stores
@@ -82,6 +85,8 @@ export interface FeatStamp {
   initiativeBonus?: number;
   /** True when the feat gives advantage on concentration saves. */
   concentrationAdvantage?: boolean;
+  /** True when the feat sets a minimum on hit-die healing. */
+  hitDieFloor?: boolean;
 }
 
 /** The checked part of a feat prerequisite. Every named part has to hold. */

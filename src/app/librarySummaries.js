@@ -41,6 +41,7 @@ export function featSummary(feat) {
     }
     if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
     if (effect.kind === 'concentrationAdvantage') return 'advantage on concentration saves';
+    if (effect.kind === 'hitDieFloor') return 'hit die minimum';
     if (effect.kind === 'hp') return `+${effect.perLevel} HP per level`;
     if (effect.kind === 'initiative') return `+${effect.bonus} initiative`;
     return [
