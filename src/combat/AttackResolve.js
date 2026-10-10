@@ -100,12 +100,22 @@ export function resolveAttack({ natural, total, ac, autoCrit = false, critOn = 2
  * The added dice take the weapon's own damage type, so they group with it in
  * the readout. They fall back to `bonus` for a weapon that lists no damage at
  * all.
+ *
+ * `critDice` is the count of extra weapon dice a critical hit adds (Brutal
+ * Critical and Savage Attacks, see `Features.extraCritDice`). Each is one more
+ * die of the weapon's first damage term, added once and not doubled. An
+ * ordinary hit, or a weapon with no damage dice, adds none.
  * @param {DamagePart[]} weaponDamage
- * @param {{ crit: boolean, bonusDice?: number, bonusDie?: DieType, sneakDice?: number }} opts
+ * @param {{ crit: boolean, bonusDice?: number, bonusDie?: DieType, sneakDice?: number, critDice?: number }} opts
  * @returns {DamagePart[]}
  */
-export function damageParts(weaponDamage, { crit, bonusDice = 0, bonusDie = 'd4', sneakDice = 0 }) {
+export function damageParts(
+  weaponDamage,
+  { crit, bonusDice = 0, bonusDie = 'd4', sneakDice = 0, critDice = 0 },
+) {
   const parts = weaponDamage.map((part) => (crit ? { ...part, count: part.count * 2 } : part));
+  const first = weaponDamage[0];
+  if (crit && critDice > 0 && first) parts.push({ ...first, count: critDice });
   /** @param {number} count @param {DieType} die */
   const add = (count, die) => {
     const dice = Math.max(0, Math.trunc(count) || 0);

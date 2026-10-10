@@ -619,6 +619,10 @@ The app follows the 5e rules for the rolls in this section.
   natural 19 or 20 from level 3 (Improved Critical), and with a natural 18
   to 20 from level 15 (Superior Critical). Such a roll also hits whatever
   the AC is.
+- A critical hit with a melee weapon adds more weapon damage dice that do
+  not double. Brutal Critical adds one die at barbarian level 9, two at 13,
+  and three at 17, and the half-orc Savage Attacks trait adds one. The damage
+  line of the log names them, as in `, extra critical dice +2d12`.
 - A natural 1 always misses.
 - On a hit, the damage dice roll with the ability modifier added.
   Proficiency never adds to damage.

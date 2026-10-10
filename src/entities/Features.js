@@ -120,3 +120,20 @@ export function critRange(character) {
   if (hasFeature(character, 'Superior Critical')) return 18;
   return hasFeature(character, 'Improved Critical') ? 19 : 20;
 }
+
+/**
+ * How many extra weapon damage dice a critical hit with a melee weapon adds,
+ * on top of the doubled dice. Brutal Critical adds one die at barbarian level
+ * 9, two at 13, and three at 17, from the level in the class that granted it.
+ * The half-orc Savage Attacks trait in the race snapshot adds one more. A
+ * creature has neither, so it gets 0.
+ * @param {Featured & { raceTraits?: { traits?: string[] } }} character
+ * @returns {number}
+ */
+export function extraCritDice(character) {
+  const classId = featureSource(character, 'Brutal Critical');
+  const level = classId ? classLevelOf(asCharacter(character), classId) : 0;
+  const brutal = level >= 17 ? 3 : level >= 13 ? 2 : level >= 9 ? 1 : 0;
+  const savage = character.raceTraits?.traits?.includes('Savage Attacks') ? 1 : 0;
+  return brutal + savage;
+}

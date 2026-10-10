@@ -4,7 +4,7 @@ import { attackTweak, rollDamage } from '../dice/DiceRoller.js';
 import { attackAbility, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { exhaustionLevel } from '../entities/Exhaustion.js';
-import { critRange, sneakAttackDice } from '../entities/Features.js';
+import { critRange, extraCritDice, sneakAttackDice } from '../entities/Features.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { hitRiderNote, hitRiderParts, hitRiders } from '../entities/HitRiders.js';
@@ -268,12 +268,17 @@ export function hitDamage(
   const disadvantaged = (rolledMode ?? setup.mode) === 'disadvantage';
   const sneakDice =
     tweaks.sneak && !disadvantaged && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
-  const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
+  const weaponDice = (twoHanded ? weapon.versatileDamage : weapon.damage) ?? [];
+  // Brutal Critical and Savage Attacks add weapon dice to a melee crit only.
+  const critDice = crit && setup.melee && weaponDice.length ? extraCritDice(attacker) : 0;
+  const parts = damageParts(weaponDice, {
     crit,
     bonusDice: tweaks.damageDice ?? 0,
     bonusDie: tweaks.damageDie ?? 'd4',
     sneakDice,
+    critDice,
   });
+  const critNote = critDice ? `, extra critical dice +${critDice}d${weaponDice[0].sides}` : '';
   // Surprise Attack dice take the weapon's damage type, and a crit doubles
   // them like any other damage die.
   const surprise = tweaks.surprise;
@@ -314,7 +319,7 @@ export function hitDamage(
   return {
     damage,
     sneakDice,
-    riderNote: hitRiderNote(riders, crit) + drinkNote + styleNote + surpriseNote,
+    riderNote: hitRiderNote(riders, crit) + drinkNote + styleNote + surpriseNote + critNote,
   };
 }
 

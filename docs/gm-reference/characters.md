@@ -215,7 +215,8 @@ sheet still needs the advantage set by hand. The remaining race traits are text 
 and the GM applies them: the Dragonborn Breath Weapon, Stonecunning,
 Trance, Naturally Stealthy, Halfling
 Nimbleness, Artificer's Lore, Tinker, Relentless Endurance,
-Savage Attacks, Hellish Resistance, Infernal Legacy, and Extra Language.
+Hellish Resistance, Infernal Legacy, and Extra Language. The app adds the
+Savage Attacks die to a melee critical hit.
 
 The class sets the hit die, and the class with its subclass sets the caster
 type. Max HP comes from the hit die plus the CON modifier per level. The Hill
