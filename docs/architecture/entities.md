@@ -137,7 +137,7 @@ records near it. The table gives the meaning of each word.
 The gear and tier types use the `Creature` prefix (`CreatureWeapon`,
 `CreatureArmor`, and `CreatureTier`) because they apply to foes and NPCs
 alike. Other code names with "enemy", such as `EnemyArmor.js` and
-`defaultEnemyGear`, also mean any creature, friendly or hostile.
+`defaultEnemyGear` in `CreatureLoadout.js`, also mean any creature, friendly or hostile.
 
 ### Creature AC
 

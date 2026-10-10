@@ -5,7 +5,8 @@ import { creatureFields, creatureFieldsChange } from '../src/view/forms/creature
 import { readCreatureFields } from '../src/view/forms/creatureRead.js';
 import { gearOptions } from '../src/view/forms/gearFields.js';
 import { applyFieldRules } from '../src/view/FieldRules.js';
-import { DEFAULT_CREATURE_HP, defaultEnemyGear } from '../src/entities/Creature.js';
+import { DEFAULT_CREATURE_HP } from '../src/entities/Creature.js';
+import { defaultEnemyGear } from '../src/entities/CreatureLoadout.js';
 import { defaultEnemyStats, STAT_KEYS } from '../src/entities/Modifiers.js';
 
 /** @param {import('../src/types/modal.js').ModalField[]} fields @param {string} name */

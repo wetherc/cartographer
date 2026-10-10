@@ -4,7 +4,6 @@ import {
   DEFAULT_CREATURE_HP,
   dispositionOptions,
   isCreature,
-  defaultEnemyGear,
   createCreature,
   withDefaults,
   effectiveStatBlock,
@@ -15,6 +14,7 @@ import {
   isDefeated,
   slay,
 } from '../src/entities/Creature.js';
+import { defaultEnemyGear } from '../src/entities/CreatureLoadout.js';
 import { toTemplate, fromTemplate } from '../src/entities/CreatureTemplate.js';
 import { createCondition } from '../src/entities/Conditions.js';
 import { elapse } from '../src/entities/TimedEffects.js';

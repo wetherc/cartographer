@@ -10,11 +10,8 @@
 
 import { crOptions } from '../../data/challenge.js';
 import { SKILL_IDS, skillName } from '../../data/skills.js';
-import {
-  DEFAULT_CREATURE_HP,
-  defaultEnemyGear,
-  dispositionOptions,
-} from '../../entities/Creature.js';
+import { DEFAULT_CREATURE_HP, dispositionOptions } from '../../entities/Creature.js';
+import { defaultEnemyGear } from '../../entities/CreatureLoadout.js';
 import {
   ABILITY_SCORES,
   defaultEnemyStats,

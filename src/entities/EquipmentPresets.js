@@ -28,7 +28,7 @@ import { DEFAULT_RANGES, WEAPON_PROPERTIES, clampWeaponRange } from './Weapons.j
 
 /**
  * 5e-standard weapon presets, per the SRD weapon table. Other modules
- * resolve these entries by name (`Creature.DEFAULT_LOADOUTS`, migration
+ * resolve these entries by name (`CreatureLoadout.DEFAULT_LOADOUTS`, migration
  * step 6), so a rename here breaks them.
  * @type {WeaponPreset[]}
  */

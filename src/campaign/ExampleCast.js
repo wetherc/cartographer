@@ -1,4 +1,5 @@
-import { createCreature, defaultEnemyGear } from '../entities/Creature.js';
+import { createCreature } from '../entities/Creature.js';
+import { defaultEnemyGear } from '../entities/CreatureLoadout.js';
 import { enemyArmor } from '../entities/EquipmentPresets.js';
 import { defaultEnemyStats } from '../entities/Modifiers.js';
 import {

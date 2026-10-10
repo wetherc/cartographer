@@ -14,7 +14,7 @@
  * enum) looks the same as the current shape without a version to compare.
  */
 
-import { defaultEnemyGear } from '../entities/Creature.js';
+import { defaultEnemyGear } from '../entities/CreatureLoadout.js';
 import { coerceWeapon } from '../entities/EquipmentPresets.js';
 import { slugId } from '../entities/Roster.js';
 import { xpForLevel } from '../entities/Experience.js';
