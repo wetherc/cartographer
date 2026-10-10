@@ -361,6 +361,9 @@ The gesture layers live beside `mapWiring.js`, each in its own file:
 - `mapTravel.js` handles Play mode: cell clicks, discovery of
   points of interest, and meetings with NPCs. It keeps its own views in step
   and does not call `resyncMapViews`.
+- `mapArrival.js` runs the effects of an arrival for `mapTravel.js` and the
+  exit and teleport modules: companions follow, placed creatures are met, the
+  location panels re-filter, and points of interest along a walk are found.
 - `mapExitTravel.js` handles the ways out of the node in view: a return to
   the parent node, and a walk across a border into the region beside it.
   `mapTravel.js` builds it and gives it the click helpers they share.
