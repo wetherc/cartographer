@@ -199,7 +199,7 @@ lists. The quest coercer gives each objective a unique id, because the panel
 keys every objective edit by id. It drops a link that names no node or no
 creature.
 
-`withNodeDefaults` (`map/TileGrid.js`) does the same job for nodes and their
+`withNodeDefaults` (`map/NodeDefaults.js`) does the same job for nodes and their
 tiles, and it drops any tile that it cannot read. `withRepairedParents` then
 clears a `parentId` that names the node itself or a node not in the save. It
 also breaks each parent loop by turning one node of the loop into a root.
@@ -288,7 +288,7 @@ with no point of interest. Written per cell, the 20,065 tiles of the example
 take 4,092,064 characters with every field and 1,506,124 characters with the
 default fields omitted.
 
-The inverse function is `withTileDefaults` (`map/TileGrid.js`). It fills
+The inverse function is `withTileDefaults` (`map/NodeDefaults.js`). It fills
 exactly those fields from absence, and every load runs it, so no code states
 a default twice. `deserialize` runs `withNodeDefaults` itself on load, so the
 unpack does not depend on `toTileGrid`.

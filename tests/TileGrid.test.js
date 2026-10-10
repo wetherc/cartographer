@@ -8,13 +8,15 @@ import {
   updateTileMetadata,
   resizeNode,
   tilesOutsideBounds,
-  withNodeDefaults,
-  withRepairedParents,
-  withRepairedLinks,
   overlayList,
   tilesById,
   TileGrid,
 } from '../src/map/TileGrid.js';
+import {
+  withNodeDefaults,
+  withRepairedParents,
+  withRepairedLinks,
+} from '../src/map/NodeDefaults.js';
 
 test('tilesById indexes a tile array, holding the tiles themselves', () => {
   const tiles = [createTile('0,0', 'grass.png'), createTile('1,0', 'water.png')];

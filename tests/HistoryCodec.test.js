@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { FOG_OP, NODE_OP, compactOps, expandOps } from '../src/storage/HistoryCodec.js';
 import { diffState, invertOps } from '../src/storage/StateDiff.js';
 import { applyOps } from '../src/storage/StateApply.js';
-import { createMapNode, createTile, withNodeDefaults } from '../src/map/TileGrid.js';
+import { createMapNode, createTile } from '../src/map/TileGrid.js';
+import { withNodeDefaults } from '../src/map/NodeDefaults.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { gridTiles } from './helpers/grid.js';
 

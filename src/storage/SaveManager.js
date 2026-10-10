@@ -6,12 +6,8 @@
  * localStorage.
  */
 
-import {
-  TileGrid,
-  withNodeDefaults,
-  withRepairedLinks,
-  withRepairedParents,
-} from '../map/TileGrid.js';
+import { TileGrid } from '../map/TileGrid.js';
+import { withNodeDefaults, withRepairedLinks, withRepairedParents } from '../map/NodeDefaults.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
 import { createEntityPacker } from './EntityPack.js';
@@ -163,7 +159,7 @@ export function serialize(state) {
  * the stored save of an app that no longer starts. The function removes
  * nodes with no id, breaks parent loops (`withRepairedParents`), and
  * clears tile links to missing nodes (`withRepairedLinks`).
- * `withNodeDefaults` (TileGrid) defends the tiles inside
+ * `withNodeDefaults` (NodeDefaults) defends the tiles inside
  * a node, and it also unpacks the tile fields `serialize` omits, so it runs
  * here, not only in `toTileGrid`. The entity `withDefaults` functions play
  * the same role one level up: they unpack the fields `packState` omitted,

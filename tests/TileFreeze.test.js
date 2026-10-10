@@ -6,13 +6,8 @@ import {
   isTileFreezingEnabled,
   setTileFreezing,
 } from '../src/map/TileFreeze.js';
-import {
-  createMapNode,
-  createTile,
-  resizeNode,
-  setTile,
-  withNodeDefaults,
-} from '../src/map/TileGrid.js';
+import { createMapNode, createTile, resizeNode, setTile } from '../src/map/TileGrid.js';
+import { withNodeDefaults } from '../src/map/NodeDefaults.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { eraseTile } from '../src/map/TilePaint.js';
 import { hideAll, revealAround } from '../src/map/FogOfWar.js';

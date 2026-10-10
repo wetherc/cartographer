@@ -7,7 +7,7 @@ import {
   samePosition,
 } from '../map/EditHistory.js';
 import { revertEdit } from '../map/EditRevert.js';
-import { withoutDeadLinks } from '../map/TileGrid.js';
+import { withoutDeadLinks } from '../map/NodeDefaults.js';
 import { collectSubtreeIds } from '../map/WorldTreeModel.js';
 import { deleteLanding, locationsAfterDelete } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';

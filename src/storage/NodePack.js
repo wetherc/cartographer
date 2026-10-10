@@ -6,7 +6,7 @@
  * an undo record stores whole.
  */
 
-import { withNodeDefaults } from '../map/TileGrid.js';
+import { withNodeDefaults } from '../map/NodeDefaults.js';
 import { nodeHoldsPayload } from './Assets.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { encodedOf, rememberEncoded } from './EncodedNodes.js';
@@ -20,7 +20,7 @@ import { record } from './RecordCoercion.js';
  * tiles are almost all plain unpainted terrain, and the undo ring multiplies
  * whatever the save costs.
  *
- * The inverse function is `withTileDefaults` (`map/TileGrid.js`), which
+ * The inverse function is `withTileDefaults` (`map/NodeDefaults.js`), which
  * every load path already runs. It fills exactly these fields from absence,
  * so packing needs no second statement of what a default value is. The code
  * copies every field except the default-valued ones, instead of picking the

@@ -1,12 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  TileGrid,
-  createMapNode,
-  createTile,
-  setTile,
-  withRepairedLinks,
-} from '../src/map/TileGrid.js';
+import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+import { withRepairedLinks } from '../src/map/NodeDefaults.js';
 import { buildState, deserialize, serialize } from '../src/storage/SaveManager.js';
 import { encodedOf, namesImageData } from '../src/storage/EncodedNodes.js';
 import { MAX_TOTAL_CELLS, decodeNodeList } from '../src/storage/TileCodec.js';

@@ -472,7 +472,7 @@ only the tile fields that differ between the two records. A change that
 lands after the edit therefore stays through the undo: a fog reveal, a
 discovered point of interest, an inspector note, or an adopted save from
 another tab. A restored tile link to a node deleted since the edit is
-cleared (`TileGrid.withoutDeadLinks`), and the load path clears the same
+cleared (`NodeDefaults.withoutDeadLinks`), and the load path clears the same
 dead links (`withRepairedLinks`).
 
 #### Shared node decisions

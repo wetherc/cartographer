@@ -13,7 +13,7 @@ import { packEntities } from '../../src/storage/EntityPack.js';
 import { hoistAssets } from '../../src/storage/Assets.js';
 import { encodeNodeTiles } from '../../src/storage/TileCodec.js';
 import { tabulateStrings } from '../../src/storage/StringTable.js';
-import { withTileDefaults } from '../../src/map/TileGrid.js';
+import { withTileDefaults } from '../../src/map/NodeDefaults.js';
 import { withDefaults as withCharacterDefaults } from '../../src/entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../../src/entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../../src/handout/Handouts.js';

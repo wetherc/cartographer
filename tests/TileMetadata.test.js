@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createTile, DEFAULT_TILE_METADATA, withTileDefaults } from '../src/map/TileGrid.js';
+import { createTile, DEFAULT_TILE_METADATA } from '../src/map/TileGrid.js';
+import { withTileDefaults } from '../src/map/NodeDefaults.js';
 import { setTileFreezing } from '../src/map/TileFreeze.js';
 
 test('a new tile shares the frozen default metadata', () => {
