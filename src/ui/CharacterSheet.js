@@ -1,45 +1,23 @@
-import { getHP, damageCharacter, spendResource, restoreResource } from '../entities/Character.js';
-import { xpForNextLevel } from '../entities/Experience.js';
-import { armorClass } from '../entities/Armor.js';
-import { speedNote, walkSpeed } from '../entities/Movement.js';
-import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
+import { spendResource, restoreResource } from '../entities/Character.js';
+import { isSlotPool, isPactPool } from '../entities/SpellSlots.js';
 import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
-import { exhaustionReadout } from '../view/ExhaustionView.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildFeaturesSection } from './CharacterFeatures.js';
 import { levelUpBanner } from './CharacterLevelBanner.js';
-import { formatModifier } from '../entities/Modifiers.js';
-import { initiativeReadout } from '../view/InitiativeBadge.js';
-import { passivePerception } from '../entities/Checks.js';
-import { characterProficiency, effectiveLevel, pendingLevels } from '../entities/Multiclass.js';
-import { sheetLevelText } from '../view/LevelUpCue.js';
 import { buildConditionsSection } from './CharacterConditions.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildQuickRolls, buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
-import { buildStatBar, buildSlotLine } from './CharacterBars.js';
+import { buildHeadBanner, buildHpLine, buildSlotPips } from './CharacterHead.js';
 import { addPoolButton, poolEditButtons } from './PoolEditor.js';
 import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
 import { statBadge } from './CharacterStatBadge.js';
-import { iconButton, textButton, emptyState } from './buttons.js';
+import { iconButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { setTip } from './Tooltip.js';
-import { buildHpAmountField, takeHpAmount } from './HpAmountField.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/view.js').SheetPermissions} SheetPermissions */
-
-/**
- * The header's XP line: the total against the start of the next level, or
- * the total alone at the top level.
- * @param {Character} character
- * @returns {string}
- */
-function xpProgress(character) {
-  const next = xpForNextLevel(character.level);
-  return next === null ? `XP ${character.xp}` : `XP ${character.xp} / ${next}`;
-}
 
 /**
  * This returns the pools the head and the stepper list do not already own.
@@ -159,7 +137,7 @@ export function mountCharacterSheet(
   // The HP amount field is rebuilt on each render. This value refills it,
   // so a typed amount stays through a re-render until a Damage or Heal
   // press sets it back to 1.
-  let hpAmount = 1;
+  const hpAmount = { value: 1 };
 
   const root = el('div', 'character-sheet');
   container.appendChild(root);
@@ -282,166 +260,24 @@ export function mountCharacterSheet(
     const main = el('div', 'character-sheet__col character-sheet__col--main');
     const side = el('div', 'character-sheet__col character-sheet__col--side');
 
-    const hp = getHP(character);
-    if (hp) {
-      /** @type {HTMLElement | null} */
-      let controls = null;
-      if (perms.hp) {
-        // The amount field sets how many HP each step button moves, so a big
-        // hit or heal is one click. A press sets the field back to 1, and an
-        // unusable entry disables both buttons (see `HpAmountField.js`).
-        const amount = () => takeHpAmount(amountInput) ?? 1;
-        // Bonus HP absorbs the hit before the pool does.
-        const damageButton = textButton(
-          'Damage',
-          () =>
-            hpStep ? hpStep.onStep(amount(), false) : commit(damageCharacter(live(), amount())),
-          {
-            icon: 'minus',
-            variant: 'danger',
-            className: 'character-sheet__hp-step',
-            ariaLabel: `Damage ${character.name}`,
-          },
-        );
-        const healButton = textButton(
-          'Heal',
-          () =>
-            hpStep
-              ? hpStep.onStep(amount(), true)
-              : commit(restoreResource(live(), 'hp', amount())),
-          {
-            icon: 'heal',
-            variant: 'success',
-            className: 'character-sheet__hp-step',
-            ariaLabel: `Heal ${character.name}`,
-          },
-        );
-        const amountInput = buildHpAmountField({
-          value: hpAmount,
-          className: 'character-sheet__hp-amount',
-          ariaLabel: `HP amount for ${character.name}`,
-          onInput: (value) => {
-            if (value !== null) hpAmount = value;
-            damageButton.disabled = value === null;
-            healButton.disabled = value === null;
-          },
-        });
-        controls = el(
-          'div',
-          'character-sheet__hp-controls u-row u-g2',
-          damageButton,
-          amountInput,
-          healButton,
-        );
-      }
-      // The HP block reads top to bottom: the label and the numbers, a tall
-      // bar the width of the card, then the damage and heal buttons with the
-      // amount between them. A GM reads the bar from across the table.
-      const bar = buildStatBar(hp, {
-        label: 'HP',
-        critical: true,
-        bonus: character.bonusHP ?? 0,
-        hero: true,
-      });
-      head.appendChild(el('div', 'character-sheet__hp-line u-col u-g2', bar.element, controls));
-      writers.push(() => {
-        const pool = getHP(live());
-        if (pool) bar.update(pool, live().bonusHP ?? 0);
-      });
+    const hpLine = buildHpLine(character, perms, { live, commit, hpStep, hpAmount });
+    if (hpLine) {
+      head.appendChild(hpLine.element);
+      writers.push(hpLine.write);
     }
 
-    const pact = getPactPool(character);
-    const slots = [...getSlotPools(character), ...(pact ? [pact] : [])];
-    if (slots.length > 0) {
-      const line = buildSlotLine(
-        slots,
-        perms.play
-          ? (pool, spent) =>
-              commit(
-                spent ? spendResource(live(), pool.id, 1) : restoreResource(live(), pool.id, 1),
-              )
-          : null,
-        perms.restore,
-      );
-      // The pips ride under the banner, which puts them across from the HP bar.
-      headSide.appendChild(line.element);
-      writers.push(() => {
-        const next = live();
-        const nextPact = getPactPool(next);
-        line.update([...getSlotPools(next), ...(nextPact ? [nextPact] : [])]);
-      });
-    } else {
-      // In the two-column sheet, a non-caster keeps the space the pips would
-      // take. Without this, the whole sheet below the header rises when the
-      // GM selects a non-caster after a caster. The stacked sheet hides the
-      // spacer (widgets.css).
-      const spacer = el('span', 'slot-line slot-line--empty');
-      spacer.setAttribute('aria-hidden', 'true');
-      headSide.appendChild(spacer);
-    }
-
-    const acBadge = tipBadge(
-      el('span', 'character-sheet__ac'),
-      'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
-        '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX, ' +
-        'or the unarmored defense of a Barbarian or a Monk when that is higher. ' +
-        'A shield adds its own bonus; other equipped items add their flat bonuses.',
-    );
-
-    const speedBadge = el('span', 'character-sheet__speed u-muted');
-    // Initiative, passive Perception, and the proficiency bonus are the other
-    // numbers a GM asks for in play, so they join AC and speed on one line.
-    const initBadge = el('span', 'character-sheet__init u-muted');
-    const ppBadge = el('span', 'character-sheet__pp u-muted');
-    tipBadge(ppBadge, 'Passive Perception');
-    const profBadge = el('span', 'character-sheet__prof u-muted');
-    tipBadge(profBadge, 'Proficiency bonus');
-
-    // A penalty that reaches every d20 roll belongs in the headline, not only
-    // beside the conditions. The badge is empty at level 0, which is where most
-    // characters sit, so the line reads as it did before exhaustion existed.
-    const tiredBadge = el('span', 'character-sheet__exhaustion');
+    // The pips ride under the banner, which puts them across from the HP bar.
+    const pips = buildSlotPips(character, perms, { live, commit });
+    headSide.appendChild(pips.element);
+    if (pips.write) writers.push(pips.write);
 
     // Level, derived AC, and XP progress share one banner line, the first line
-    // of the right-hand headline block.
-    const banner = el(
-      'div',
-      'character-sheet__header',
-      el('span', '', sheetLevelText(effectiveLevel(character), pendingLevels(character))),
-      el(
-        'span',
-        'character-sheet__header-meta u-muted',
-        acBadge,
-        initBadge,
-        speedBadge,
-        ppBadge,
-        profBadge,
-        tiredBadge,
-        el('span', 'character-sheet__xp-progress u-muted', xpProgress(character)),
-      ),
-    );
-    // The banner is built after the pip line but reads above it.
-    headSide.prepend(banner);
+    // of the right-hand headline block. The banner is built after the pip line
+    // but reads above it.
+    const banner = buildHeadBanner(character, live);
+    headSide.prepend(banner.element);
     body.append(main, side);
-    // An edit to base AC does not change the sheet's shape, so the derived
-    // badge must follow it.
-    writers.push(() => {
-      const shown = live();
-      acBadge.textContent = `AC ${armorClass(shown)}`;
-      // Speed follows a STR edit as well, because armor too heavy for the
-      // wearer costs 10 feet.
-      speedBadge.textContent = `${walkSpeed(shown)} ft`;
-      const init = initiativeReadout(shown);
-      initBadge.textContent = init.label;
-      tipBadge(initBadge, init.note);
-      ppBadge.textContent = `PP ${passivePerception(shown)}`;
-      profBadge.textContent = `Prof ${formatModifier(characterProficiency(shown))}`;
-      tipBadge(speedBadge, speedNote(shown));
-      const tired = exhaustionReadout(shown);
-      tiredBadge.textContent = tired.badge;
-      tipBadge(tiredBadge, tired.badge && tired.note);
-      tiredBadge.classList.toggle('character-sheet__exhaustion--fatal', tired.fatal);
-    });
+    writers.push(banner.write);
 
     const statsList = el('div', 'character-sheet__stats');
     // Each ability shows as one d20-style badge with the effective score,
@@ -590,19 +426,4 @@ export function mountCharacterSheet(
       render();
     },
   };
-}
-
-/**
- * Give a headline badge a tooltip and put it in the Tab order, so a keyboard
- * user reads the same hint that a hover shows. A badge with no hint, such as
- * the empty exhaustion badge at level 0, leaves the Tab order.
- * @param {HTMLElement} badge
- * @param {string} text
- * @returns {HTMLElement}
- */
-function tipBadge(badge, text) {
-  setTip(badge, text);
-  if (text) badge.tabIndex = 0;
-  else badge.removeAttribute('tabindex');
-  return badge;
 }

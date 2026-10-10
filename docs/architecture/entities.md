@@ -2438,6 +2438,7 @@ The parts of the sheet have their own modules:
 | --- | --- |
 | `ui/CharacterStatBadge.js` | The ability badges and their breakdown popover |
 | `ui/CharacterBars.js` | The HP bar and the slot pips (the elements and the update loop) |
+| `ui/CharacterHead.js` | The headline lines of the sheet: the HP line with its Damage and Heal steppers, the slot pips, and the banner of level, AC, speed, initiative, passive Perception, proficiency, exhaustion, and XP |
 | `ui/FullSheet.js` | The full-page view of the sheet: the party switcher and Back to the map. It moves the sheet card into its body while open, and `view/SheetSwitcher.js` decides the arrow-key moves of the switcher. In the sidebar the card is a summary: `styles/sheet-summary.css` hides the tab strip and every piece that the sheet marks `sheet-full-only`, and the full sheet hides the pieces marked `sheet-summary-only` |
 | `ui/CharacterLevelBanner.js` | The level-up banner at the top of the sheet, and the level-up text that the party roster also shows |
 | `ui/InventoryEquipment.js` | The paperdoll of the Equipment tab and the item picker that a slot card opens. `view/EquipSlots.js` lists the items a slot can take and writes the short stat line of a card and the detail line of a picker option |
