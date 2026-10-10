@@ -2,13 +2,9 @@ import { campaignFromLiveState, loadInitialCampaign } from '../campaign/Campaign
 import { rehydrateCampaign } from './rehydrate.js';
 import { confirmModal } from '../ui/Modal.js';
 import { STORAGE_KEY, onExternalSave, readSaveMark } from '../storage/SaveManager.js';
-import {
-  historyPosition,
-  planAdoption,
-  applyHistoryOps,
-  adoptPersisted,
-  persistedSave,
-} from '../storage/HistoryLog.js';
+import { applyHistoryOps } from '../storage/HistoryLog.js';
+import { adoptPersisted, persistedSave } from '../storage/PersistedCampaign.js';
+import { historyPosition, planAdoption } from '../storage/HistoryAdoption.js';
 import { markMovedOn, storageMovedOn } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
 import { isGM } from '../view/ViewRole.js';

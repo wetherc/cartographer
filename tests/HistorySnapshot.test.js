@@ -3,13 +3,12 @@ import assert from 'node:assert/strict';
 import {
   HISTORY_KEY,
   historyDepth,
-  historyPosition,
-  planAdoption,
   redoCampaign,
   saveCampaign,
   undoCampaign,
   undoRestoresSave,
 } from '../src/storage/HistoryLog.js';
+import { historyPosition, planAdoption } from '../src/storage/HistoryAdoption.js';
 import { buildState, loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';

@@ -42,17 +42,6 @@
  * current schema version is discarded, not applied. Each app upgrade costs
  * undo depth. Pre-GA save compatibility allows this cost.
  *
- * A diff needs the previous state as a value, and parsing the stored save
- * on every push costs a whole campaign's parse. This module caches the last
- * persisted state in memory, stamped with the raw string it came from and
- * the save mark stored with it. In the normal case, this costs one read of
- * the short save mark, and the whole save string is read only when the mark
- * is missing or differs.
- * The stamp also guards the diff. A tab that declines the cross-tab reload
- * prompt keeps editing against a save that another tab has since replaced.
- * A new mark or a new raw string catches this case. A plain cache would diff
- * against a state that is no longer stored.
- *
  * Every history write in this module happens after the campaign write,
  * never before. Only the removal of the save mark comes first.
  * An index that describes a state that was not stored applies a delta to
@@ -69,16 +58,8 @@
 import { applyOps, diffState, invertOps } from './StateDiff.js';
 import { compactOps, expandOps, historyForm, opsNameAssets } from './HistoryCodec.js';
 import { ASSET_PREFIX, restoreAssets } from './Assets.js';
-import { CURRENT_VERSION } from './Migrations.js';
-import {
-  STORAGE_KEY,
-  deserialize,
-  packState,
-  clearSaveMark,
-  readSaveMark,
-  trySaveToLocalStorage,
-  writeSaveMark,
-} from './SaveManager.js';
+import { STORAGE_KEY, deserialize, packState, readSaveMark } from './SaveManager.js';
+import { lastPersisted, markSave, persistedSave, writeCampaign } from './PersistedCampaign.js';
 import { detachAssets } from './AssetStore.js';
 import { mirrorActive, storedAssetTable } from './AssetMirror.js';
 import {
@@ -88,16 +69,15 @@ import {
   storedLength,
   writeStored,
 } from './Footprint.js';
-import { newestSnapshot, olderSnapshotRoom, recordsToDrop, snapshotFits } from './HistoryBudget.js';
+import { snapshotFits } from './HistoryBudget.js';
+import { dropForSave, recordStep } from './HistoryAppend.js';
 import {
   DELTA_PREFIX,
   SNAPSHOT_PREFIX,
   clearHistoryLog,
   deltaKey,
   isHistoryKey,
-  newLogId,
   nextSeq,
-  readDelta,
   readIndex,
   readRecord,
   writeIndex,
@@ -110,173 +90,8 @@ export { HISTORY_KEY, clearHistoryLog } from './HistoryRecords.js';
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 /** @typedef {import('./HistoryRecords.js').HistoryIndex} HistoryIndex */
-/** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
+/** @typedef {import('./HistoryAppend.js').HistoryResult} HistoryResult */
 /** @typedef {import('./HistoryRecords.js').HistoryRecord} HistoryRecord */
-
-/**
- * How many bytes of delta records this module keeps. Without a cap, a log
- * of large edits (a region generated or regenerated, a custom tile painted
- * over a whole node) grows until the origin is over quota. Snapshot records
- * do not count here. They have their own budget in `HistoryBudget.js`.
- */
-export const HISTORY_BYTE_CAP = 512 * 1024;
-
-/**
- * The most records that `planAdoption` walks. Each record costs the follower
- * one `applyOps` pass, so a long walk costs more than the full read it
- * replaces.
- */
-export const ADOPTION_WALK = 8;
-
-/**
- * The last persisted campaign as a value. This module stamps it with the raw
- * string it was parsed from, so a save from another tab invalidates the
- * cache. `mark` is the save mark that was stored with that string, or null
- * when it is not known. While the stored mark equals it, the stored string
- * is still `raw`, and a read skips the whole save string.
- * @type {{ raw: string, state: CampaignState, mark: string | null } | null}
- */
-let cached = null;
-
-/**
- * Write a campaign with `trySaveToLocalStorage`, and cache it on success.
- * The save mark goes right before the campaign write, so for the time
- * between this write and the new mark no tab reads the old mark as proof
- * that nothing moved. A save that waits on an image put writes nothing and
- * keeps the mark.
- * @param {CampaignState} state
- * @param {Parameters<typeof trySaveToLocalStorage>[2]} [options]
- * @returns {ReturnType<typeof trySaveToLocalStorage>}
- */
-function writeCampaign(state, options) {
-  const save = trySaveToLocalStorage(state, STORAGE_KEY, {
-    ...options,
-    beforeWrite: clearSaveMark,
-  });
-  if (save.ok) cached = { raw: save.json, state, mark: null };
-  return save;
-}
-
-/**
- * Write a new save mark after a step that stored a campaign, and remember
- * it beside the cache.
- * @returns {string | null}
- */
-function markSave() {
-  const mark = writeSaveMark();
-  if (cached) cached.mark = mark;
-  return mark;
-}
-
-/**
- * The persisted campaign as a value, or null when nothing is stored. This
- * function reuses the cache when the stored save mark is the cached one, or
- * when the stored string still matches the string the cache was built from.
- * Otherwise it parses the save and caches the result. An unreadable save throws, as `deserialize` does.
- *
- * The startup path loads through this function instead of
- * `loadFromLocalStorage`, so the cache is warm from the first save on. The
- * first save of a session otherwise parsed the stored string a second time
- * and diffed two states that shared no object, which at a large world cost
- * more than a hundred milliseconds. Because `toTileGrid` keeps the parsed
- * node objects, the live nodes are the cached ones, and the first diff runs
- * by identity like every later one.
- * @returns {CampaignState | null}
- */
-export function loadPersistedCampaign() {
-  // The mark is read before the save string. A save that lands between the
-  // two reads removed that mark first, so it can never match this cache.
-  const mark = readSaveMark();
-  if (cached && mark !== null && cached.mark === mark) return cached.state;
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === null) return null;
-  if (cached && cached.raw === raw) {
-    cached.mark = mark;
-    return cached.state;
-  }
-  // The cached state is the one this tab holds, so every stored node that
-  // encodes unchanged comes back as the node the tab already has.
-  const state = deserialize(raw, storedAssetTable(), cached?.state.nodes);
-  cached = { raw, state, mark };
-  return state;
-}
-
-/**
- * The save string and save mark of the cached state, or null when nothing
- * is cached. At boot this is the save the page loaded. A tab that records
- * the save it last matched takes the string from here, so the tab and this
- * cache share one string, where a second `getItem` call makes a second copy
- * of the whole save.
- * @returns {{ raw: string, mark: string | null } | null}
- */
-export function persistedSave() {
-  return cached ? { raw: cached.raw, mark: cached.mark } : null;
-}
-
-/**
- * Make `state` the base of the next diff, stamped with the save string
- * stored now. A tab calls this after it adopts another tab's save, when its
- * live state is the stored campaign. The full load path leaves the cache on
- * freshly parsed objects, while the live state keeps the objects that
- * `Reconcile.reconcile` put back, and a delta adoption leaves the cache on
- * the save before. Either way the next save of the tab would diff two
- * states that share no object, which at 200 extra regions costs more than a
- * hundred milliseconds.
- * @param {CampaignState} state
- * @returns {{ raw: string | null, mark: string | null }} the stored save
- *   string and save mark
- */
-export function adoptPersisted(state) {
-  const mark = readSaveMark();
-  const raw = localStorage.getItem(STORAGE_KEY);
-  cached = raw === null ? null : { raw, state, mark };
-  return { raw, mark };
-}
-
-/**
- * `loadPersistedCampaign`, with an unreadable save read as nothing stored.
- * A history step must not throw over a save it cannot read.
- * @returns {CampaignState | null}
- */
-function lastPersisted() {
-  try {
-    return loadPersistedCampaign();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Remove the oldest records until the delta records fit the byte cap and
- * the older snapshots fit the room that `HistoryBudget.js` gives them.
- * Return the surviving sequence numbers, and remove the corresponding keys.
- * Hitting the budget is by design, not a failure, so this function does not
- * report it as lost depth. An unbounded log puts the origin over quota.
- * @param {number[]} deltas
- * @param {number[]} snapshots the sequence numbers whose record is a snapshot
- * @returns {number[]}
- */
-function trimToCap(deltas, snapshots) {
-  const isSnapshot = new Set(snapshots);
-  // The ledger already holds each record's length, so no record is read again.
-  const records = deltas.map((seq) => ({
-    bytes: storedLength(deltaKey(seq)) * 2,
-    snapshot: isSnapshot.has(seq),
-  }));
-  const newest = newestSnapshot(records);
-  const older = records.some((record, i) => record.snapshot && i !== newest);
-  const room = older
-    ? olderSnapshotRoom({
-        quota: QUOTA_BYTES,
-        cap: HISTORY_BYTE_CAP,
-        outside: footprintWhere((key) => !isHistoryKey(key)),
-        newest: records[newest].bytes,
-      })
-    : Infinity;
-  const drop = recordsToDrop(records, HISTORY_BYTE_CAP, room);
-  for (const seq of deltas.slice(0, drop)) removeStored(deltaKey(seq));
-  return deltas.slice(drop);
-}
 
 /**
  * The record for the step from `before` to `after`, or null when the step
@@ -359,100 +174,6 @@ export function applyHistoryOps(state, ops) {
 }
 
 /**
- * Append one record and remove any redo tail that the new edit
- * invalidates. `ok` states whether this step is undoable, and `evictedAll`
- * states whether a full origin cost the GM depth beyond the ordinary cap.
- * A record larger than the whole cap stays as the only step, because
- * `trimToCap` always keeps the newest record.
- *
- * A step that starts a new log stores `baseMark` in the index. A follower
- * that loaded the save before the log began has no position, and the mark
- * tells `planAdoption` that it holds the state the first record applies to.
- * @param {string} record
- * @param {string | null} baseMark the save mark of the save this step diffed
- *   against, or null when it is not known
- * @returns {HistoryResult}
- */
-function recordStep(record, baseMark) {
-  const index = readIndex();
-  const seq = nextSeq(index);
-  let tail = index.deltas.slice(index.cursor);
-  const deltas = [...index.deltas.slice(0, index.cursor), seq];
-  const snapshots = record.startsWith(SNAPSHOT_PREFIX)
-    ? [...index.snapshots, seq]
-    : index.snapshots;
-  let evictedAll = false;
-  for (;;) {
-    try {
-      writeStored(deltaKey(seq), record);
-      break;
-    } catch {
-      // A full origin degrades depth first. The redo tail goes before any
-      // step, because this step drops it anyway, and an undone Import leaves
-      // a whole save in it. Then the oldest step goes, and the write runs
-      // again, instead of losing the whole log for one write.
-      if (tail.length) {
-        for (const dropped of tail) removeStored(deltaKey(dropped));
-        tail = [];
-        continue;
-      }
-      if (deltas.length < 2) {
-        clearHistoryLog();
-        return { ok: false, evictedAll: true };
-      }
-      const oldest = /** @type {number} */ (deltas.shift());
-      removeStored(deltaKey(oldest));
-      evictedAll = true;
-    }
-  }
-  const kept = trimToCap(deltas, snapshots);
-  const log = index.log || newLogId();
-  // The index write happens last. An index that names a key that was never
-  // written describes a history step that cannot be applied. An unnamed key
-  // is only unused data.
-  const next = {
-    version: CURRENT_VERSION,
-    log,
-    deltas: kept,
-    cursor: kept.length,
-    snapshots,
-    baseMark: index.log ? index.baseMark : baseMark,
-  };
-  if (!writeIndex(next)) {
-    clearHistoryLog();
-    return { ok: false, evictedAll: true };
-  }
-  for (const dropped of tail) removeStored(deltaKey(dropped));
-  return { ok: true, evictedAll };
-}
-
-/**
- * Remove history to make room for a campaign write that failed on a full
- * origin. Each call removes the next piece and returns true, or returns
- * false when no history is left. The redo tail goes first, because the save
- * that needs the room drops it anyway. Then the oldest step goes, one per
- * call, and last any history key that the index does not name.
- *
- * The index is written before the records are removed, so it never names a
- * key that is gone. An index write that fails clears the whole log.
- * @returns {boolean}
- */
-function dropForSave() {
-  const index = readIndex();
-  const tail = index.deltas.slice(index.cursor);
-  const doomed = tail.length ? tail : index.deltas.slice(0, 1);
-  if (!doomed.length) return clearHistoryLog();
-  const deltas = index.deltas.filter((seq) => !doomed.includes(seq));
-  const cursor = tail.length ? index.cursor : index.cursor - 1;
-  if (!deltas.length || !writeIndex({ ...index, deltas, cursor })) {
-    clearHistoryLog();
-    return true;
-  }
-  for (const seq of doomed) removeStored(deltaKey(seq));
-  return true;
-}
-
-/**
  * Persist a campaign and record the step that produced it. This is the only
  * save path. This module writes the record after the campaign, so a failed
  * campaign write leaves the log describing exactly what is stored. A
@@ -480,7 +201,7 @@ function dropForSave() {
  * adds an image whose IndexedDB put has not committed. The caller saves
  * again once the promise settles.
  * @param {CampaignState} state
- * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
+ * @returns {ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
  */
 export function saveCampaign(state) {
   const before = lastPersisted();
@@ -489,11 +210,12 @@ export function saveCampaign(state) {
   // would apply to a campaign they were never recorded against.
   const unreadable = before === null && localStorage.getItem(STORAGE_KEY) !== null;
   // `lastPersisted` leaves the cache on the string it parsed.
-  const record = before && cached ? stepRecord(before, cached.raw, state) : null;
+  const held = persistedSave();
+  const record = before && held ? stepRecord(before, held.raw, state) : null;
   // A second read of the mark proves that the cached string is the save
   // that this mark was written with. A save from another tab that landed
   // between the reads of `lastPersisted` changed the mark.
-  const baseMark = cached?.mark != null && readSaveMark() === cached.mark ? cached.mark : null;
+  const baseMark = held?.mark != null && readSaveMark() === held.mark ? held.mark : null;
   // A record that names an image keeps it in the table. The retention scan
   // of this save runs before the record is written, so it waits for the next
   // save, which finds the record.
@@ -513,7 +235,7 @@ export function saveCampaign(state) {
   return { ...save, history: dropped ? { ...history, evictedAll: true } : history, mark };
 }
 
-/** @typedef {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState }} StepResult */
+/** @typedef {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState }} StepResult */
 
 /**
  * Move the cursor by one record and persist the state it names. Undo and
@@ -618,96 +340,6 @@ function swapSnapshot(index, at, direction, snapshot) {
 }
 
 /**
- * The position at `at` in this log, as an opaque token, or null when the log
- * is empty. The token pairs the log id with the sequence number of the
- * record before the position, or with `^` and the first record's number at
- * position 0. A cleared and restarted log reuses sequence numbers but never
- * the id, so a token from the old log matches nothing. A record dropped from
- * the front changes the token of position 0, because the old base state is
- * no longer reachable.
- * @param {HistoryIndex} index
- * @param {number} at a cursor value: how many deltas the position reflects
- * @returns {string | null}
- */
-function positionToken(index, at) {
-  if (at > 0) return `${index.log}:${index.deltas[at - 1]}`;
-  return index.deltas.length ? `${index.log}:^${index.deltas[0]}` : null;
-}
-
-/**
- * The cursor value of the state a tab holds, or -1 when the log does not
- * name it. A tab with no position loaded its save before the log began.
- * When its save mark is the log's `baseMark` and the first record is still
- * sequence number 0, it holds the state that record applies to.
- * @param {HistoryIndex} index
- * @param {string | null} held
- * @param {string | null} heldMark
- * @returns {number}
- */
-function heldAt(index, held, heldMark) {
-  if (held === null) {
-    return heldMark !== null && heldMark === index.baseMark && index.deltas[0] === 0 ? 0 : -1;
-  }
-  for (let at = 0; at <= index.deltas.length; at += 1) {
-    if (positionToken(index, at) === held) return at;
-  }
-  return -1;
-}
-
-/**
- * The position the persisted save currently reflects. A tab records this
- * token whenever its live state matches the persisted save: at load, after
- * its own save, and after adopting another tab's save. `planAdoption` later
- * compares the recorded token against the log.
- * @returns {string | null}
- */
-export function historyPosition() {
-  const index = readIndex();
-  return positionToken(index, index.cursor);
-}
-
-/**
- * How a tab holding the state recorded at `held` can adopt the save another
- * tab just wrote.
- *
- * `delta` comes back when the log walks from the held position to the
- * cursor in at most `ADOPTION_WALK` delta records. Each entry of `steps` is
- * the ops of one record, in walk order. A walk forward covers saves and
- * redos, and a walk back covers undos, with each record's ops inverted. A
- * save made from an undone cursor drops the redo tail and appends, so a tab
- * that holds a position before the cursor walks forward. Apply the steps one
- * at a time, because `applyOps` groups the ops of one list by kind and does
- * not apply them in list order.
- *
- * `current` means the persisted save is the state the tab already holds.
- *
- * Everything else is `full`: a position that the log does not name, a walk
- * longer than `ADOPTION_WALK`, a snapshot record or an unreadable record in
- * the walk, or an empty or cleared log. The caller then re-reads the whole
- * save.
- * @param {string | null} held
- * @param {string | null} [heldMark] the save mark of the save the tab holds
- * @returns {{ kind: 'current' | 'full' } | { kind: 'delta', steps: DiffOp[][] }}
- */
-export function planAdoption(held, heldMark = null) {
-  const index = readIndex();
-  const from = heldAt(index, held, heldMark);
-  if (from < 0) return { kind: 'full' };
-  const { cursor } = index;
-  if (from === cursor) return { kind: 'current' };
-  if (Math.abs(cursor - from) > ADOPTION_WALK) return { kind: 'full' };
-  const forward = cursor > from;
-  /** @type {DiffOp[][]} */
-  const steps = [];
-  for (let at = from; at !== cursor; at += forward ? 1 : -1) {
-    const ops = readDelta(index.deltas[forward ? at : at - 1]);
-    if (!ops) return { kind: 'full' };
-    steps.push(forward ? ops : invertOps(ops));
-  }
-  return { kind: 'delta', steps };
-}
-
-/**
  * Write the save mark after a step that stored a campaign, so a follower
  * tab adopts it with the index this step wrote.
  * @param {StepResult | null} result
@@ -721,7 +353,7 @@ function marked(result) {
 /**
  * Restore the state before the most recent recorded edit, and persist it.
  * This function returns null when there is nothing to undo.
- * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
+ * @returns {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function undoCampaign() {
   return marked(step(-1));
@@ -730,7 +362,7 @@ export function undoCampaign() {
 /**
  * Reapply the edit that the last undo reversed, and persist the result. This
  * function returns null when the cursor is already at the head.
- * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
+ * @returns {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function redoCampaign() {
   return marked(step(1));

@@ -306,7 +306,7 @@ export const PROSE_REFERENCES = [
   ['src/map/TilePaint.js', 'spanBlocks'],
   ['src/storage/StateDiff.js', 'diffState'],
   ['src/storage/StateDiff.js', 'invertOps'],
-  ['src/storage/HistoryLog.js', 'HISTORY_BYTE_CAP'],
+  ['src/storage/HistoryAppend.js', 'HISTORY_BYTE_CAP'],
   ['src/storage/fileIO.js', 'downloadJSON'],
   ['src/entities/CreatureTemplate.js', 'fromTemplate'],
   ['src/util/deepFreeze.js', 'deepFreeze'],

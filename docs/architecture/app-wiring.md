@@ -217,7 +217,7 @@ Without this check, the tab writes its older copy over the other tab's
 change.
 
 The tab compares against the string that the history cache keeps
-(`HistoryLog.persistedSave` at boot, then `adoptPersisted` and the tab's own
+(`PersistedCampaign.persistedSave` at boot, then `adoptPersisted` and the tab's own
 save result). The tab therefore keeps one copy of the save string, about
 2 MB at 400 extra regions, and not two.
 
@@ -229,7 +229,7 @@ edit as a delta beside the campaign (see the history log in
 position and save mark of its live state.
 
 When the log walks from that position to the stored one in at most eight
-delta records (`ADOPTION_WALK`), `HistoryLog.planAdoption` returns the ops of
+delta records (`ADOPTION_WALK`), `HistoryAdoption.planAdoption` returns the ops of
 each record. The walk can go forward across saves and redos, or back across
 undos. The tab applies the ops to its own state with
 `HistoryLog.applyHistoryOps` and does not read the whole save again.
@@ -239,7 +239,7 @@ the edits keeps its identity, and the adoption costs the size of the edits.
 Every other case takes the full load path through
 `Campaigns.loadInitialCampaign`: a longer walk, a snapshot record, a cleared
 log, or a failed apply. After either path, the tab passes its live state to
-`HistoryLog.adoptPersisted`, so its next save diffs against the objects it
+`PersistedCampaign.adoptPersisted`, so its next save diffs against the objects it
 keeps. Without that call, the history cache keeps the freshly parsed objects
 after a full load, and they share nothing with the reconciled live state.
 Over the example campaign plus 200 generated regions, the next save takes

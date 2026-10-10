@@ -3,12 +3,11 @@ import assert from 'node:assert/strict';
 import {
   HISTORY_KEY,
   applyHistoryOps,
-  historyPosition,
-  planAdoption,
   redoCampaign,
   saveCampaign,
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
+import { historyPosition, planAdoption } from '../src/storage/HistoryAdoption.js';
 import { historyForm, opsNameAssets } from '../src/storage/HistoryCodec.js';
 import { buildState, loadFromLocalStorage } from '../src/storage/SaveManager.js';
 import { ASSETS_KEY } from '../src/storage/AssetStore.js';

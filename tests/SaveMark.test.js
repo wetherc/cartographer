@@ -1,11 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  loadPersistedCampaign,
-  redoCampaign,
-  saveCampaign,
-  undoCampaign,
-} from '../src/storage/HistoryLog.js';
+import { redoCampaign, saveCampaign, undoCampaign } from '../src/storage/HistoryLog.js';
+import { loadPersistedCampaign } from '../src/storage/PersistedCampaign.js';
 import {
   SAVE_MARK_KEY,
   STORAGE_KEY,

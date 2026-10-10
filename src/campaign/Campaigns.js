@@ -5,7 +5,7 @@ import { partySight } from '../party/Sight.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { campaignFields } from '../storage/CampaignFields.js';
-import { loadPersistedCampaign } from '../storage/HistoryLog.js';
+import { loadPersistedCampaign } from '../storage/PersistedCampaign.js';
 import { loadTruncation } from '../storage/ShortenedLoad.js';
 import { createClock } from '../time/GameClock.js';
 import { buildExampleWorld } from './ExampleWorld.js';

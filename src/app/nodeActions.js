@@ -22,7 +22,7 @@ import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
 import { keyItemNames, lockFields, readLockFields, unknownKeyWarning } from '../map/NodeLock.js';
 import { activeEquipment } from '../library/Library.js';
 import { linksIn } from '../quest/QuestLinks.js';
-import { loadPersistedCampaign } from '../storage/HistoryLog.js';
+import { loadPersistedCampaign } from '../storage/PersistedCampaign.js';
 import { commitCreatures } from './combatants.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */

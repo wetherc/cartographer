@@ -2,12 +2,12 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   HISTORY_KEY,
-  HISTORY_BYTE_CAP,
   historyDepth,
   replaceIsUndoable,
   saveCampaign,
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
+import { HISTORY_BYTE_CAP } from '../src/storage/HistoryAppend.js';
 import { loadFromLocalStorage } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage, installQuotaStorage } from './helpers/env.js';

@@ -1,7 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HISTORY_BYTE_CAP,
   HISTORY_KEY,
   clearHistoryLog,
   historyDepth,
@@ -10,6 +9,7 @@ import {
   undoCampaign,
   undoRestoresSave,
 } from '../src/storage/HistoryLog.js';
+import { HISTORY_BYTE_CAP } from '../src/storage/HistoryAppend.js';
 import { loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage } from './helpers/env.js';

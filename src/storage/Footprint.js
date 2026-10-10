@@ -6,7 +6,7 @@
  * preference flags share one origin quota of about 5 MB. The image table
  * joins them only when IndexedDB is not in use (`AssetMirror.js`).
  * `trySaveToLocalStorage` measures the whole footprint after every write,
- * and `HistoryLog.trimToCap` measures every delta again in the same save.
+ * and `HistoryAppend.trimToCap` measures every delta again in the same save.
  * Near the warning threshold that copied several megabytes of strings per
  * autosave. This module keeps a `Map` from key to stored length instead. It
  * reads the origin once. Every localStorage write in the app goes through

@@ -13,11 +13,11 @@ import {
 } from '../src/storage/SaveManager.js';
 import {
   clearHistoryLog,
-  loadPersistedCampaign,
   replaceIsUndoable,
   saveCampaign,
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
+import { loadPersistedCampaign } from '../src/storage/PersistedCampaign.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage, installQuotaStorage } from './helpers/env.js';
 

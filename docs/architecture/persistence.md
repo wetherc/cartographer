@@ -140,7 +140,7 @@ variant toggle, and the Player hint use it. On a full origin a throw from one of
 the boot of the app, because `main.js` calls the wiring modules with no
 `try` around them.
 
-`HistoryLog.trimToCap` reads delta sizes from the same ledger. Writes from
+`HistoryAppend.trimToCap` reads delta sizes from the same ledger. Writes from
 other tabs arrive as `storage` events, and `onExternalSave` passes each one to
 the ledger. The ledger reads the origin again when the key count differs from
 its own size.
@@ -583,8 +583,8 @@ path gives the inline payloads straight back to the same writer.
 The optional second argument to `deserialize` is the read half. It supplies
 payloads that the string does not contain, and a table inside the string
 takes priority over it. Its callers are the readers of a stored string:
-`loadFromLocalStorage`, and the cache that `HistoryLog` keeps of the last
-persisted state.
+`loadFromLocalStorage`, and the cache of the last persisted state in
+`PersistedCampaign.js`.
 
 #### Retention
 
@@ -794,7 +794,7 @@ needs no decode, no asset walk, and no defaults pass.
 
 The record names every `childNodeId` of the node in its link palette, so the
 dead-link repair checks that palette instead of the tiles.
-`HistoryLog.loadPersistedCampaign` passes the nodes of its cached state,
+`PersistedCampaign.loadPersistedCampaign` passes the nodes of its cached state,
 which is the live state after `adoptPersisted`. A follower's full read then
 decodes only the nodes that changed.
 
@@ -895,7 +895,9 @@ field is unchanged.
 Undo and redo work from a log of invertible deltas against the persisted
 save, in `storage/HistoryLog.js`. A delta records only what one save changed,
 not the whole campaign. `storage/HistoryRecords.js` reads and writes the
-index and the stored records of the log.
+index and the stored records of the log. `storage/HistoryAppend.js` appends
+the record of a save and trims the log, and `storage/HistoryAdoption.js`
+plans cross-tab adoption.
 
 `saveCampaign` is the one save path. It writes the campaign, then appends one
 delta. The `diffState` function of `storage/StateDiff.js` produces that delta
@@ -1117,7 +1119,7 @@ describes:
 
 ### The cached base state
 
-A diff needs the previous state as a *value*, not a string. `HistoryLog`
+A diff needs the previous state as a *value*, not a string. `PersistedCampaign.js`
 caches this value, stamped with the raw string that it was parsed from and
 the save mark stored with it. A tab that declined the cross-tab reload prompt
 cannot diff against a save that another tab replaced. A save from another tab
@@ -1140,7 +1142,7 @@ follower ignores the removal event.
 
 The cache is warm from the start of a session.
 `Campaigns.loadInitialCampaign` reads the save through
-`HistoryLog.loadPersistedCampaign`, which parses the stored string once and
+`PersistedCampaign.loadPersistedCampaign`, which parses the stored string once and
 keeps the result as the base for the first delta. `toTileGrid` adds those
 parsed nodes to the grid as they are, so the live nodes and the cached nodes
 are the same objects, and the first save of the session diffs by identity.

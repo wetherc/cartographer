@@ -1,11 +1,11 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { saveCampaign } from '../src/storage/HistoryLog.js';
 import {
   adoptPersisted,
   loadPersistedCampaign,
   persistedSave,
-  saveCampaign,
-} from '../src/storage/HistoryLog.js';
+} from '../src/storage/PersistedCampaign.js';
 import {
   buildState,
   deserialize,
