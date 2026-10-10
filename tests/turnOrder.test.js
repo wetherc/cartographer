@@ -22,6 +22,7 @@ function fight() {
     setCombat: (next) => {
       app.state.combat = next;
     },
+    tickRound: () => {},
   });
   return app;
 }
@@ -65,6 +66,20 @@ test('Delay passes the turn to the next row', () => {
   const last = app.state.combat;
   app.actions.delayCombatTurn();
   assert.equal(app.state.combat, last, 'the last row has no later turn');
+});
+
+test('Delay onto a row that cannot act passes the turn on', () => {
+  const app = fight();
+  app.state.creatures = [
+    { ...app.state.creatures[0], conditions: addCondition([], 'Paralyzed', null) },
+  ];
+  app.actions.delayCombatTurn();
+  const combat = app.state.combat;
+  assert.deepEqual(
+    combat?.order.map((p) => p.id),
+    ['ogre', 'mage', 'hero'],
+  );
+  assert.equal(combat?.order[combat.index].id, 'mage', 'the held ogre loses its turn');
 });
 
 test('the actions do nothing with no fight running', () => {

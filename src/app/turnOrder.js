@@ -6,7 +6,7 @@ import {
 } from '../combat/Initiative.js';
 import { skipsTurn } from '../combat/CombatView.js';
 import { describeCombatant, findCombatant } from './combatants.js';
-import { startTurnEffects } from './turnEffectsWiring.js';
+import { startLandingTurn } from './turnAdvance.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -19,11 +19,13 @@ import { startTurnEffects } from './turnEffectsWiring.js';
  * Previous turn moves only the pointer. The turn effects that ran on the way
  * forward, such as a repeated save or a round tick, stay as they are, and
  * the header Undo is the way to take those back. Delay starts the turn of
- * the combatant it passes to, the same way Next turn does.
+ * the combatant it passes to, the same way Next turn does. A row there that
+ * cannot act, such as a Paralyzed one, starts and ends its turn, and the
+ * turn moves on (see `turnAdvance.startLandingTurn`).
  * @param {AppContext} app
- * @param {{ setCombat: (next: CombatState) => void }} hooks
+ * @param {{ setCombat: (next: CombatState) => void, tickRound: () => void }} hooks
  */
-export function wireTurnOrder(app, { setCombat }) {
+export function wireTurnOrder(app, { setCombat, tickRound }) {
   const { state } = app;
   const nameOf = (/** @type {import('../types/combat.js').Participant} */ p) =>
     describeCombatant(app, p.id)?.name ?? '';
@@ -63,9 +65,8 @@ export function wireTurnOrder(app, { setCombat }) {
     const next = delayTurn(combat);
     if (next === combat || !delayed) return;
     setCombat(next);
-    const holder = currentParticipant(next);
     app.actions.logEvent('combat', `${labelOf(delayed.id)} delays the turn.`);
-    if (holder) startTurnEffects(app, holder.id);
+    startLandingTurn(app, { setCombat, tickRound });
     refresh();
   };
 }

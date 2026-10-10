@@ -215,7 +215,7 @@ export function wireFightState(app) {
    */
   const describe = (participant) => describeCombatant(app, participant.id);
 
-  wireTurnOrder(app, { setCombat });
+  wireTurnOrder(app, { setCombat, tickRound });
 
   // Leaving combat mode is tied to the fight ending, regardless of how it
   // ends: the End button, the last encounter dying, or the party walking
