@@ -45,3 +45,15 @@ test('refocusTarget with no key goes straight to the fallbacks', () => {
   const heading = { element: 'heading', key: null };
   assert.equal(refocusTarget(null, [damage], [heading]), heading);
 });
+
+test('refocusTarget stops reading candidates at the first match', () => {
+  const read = [];
+  const candidates = (function* () {
+    for (const name of ['Damage', 'Heal', 'Next turn']) {
+      read.push(name);
+      yield { element: name, key: `control:${name}` };
+    }
+  })();
+  assert.equal(refocusTarget('control:Heal', candidates, [])?.element, 'Heal');
+  assert.deepEqual(read, ['Damage', 'Heal']);
+});

@@ -44,11 +44,15 @@ export function focusKey({ combatantId = null, chip = false, label = null, text 
  * and the caller leaves focus alone.
  * @template T
  * @param {string | null} key the key of the control that had focus
- * @param {FocusCandidate<T>[]} candidates every focusable control on the rebuilt screen
+ * The candidates are read in order and the search stops at the first match,
+ * so a caller can pass a generator that reads each key only when it is needed.
+ * @param {Iterable<FocusCandidate<T>>} candidates every focusable control on the rebuilt screen
  * @param {(FocusCandidate<T> | null | undefined)[]} fallbacks
  * @returns {FocusCandidate<T> | null}
  */
 export function refocusTarget(key, candidates, fallbacks) {
-  const same = key ? candidates.find((c) => c.key === key && !c.disabled) : undefined;
-  return same ?? fallbacks.find((f) => f && !f.disabled) ?? null;
+  if (key) {
+    for (const c of candidates) if (c.key === key && !c.disabled) return c;
+  }
+  return fallbacks.find((f) => f && !f.disabled) ?? null;
 }

@@ -273,8 +273,8 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * Put focus back after a rebuild. Focus that sat on an element still in
-   * the document is left alone, whether inside the screen (the dice tray)
+   * Put focus back after a rebuild. Focus that sat on an enabled element
+   * still in the document is left alone, whether inside the screen (the dice tray)
    * or outside it. Focus on a replaced control moves to its rebuilt twin,
    * or to the current turn's chip, or to the heading. The first frame of a
    * fight moves focus onto the screen the same way, because the control that
@@ -284,16 +284,30 @@ export function mountCombatScreen(container, callbacks) {
    * @param {boolean} opened whether this is the fight's first frame
    */
   function restoreFocus(inside, previousKey, opened) {
-    if (inside ? inside.isConnected : !opened) return;
-    const candidates = [...root.querySelectorAll('button, input, select')].map((element) => ({
-      element: /** @type {HTMLElement} */ (element),
-      key: keyOf(/** @type {HTMLElement} */ (element)),
-      disabled: /** @type {HTMLButtonElement} */ (element).disabled,
-    }));
+    // A kept control that a turn change disabled, such as Previous turn on
+    // the first turn, has lost focus, so it counts as replaced.
+    const kept = inside?.isConnected && !(/** @type {HTMLButtonElement} */ (inside).disabled);
+    if (inside ? kept : !opened) return;
+    // Read each control's key only up to the first match, because a key
+    // reads the text of the control, and a board of many cards has many
+    // controls.
+    const candidates = (function* () {
+      for (const element of root.querySelectorAll('button, input, select')) {
+        const control = /** @type {HTMLButtonElement} */ (element);
+        yield {
+          element: /** @type {HTMLElement} */ (control),
+          key: keyOf(control),
+          disabled: control.disabled,
+        };
+      }
+    })();
     const fallbacks = [ribbon.currentChip(), ribbon.heading].map((element) =>
       element ? { element, key: null } : null,
     );
-    refocusTarget(previousKey, candidates, fallbacks)?.element.focus();
+    const target = refocusTarget(previousKey, candidates, fallbacks)?.element;
+    // A focus call forces style and layout, and it shows the tooltip again,
+    // so it is skipped when the target already has focus.
+    if (target && target !== document.activeElement) target.focus();
   }
 
   /**

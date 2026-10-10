@@ -42,6 +42,10 @@ export function mountCombatRibbon(callbacks) {
   element.append(heading, chips, controls);
   element.hidden = true;
   wireRoving(element, '.combat-ribbon__chip');
+  /** The settings the control row was last built for. */
+  let controlsKey = /** @type {string | null} */ (null);
+  let now = el('span', 'combat-ribbon__now');
+  let previousButton = /** @type {HTMLButtonElement | null} */ (null);
 
   /**
    * @param {CombatView} view
@@ -52,7 +56,6 @@ export function mountCombatRibbon(callbacks) {
     element.hidden = false;
     heading.textContent = `Round ${view.round}`;
     chips.innerHTML = '';
-    controls.innerHTML = '';
     view.rows.forEach((row, i) => {
       const current = i === view.turnIndex;
       const name = row.name ?? 'Unknown combatant';
@@ -104,11 +107,33 @@ export function mountCombatRibbon(callbacks) {
     // returns here.
     // Previous turn takes back a Next turn pressed by mistake. It is the GM's
     // control, and it is disabled on the first turn of the fight.
-    const previous =
-      gm && callbacks.onPrevious
+    const hasPrevious = Boolean(gm && callbacks.onPrevious);
+    // The controls are rebuilt only when their set or emphasis changes. A
+    // plain turn change patches the acting name and the Previous turn state,
+    // so a focused Next turn button stays in the document and keeps focus.
+    const key = `${gm}|${settled}|${mayEndTurn}|${hasPrevious}`;
+    if (key !== controlsKey) {
+      controlsKey = key;
+      buildControls(gm, settled, mayEndTurn, hasPrevious);
+    }
+    now.textContent = acting ? `${acting.name ?? 'Unknown combatant'}'s turn` : '';
+    if (previousButton) previousButton.disabled = view.round === 1 && view.turnIndex === 0;
+  }
+
+  /**
+   * Build the control row: Back to map, the turn group, and End combat.
+   * @param {boolean} gm
+   * @param {boolean} settled
+   * @param {boolean} mayEndTurn
+   * @param {boolean} hasPrevious
+   */
+  function buildControls(gm, settled, mayEndTurn, hasPrevious) {
+    controls.innerHTML = '';
+    now = el('span', 'combat-ribbon__now');
+    previousButton =
+      hasPrevious && callbacks.onPrevious
         ? textButton('Previous turn', callbacks.onPrevious, { icon: 'back' })
         : null;
-    if (previous) previous.disabled = view.round === 1 && view.turnIndex === 0;
     // The turn group keeps the name of the acting combatant and the turn
     // buttons. On a phone it is a bar pinned to the bottom of the window, so
     // Next turn stays in reach while the GM scrolls the cards. The name shows
@@ -116,12 +141,8 @@ export function mountCombatRibbon(callbacks) {
     const turn = el(
       'div',
       'combat-ribbon__turn',
-      el(
-        'span',
-        'combat-ribbon__now',
-        acting ? `${acting.name ?? 'Unknown combatant'}'s turn` : '',
-      ),
-      ...(previous ? [previous] : []),
+      now,
+      ...(previousButton ? [previousButton] : []),
       ...(mayEndTurn
         ? [
             textButton(gm ? 'Next turn' : 'End my turn', callbacks.onNext, {
@@ -165,6 +186,7 @@ export function mountCombatRibbon(callbacks) {
     element.hidden = true;
     chips.innerHTML = '';
     controls.innerHTML = '';
+    controlsKey = null;
   }
 
   return {

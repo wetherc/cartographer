@@ -1243,8 +1243,13 @@ focus with wraparound. The keydown listeners attach once, at mount, to the
 persistent containers. They find the buttons on each keypress, because every
 render replaces the buttons.
 
-A rebuild replaces every control, so without help, focus would fall to the page
-body after each rebuild. `src/combat/FocusRestore.js` decides where focus goes.
+A rebuild replaces every control except the ribbon's control row, so without
+help, focus would fall to the page body after each rebuild. The ribbon builds
+Back to map, Previous turn, Next turn, and End combat again only when the GM
+role, the settled state, or the right to end the turn changes. A plain turn
+change updates the acting name and the Previous turn state in place, so a
+focused Next turn button keeps focus, and the screen does not call `focus()`,
+which forces style and layout. `src/combat/FocusRestore.js` decides where focus goes.
 Before the rebuild, the screen names the focused control: a chip or a card by
 its combatant id, and any other control by its accessible label or its text.
 After the rebuild, the control with the same name takes focus again, so the
@@ -1252,8 +1257,9 @@ Damage button keeps focus through the HP edit that it made.
 
 When that control is gone or disabled, focus goes to the chip of the current
 turn, and then to the round heading, which is a persistent `h2` with
-`tabindex="-1"`. Focus on an element that is still in the document, such as the
-docked dice tray, stays where it is. The first frame of a fight moves focus onto
+`tabindex="-1"`. Focus on an enabled element that is still in the document,
+such as the docked dice tray, stays where it is. The search for the same name
+stops at the first match, so it reads the text of only the controls before it. The first frame of a fight moves focus onto
 the screen the same way, because the Start control that opened the fight is
 gone by then. Back to map and End combat move focus to the map canvas.
 
