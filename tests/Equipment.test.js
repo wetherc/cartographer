@@ -848,3 +848,35 @@ test('migrateItem turns a name that is not a string into text', () => {
   assert.equal(migrateItem(/** @type {any} */ ({ type: 'gear' })).name, '');
   assert.equal(migrateItem(/** @type {any} */ ({ name: 42, type: 'gear' })).name, '42');
 });
+
+test('pruneEquipment frees slots beyond the stack quantity, in slot order', () => {
+  let duelist = addItem(
+    createCharacter('c2', 'Duelist'),
+    item('dagger', 'Dagger', {
+      type: 'weapon',
+      quantity: 2,
+      properties: ['light'],
+    }),
+  );
+  duelist = equip(equip(duelist, 'mainHand', 'dagger'), 'offHand', 'dagger');
+  assert.equal(duelist.equipment?.offHand, 'dagger');
+  duelist = removeItem(duelist, 'dagger', 1);
+  assert.equal(duelist.equipment?.mainHand, 'dagger');
+  assert.equal(duelist.equipment?.offHand, null);
+});
+
+test('pruneEquipment clears the off hand under a two-handed main hand', () => {
+  let knight = addItem(createCharacter('c3', 'Knight'), item('sword', 'Sword', { type: 'weapon' }));
+  knight = addItem(knight, item('shield', 'Shield', { type: 'shield' }));
+  knight = equip(equip(knight, 'mainHand', 'sword'), 'offHand', 'shield');
+  const sword = knight.inventory.find((i) => i.id === 'sword');
+  knight = updateItem(knight, 'sword', { ...sword, properties: ['heavy', 'two-handed'] });
+  assert.equal(knight.equipment?.mainHand, 'sword');
+  assert.equal(knight.equipment?.offHand, null);
+});
+
+test('pruneEquipment sorts slots outside the slot list last and keeps empty ones', () => {
+  const hero = addItem(createCharacter('c4', 'Hero'), item('ring', 'Ring', { type: 'ring' }));
+  const odd = { ...hero, equipment: { ...hero.equipment, extra: null, accessory: 'ring' } };
+  assert.equal(pruneEquipment(/** @type {any} */ (odd)), odd);
+});

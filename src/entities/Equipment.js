@@ -530,10 +530,14 @@ export function isConsumable(item) {
 }
 
 /**
- * Clear any slot that references an item no longer in the inventory, or an
- * item the slot no longer accepts. Removing the last of a stack also
- * unequips it. Editing a worn ring into gear also takes it off. This
- * function returns the character unchanged when nothing dangles. It is pure.
+ * Clear any slot that `equip` would refuse now. A slot clears when it
+ * references an item no longer in the inventory, or an item the slot no
+ * longer accepts. Removing the last of a stack also unequips it, and
+ * editing a worn ring into gear also takes it off. A stack fills at most as
+ * many slots as its quantity, counted in `EQUIPMENT_SLOTS` order, so after a
+ * character gives away one of two daggers the off-hand copy clears. The off
+ * hand clears while the main hand keeps a two-handed weapon. This function
+ * returns the character unchanged when nothing changes. It is pure.
  * @param {Character} character
  * @returns {Character}
  */
@@ -541,18 +545,33 @@ export function pruneEquipment(character) {
   const equipment = character.equipment;
   if (!equipment) return character;
   const items = new Map(character.inventory.map((i) => [i.id, i]));
-  /** @param {string} slot @param {string | null} id */
-  const valid = (slot, id) => {
-    if (id === null) return true;
-    const item = items.get(id);
-    return item !== undefined && slotAccepts(/** @type {EquipmentSlot} */ (slot), item);
+  const order = (/** @type {string} */ slot) => {
+    const index = EQUIPMENT_SLOTS.findIndex((s) => s.key === slot);
+    return index < 0 ? EQUIPMENT_SLOTS.length : index;
   };
+  /** @type {Map<string, number>} */
+  const used = new Map();
+  /** @type {Record<string, string | null>} */
+  const kept = {};
+  for (const slot of Object.keys(equipment).sort((a, b) => order(a) - order(b))) {
+    const id = /** @type {Record<string, string | null>} */ (equipment)[slot] ?? null;
+    const item = id === null ? undefined : items.get(id);
+    const count = (id !== null && used.get(id)) || 0;
+    const fits =
+      item !== undefined &&
+      slotAccepts(/** @type {EquipmentSlot} */ (slot), item) &&
+      count < Math.max(1, item.quantity ?? 1);
+    if (fits) used.set(/** @type {string} */ (id), count + 1);
+    kept[slot] = fits ? id : null;
+  }
+  const main = kept.mainHand ? items.get(kept.mainHand) : undefined;
+  if ('offHand' in kept && main && hasWeaponProperty(main, 'two-handed')) kept.offHand = null;
   const entries = Object.entries(equipment);
-  if (entries.every(([slot, id]) => valid(slot, id))) return character;
+  if (entries.every(([slot, id]) => (id ?? null) === kept[slot])) return character;
   return {
     ...character,
     equipment: /** @type {Equipment} */ (
-      Object.fromEntries(entries.map(([slot, id]) => [slot, valid(slot, id) ? id : null]))
+      Object.fromEntries(entries.map(([slot]) => [slot, kept[slot]]))
     ),
   };
 }
