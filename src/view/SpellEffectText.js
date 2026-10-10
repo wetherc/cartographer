@@ -1,3 +1,4 @@
+import { countNoun } from '../util/text.js';
 import { hitRiderSummary } from '../entities/HitRiders.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { buffCondition } from '../entities/Casting.js';
@@ -57,7 +58,7 @@ function effectLine(spell, saveDC) {
     // count before it states what one projectile deals.
     const growth = shots.perStep ? ` (+${shots.perStep} per level)` : '';
     const roll = shots.autoHit ? 'hits automatically' : kind.toLowerCase();
-    return `${shots.count} projectile${shots.count === 1 ? '' : 's'}${growth}, ${roll} — ${damage} each`;
+    return `${countNoun(shots.count, 'projectile')}${growth}, ${roll} — ${damage} each`;
   }
   if (effect.kind === 'save') {
     const dc = saveDC !== null ? ` DC ${saveDC}` : '';

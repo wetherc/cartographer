@@ -1,6 +1,6 @@
 import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { formatCastingTime } from '../entities/SpellTiming.js';
-import { capitalize } from '../util/text.js';
+import { countNoun, capitalize } from '../util/text.js';
 
 /**
  * The text of the spell cards in the Spellbook tab and of the slot count in
@@ -47,5 +47,5 @@ function countText(pools, noun) {
   const max = pools.reduce((n, p) => n + p.max, 0);
   if (max === 0) return '';
   const free = pools.reduce((n, p) => n + p.current, 0);
-  return `${free} of ${max} ${noun}${max === 1 ? '' : 's'}`;
+  return `${free} of ${countNoun(max, noun)}`;
 }

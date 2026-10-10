@@ -1,7 +1,7 @@
 import { createMapNode, resizeNode } from '../map/TileGrid.js';
 import { NODE_KINDS, coerceNodeKind, environFieldOptions } from '../map/NodeKinds.js';
 import { readLockFields } from '../map/NodeLock.js';
-import { capitalize } from '../util/text.js';
+import { countNoun, capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -130,7 +130,7 @@ export function editedNode(node, values) {
  * @returns {string}
  */
 export function shrinkQuestion(name, lost) {
-  return `Shrinking "${name}" removes ${lost} tile${lost === 1 ? '' : 's'} outside the new bounds.`;
+  return `Shrinking "${name}" removes ${countNoun(lost, 'tile')} outside the new bounds.`;
 }
 
 /**

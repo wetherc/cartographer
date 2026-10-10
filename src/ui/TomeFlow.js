@@ -13,7 +13,7 @@ import {
 } from '../entities/PactTome.js';
 import { getPactBoon } from '../entities/Invocations.js';
 import { activeSpellIndex, activeSpells } from '../library/Library.js';
-import { splitList } from '../util/text.js';
+import { countNoun, splitList } from '../util/text.js';
 
 /**
  * The Book of Shadows dialogs and rows of a Pact of the Tome warlock: the
@@ -70,7 +70,7 @@ export async function askTomeRituals(character, count, maxLevel) {
     [
       {
         name: 'rituals',
-        label: `Choose ${count} ritual${count === 1 ? '' : 's'} from any class`,
+        label: `Choose ${countNoun(count, 'ritual')} from any class`,
         type: 'multiselect',
         options: options.map((s) => ({ value: s.id, label: `${s.name} (level ${s.level})` })),
         max: count,

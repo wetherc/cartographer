@@ -1,3 +1,4 @@
+import { countNoun } from '../util/text.js';
 import { el } from './dom.js';
 import { chip } from './buttons.js';
 import { factLine } from './FactLine.js';
@@ -86,8 +87,8 @@ function line(label, value) {
 function spellSummary(spells) {
   /** @type {string[]} */
   const parts = [];
-  if (spells.cantrips > 0) parts.push(`${spells.cantrips} cantrip${plural(spells.cantrips)}`);
-  if (spells.leveled > 0) parts.push(`${spells.leveled} spell${plural(spells.leveled)}`);
+  if (spells.cantrips > 0) parts.push(countNoun(spells.cantrips, 'cantrip'));
+  if (spells.leveled > 0) parts.push(countNoun(spells.leveled, 'spell'));
   return parts.length > 0 ? parts.join(', ') : null;
 }
 
@@ -105,9 +106,4 @@ function slotLabel(slot) {
  */
 function compactSlot(slot) {
   return `${slot.pact ? 'Pact' : `L${slot.level}`} ${slot.remaining}/${slot.max}`;
-}
-
-/** @param {number} n */
-function plural(n) {
-  return n === 1 ? '' : 's';
 }

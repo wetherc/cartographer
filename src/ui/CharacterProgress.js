@@ -16,6 +16,7 @@ import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
 import { chooseASI, chooseFeat } from './ImprovementFlow.js';
 import { skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
+import { featureChoiceCount, improvementCount, levelsToAssign } from '../view/LevelUpCue.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../entities/FeatureGrants.js').FeatureStamp} FeatureStamp */
@@ -92,7 +93,7 @@ export function buildProgressSection(getCharacter, opts) {
   if (pending > 0 || (opts.editBase && assignable)) {
     const row = addRow();
     if (pending > 0) {
-      addText(row, `${pending} level${pending === 1 ? '' : 's'} to assign`);
+      addText(row, levelsToAssign(pending));
     }
     if (opts.editBase) {
       row.appendChild(
@@ -108,7 +109,7 @@ export function buildProgressSection(getCharacter, opts) {
     const row = addRow();
     const [first] = slots;
     const where = `${className(first.classId)} ${first.classLevel}`;
-    addText(row, `${slots.length} improvement${slots.length === 1 ? '' : 's'} pending (${where})`);
+    addText(row, `${improvementCount(slots.length)} pending (${where})`);
     if (opts.editBase) {
       const asi = textButton('+2 ability', () => chooseASI(getCharacter, opts));
       // The level-up banner focuses the first button marked pending.
@@ -140,10 +141,7 @@ export function buildProgressSection(getCharacter, opts) {
     const row = addRow();
     const [first] = grants;
     const where = `${first.name}, ${className(first.classId)} ${first.classLevel}`;
-    addText(
-      row,
-      `${grants.length} feature choice${grants.length === 1 ? '' : 's'} pending (${where})`,
-    );
+    addText(row, `${featureChoiceCount(grants.length)} pending (${where})`);
     if (opts.editBase) {
       const choose = textButton('Choose', runFeatureGrants, {
         ariaLabel: 'Choose the pending class feature grants',

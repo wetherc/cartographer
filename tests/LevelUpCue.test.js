@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { levelUpCue, rosterLevelText, sheetLevelText } from '../src/view/LevelUpCue.js';
+import {
+  featureChoiceCount,
+  improvementCount,
+  levelsToAssign,
+  levelUpCue,
+  rosterLevelText,
+  sheetLevelText,
+} from '../src/view/LevelUpCue.js';
 
 test('no pending step gives no banner', () => {
   assert.equal(levelUpCue({ levels: 0, improvements: 0, choices: 0 }), null);
@@ -31,4 +38,10 @@ test('the level labels name the levels left to assign', () => {
   assert.equal(sheetLevelText(4, 0), 'Level 4');
   assert.equal(sheetLevelText(4, 1), 'Level 4, 1 level to assign');
   assert.equal(sheetLevelText(4, 2), 'Level 4, 2 levels to assign');
+});
+
+test('the level-up phrases count their nouns', () => {
+  assert.equal(levelsToAssign(1), '1 level to assign');
+  assert.equal(improvementCount(2), '2 improvements');
+  assert.equal(featureChoiceCount(1), '1 feature choice');
 });

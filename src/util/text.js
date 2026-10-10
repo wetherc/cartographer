@@ -14,6 +14,19 @@ export function capitalize(text) {
 }
 
 /**
+ * A count with its noun, in the singular for exactly 1 and the plural for any
+ * other number: "1 level", "0 levels", "3 levels". The plural defaults to the
+ * noun plus "s", and a noun with another plural passes it.
+ * @param {number} n
+ * @param {string} noun
+ * @param {string} [plural]
+ * @returns {string}
+ */
+export function countNoun(n, noun, plural = `${noun}s`) {
+  return `${n} ${n === 1 ? noun : plural}`;
+}
+
+/**
  * The indefinite article a phrase reads with: "an Acrobatics check" against "a
  * Stealth check". The rule here is the spelling one, a vowel letter first, not
  * the spoken one, so a phrase that starts with a consonant sound spelled with a

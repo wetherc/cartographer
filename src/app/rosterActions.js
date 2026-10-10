@@ -1,3 +1,4 @@
+import { countNoun } from '../util/text.js';
 import { applyRacePicks, racePickFields } from './raceEdit.js';
 import { promptModal, confirmDelete } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
@@ -213,9 +214,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
       scope.reselect(); // refresh the sheet, inventory, and roster
       app.actions.markDirty();
       app.actions.logEvent('note', `The party is awarded ${paid.xp} XP each.`);
-      app.toasts.show(
-        `Awarded ${paid.xp} XP to ${paid.count} character${paid.count === 1 ? '' : 's'}.`,
-      );
+      app.toasts.show(`Awarded ${paid.xp} XP to ${countNoun(paid.count, 'character')}.`);
     },
   };
 }

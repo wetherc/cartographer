@@ -1,3 +1,24 @@
+import { countNoun } from '../util/text.js';
+
+/**
+ * The pending levels as the banner and the Progression panel word them.
+ * @param {number} n
+ * @returns {string} "1 level to assign", "2 levels to assign"
+ */
+export const levelsToAssign = (n) => `${countNoun(n, 'level')} to assign`;
+
+/**
+ * @param {number} n
+ * @returns {string} "1 improvement", "2 improvements"
+ */
+export const improvementCount = (n) => countNoun(n, 'improvement');
+
+/**
+ * @param {number} n
+ * @returns {string} "1 feature choice", "2 feature choices"
+ */
+export const featureChoiceCount = (n) => countNoun(n, 'feature choice');
+
 /**
  * The text of the level-up banner at the top of a character sheet. The
  * banner shows while a character has any level-up step left: a level earned
@@ -9,9 +30,9 @@
  */
 export function levelUpCue({ levels, improvements, choices }) {
   const parts = [
-    levels > 0 && `${levels} level${levels === 1 ? '' : 's'} to assign`,
-    improvements > 0 && `${improvements} improvement${improvements === 1 ? '' : 's'}`,
-    choices > 0 && `${choices} feature choice${choices === 1 ? '' : 's'}`,
+    levels > 0 && levelsToAssign(levels),
+    improvements > 0 && improvementCount(improvements),
+    choices > 0 && featureChoiceCount(choices),
   ].filter(Boolean);
   return parts.length === 0 ? null : `Ready to level up: ${parts.join(', ')}.`;
 }
@@ -38,5 +59,5 @@ export function rosterLevelText(level, pending) {
  */
 export function sheetLevelText(level, pending) {
   if (pending <= 0) return `Level ${level}`;
-  return `Level ${level}, ${pending} level${pending === 1 ? '' : 's'} to assign`;
+  return `Level ${level}, ${levelsToAssign(pending)}`;
 }

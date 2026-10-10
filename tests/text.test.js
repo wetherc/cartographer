@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { article, capitalize, slugify, splitList, splitTrimmedList } from '../src/util/text.js';
+import {
+  article,
+  capitalize,
+  countNoun,
+  slugify,
+  splitList,
+  splitTrimmedList,
+} from '../src/util/text.js';
 
 test('article picks "an" before a vowel letter and "a" otherwise', () => {
   assert.equal(article('Acrobatics check'), 'an');
@@ -65,4 +72,11 @@ test('splitTrimmedList trims each segment and drops the blank ones', () => {
   assert.deepEqual(splitTrimmedList(' a , , b '), ['a', 'b']);
   assert.deepEqual(splitTrimmedList('   '), []);
   assert.deepEqual(splitTrimmedList(undefined), []);
+});
+
+test('countNoun uses the singular for exactly 1 and the plural otherwise', () => {
+  assert.equal(countNoun(1, 'level'), '1 level');
+  assert.equal(countNoun(0, 'skill'), '0 skills');
+  assert.equal(countNoun(3, 'feature choice'), '3 feature choices');
+  assert.equal(countNoun(2, 'wolf', 'wolves'), '2 wolves');
 });

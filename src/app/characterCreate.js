@@ -14,7 +14,7 @@ import { withSpellSlots } from '../entities/SpellSlots.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
-import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
+import { countNoun, capitalize, splitList, splitTrimmedList } from '../util/text.js';
 import { statFields, readStats } from './statFields.js';
 import { raceCantripLabel, raceCantripOptions } from './raceEdit.js';
 import {
@@ -261,7 +261,7 @@ function statMethodCaption(method, scores) {
   if (method === 'point-buy') {
     const left = pointBuyRemaining(scores);
     if (left === null) return 'Ability scores (point buy uses 8-15)';
-    const points = (/** @type {number} */ n) => `${n} point${n === 1 ? '' : 's'}`;
+    const points = (/** @type {number} */ n) => `${countNoun(n, 'point')}`;
     return `Ability scores (${points(left)} left)`;
   }
   return 'Ability scores';

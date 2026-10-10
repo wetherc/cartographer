@@ -1,3 +1,5 @@
+import { countNoun } from '../util/text.js';
+
 /**
  * Casting time and duration as structured values instead of free text, with
  * a parser tolerant enough to read every phrasing that the SRD and a GM's
@@ -144,11 +146,6 @@ export function parseDuration(value) {
   return { kind: 'special', text: original };
 }
 
-/** @param {number} amount @param {string} unit @returns {string} for example '1 minute', '10 minutes'. */
-function plural(amount, unit) {
-  return `${amount} ${unit}${amount === 1 ? '' : 's'}`;
-}
-
 /**
  * The printed phrasing of a casting time. This is the same string the entry
  * carried before the app structured it.
@@ -164,9 +161,9 @@ export function formatCastingTime(value) {
     case 'reaction':
       return value.trigger ? `1 reaction, ${value.trigger}` : '1 reaction';
     case 'minutes':
-      return plural(value.amount ?? 1, 'minute');
+      return countNoun(value.amount ?? 1, 'minute');
     case 'hours':
-      return plural(value.amount ?? 1, 'hour');
+      return countNoun(value.amount ?? 1, 'hour');
     default:
       return value.text || 'Special';
   }
@@ -199,7 +196,7 @@ export function formatDuration(value, { concentration = false } = {}) {
   const units = { rounds: 'round', minutes: 'minute', hours: 'hour', days: 'day' };
   const unit = units[value.kind];
   if (unit) {
-    const base = plural(value.amount ?? 1, unit);
+    const base = countNoun(value.amount ?? 1, unit);
     if (concentration) return `Concentration, up to ${base}`;
     return value.upTo ? `Up to ${base}` : base;
   }

@@ -1,7 +1,7 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { riderText } from '../entities/Riders.js';
 import { crLabel } from '../data/challenge.js';
-import { capitalize } from '../util/text.js';
+import { countNoun, capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -43,8 +43,8 @@ export function featSummary(feat) {
     if (effect.kind === 'hp') return `+${effect.perLevel} HP per level`;
     if (effect.kind === 'initiative') return `+${effect.bonus} initiative`;
     return [
-      effect.skills ? `${effect.skills.choose} skill${effect.skills.choose > 1 ? 's' : ''}` : '',
-      effect.saves ? `${effect.saves.choose} save${effect.saves.choose > 1 ? 's' : ''}` : '',
+      effect.skills ? `${countNoun(effect.skills.choose, 'skill')}` : '',
+      effect.saves ? `${countNoun(effect.saves.choose, 'save')}` : '',
       effect.expertise ? 'expertise' : '',
       effect.armor ? `armor: ${effect.armor.join(', ')}` : '',
       effect.tools ? 'tools' : '',

@@ -1,3 +1,5 @@
+import { countNoun } from '../util/text.js';
+
 /** @typedef {import('../types/time.js').GameClock} GameClock */
 
 /**
@@ -101,9 +103,10 @@ export function formatMinutes(minutes) {
   const total = Math.max(0, Math.floor(minutes));
   const hours = Math.floor(total / 60);
   const rest = total % 60;
-  /** @param {number} n @param {string} unit */
-  const count = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
-  const parts = [hours ? count(hours, 'hour') : '', rest || !hours ? count(rest, 'minute') : ''];
+  const parts = [
+    hours ? countNoun(hours, 'hour') : '',
+    rest || !hours ? countNoun(rest, 'minute') : '',
+  ];
   return parts.filter(Boolean).join(' ');
 }
 

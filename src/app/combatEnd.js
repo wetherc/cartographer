@@ -1,7 +1,7 @@
 import { confirmModal, promptModal } from '../ui/Modal.js';
 import { addItem, addXP } from '../entities/Character.js';
 import { addGold } from '../entities/Purse.js';
-import { slugify } from '../util/text.js';
+import { countNoun, slugify } from '../util/text.js';
 import {
   FOE_FATES,
   fightEnd,
@@ -216,7 +216,7 @@ export function applyFightXP(app, end, values) {
   app.actions.refreshSelectedCharacter();
   app.actions.markDirty();
   app.actions.logEvent('note', `The party is awarded ${amount} XP each for the fight.`);
-  app.toasts.show(`Awarded ${amount} XP to ${count} character${count === 1 ? '' : 's'}.`);
+  app.toasts.show(`Awarded ${amount} XP to ${countNoun(count, 'character')}.`);
 }
 
 /**

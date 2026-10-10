@@ -12,7 +12,7 @@ import {
   setPactBoon,
 } from '../entities/Invocations.js';
 import { PACT_BOONS } from '../data/invocationCatalog.js';
-import { splitList } from '../util/text.js';
+import { countNoun, splitList } from '../util/text.js';
 import { askArcana, choosePendingWarlockPicks } from './InvocationLevelFlow.js';
 import { buildTomeRows, progressRow } from './TomeFlow.js';
 import { pendingTomeCantrips, pendingTomeRituals } from '../entities/PactTome.js';
@@ -64,7 +64,7 @@ export function buildInvocationRows(getCharacter, opts) {
   if (any || pactBoonPending(character)) {
     const parts = [
       ...(pactBoonPending(character) ? ['pact boon'] : []),
-      ...(pending > 0 ? [`${pending} invocation${pending === 1 ? '' : 's'}`] : []),
+      ...(pending > 0 ? [`${countNoun(pending, 'invocation')}`] : []),
       ...(arcanaPending > 0 ? [`${arcanaPending} Mystic Arcanum`] : []),
       ...(tomePending > 0 ? [`${tomePending} Book of Shadows cantrips`] : []),
       ...(ritualsPending > 0 ? [`${ritualsPending} book rituals`] : []),
