@@ -27,6 +27,14 @@ modules, and its name is the name of the feature, such as
 can have no test file of its own name and still have tests. Search `tests/`
 for the module name before you add a new file.
 
+Each module under `src/` has a basename that no other file in `src/` uses,
+even when case is ignored. macOS and Windows treat `potions.js` and
+`Potions.js` as the same name, so the flat `tests/` directory could hold
+only one `Potions.test.js` for the two modules. Give the app half of such a
+pair a role suffix, such as `potionsWiring.js` beside `entities/Potions.js`.
+`tests/moduleLoad.test.js` fails when two files in `src/`, or two files in
+`tests/`, have basenames that match when case is ignored.
+
 The helpers in `tests/helpers/` stand in for the browser and for the
 running app:
 

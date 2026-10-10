@@ -1,8 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join, relative } from 'node:path';
 
 /**
  * Every module under `src/` gets imported here, except the composition root.
@@ -68,4 +77,56 @@ test('no source file under src contains a raw NUL byte', () => {
   // matches go blank. Code that needs a NUL separator writes the `\u0000` escape.
   const withNul = jsFiles(SRC).filter((file) => readFileSync(file).includes(0));
   assert.deepEqual(withNul, []);
+});
+
+/**
+ * Every file under a directory, deepest paths included.
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function allFiles(dir) {
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .map((entry) => join(dir, entry))
+    .filter((path) => statSync(path).isFile());
+}
+
+/**
+ * The groups of files whose basenames match when case is ignored. Each group
+ * lists its paths relative to `root`, sorted.
+ * @param {string} root
+ * @returns {string[][]}
+ */
+function caseCollisions(root) {
+  /** @type {Map<string, string[]>} */
+  const byName = new Map();
+  for (const path of allFiles(root)) {
+    const key = basename(path).toLowerCase();
+    byName.set(key, [...(byName.get(key) ?? []), relative(root, path)]);
+  }
+  return [...byName.values()].filter((paths) => paths.length > 1).map((paths) => paths.sort());
+}
+
+test('caseCollisions finds basenames that differ only by case', () => {
+  const root = mkdtempSync(join(tmpdir(), 'case-names-'));
+  try {
+    mkdirSync(join(root, 'app'));
+    mkdirSync(join(root, 'entities'));
+    writeFileSync(join(root, 'app', 'potions.js'), '');
+    writeFileSync(join(root, 'entities', 'Potions.js'), '');
+    writeFileSync(join(root, 'entities', 'Other.js'), '');
+    assert.deepEqual(caseCollisions(root), [
+      [join('app', 'potions.js'), join('entities', 'Potions.js')],
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('no two files under src or tests share a basename when case is ignored', () => {
+  // macOS and Windows treat `potions.js` and `Potions.js` as one name, so the
+  // flat tests directory could not hold a test file for each module of such a
+  // pair. A rename with a role suffix (for example `potionsWiring.js`) keeps
+  // the names apart.
+  assert.deepEqual(caseCollisions(SRC), []);
+  assert.deepEqual(caseCollisions(HERE), []);
 });
