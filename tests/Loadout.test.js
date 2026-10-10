@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLoadout, loadoutAccess } from '../src/combat/Loadout.js';
+import { buildLoadout, combatantWeapons, loadoutAccess } from '../src/combat/Loadout.js';
 import { createCharacter, addItem, withHP } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
 import { createCreature } from '../src/entities/Creature.js';
@@ -228,4 +228,17 @@ test('a foe with no authored armor reports none', () => {
   const loadout = buildLoadout({ kind: 'creature', entity: ooze });
   assert.deepEqual(loadout.armor, []);
   assert.deepEqual(loadout.weapons, []);
+});
+
+test('combatantWeapons lists equipped weapons for a character and the weapons of a creature', () => {
+  assert.deepEqual(
+    combatantWeapons({ kind: 'character', entity: armedHero() }).map((w) => w.name),
+    ['Longsword'],
+  );
+  const weapon = { name: 'Bite', kind: /** @type {const} */ ('melee'), damage: [] };
+  const wolf = {
+    ...createCreature('wolf', 'Wolf', { maxHP: 11, location: HERE }),
+    weapons: [weapon],
+  };
+  assert.deepEqual(combatantWeapons({ kind: 'creature', entity: wolf }), [weapon]);
 });

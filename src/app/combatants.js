@@ -2,7 +2,7 @@ import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { effectiveStatBlock } from '../entities/Creature.js';
 import { armorClass, unproficientWear } from '../entities/Armor.js';
-import { equippedWeapons } from '../entities/Equipment.js';
+import { combatantWeapons } from '../combat/Loadout.js';
 import { getHP, getSpellbook } from '../entities/Character.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { saveBonus } from '../entities/Checks.js';
@@ -315,7 +315,7 @@ export function targetArmorPenalty(app, id) {
 }
 
 /**
- * weaponsOf gives the weapons a combatant can attack with: a party
+ * weaponsOf gives the weapons a combatant can attack with, by id: a party
  * character's equipped weapons, or the one weapon a creature was given. An
  * unarmed creature has nothing to swing, and so does an id that resolves to
  * nothing.
@@ -325,9 +325,7 @@ export function targetArmorPenalty(app, id) {
  */
 export function weaponsOf(app, id) {
   const found = findCombatant(app, id);
-  if (!found) return [];
-  if (found.kind === 'character') return equippedWeapons(found.entity);
-  return found.entity.weapons;
+  return found ? combatantWeapons(found) : [];
 }
 
 /**

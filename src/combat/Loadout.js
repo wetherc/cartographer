@@ -114,21 +114,24 @@ function armorOf(found) {
 }
 
 /**
- * The weapons available, each with its damage written out: a character's
- * equipped weapons in slot order, or the single weapon of a creature.
- * This is the same
- * list the action bar offers, so a card and the bar always agree. This
- * function is named apart from combatants.js's `weaponsOf`, which returns
- * the weapon objects themselves. This function returns display lines.
+ * The weapons a combatant can attack with: a character's equipped weapons
+ * in slot order, or the weapons a creature was given. The action bar and the
+ * loadout card both read this list, so they always agree.
+ * @param {ResolvedCombatant} found
+ * @returns {(import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon)[]}
+ */
+export function combatantWeapons(found) {
+  return found.kind === 'character' ? equippedWeapons(found.entity) : found.entity.weapons;
+}
+
+/**
+ * The weapons of `combatantWeapons`, each with its damage written out as a
+ * display line.
  * @param {ResolvedCombatant} found
  * @returns {{ name: string, damage: string }[]}
  */
 function weaponLines(found) {
-  /** @type {{ name: string, damage?: import('../types/entities.js').DamagePart[] }[]} */
-  let weapons = [];
-  if (found.kind === 'character') weapons = equippedWeapons(found.entity);
-  else weapons = found.entity.weapons;
-  return weapons.map((weapon) => ({
+  return combatantWeapons(found).map((weapon) => ({
     name: weapon.name,
     damage: formatDamage(weapon.damage ?? []),
   }));
