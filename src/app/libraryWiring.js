@@ -290,10 +290,21 @@ export function wireLibrary(app) {
         onSubmit: (fields) => {
           const { quantity: _quantity, notes: _notes, ...rest } = fields;
           const entry = /** @type {EquipmentTemplate} */ (rest);
+          const newKey = equipmentKey(entry);
+          const target = activeEquipmentEntries().find((e) => equipmentKey(e.entry) === newKey);
+          if (renameConflict({ found, target, renamed: key !== newKey })) {
+            app.toasts.show(
+              `Another item is already named "${entry.name.trim()}". Choose a different name.`,
+              { level: 'error' },
+            );
+            return;
+          }
           // A rename or a type change removes the old custom entry instead
           // of leaving both. Renaming a default only adds the renamed copy.
+          // A rename onto the name and type of another entry is refused,
+          // because the upsert would replace that entry.
           updateCustom((base) => {
-            const moved = key && key !== equipmentKey(entry);
+            const moved = key && key !== newKey;
             const next = moved ? removeEntry(base.equipment, key, equipmentKey) : base.equipment;
             return { ...base, equipment: upsertEntry(next, entry, equipmentKey) };
           });

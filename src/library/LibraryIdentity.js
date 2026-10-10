@@ -50,8 +50,8 @@ export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
  * conflict: it stores as an override of that entry, which is how editing a
  * built-in works.
  * @param {{
- *   found?: { entry: { id: string } } | null,
- *   target?: { entry: { id: string } } | null,
+ *   found?: object | null,
+ *   target?: object | null,
  *   renamed: boolean,
  * }} args The same `found`, `target`, and `renamed` that storedEntryId reads.
  * @returns {boolean}
