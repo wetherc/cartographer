@@ -272,7 +272,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
 
     const result = castSpell(caster, resolved, {
       slotLevel,
-      casterLevel: caster.level ?? 1,
+      casterLevel: caster.level,
       targets: castTargets,
       spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
       saveDC,

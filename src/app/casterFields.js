@@ -3,6 +3,7 @@ import { castsAs, spellListOf, subclassDef } from '../entities/ClassCasting.js';
 import { classSpellLevelCap } from '../entities/SpellLearning.js';
 import { activeSpells, activeSpellIndex } from '../library/Library.js';
 import { emptySpellbook } from '../entities/Character.js';
+import { casterLevelOf } from '../entities/Caster.js';
 import { clampInt } from '../util/num.js';
 import { splitList } from '../util/text.js';
 
@@ -167,7 +168,7 @@ export function casterFields(seed) {
       name: 'casterLevel',
       label: 'Caster level',
       type: 'number',
-      value: seed?.casterLevel ?? seed?.level ?? 1,
+      value: casterLevelOf(seed),
       min: 1,
     },
     {
@@ -179,10 +180,7 @@ export function casterFields(seed) {
       emptyText: NO_CASTER_TEXT,
       // Seed the list filtered to the seed's class and level. The dialog's
       // onChange refilters it live as the caster class or level changes.
-      options: spellPickerOptions(
-        casterValue(seed?.class, seed?.subclass),
-        seed?.casterLevel ?? seed?.level ?? 1,
-      ),
+      options: spellPickerOptions(casterValue(seed?.class, seed?.subclass), casterLevelOf(seed)),
     },
   ];
 }

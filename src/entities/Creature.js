@@ -6,7 +6,7 @@ import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.
 import { endOnDamage } from './Conditions.js';
 import { creatureTypeFields } from './CreatureType.js';
 import { attackTraitFields } from './CreatureAttacks.js';
-import { withCasterFields, ensureCasterFields } from './Caster.js';
+import { withCasterFields, ensureCasterFields, casterLevelOf } from './Caster.js';
 import { castsAs, casterDefFor } from './ClassCasting.js';
 import { isCasterPool } from './SpellSlots.js';
 import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js';
@@ -244,7 +244,7 @@ export function createCreature(id, name, options = {}) {
   };
   // A caster class stamps spell slots (rebuilt for its level) and an empty
   // spellbook. A non-caster leaves the creature untouched.
-  return withCasterFields(creature, options, options.casterLevel ?? options.level ?? 1);
+  return withCasterFields(creature, options, casterLevelOf(options));
 }
 
 /**
@@ -293,7 +293,7 @@ export function withDefaults(creature) {
       weapons: weaponList(rawWeapons, legacyWeapon),
       armor: coerceEnemyArmor(creature.armor),
     },
-    casterLevel ?? level ?? 1,
+    casterLevelOf({ casterLevel, level }),
   );
 }
 
@@ -399,9 +399,9 @@ export function editCreature(creature, edits) {
  * @returns {Creature}
  */
 function applyCasterEdit(base, prior, edits) {
-  const priorLevel = prior.casterLevel ?? prior.level ?? 1;
+  const priorLevel = casterLevelOf(prior);
   const wasCaster = castsAs(prior.class, prior.subclass, priorLevel);
-  const level = edits.casterLevel ?? edits.level ?? 1;
+  const level = casterLevelOf(edits);
   // The caster form sends a subclass only for a casting one (the Eldritch
   // Knight). A kept class keeps its stored subclass, so a Life Domain cleric
   // stays one across an edit.

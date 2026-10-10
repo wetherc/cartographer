@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   toCaster,
+  casterLevelOf,
   isCaster,
   withCasterFields,
   ensureCasterFields,
@@ -401,4 +402,11 @@ test('toCaster reads a Character at its assigned class levels', () => {
     resources: [],
   };
   assert.equal(toCaster(character).level, 4, 'the pending level adds no cantrip die');
+});
+
+test('casterLevelOf reads casterLevel, then level, then 1', () => {
+  assert.equal(casterLevelOf({ casterLevel: 5, level: 2 }), 5);
+  assert.equal(casterLevelOf({ level: 3 }), 3);
+  assert.equal(casterLevelOf({}), 1);
+  assert.equal(casterLevelOf(undefined), 1);
 });

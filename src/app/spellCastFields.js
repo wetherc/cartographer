@@ -330,11 +330,7 @@ export function castChangeHandler(plan) {
     const asRitual = offersRitual && form.get('ritual') === '1';
     if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
     if (!allocates && !group) return;
-    const total = castCap(
-      spell,
-      effectiveSlot(spell, form.get('slot'), asRitual),
-      caster.level ?? 1,
-    );
+    const total = castCap(spell, effectiveSlot(spell, form.get('slot'), asRitual), caster.level);
     if (group) {
       form.setOptions('targets', group.options ?? [], total);
       form.setLabel('targets', targetsLabel(spell.effect.kind, total, spell.range));

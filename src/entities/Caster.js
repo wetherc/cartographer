@@ -65,6 +65,17 @@ import { isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlo
  */
 
 /**
+ * The level a creature or character casts at, read from `casterLevel`, then
+ * `level`, then 1. A creature can have a caster level apart from its
+ * fighting level, and a template can have neither.
+ * @param {{ casterLevel?: number, level?: number } | null | undefined} entity
+ * @returns {number}
+ */
+export function casterLevelOf(entity) {
+  return entity?.casterLevel ?? entity?.level ?? 1;
+}
+
+/**
  * An entity's classes as a list, whichever shape it stores them in. A
  * Character carries a `classes` list, while a Creature carries a scalar
  * `class` and `subclass` pair at its caster level. Normalizing here
@@ -98,7 +109,7 @@ export function toCaster(entity) {
   // but not yet assigned does not raise cantrip damage or the target cap.
   const level = Array.isArray(entity.classes)
     ? effectiveLevel(/** @type {Character} */ (entity))
-    : (entity.casterLevel ?? entity.level ?? 1);
+    : casterLevelOf(entity);
   return {
     id: entity.id,
     name: entity.name,

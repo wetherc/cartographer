@@ -193,14 +193,14 @@ export function castPlan(app, entity, listed, offered, route = null) {
   const cap = castCap(
     spell,
     free ? free.slotLevel : startingSlotLevel(spell, slotLevels),
-    caster.level ?? 1,
+    caster.level,
   );
   const maxCap = free
     ? cap
     : castCap(
         spell,
         slotLevels.length ? Math.max(...slotLevels) : startingSlotLevel(spell, slotLevels),
-        caster.level ?? 1,
+        caster.level,
       );
   // The check reads the real entity, not the caster view, because the
   // caster view has no inventory. A combatant with no inventory is never
