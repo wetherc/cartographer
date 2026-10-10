@@ -49,6 +49,11 @@ export async function drinkPotion(app, drinker, item, store, { prompt = promptMo
     if (!values) return false;
     recipientId = String(values.recipient);
   }
+  // A cross-tab save or a player patch can change the drinker while the
+  // dialog is open, so the write below starts from the stored copy. A
+  // drinker or a potion that is gone ends the use.
+  const holder = app.state.characters.find((c) => c.id === drinker.id);
+  if (!holder?.inventory.some((i) => i.id === item.id)) return false;
   const recipient = app.state.characters.find((c) => c.id === recipientId);
   if (!recipient) return false;
   const blocked = potionBlocked(recipient);
@@ -63,7 +68,7 @@ export async function drinkPotion(app, drinker, item, store, { prompt = promptMo
     return false;
   }
   const { result } = app.actions.rollDice(potionSelection(heals), null);
-  store(removeItem(drinker, item.id, 1));
+  store(removeItem(holder, item.id, 1));
   applyToTarget(app, recipient.id, result.total, true);
   const line = potionLine(app, drinker, recipient, item, result.total);
   app.actions.logEvent('combat', line);

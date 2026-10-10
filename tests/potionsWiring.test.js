@@ -151,3 +151,33 @@ test('a custom consumable with heal dice drinks under any name', async () => {
   assert.deepEqual(rolled, [{ counts: { d6: 3 }, modifier: 0 }]);
   assert.ok(app.log.includes('Wren drinks a Troll Draught: +9 HP (now 14/20).'));
 });
+
+test('a change to the drinker while the dialog is open stays after the drink', async () => {
+  const { app, wren, store } = party();
+  const prompt = /** @type {any} */ (
+    async () => {
+      // A player patch lands while the dialog is open.
+      app.state.characters = app.state.characters.map((/** @type {any} */ c) =>
+        c.id === 'wren' ? { ...c, notes: 'patched' } : c,
+      );
+      return { recipient: 'mirelle' };
+    }
+  );
+  assert.equal(await drinkPotion(app, wren, POTION, store, { prompt }), true);
+  assert.equal(app.state.characters[0].notes, 'patched');
+  assert.equal(stack(app), 1);
+});
+
+test('a potion that leaves while the dialog is open is not used', async () => {
+  const { app, wren, store } = party();
+  const prompt = /** @type {any} */ (
+    async () => {
+      app.state.characters = app.state.characters.map((/** @type {any} */ c) =>
+        c.id === 'wren' ? { ...c, inventory: [] } : c,
+      );
+      return { recipient: 'mirelle' };
+    }
+  );
+  assert.equal(await drinkPotion(app, wren, POTION, store, { prompt }), false);
+  assert.equal(hpOf(app, 'mirelle'), 0);
+});

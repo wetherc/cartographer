@@ -31,6 +31,19 @@ import { splitTrimmedList } from '../util/text.js';
  */
 
 /**
+ * The cleric as stored now, read again after a dialog. A cross-tab save or a
+ * player patch can change the cleric while the dialog is open, and a write
+ * from the copy taken before it would undo that change.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {Character | null} null when the cleric is gone
+ */
+function storedCleric(app, id) {
+  const found = findCombatant(app, id);
+  return found?.kind === 'character' ? found.entity : null;
+}
+
+/**
  * Turn Undead. The dialog lists every undead combatant, all ticked, because
  * the range (30 ft) and "can see or hear" are the GM's call. Each ticked
  * undead rolls a WIS save against the cleric's spell save DC. A failure adds
@@ -76,14 +89,16 @@ export async function turnUndead(
     { submitLabel: 'Turn Undead' },
   );
   if (!values) return false;
+  const live = storedCleric(app, cleric.id);
+  if (!live) return false;
   if (app.actions.spendBudget && !app.actions.spendBudget(cleric.id, 'action')) {
     app.toasts.show(`${found.label} has no action left this turn.`);
     return false;
   }
-  found.store(spendResource(cleric, CHANNEL_DIVINITY_ID, 1));
+  found.store(spendResource(live, CHANNEL_DIVINITY_ID, 1));
   app.actions.markDirty();
-  const dc = spellSaveDC(cleric, 'cleric') ?? 10;
-  const level = classLevelOf(cleric, 'cleric');
+  const dc = spellSaveDC(live, 'cleric') ?? 10;
+  const level = classLevelOf(live, 'cleric');
   app.actions.logEvent('combat', `${found.label} uses Channel Divinity: Turn Undead (DC ${dc}).`);
   for (const id of splitTrimmedList(String(values.targets ?? ''))) {
     const target = findCombatant(app, id);
@@ -187,11 +202,13 @@ export async function preserveLife(app, found, { prompt = promptModal } = {}) {
     app.toasts.show(check.message);
     return false;
   }
+  const live = storedCleric(app, cleric.id);
+  if (!live) return false;
   if (app.actions.spendBudget && !app.actions.spendBudget(cleric.id, 'action')) {
     app.toasts.show(`${found.label} has no action left this turn.`);
     return false;
   }
-  found.store(spendResource(cleric, CHANNEL_DIVINITY_ID, 1));
+  found.store(spendResource(live, CHANNEL_DIVINITY_ID, 1));
   app.actions.markDirty();
   app.actions.logEvent(
     'combat',

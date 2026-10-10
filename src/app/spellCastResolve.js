@@ -87,20 +87,19 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // reads the caster again by id, so the write-back below never replaces
   // that newer entity with the stale copy plus a spent slot. A caster that
   // left the campaign in the meantime casts nothing and spends nothing.
-  const live = findCombatant(app, entity.id)?.entity;
-  if (!live) {
+  const submitted = findCombatant(app, entity.id)?.entity;
+  if (!submitted) {
     app.toasts.show(`${entity.name} is no longer in the campaign.`);
     return;
   }
-  const caster = live === entity ? plan.caster : toCaster(live);
   // An unprepared Wizard ritual has no slot to fall back to, so it casts as
   // a ritual even if the box was unticked.
   const free = plan.free ?? null;
-  // A once-per-rest use reads again off the live caster, because another tab
+  // A once-per-rest use reads again off the submitted caster, because another tab
   // can spend it while this dialog sits open, and the plan copy would then
   // spend one use twice.
   const invocation = plan.invocation?.oncePerRest
-    ? warlockCast(/** @type {any} */ (live), spell.id)
+    ? warlockCast(/** @type {any} */ (submitted), spell.id)
     : (plan.invocation ?? null);
   if (plan.invocation?.oncePerRest && (!invocation?.oncePerRest || invocation.spent)) {
     app.toasts.show(`${plan.invocation.invocation.name} is spent until a long rest.`, {
@@ -182,6 +181,14 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // The rest of the cast rolls against the final targets, after any Redirect
   // Attack below has swapped one of them for an ally.
   const rest = () => {
+    // The Redirect Attack dialog can sit open the same way, so the caster is
+    // read again here, after any pause and before anything is written.
+    const live = findCombatant(app, entity.id)?.entity;
+    if (!live) {
+      app.toasts.show(`${entity.name} is no longer in the campaign.`);
+      return;
+    }
+    const caster = live === entity ? plan.caster : toCaster(live);
     // The caster view carries no conditions, so the chips come off the real
     // combatant. A Bless on the caster rides its spell attack rolls, and a
     // Blinded on it slants them.

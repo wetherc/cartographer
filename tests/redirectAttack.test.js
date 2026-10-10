@@ -319,3 +319,76 @@ test('redirectSpellTargets keeps the list when no target can redirect', async ()
     [undefined, 'gob2'],
   );
 });
+
+test('a change to the caster during the Redirect Attack dialog stays after the cast', async () => {
+  const { app } = fight();
+  const evoker = /** @type {any} */ ({
+    ...createCharacter('evoker', 'Evoker', {
+      STR: 10,
+      DEX: 14,
+      CON: 10,
+      INT: 16,
+      WIS: 10,
+      CHA: 10,
+    }),
+    classes: [{ classId: 'wizard', level: 5 }],
+    level: 5,
+    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    spellbook: { cantrips: [], known: ['ray-of-sickness'], prepared: ['ray-of-sickness'] },
+  });
+  app.state.characters = [...app.state.characters, evoker];
+  const bolt = /** @type {any} */ (DEFAULT_SPELLS.find((s) => s.id === 'ray-of-sickness'));
+  const aim = (/** @type {string} */ id) => ({ id, name: id, ac: 10, conditions: [] });
+  const plan = /** @type {any} */ (castPlan(app, evoker, bolt, [aim('boss'), aim('gob1')]));
+  assert.equal(plan.ok, true, plan.message);
+  const store = (/** @type {any} */ next) => {
+    app.state.characters = replaceById(app.state.characters, next);
+  };
+  await resolveCast(
+    app,
+    plan,
+    { target: 'boss', slot: '1' },
+    {
+      writeBack: store,
+      rng: () => 0.99,
+      prompt: /** @type {any} */ (
+        async () => {
+          store({ ...app.state.characters.find((c) => c.id === 'evoker'), notes: 'patched' });
+          return { ally: 'gob1' };
+        }
+      ),
+    },
+  );
+  const after = app.state.characters.find((c) => c.id === 'evoker');
+  assert.equal(after?.notes, 'patched');
+  assert.equal(after?.resources.find((r) => r.id === 'slots-1')?.current, 3);
+});
+
+test('a caster removed during the Redirect Attack dialog casts nothing', async () => {
+  const { app } = fight();
+  const evoker = /** @type {any} */ ({
+    ...createCharacter('evoker', 'Evoker'),
+    classes: [{ classId: 'wizard', level: 5 }],
+    level: 5,
+    spellbook: { cantrips: ['fire-bolt'], known: [], prepared: [] },
+  });
+  app.state.characters = [...app.state.characters, evoker];
+  const bolt = /** @type {any} */ (DEFAULT_SPELLS.find((s) => s.id === 'fire-bolt'));
+  const aim = (/** @type {string} */ id) => ({ id, name: id, ac: 10, conditions: [] });
+  const plan = /** @type {any} */ (castPlan(app, evoker, bolt, [aim('boss'), aim('gob1')]));
+  await resolveCast(
+    app,
+    plan,
+    { target: 'boss' },
+    {
+      writeBack: () => assert.fail('nothing to write'),
+      prompt: /** @type {any} */ (
+        async () => {
+          app.state.characters = app.state.characters.filter((c) => c.id !== 'evoker');
+          return { ally: 'gob1' };
+        }
+      ),
+    },
+  );
+  assert.equal(app.state.creatures.find((c) => c.id === 'gob1')?.currentHP, 7);
+});

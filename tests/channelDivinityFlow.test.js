@@ -245,3 +245,38 @@ test('a Turn Undead pick that names no fighter in the list is skipped', async ()
   assert.equal(uses(app), 0);
   assert.ok(app.log.some((l) => /^Skeleton/.test(l)));
 });
+
+/** A prompt that patches or removes the cleric while it is open. */
+const patching = (/** @type {any} */ app, /** @type {any} */ change, /** @type {any} */ answer) =>
+  /** @type {any} */ (
+    async (/** @type {string} */ _title, /** @type {any[]} */ fields) => {
+      app.state.characters = change(app.state.characters);
+      return answer(fields);
+    }
+  );
+
+test('Turn Undead keeps a change made to the cleric while its dialog is open', async () => {
+  const app = fight();
+  const prompt = patching(
+    app,
+    (/** @type {any[]} */ list) => list.map((c) => ({ ...c, notes: 'patched' })),
+    () => ({ targets: 's1' }),
+  );
+  assert.equal(await turnUndead(app, found(app), { prompt, rng: () => 0 }), true);
+  assert.equal(app.state.characters[0].notes, 'patched');
+  assert.equal(uses(app), 0);
+});
+
+test('Turn Undead and Preserve Life stop when the cleric leaves during the dialog', async () => {
+  for (const use of [turnUndead, preserveLife]) {
+    const app = fight();
+    app.state.characters.push(damageCharacter(withHP(createCharacter('ally', 'Ally'), 20), 18));
+    app.state.combat.order.push({ id: 'ally', initiative: 5, modifier: 0 });
+    const prompt = patching(
+      app,
+      (/** @type {any[]} */ list) => list.filter((c) => c.id !== 'mirelle'),
+      (/** @type {any[]} */ fields) => ({ targets: 's1', [fields[0].name]: 0 }),
+    );
+    assert.equal(await use(app, found(app), { prompt }), false);
+  }
+});
