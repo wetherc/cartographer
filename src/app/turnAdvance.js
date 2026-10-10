@@ -72,3 +72,20 @@ export function advancePastHeld(app, { setCombat, tickRound, rng = Math.random }
   if (landing && !skipped.includes(landing.id)) startTurnEffects(app, landing.id);
   return result;
 }
+
+/**
+ * Start the turn of the combatant under the pointer, after a fight starts or
+ * after the combatant who held the turn leaves the order. Those moves land
+ * on the next row without the skip rule of `advancePastHeld`, so the row
+ * can be dead, stable, or held by a chip such as Paralyzed. Such a row
+ * starts and ends its turn the way a skipped row does, and the pointer then
+ * moves on to the next combatant who can act.
+ * @param {AppContext} app
+ * @param {Parameters<typeof advancePastHeld>[1]} hooks the same hooks as `advancePastHeld`
+ */
+export function startLandingTurn(app, hooks) {
+  const landing = app.state.combat ? currentParticipant(app.state.combat) : null;
+  if (!landing) return;
+  startTurnEffects(app, landing.id);
+  if (skipsTurn(findCombatant(app, landing.id))) advancePastHeld(app, hooks);
+}

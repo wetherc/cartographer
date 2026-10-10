@@ -34,9 +34,9 @@ import {
   logName,
 } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
-import { advancePastHeld } from './turnAdvance.js';
+import { advancePastHeld, startLandingTurn } from './turnAdvance.js';
 import { wireTurnOrder } from './turnOrder.js';
-import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffectsWiring.js';
+import { dropTurnChips, endFightEffects } from './turnEffectsWiring.js';
 import { focusMapCanvas } from './combatWiring.js';
 import {
   applyFightXP,
@@ -99,10 +99,9 @@ export function wireEncounters(app) {
     if (next.round !== combat.round) tickRound();
     // The removed combatant has no more turns, so the chips keyed to them end
     // now. When it held the turn, the combatant the pointer lands on starts
-    // its turn.
+    // its turn, and a row that cannot act passes the turn on.
     dropTurnChips(app, id);
-    const holder = state.combat?.order[state.combat.index];
-    if (heldTurn && holder) startTurnEffects(app, holder.id);
+    if (heldTurn) startLandingTurn(app, { setCombat, tickRound });
     app.views.initiativePanel.update();
   };
 
@@ -295,8 +294,7 @@ export function wireEncounters(app) {
       });
       app.actions.logEvent('combat', `${describe(p)?.name ?? 'Unknown combatant'} is surprised.`);
     }
-    const first = started.order[started.index];
-    if (first) startTurnEffects(app, first.id);
+    startLandingTurn(app, { setCombat, tickRound });
     app.views.initiativePanel.update(); // shows the panel again
     app.views.encounterPanel.update(); // hides the Start combat button
     app.actions.setMode('combat'); // the fight runs on the full-width screen

@@ -204,7 +204,9 @@ boundary. A dying character at 0 HP still has its turn end, and the damage
 of a chip costs it a failed death save, as any hit does. The start of a fight
 starts the first turn. A removal from the fight ends the chips keyed to the
 removed combatant, and it starts the turn of the next combatant when the
-removed one held the turn. The end of a fight ends every chip that waits on
+removed one held the turn. `startLandingTurn` runs both of those starts.
+When the row it starts cannot act (dead, stable, or held by a chip), that
+row ends its turn, and `advancePastHeld` moves the pointer on. The end of a fight ends every chip that waits on
 a turn boundary, because no turn comes again. `endFightEffects` first deals
 the later-turn damage that such a chip still owes, so an Acid Arrow that hit
 on the last turn still burns. A chip that deals damage only on a failed

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { advancePastHeld } from '../src/app/turnAdvance.js';
+import { advancePastHeld, startLandingTurn } from '../src/app/turnAdvance.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { createCharacter, withHP } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
@@ -160,4 +160,30 @@ test('a dying character keeps its turn, and its start asks for a death save', ()
   const result = advance(app);
   assert.equal(result?.state.order[result.state.index].id, 'hero');
   assert.match(app.log.join('\n'), /Hero is dying\. Roll a death save\./);
+});
+
+test('a landing on a held combatant starts its turn and passes the turn on', () => {
+  const { app } = fight(99);
+  app.state.combat = { ...app.state.combat, index: 1 };
+  startLandingTurn(app, {
+    setCombat: (next) => {
+      app.state.combat = next;
+    },
+    tickRound: () => app.calls.push('tickRound'),
+  });
+  const combat = app.state.combat;
+  assert.equal(combat.order[combat.index].id, 'hero');
+  assert.match(app.log.join('\n'), /Ogre/);
+});
+
+test('a landing on a combatant who can act only starts its turn', () => {
+  const { app } = fight(99);
+  const before = app.state.combat;
+  startLandingTurn(app, { setCombat: () => assert.fail('no move'), tickRound: () => {} });
+  assert.equal(app.state.combat.index, before.index);
+});
+
+test('a landing with no fight does nothing', () => {
+  const app = stubApp({ state: { combat: null } });
+  startLandingTurn(app, { setCombat: () => assert.fail('no fight'), tickRound: () => {} });
 });
