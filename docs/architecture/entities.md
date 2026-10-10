@@ -851,6 +851,9 @@ A structured effect models a grant made once. A value that scales with the
 class level stays a name match, because the app derives it on each read. A
 homebrew class that uses the same names gets the same rules.
 
+[Adding a class mechanic](../adding-a-class-mechanic.md) lists the files to
+change for each kind of class feature.
+
 ### Eldritch invocations
 
 `entities/Invocations.js` defines the rules of the warlock's eldritch

@@ -25,6 +25,8 @@
       url: /docs/testing.html
     - title: Adding a tile
       url: /docs/adding-a-tile.html
+    - title: Adding a class mechanic
+      url: /docs/adding-a-class-mechanic.html
 - section: Architecture
   pages:
     - title: Overview

@@ -37,6 +37,7 @@ describes how the site is built.
 | [Contributing](../CONTRIBUTING.md) | Set up the tools, run the checks, build, and send a change |
 | [Testing a change](testing.md) | Run the unit tests, the typecheck, the linter, and the browser checks |
 | [Adding a tile](adding-a-tile.md) | Draw a tile, register it, and check that it joins its neighbors |
+| [Adding a class mechanic](adding-a-class-mechanic.md) | Add a class feature: a sheet name, a scaling value, a pool, a turn action, or a level-up pick |
 
 ## Reference
 
