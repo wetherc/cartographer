@@ -668,6 +668,14 @@
     * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
 
+  details.modules { margin-top: var(--sp-2); border-top: 1px solid var(--rule); }
+  details.modules summary { cursor: pointer; padding: var(--sp-2) 0; }
+  .modules-n { color: var(--text-muted); font-size: var(--step--1); margin-left: 1ch; }
+  details.modules table { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+  details.modules th, details.modules td {
+    text-align: left; vertical-align: top; padding: 0.3em 0.6em; border-bottom: 1px solid var(--rule);
+  }
+  details.modules td:first-child { overflow-wrap: anywhere; }
   .snip { margin-top: var(--sp-3); }
   .snippet-label {
     font-family: var(--f-mono);
@@ -1006,13 +1014,749 @@
       <p class="caption"><code>docs/architecture/conventions.md</code> explains each rule. <code>docs/architecture.md</code> is authoritative for design questions.</p>
     </section>
 
+    <section id="modules">
+      <div class="sec-head"><span class="sec-num">09</span><h2>Module index</h2></div>
+      <div class="prose">
+        <p>
+          The table of each area lists its modules under <code>src/</code> with the first
+          sentence of the first JSDoc comment of each module. Open an area to see its table.
+        </p>
+      </div>
+      <details class="modules">
+        <summary><code>app/</code> <span class="modules-n">96 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>app/actionFields.js</code></td><td>The Actions part of the creature dialog.</td></tr>
+            <tr><td><code>app/assetWait.js</code></td><td>The saves that wait on an image put.</td></tr>
+            <tr><td><code>app/attackFields.js</code></td><td>The fields of the weapon attack dialog, described once.</td></tr>
+            <tr><td><code>app/campaignActions.js</code></td><td>Wires campaign persistence: the dirty flag (Save button indicator and leave-page guard), Save, autosave, and the combat flush.</td></tr>
+            <tr><td><code>app/castPlan.js</code></td><td>The cast plan, the part of a cast that comes before the dialog.</td></tr>
+            <tr><td><code>app/channelDivinityFlow.js</code></td><td>The Channel Divinity options of a cleric in a fight.</td></tr>
+            <tr><td><code>app/characterCreate.js</code></td><td>This module defines the fields for the New Character dialog and the pure builder that turns submitted values into a level 1 character.</td></tr>
+            <tr><td><code>app/characterEdit.js</code></td><td>This module defines the fields of a character's edit dialog and the pure functions that apply the submitted values: the name, the ability scores, the proficiency lists, the HP, and the AC.</td></tr>
+            <tr><td><code>app/characterScope.js</code></td><td>The selected-character scope.</td></tr>
+            <tr><td><code>app/checkRolls.js</code></td><td>Rolling a saving throw or an ability check from the character sheet.</td></tr>
+            <tr><td><code>app/combatEnd.js</code></td><td>The summary of the running fight from the live state, or null when no fight runs.</td></tr>
+            <tr><td><code>app/combatWiring.js</code></td><td>Move keyboard focus to the map canvas.</td></tr>
+            <tr><td><code>app/combatantWrites.js</code></td><td>The write paths that change a combatant: damage and healing, condition chips, the end of a spell's effects, and the repeated saves at the end of a turn.</td></tr>
+            <tr><td><code>app/combatants.js</code></td><td>Combatant is the resolved holder for a participant id: the entity, the collection it lives in, and a store function.</td></tr>
+            <tr><td><code>app/companions.js</code></td><td>The NPC card controls for companions: the "Travels with the party" toggle and "Bring to the party".</td></tr>
+            <tr><td><code>app/creatureForm.js</code></td><td>This is the shared create/edit dialog behind every creature authoring flow: the Encounters panel, the Story sidebar, the Build rail lists, the Build-mode right-click menu, and the Library rail's "Add to campaign".</td></tr>
+            <tr><td><code>app/damageWardPrompt.js</code></td><td>The pause after the damage roll of a weapon hit, a spell attack hit, or a save spell, for a defender that can resist the damage with a reaction spell.</td></tr>
+            <tr><td><code>app/deathSaveRolls.js</code></td><td>Rolling a death save from the combat screen or the character sheet, and stabilizing a character by hand.</td></tr>
+            <tr><td><code>app/diceWiring.js</code></td><td>The dice tray and the roll log.</td></tr>
+            <tr><td><code>app/encounterPanels.js</code></td><td>This module wires the panels that list creatures by place: the Encounters panel of the Play sidebar, the Build rail's foe list, and the Build-mode right-click menu of a tile.</td></tr>
+            <tr><td><code>app/encounterWiring.js</code></td><td>This module wires the start of a fight.</td></tr>
+            <tr><td><code>app/entityList.js</code></td><td>The add, edit, and delete callbacks that a title-keyed campaign list needs.</td></tr>
+            <tr><td><code>app/exhaustionWrites.js</code></td><td>The GM's write path for exhaustion, over a character or a creature by id.</td></tr>
+            <tr><td><code>app/externalSaves.js</code></td><td>Wires cross-tab live sync, the minimum multi-device setup.</td></tr>
+            <tr><td><code>app/fightState.js</code></td><td>The write hooks of the running fight, for the start of a fight in encounterWiring.js.</td></tr>
+            <tr><td><code>app/generateAction.js</code></td><td>The question the GM answers before a non-empty node is replaced.</td></tr>
+            <tr><td><code>app/handoutCue.js</code></td><td>Registers `cueHandouts`, which tells the GM when the party, or a character on their own tile, stands on a tile with a hidden handout.</td></tr>
+            <tr><td><code>app/handoutWiring.js</code></td><td>The handout dialog's fields.</td></tr>
+            <tr><td><code>app/headerMenu.js</code></td><td>Wires the Menu button of the header.</td></tr>
+            <tr><td><code>app/healCurePrompt.js</code></td><td>Ask the caster which condition the heal ends.</td></tr>
+            <tr><td><code>app/historySteps.js</code></td><td>The tab strips of the page whose open tab a history step keeps.</td></tr>
+            <tr><td><code>app/legendaryResistancePrompt.js</code></td><td>The uses of Legendary Resistance a combatant has left, or 0 for anything that is not a creature with the trait.</td></tr>
+            <tr><td><code>app/lethargyWrites.js</code></td><td>The wiring of Haste's lethargy (see `entities/Lethargy.js`).</td></tr>
+            <tr><td><code>app/librarySummaries.js</code></td><td>The one-line summaries under each row of the Library rail.</td></tr>
+            <tr><td><code>app/libraryWiring.js</code></td><td>The section headings for the equipment list, in display order.</td></tr>
+            <tr><td><code>app/locationFields.js</code></td><td>The map choices of the location picker.</td></tr>
+            <tr><td><code>app/locationPanels.js</code></td><td>Refresh the panels that filter their rows by a map location.</td></tr>
+            <tr><td><code>app/lockGuard.js</code></td><td>The check that every move into a map runs first.</td></tr>
+            <tr><td><code>app/luckyRoll.js</code></td><td>Roll a d20 selection in the dice tray for one roller.</td></tr>
+            <tr><td><code>app/mapArrival.js</code></td><td>Build what happens when the party or a character arrives on a tile: companions follow, placed creatures are met, the location panels re-filter, and points of interest along the walk are discovered.</td></tr>
+            <tr><td><code>app/mapAuthoring.js</code></td><td>This module builds Build-mode authoring for the map view.</td></tr>
+            <tr><td><code>app/mapBuildTools.js</code></td><td>Wire the Build map tools: the header Undo stroke and Redo stroke buttons, a fog-free PNG export of the current node, and the card over a map with no tiles.</td></tr>
+            <tr><td><code>app/mapChrome.js</code></td><td>Mount the HTML chrome over the map canvas: the mini-map of the parent map and the zoom and fog toolbar.</td></tr>
+            <tr><td><code>app/mapExitTravel.js</code></td><td>The travel helpers that the ways out use from mapTravel.js.</td></tr>
+            <tr><td><code>app/mapHover.js</code></td><td>Build the Play-mode hover handler for the map.</td></tr>
+            <tr><td><code>app/mapNarration.js</code></td><td>The Build-rail warning for the node in view.</td></tr>
+            <tr><td><code>app/mapNightWalk.js</code></td><td>The dialogs a walk can open.</td></tr>
+            <tr><td><code>app/mapPick.js</code></td><td>The map callbacks that a tile pick takes over.</td></tr>
+            <tr><td><code>app/mapResync.js</code></td><td>Bring every view that reflects the map back in line with the grid, after a caller changed the world underneath them.</td></tr>
+            <tr><td><code>app/mapSightings.js</code></td><td>Build the travelogue note for sites that a move brings out of the fog.</td></tr>
+            <tr><td><code>app/mapTeleport.js</code></td><td>Ask the GM whether a world tree pick only shows the map or moves the party there.</td></tr>
+            <tr><td><code>app/mapTravel.js</code></td><td>This module builds Play-mode movement and discovery for the map view.</td></tr>
+            <tr><td><code>app/mapWiring.js</code></td><td>Wires everything on and around the map: the canvas and its stroke and click gestures, the breadcrumb, both world trees, the tile inspector, the palette and its drag and drop, the fog controls, the screen-reader map description, stroke-level undo and redo, and the Build tools (the header Undo stroke and Redo stroke buttons, and Export PNG).</td></tr>
+            <tr><td><code>app/moveEncounter.js</code></td><td>Check for an encounter after a move onto another map.</td></tr>
+            <tr><td><code>app/nodeActions.js</code></td><td>Whether the stored save has a node.</td></tr>
+            <tr><td><code>app/onboarding.js</code></td><td>First-run onboarding.</td></tr>
+            <tr><td><code>app/onboardingNext.js</code></td><td>The second Welcome step, after "Generate a world" builds a world.</td></tr>
+            <tr><td><code>app/partyWiring.js</code></td><td>The length of a 5e short rest.</td></tr>
+            <tr><td><code>app/passTime.js</code></td><td>Spend game time on every timed effect in the campaign: the Time panel's Advance button and both rests call this with the watches that passed.</td></tr>
+            <tr><td><code>app/phoneViewsWiring.js</code></td><td>Mounts the bottom bar of Play mode at phone width.</td></tr>
+            <tr><td><code>app/playerPatches.js</code></td><td>Wires both ends of the player patch (see `storage/PlayerPatch.js`).</td></tr>
+            <tr><td><code>app/potionsWiring.js</code></td><td>Drink a healing potion, or give it to another party character.</td></tr>
+            <tr><td><code>app/questCleanup.js</code></td><td>The quest-link writes that follow a node edit or a creature delete.</td></tr>
+            <tr><td><code>app/questCompletion.js</code></td><td>Completing a quest: the dialog that asks the GM, and the write that follows.</td></tr>
+            <tr><td><code>app/questDetailActions.js</code></td><td>The callbacks behind the expanded GM row of the quest log: the objective edits, the link dialogs, and the link chips (see `ui/QuestDetail.js`).</td></tr>
+            <tr><td><code>app/raceEdit.js</code></td><td>This module defines the race pick fields of a character's edit dialog and the pure function that applies them.</td></tr>
+            <tr><td><code>app/reactionGate.js</code></td><td>The checks that every reaction pause runs before it asks its question.</td></tr>
+            <tr><td><code>app/redirectWard.js</code></td><td>The pause when an attack targets a creature with Redirect Attack (`redirectAttack`), such as a goblin boss.</td></tr>
+            <tr><td><code>app/rehydrate.js</code></td><td>Adopt a campaign that another tab saved, without a page reload.</td></tr>
+            <tr><td><code>app/replaceActions.js</code></td><td>The confirm line of a replace that Undo can take back.</td></tr>
+            <tr><td><code>app/riderSpend.js</code></td><td>Remove the one-roll rider chips that a roll used up, such as Guidance after an ability check, from the character or creature that rolled.</td></tr>
+            <tr><td><code>app/rollModeField.js</code></td><td>The roll mode control of the weapon attack dialog and the spell cast dialog.</td></tr>
+            <tr><td><code>app/rosterActions.js</code></td><td>The GM's roster controls: place one character, edit its name, scores, proficiencies, HP, and AC, grant XP to one character or award it to the party, and add or delete a character.</td></tr>
+            <tr><td><code>app/searchWiring.js</code></td><td>The sidebar tab and the card of each panel a result can open.</td></tr>
+            <tr><td><code>app/sessionControls.js</code></td><td>localStorage key set once the first switch to the Player view showed its toast.</td></tr>
+            <tr><td><code>app/shieldWard.js</code></td><td>The pause before an attack hits a defender that can raise its AC with a reaction, as Shield does.</td></tr>
+            <tr><td><code>app/shortcutsWiring.js</code></td><td>App-wide keyboard shortcuts.</td></tr>
+            <tr><td><code>app/shortenedLoadPrompts.js</code></td><td>The prompts for a campaign that loaded shortened (`storage/ShortenedLoad.js`).</td></tr>
+            <tr><td><code>app/slay.js</code></td><td>The write that kills a combatant outright, with no damage roll behind it (Power Word Kill).</td></tr>
+            <tr><td><code>app/spellCast.js</code></td><td>Casting a spell, from the button the GM presses to the dialog and back.</td></tr>
+            <tr><td><code>app/spellCastFields.js</code></td><td>The cast dialog's field list, and what one changed field does to the rest.</td></tr>
+            <tr><td><code>app/spellCastResolve.js</code></td><td>Stores a caster's updated entity in its collection.</td></tr>
+            <tr><td><code>app/spellOutcomes.js</code></td><td>Writing a resolved cast into the world: hit points, condition chips, the damage a chip leaves for later turns, summoned creatures, and the log lines the GM reads afterward.</td></tr>
+            <tr><td><code>app/spellTargets.js</code></td><td>Who a spell can reach, and how the cast dialog names them.</td></tr>
+            <tr><td><code>app/spentCasts.js</code></td><td>End the caster's concentration on a spell when no chip of that cast is left on anyone.</td></tr>
+            <tr><td><code>app/splitParty.js</code></td><td>This module is the GM's "allow splitting the party" switch, and the regroup step it forces on the way back.</td></tr>
+            <tr><td><code>app/storyWiring.js</code></td><td>The reward key of a quest from the dialog values, or nothing when the reward pays no gold and no XP.</td></tr>
+            <tr><td><code>app/strokeHistory.js</code></td><td>What the Undo and Redo buttons offer: a description of the edit each one would revert or apply again, or null when its ring is empty.</td></tr>
+            <tr><td><code>app/summonsWiring.js</code></td><td>Spawning the creatures that a summoning spell brings.</td></tr>
+            <tr><td><code>app/tempHP.js</code></td><td>Grant temporary HP to a combatant by id, store it, and log it.</td></tr>
+            <tr><td><code>app/turnActionsWiring.js</code></td><td>The turn actions of the combat screen's action bar, and the budget pips the GM can press to mark a cost spent or free.</td></tr>
+            <tr><td><code>app/turnAdvance.js</code></td><td>Move the turn pointer to the next combatant who can act, and run the turn boundaries on the way (see `turnEffectsWiring.js`).</td></tr>
+            <tr><td><code>app/turnEffectsWiring.js</code></td><td>What happens at the start and the end of one combatant's turn, beyond the action budget that `Initiative.js` refreshes.</td></tr>
+            <tr><td><code>app/turnOrder.js</code></td><td>Register the GM's corrections to a running order: Previous turn, a new initiative value for one combatant, and Delay.</td></tr>
+            <tr><td><code>app/viewer.js</code></td><td>Who looks at this tab: the GM, or a Player tab with the id of the character it is bound to (null when unbound).</td></tr>
+            <tr><td><code>app/weaponAttack.js</code></td><td>Who can attack and who is left to attack.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>src/</code> <span class="modules-n">2 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>boot.js</code></td><td>The before-paint script.</td></tr>
+            <tr><td><code>main.js</code></td><td>This is the composition root.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>campaign/</code> <span class="modules-n">12 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>campaign/Campaigns.js</code></td><td>Everything that makes up one campaign's state at runtime.</td></tr>
+            <tr><td><code>campaign/ExampleCast.js</code></td><td>The options that a creature adds to its stats: gear, training, damage defenses, and GM notes.</td></tr>
+            <tr><td><code>campaign/ExampleContent.js</code></td><td>A lookup of the story places of the example world.</td></tr>
+            <tr><td><code>campaign/ExampleHandouts.js</code></td><td>One handout.</td></tr>
+            <tr><td><code>campaign/ExampleParty.js</code></td><td>The example party: four level-4 characters, each built through the same calls that the level-up flow makes, so the sheet shows a real history of choices.</td></tr>
+            <tr><td><code>campaign/ExamplePeople.js</code></td><td>The people of the Marches.</td></tr>
+            <tr><td><code>campaign/ExampleRegions.js</code></td><td>The story of each region of the example world: which generated places are story places, which landmarks the story stamps onto the region map, and where the people and the monsters of the story stand.</td></tr>
+            <tr><td><code>campaign/ExampleRoads.js</code></td><td>The arms of each road piece, keyed by its kind, from every set of arms that `connectorKind` names.</td></tr>
+            <tr><td><code>campaign/ExampleStaging.js</code></td><td>Helpers that put the example story onto generated maps: node ids that stay unique across the whole campaign, the expansion of a map's sites into sub-maps, and the pickers that find a tile for a camp, a boss, or an NPC.</td></tr>
+            <tr><td><code>campaign/ExampleStatBlocks.js</code></td><td></td></tr>
+            <tr><td><code>campaign/ExampleStory.js</code></td><td>An objective that the players see once its quest is revealed.</td></tr>
+            <tr><td><code>campaign/ExampleWorld.js</code></td><td>A spot on the map where the story puts something: a creature, the party, or a handout.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>combat/</code> <span class="modules-n">30 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>combat/ActionBudget.js</code></td><td>Pure per-turn action budget for one combatant.</td></tr>
+            <tr><td><code>combat/Arrival.js</code></td><td>The text of the walked-into-something alert.</td></tr>
+            <tr><td><code>combat/AttackOptions.js</code></td><td>The weapon attack dialog's per-swing options that depend on the weapon and on what the attacker holds.</td></tr>
+            <tr><td><code>combat/AttackResolve.js</code></td><td>The 5e rules a weapon attack resolves by.</td></tr>
+            <tr><td><code>combat/AttackTweaks.js</code></td><td>The answers of the weapon attack dialog, read into the overrides that one swing takes, and the three kinds of swing with what each one costs.</td></tr>
+            <tr><td><code>combat/ChannelDivinity.js</code></td><td>Pure rules of the cleric's Channel Divinity options in a fight.</td></tr>
+            <tr><td><code>combat/CombatRoster.js</code></td><td>The combatants of a fight that starts where the party stands, and the log line of the initiative roll.</td></tr>
+            <tr><td><code>combat/CombatView.js</code></td><td>Pure derivations over a running combat: which side a combatant fights on, whether it is out of the fight, and the full per-participant view a combat surface draws from.</td></tr>
+            <tr><td><code>combat/Cover.js</code></td><td>Cover on one attack, as the GM calls it at the table.</td></tr>
+            <tr><td><code>combat/DisplayNames.js</code></td><td>Display labels for combatants that share a name.</td></tr>
+            <tr><td><code>combat/FightEnd.js</code></td><td>A hostile creature still up when the fight ends, with the points it is worth if the GM counts it as overcome.</td></tr>
+            <tr><td><code>combat/FightMarkers.js</code></td><td>The danger markers of the read-only fight map on the combat screen.</td></tr>
+            <tr><td><code>combat/FocusRestore.js</code></td><td>Where keyboard focus goes after the combat screen rebuilds.</td></tr>
+            <tr><td><code>combat/HPLines.js</code></td><td>The log lines for a damage or heal that the GM applies by hand from the combat screen.</td></tr>
+            <tr><td><code>combat/HitEventLines.js</code></td><td>The log line for one thing that a hit or a heal did to a combatant (see `CharacterHit.HitEvent`).</td></tr>
+            <tr><td><code>combat/HitSave.js</code></td><td>A save that a creature's weapon forces on a hit, such as the wolf bite's DC 11 Strength save against falling prone.</td></tr>
+            <tr><td><code>combat/Initiative.js</code></td><td>Pure initiative and turn-order logic for running a combat round.</td></tr>
+            <tr><td><code>combat/InitiativeRoll.js</code></td><td>Rolling initiative for one combatant.</td></tr>
+            <tr><td><code>combat/LegendaryResistance.js</code></td><td>Pure rules for Legendary Resistance.</td></tr>
+            <tr><td><code>combat/Loadout.js</code></td><td>What a combatant brings to the fight, as display-ready values: worn armor, the weapons it can swing, how many spells it has to hand, and what is left in its slot pools.</td></tr>
+            <tr><td><code>combat/Rage.js</code></td><td>The barbarian's Rage under the 2014 rules.</td></tr>
+            <tr><td><code>combat/Reactions.js</code></td><td>Pure derivations for what a combatant can do with its reaction between its own turns: an opportunity attack, or a spell whose casting time is a reaction.</td></tr>
+            <tr><td><code>combat/RefreshScheduler.js</code></td><td>One refresh for a whole burst of writes.</td></tr>
+            <tr><td><code>combat/SaveLines.js</code></td><td>The log lines of a save spell, as the GM reads them and as a Player tab reads them.</td></tr>
+            <tr><td><code>combat/SpellRule.js</code></td><td>The 5e bonus action spell rule.</td></tr>
+            <tr><td><code>combat/SpentCost.js</code></td><td>Which buttons of the combat action bar need a part of the turn that is already spent.</td></tr>
+            <tr><td><code>combat/Stealth.js</code></td><td>The Stealth contest before a fight, and the log lines of the setup dialog.</td></tr>
+            <tr><td><code>combat/TurnActions.js</code></td><td>Pure list of the turn actions that the combat screen offers as buttons, besides weapon swings and spells.</td></tr>
+            <tr><td><code>combat/TwoWeapon.js</code></td><td>Two-weapon fighting: which weapons a second hand can swing, when the swing is available, and what the second hand does to damage.</td></tr>
+            <tr><td><code>combat/WeaponSwing.js</code></td><td>The pure steps of one weapon swing: the numbers and the slants that the attack roll takes, the log line of that roll, and the damage of a hit with its log and toast lines.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>data/</code> <span class="modules-n">18 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>data/abilities.js</code></td><td>What each of the six ability scores covers, in one line each.</td></tr>
+            <tr><td><code>data/backgroundCatalog.js</code></td><td>The character backgrounds, covering the classic PHB set.</td></tr>
+            <tr><td><code>data/challenge.js</code></td><td>Challenge rating: the 5e measure of how much of a threat one creature is.</td></tr>
+            <tr><td><code>data/classCatalog.js</code></td><td>Expand a sparse {level: count} breakpoint map into a 20-entry per-level curve (index 0 = level 1), each entry carrying forward until the next breakpoint.</td></tr>
+            <tr><td><code>data/creatures.js</code></td><td>The application's built-in creatures.</td></tr>
+            <tr><td><code>data/feats.js</code></td><td>The built-in feat catalog.</td></tr>
+            <tr><td><code>data/fightingStyles.js</code></td><td>The 5e SRD fighting styles.</td></tr>
+            <tr><td><code>data/invocationCatalog.js</code></td><td>The eldritch invocations of the SRD warlock.</td></tr>
+            <tr><td><code>data/raceCatalog.js</code></td><td>The playable races.</td></tr>
+            <tr><td><code>data/skills.js</code></td><td>The 18 skills, mapped to their governing ability and keyed by kebab-case skill id.</td></tr>
+            <tr><td><code>data/spells.js</code></td><td>The curated built-in spell corpus.</td></tr>
+            <tr><td><code>data/spells/cantrips.js</code></td><td>The built-in cantrips (level 0).</td></tr>
+            <tr><td><code>data/spells/level1.js</code></td><td>The built-in 1st-level spells.</td></tr>
+            <tr><td><code>data/spells/level2.js</code></td><td>The built-in 2nd-level spells.</td></tr>
+            <tr><td><code>data/spells/level3.js</code></td><td>The built-in 3rd-level spells.</td></tr>
+            <tr><td><code>data/spells/level4to5.js</code></td><td>The built-in 4th-level and 5th-level spells.</td></tr>
+            <tr><td><code>data/spells/level6to9.js</code></td><td>The built-in spells of 6th level and higher.</td></tr>
+            <tr><td><code>data/spells/utility.js</code></td><td>Built-in spells of several levels whose rules live only in the description, as `utility` entries.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>dice/</code> <span class="modules-n">3 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>dice/DiceRoller.js</code></td><td>Roll a structured dice selection: counts per die type plus a flat modifier.</td></tr>
+            <tr><td><code>dice/ResultLine.js</code></td><td>The parts of a dice tray result, for a GM to read at a glance.</td></tr>
+            <tr><td><code>dice/TrayTarget.js</code></td><td>The target of one dice tray roll.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>entities/</code> <span class="modules-n">106 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>entities/Armor.js</code></td><td>The rules for wearing armor: what the worn pieces do to AC, to Stealth, and to a character who is not trained for them.</td></tr>
+            <tr><td><code>entities/Backgrounds.js</code></td><td>The character backgrounds.</td></tr>
+            <tr><td><code>entities/BuffCast.js</code></td><td>The outcomes of a buff cast.</td></tr>
+            <tr><td><code>entities/CastRolls.js</code></td><td>The rolls a spell makes against each of its targets: the attack roll of each projectile, the save a target makes against the caster's DC, and the save or chip that a hit brings with it (Ray of Sickness poisons the creature it hits unless that creature makes a Constitution save).</td></tr>
+            <tr><td><code>entities/CastRoute.js</code></td><td>The ways a caster can pay for one spell, when it has more than one.</td></tr>
+            <tr><td><code>entities/CastScaling.js</code></td><td>How far a cast grows past its base: the scaling steps of a cantrip or an upcast, and the counts and dice that grow with them (projectiles, summoned creatures, the target cap, and the damage parts).</td></tr>
+            <tr><td><code>entities/Caster.js</code></td><td>The options that stamp caster fields onto an entity.</td></tr>
+            <tr><td><code>entities/Casting.js</code></td><td>A single target of a cast: its identity plus the numbers the resolver needs.</td></tr>
+            <tr><td><code>entities/Character.js</code></td><td>The highest level a character reaches.</td></tr>
+            <tr><td><code>entities/CharacterHit.js</code></td><td>One consequence of a hit or a heal on a party character, for the caller to log.</td></tr>
+            <tr><td><code>entities/CharacterInventory.js</code></td><td>The inventory writes of a character: add, hand over, edit, and remove a stack.</td></tr>
+            <tr><td><code>entities/CharacterSpellbook.js</code></td><td>A character's spellbook: its cantrips, known spells, and prepared spells, and the class that each spell belongs to.</td></tr>
+            <tr><td><code>entities/Checks.js</code></td><td>The two d20 rolls a character makes outside combat: saving throws and ability checks.</td></tr>
+            <tr><td><code>entities/ChipMods.js</code></td><td>What a condition chip changes on its holder besides a d20 roll.</td></tr>
+            <tr><td><code>entities/ChipSlants.js</code></td><td>The attack slants that chip mods give, beside the named conditions of `ConditionEffects.js`.</td></tr>
+            <tr><td><code>entities/ClassCasting.js</code></td><td>The caster fields of one class membership, with its subclass applied.</td></tr>
+            <tr><td><code>entities/ClassPools.js</code></td><td>The uses of one class feature at the character's current levels: the pool's maximum and the rest that refills it.</td></tr>
+            <tr><td><code>entities/Classes.js</code></td><td>The playable classes.</td></tr>
+            <tr><td><code>entities/Concentration.js</code></td><td>Concentration: the one spell effect a caster holds open, what breaks it, and when it runs out.</td></tr>
+            <tr><td><code>entities/ConditionEffects.js</code></td><td>What a status condition does to a roll.</td></tr>
+            <tr><td><code>entities/Conditions.js</code></td><td>The chip that a caster carries while it holds a spell open.</td></tr>
+            <tr><td><code>entities/Creature.js</code></td><td>The hit points a creature gets when nobody types a number: the 5e commoner's 4.</td></tr>
+            <tr><td><code>entities/CreatureActions.js</code></td><td>Creature save actions, such as a breath weapon.</td></tr>
+            <tr><td><code>entities/CreatureAttacks.js</code></td><td>The attack traits of a creature's stat block.</td></tr>
+            <tr><td><code>entities/CreatureChecks.js</code></td><td>What a creature adds to a saving throw or an ability check.</td></tr>
+            <tr><td><code>entities/CreatureHit.js</code></td><td>What one write to a creature does to the spell it holds open.</td></tr>
+            <tr><td><code>entities/CreatureLoadout.js</code></td><td>The default weapon and armor of a new foe, by tier and level band.</td></tr>
+            <tr><td><code>entities/CreatureMap.js</code></td><td>The creatures relevant to the party's position: those placed in the node the party occupies, plus unplaced ones (location === null), which show everywhere.</td></tr>
+            <tr><td><code>entities/CreatureTemplate.js</code></td><td>Creature templates: the reusable blueprint of a creature that the library keeps and that the GM saves from an encounter row.</td></tr>
+            <tr><td><code>entities/CreatureType.js</code></td><td>Creature types and condition immunities.</td></tr>
+            <tr><td><code>entities/CustomPools.js</code></td><td>This module keeps the GM's own resource pools: a pool that the class list does not derive, such as the charges of a wand or a homebrew feature.</td></tr>
+            <tr><td><code>entities/DamageDefenses.js</code></td><td>Damage resistance, vulnerability, and immunity.</td></tr>
+            <tr><td><code>entities/DamageParts.js</code></td><td>The vocabulary of a damage roll: the die sizes, the 5e damage types, the healing type, and the validator and text form of one damage term.</td></tr>
+            <tr><td><code>entities/DamageWard.js</code></td><td>The damage type that a reaction spell would resist in one hit, for the pause after a damage roll (`app/damageWardPrompt.js`).</td></tr>
+            <tr><td><code>entities/DeathSaves.js</code></td><td>Death saves: what happens to a party character between 0 HP and dead.</td></tr>
+            <tr><td><code>entities/EncounterDifficulty.js</code></td><td>How hard a fight is, by the 5e experience-point budget.</td></tr>
+            <tr><td><code>entities/EnemyArmor.js</code></td><td>The armor a creature wears, and what it does to the creature's AC.</td></tr>
+            <tr><td><code>entities/Equipment.js</code></td><td>The wearable slots on a character, in display order.</td></tr>
+            <tr><td><code>entities/EquipmentPresets.js</code></td><td>The built-in 5e equipment catalogs: weapon, armor, gear, and consumable presets that seed the item form's pickers and the library's stock equipment list.</td></tr>
+            <tr><td><code>entities/Exhaustion.js</code></td><td>Exhaustion, in the 2014 form: a ladder of six levels, where each level keeps the effects of the levels below it.</td></tr>
+            <tr><td><code>entities/Experience.js</code></td><td>The 5e experience ladder.</td></tr>
+            <tr><td><code>entities/ExpertiseSources.js</code></td><td>Whether the character has a source of expertise: a class feature that grants it (the Expertise of the Bard and the Rogue), a feat that asked for it (Skill Expert), or expertise already on record from a hand grant.</td></tr>
+            <tr><td><code>entities/FeatChoices.js</code></td><td>The choice arithmetic behind the take-feat dialog, and the read side the roll paths use.</td></tr>
+            <tr><td><code>entities/FeatRequirement.js</code></td><td>Whether the character meets a feat's structured requirement.</td></tr>
+            <tr><td><code>entities/FeatureGrants.js</code></td><td>The grant lifecycle of a structured class feature.</td></tr>
+            <tr><td><code>entities/Features.js</code></td><td>Readers over the class features that a character has unlocked.</td></tr>
+            <tr><td><code>entities/FightingStyle.js</code></td><td>This module reads the fighting styles a character claimed through the Fighting Style feature (fighter 1, paladin 2, ranger 2) and works out their numbers.</td></tr>
+            <tr><td><code>entities/GrantLedger.js</code></td><td>The proficiency grants a feat or a class feature can carry, and how a recorded grant comes back off.</td></tr>
+            <tr><td><code>entities/HPBuffs.js</code></td><td>What spell chips do to an entity's hit points.</td></tr>
+            <tr><td><code>entities/HealCure.js</code></td><td>The conditions that a healing spell ends.</td></tr>
+            <tr><td><code>entities/HealDice.js</code></td><td>The heal dice that a consumable item stores.</td></tr>
+            <tr><td><code>entities/HealTarget.js</code></td><td>The chip that stops its holder from regaining hit points (Chill Touch), or undefined.</td></tr>
+            <tr><td><code>entities/HealingBonus.js</code></td><td>The flat bonus that a caster's class features add to each target of a healing spell.</td></tr>
+            <tr><td><code>entities/HitDice.js</code></td><td>Hit dice are regular resource pools under reserved ids, like HP and the spell-slot pools.</td></tr>
+            <tr><td><code>entities/HitRiders.js</code></td><td>Hit riders: extra damage dice that a chip adds to hits.</td></tr>
+            <tr><td><code>entities/HpPool.js</code></td><td>The HP pool of a spell such as Sleep or Color Spray.</td></tr>
+            <tr><td><code>entities/ImposedConditions.js</code></td><td>Conditions that a spell put on a target: which cast owns one, when the end of the cast takes it back off, and the repeated save a target gets against the ones that allow it.</td></tr>
+            <tr><td><code>entities/InventoryLog.js</code></td><td>An inventory interaction that the panel reports for travelogue logging.</td></tr>
+            <tr><td><code>entities/InvocationLevelUp.js</code></td><td>The warlock picks that a level-up asks for: the pact boon from 3rd warlock level, the invocations that the level count allows but the character has not picked, one optional swap of a known invocation for another, and the Mystic Arcanum spell of each spell level the warlock level grants.</td></tr>
+            <tr><td><code>entities/Invocations.js</code></td><td>The eldritch invocations and the pact boon of a warlock.</td></tr>
+            <tr><td><code>entities/ItemDraft.js</code></td><td>This module turns the item form's raw control values into an inventory item.</td></tr>
+            <tr><td><code>entities/KnownSpellLimit.js</code></td><td>The spells-known limit of the four classes that learn a fixed number of leveled spells: the Bard, the Sorcerer, the Warlock, and the Ranger.</td></tr>
+            <tr><td><code>entities/Lethargy.js</code></td><td>The lethargy that Haste leaves when it ends.</td></tr>
+            <tr><td><code>entities/LevelAssign.js</code></td><td>The multiclass level-up flow.</td></tr>
+            <tr><td><code>entities/LevelUp.js</code></td><td>Ability-score improvements and level-gated features are both derived from the class definitions instead of stored.</td></tr>
+            <tr><td><code>entities/LoadCoercion.js</code></td><td>Coercers for the list and record fields of a loaded character or creature.</td></tr>
+            <tr><td><code>entities/MagicWeapon.js</code></td><td>Whether a weapon counts as magical for resistance to nonmagical weapon damage (Stoneskin).</td></tr>
+            <tr><td><code>entities/MaterialCheck.js</code></td><td>Whether the caster must hold a spell's material component, and which inventory stack it comes from.</td></tr>
+            <tr><td><code>entities/Modifiers.js</code></td><td>Ability score modifiers and tiered default enemy stat blocks.</td></tr>
+            <tr><td><code>entities/Movement.js</code></td><td>How fast a character walks.</td></tr>
+            <tr><td><code>entities/Multiclass.js</code></td><td>Class-list mechanics.</td></tr>
+            <tr><td><code>entities/MysticArcanum.js</code></td><td>The Mystic Arcanum of a warlock.</td></tr>
+            <tr><td><code>entities/PactTome.js</code></td><td>The Book of Shadows of a Pact of the Tome warlock.</td></tr>
+            <tr><td><code>entities/PactWeapon.js</code></td><td>The pact weapon of a Pact of the Blade warlock, and the two invocations that read it.</td></tr>
+            <tr><td><code>entities/PoolIds.js</code></td><td>This module keeps the reserved ResourcePool ids and id prefixes.</td></tr>
+            <tr><td><code>entities/Potions.js</code></td><td>The heal dice of a consumable item, or null.</td></tr>
+            <tr><td><code>entities/Proficiencies.js</code></td><td>The whole-category weapon proficiencies, as opposed to individually named weapons.</td></tr>
+            <tr><td><code>entities/Progression.js</code></td><td>This is the one place that reconciles a character's derived state.</td></tr>
+            <tr><td><code>entities/Purse.js</code></td><td>The five 5e coins, from the most valuable to the least, with the value of each in copper pieces.</td></tr>
+            <tr><td><code>entities/RaceTraits.js</code></td><td>Race traits with a mechanical effect on d20 rolls.</td></tr>
+            <tr><td><code>entities/Races.js</code></td><td>The playable races.</td></tr>
+            <tr><td><code>entities/Resource.js</code></td><td>Create a resource pool (item count, mana, or custom expendable) at full capacity.</td></tr>
+            <tr><td><code>entities/ResourceRestore.js</code></td><td>The one heal path for a character's resource pools.</td></tr>
+            <tr><td><code>entities/RestHitDice.js</code></td><td>The hit dice spent during a short rest, as pure steps under the short rest dialog.</td></tr>
+            <tr><td><code>entities/Riders.js</code></td><td>Riders: what a condition chip adds to the rolls its holder makes later.</td></tr>
+            <tr><td><code>entities/Roster.js</code></td><td>This module holds pure helpers for roster management (characters, encounters).</td></tr>
+            <tr><td><code>entities/SourceSlant.js</code></td><td>A chip that slants its holder's attack rolls against the caster who wrote it.</td></tr>
+            <tr><td><code>entities/SpellDraft.js</code></td><td>This module turns the spell form's raw control values into a Spell.</td></tr>
+            <tr><td><code>entities/SpellEntry.js</code></td><td>The repair of one written spell into a valid Spell.</td></tr>
+            <tr><td><code>entities/SpellFields.js</code></td><td>Normalizers for the spell fields beyond a single roll: damage that stays on a target, the turn boundary that ends a chip, a spell that the caster uses again without a new slot, and what a hit does besides its damage (a save or a chip on the target, and hit points back to the caster), and the HP rules of a save (a pool rolled in place of the save, a kill, and a chip that damage ends), and what a buff's chip changes besides a roll.</td></tr>
+            <tr><td><code>entities/SpellKinds.js</code></td><td>The traits of each spell effect kind that code outside the kind's own branches reads.</td></tr>
+            <tr><td><code>entities/SpellLearning.js</code></td><td>Which spells a character can learn.</td></tr>
+            <tr><td><code>entities/SpellNormalize.js</code></td><td>The normalizers of written spell fields that the authoring form and the library share: the target count, the projectile block, and the material block.</td></tr>
+            <tr><td><code>entities/SpellRepeat.js</code></td><td>Spells that a caster uses again on later turns without a new slot.</td></tr>
+            <tr><td><code>entities/SpellSlots.js</code></td><td>Spell slots are regular resource pools under reserved ids, `slots-1` through `slots-9`, one per spell level.</td></tr>
+            <tr><td><code>entities/SpellTiming.js</code></td><td>Casting time and duration as structured values instead of free text, with a parser tolerant enough to read every phrasing that the SRD and a GM's typing use.</td></tr>
+            <tr><td><code>entities/SpellTypeRules.js</code></td><td>The creature-type rules of a spell: which targets it passes over or alone affects, which save at disadvantage, and which take the maximum damage.</td></tr>
+            <tr><td><code>entities/SpellView.js</code></td><td>A group heading for a spell level: "Cantrips" for level 0, "Level N" otherwise.</td></tr>
+            <tr><td><code>entities/StatGen.js</code></td><td>This module holds ability score generation methods for character creation: the 5e point-buy cost table, the standard array, and the 4d6-drop-lowest roller.</td></tr>
+            <tr><td><code>entities/Stats.js</code></td><td>One combatant stat as it currently reads.</td></tr>
+            <tr><td><code>entities/Subclass.js</code></td><td>Choosing a character's subclass.</td></tr>
+            <tr><td><code>entities/Summons.js</code></td><td>Creatures that a spell put on the map: which cast owns one, and what the end of the cast takes back off.</td></tr>
+            <tr><td><code>entities/ThirdCasterSpells.js</code></td><td>The spell rules of the two third-caster subclasses, the Arcane Trickster and the Eldritch Knight, as sheet warnings.</td></tr>
+            <tr><td><code>entities/TimedEffects.js</code></td><td>Game time passing outside combat, for effects that count combat rounds.</td></tr>
+            <tr><td><code>entities/TurnEffects.js</code></td><td>Chips that end at a turn boundary, instead of after a count of rounds.</td></tr>
+            <tr><td><code>entities/Weapons.js</code></td><td>The weapon property model: the kind and property vocabularies, and the reads that pick a weapon's attack ability from them.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>handout/</code> <span class="modules-n">2 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>handout/HandoutForm.js</code></td><td>Pure helpers for the handout dialog: the "Shows at" choices, the "Only for" audience field, and the short note under a GM's handout row.</td></tr>
+            <tr><td><code>handout/Handouts.js</code></td><td>Pure helpers for lore and read-aloud handouts.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>library/</code> <span class="modules-n">6 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>library/ActiveLibrary.js</code></td><td>The active library registry.</td></tr>
+            <tr><td><code>library/Library.js</code></td><td>The one import site of the template library.</td></tr>
+            <tr><td><code>library/LibraryFacets.js</code></td><td>The filter tags of the Library rows.</td></tr>
+            <tr><td><code>library/LibraryIdentity.js</code></td><td>The id rules for the name-keyed library lists (creature templates, spells, and feats).</td></tr>
+            <tr><td><code>library/LibraryMerge.js</code></td><td>The built-in library lists and the pure merge of custom entries over them.</td></tr>
+            <tr><td><code>library/LibraryNormalize.js</code></td><td>The import normalizers of the custom library.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>log/</code> <span class="modules-n">3 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>log/LogVisibility.js</code></td><td>The travelogue as each viewer role reads it.</td></tr>
+            <tr><td><code>log/Travelogue.js</code></td><td>Pure helpers for the party's travelogue.</td></tr>
+            <tr><td><code>log/TrayRollLine.js</code></td><td>The travelogue line of a roll from the dice tray.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>map/</code> <span class="modules-n">84 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>map/AncestorMarker.js</code></td><td>The tile of an ancestor map where the party marker goes, while the GM looks at a map above the one where the party stands.</td></tr>
+            <tr><td><code>map/Autotile.js</code></td><td>This module gives pure helper functions.</td></tr>
+            <tr><td><code>map/BlankMap.js</code></td><td>True when no cell of the node has tile art yet.</td></tr>
+            <tr><td><code>map/CanvasFactory.js</code></td><td>A detached canvas of the given size, for a cache that draws once and blits the result on later frames.</td></tr>
+            <tr><td><code>map/CanvasInk.js</code></td><td>The colors the map canvas draws with.</td></tr>
+            <tr><td><code>map/CanvasText.js</code></td><td>The text the map canvas draws: coordinate digits, character names, exit labels, and region names.</td></tr>
+            <tr><td><code>map/CoordLabels.js</code></td><td>Coordinate digits run large: they label a whole row or column, and they draw on empty canvas or a plate rather than over tile art, so they take a high cap.</td></tr>
+            <tr><td><code>map/EditHistory.js</code></td><td>In-memory Build-mode edit history: a bounded ring of snapshots taken before each stroke, erase, link, or generate action.</td></tr>
+            <tr><td><code>map/EditRevert.js</code></td><td>The tile fields an edit can change, apart from the metadata record.</td></tr>
+            <tr><td><code>map/EntryMemory.js</code></td><td>The parent tile each traveler entered each child node through.</td></tr>
+            <tr><td><code>map/EntryPoint.js</code></td><td>Choose the tile where the party enters a child node.</td></tr>
+            <tr><td><code>map/ExitBands.js</code></td><td>An exit label rides inside its band, which is sized from the tile too, so the label stays between the coordinate digits and a character name in weight.</td></tr>
+            <tr><td><code>map/FightFrame.js</code></td><td>The frame of the read-only fight map on the combat screen.</td></tr>
+            <tr><td><code>map/FitArea.js</code></td><td>Cells of unexplored map that a Play fit keeps around the revealed tiles.</td></tr>
+            <tr><td><code>map/FogOfWar.js</code></td><td>Reveal every tile within `radius` (Euclidean distance in grid cells) of a center tile.</td></tr>
+            <tr><td><code>map/GeneratePreview.js</code></td><td>The smallest tile, in canvas px, that gets coordinate labels (CoordLabels.js).</td></tr>
+            <tr><td><code>map/GeneratorCave.js</code></td><td>The cave archetype: winding natural passages grown with a cellular automaton.</td></tr>
+            <tr><td><code>map/GeneratorFurnish.js</code></td><td>Furnishings for generated interiors.</td></tr>
+            <tr><td><code>map/GeneratorGround.js</code></td><td>The share of the usual river count that a guided map traces on its own.</td></tr>
+            <tr><td><code>map/GeneratorGuide.js</code></td><td>Guided terrain for an open sub-map, such as a region of a world.</td></tr>
+            <tr><td><code>map/GeneratorHalls.js</code></td><td>The walled archetypes: castle and building.</td></tr>
+            <tr><td><code>map/GeneratorInnShop.js</code></td><td>The fixed floor plans of an inn, a shop, and a tavern.</td></tr>
+            <tr><td><code>map/GeneratorInteriorMask.js</code></td><td>The cell mask that every interior generator draws on, and the builder that turns a finished mask into tiles.</td></tr>
+            <tr><td><code>map/GeneratorInteriors.js</code></td><td>The dungeon archetype: rooms joined by corridors, one level at a time.</td></tr>
+            <tr><td><code>map/GeneratorNames.js</code></td><td>Seeded place names for generated sub-maps.</td></tr>
+            <tr><td><code>map/GeneratorNoise.js</code></td><td>Seeded 2D value noise for the terrain generators.</td></tr>
+            <tr><td><code>map/GeneratorRandom.js</code></td><td>RNG helpers for the map generators.</td></tr>
+            <tr><td><code>map/GeneratorRivers.js</code></td><td>Rivers for the open-terrain generators.</td></tr>
+            <tr><td><code>map/GeneratorRoads.js</code></td><td>Road routing for the generators.</td></tr>
+            <tr><td><code>map/GeneratorSites.js</code></td><td>The places on an open-terrain map that people built: settlements, a keep, and a dungeon, plus the farmland and roads around them.</td></tr>
+            <tr><td><code>map/GeneratorSizes.js</code></td><td>Grid side length per size preset.</td></tr>
+            <tr><td><code>map/GeneratorTerrain.js</code></td><td>The climate model behind the open-terrain generators.</td></tr>
+            <tr><td><code>map/GeneratorTown.js</code></td><td>The town archetype generator.</td></tr>
+            <tr><td><code>map/GeneratorTownBuildings.js</code></td><td>Town building placement: the free blocks of a town, the order in which each set of buildings takes them, and the fields and the windmill on the outskirts.</td></tr>
+            <tr><td><code>map/GeneratorTownDocks.js</code></td><td>The piers of a port town.</td></tr>
+            <tr><td><code>map/GeneratorTownWall.js</code></td><td>The town wall: a square ring of wall pieces around the core, with a gate where a street goes through and a water gate where the river goes through.</td></tr>
+            <tr><td><code>map/GeneratorTree.js</code></td><td>Nested generation: one generated map, plus the sub-maps that its places open into, plus theirs, down to a chosen depth.</td></tr>
+            <tr><td><code>map/GeneratorWilds.js</code></td><td>The open-terrain archetypes: wilderness and its climate variants.</td></tr>
+            <tr><td><code>map/GeneratorWorld.js</code></td><td>The world archetype: a continent in a sea, split into regions.</td></tr>
+            <tr><td><code>map/MapCanvas.js</code></td><td>This class draws a MapNode's tile grid onto a canvas.</td></tr>
+            <tr><td><code>map/MapCanvasKeyboard.js</code></td><td>Whether a key press asks for the context menu, the way a right click does.</td></tr>
+            <tr><td><code>map/MapCanvasPointer.js</code></td><td>This class manages pointer, touch, and wheel interaction for MapCanvas.</td></tr>
+            <tr><td><code>map/MapCursor.js</code></td><td>The arrow-key directions the map cursor understands, mapped to grid deltas.</td></tr>
+            <tr><td><code>map/MapDecorations.js</code></td><td>This class draws the decoration layer of the map render.</td></tr>
+            <tr><td><code>map/MapDescription.js</code></td><td>What a description may name.</td></tr>
+            <tr><td><code>map/MapExits.js</code></td><td>The four sides of a node, with the direction each side leads to.</td></tr>
+            <tr><td><code>map/MapExport.js</code></td><td>Export a node's map as a PNG image.</td></tr>
+            <tr><td><code>map/MapFollow.js</code></td><td>The part of the canvas, on each side, that the followed tile keeps clear of.</td></tr>
+            <tr><td><code>map/MapGenerator.js</code></td><td>The map-generation front door: size presets, the archetype catalog the Build UI offers, and the dispatchers that run a generator and hand the caller a stampable tile grid.</td></tr>
+            <tr><td><code>map/MapGeometry.js</code></td><td>Pure grid and screen coordinate math shared by MapCanvas and the map modules that reason about tile positions: fog of war, region grouping, descriptions, and paint.</td></tr>
+            <tr><td><code>map/MapMarkers.js</code></td><td>The shape one marker pass draws, given the tile's screen origin and size.</td></tr>
+            <tr><td><code>map/MapNavigator.js</code></td><td>Tracks which MapNode is currently in view and drives zoom in and zoom out through the node hierarchy.</td></tr>
+            <tr><td><code>map/MapPath.js</code></td><td>Whether the party can walk on a tile during a move.</td></tr>
+            <tr><td><code>map/MapRenderer.js</code></td><td>Whether any of a block's tiles is revealed, and so whether the block draws at all.</td></tr>
+            <tr><td><code>map/MiniMapLayout.js</code></td><td>What the mini-map shows for the node in view: its parent, the block of parent cells that links to the node, and the parent cell where the party is, or null when the party is somewhere else.</td></tr>
+            <tr><td><code>map/NodeCleanup.js</code></td><td>Where every map location goes when a node is deleted or shrinks.</td></tr>
+            <tr><td><code>map/NodeDefaults.js</code></td><td>Defaults and repairs for the tiles and nodes that a save or an import supplies.</td></tr>
+            <tr><td><code>map/NodeEdits.js</code></td><td>What a node edit does to identity, bounds, and the party tile.</td></tr>
+            <tr><td><code>map/NodeKinds.js</code></td><td>The two node kinds.</td></tr>
+            <tr><td><code>map/NodeLock.js</code></td><td>Pure helpers for a locked map.</td></tr>
+            <tr><td><code>map/PoiGlow.js</code></td><td>The glowing gold outline around a point-of-interest tile, drawn from a cached sprite.</td></tr>
+            <tr><td><code>map/RegenerateNode.js</code></td><td>What a regeneration does beyond the node's own tiles.</td></tr>
+            <tr><td><code>map/RegionCrossing.js</code></td><td>Map a coordinate along one wall of the region block onto the matching tile range of the child.</td></tr>
+            <tr><td><code>map/RegionGroups.js</code></td><td>The groups of each `TileIndex.linkStamp`.</td></tr>
+            <tr><td><code>map/RegionLabels.js</code></td><td>The placement of region names on the map.</td></tr>
+            <tr><td><code>map/RegionOutline.js</code></td><td>One cell edge of a region's outline, in grid units: the line from (x1, y1) to (x2, y2) runs along a cell boundary.</td></tr>
+            <tr><td><code>map/RegionOverlay.js</code></td><td>Draw the region overlays of the node in view: a tint over each region's cells and a border along its outline.</td></tr>
+            <tr><td><code>map/RegionOverlayLayout.js</code></td><td>The layout math of the region overlay: the cells each tint covers, the width of its border, and where each region name goes.</td></tr>
+            <tr><td><code>map/RegionRepaint.js</code></td><td>The ground that a region block on a parent map gets for each climate archetype.</td></tr>
+            <tr><td><code>map/RoomReveal.js</code></td><td>The most open tiles in one room reveal.</td></tr>
+            <tr><td><code>map/Sightings.js</code></td><td>The child nodes whose link tiles came out of the fog between two versions of one node, in tile order and each named once.</td></tr>
+            <tr><td><code>map/SpawnSpread.js</code></td><td>The tiles that a group of spawned creatures spreads over: the chosen tile first, then the nearest open tiles around it.</td></tr>
+            <tr><td><code>map/TerrainLayer.js</code></td><td>A cache of the terrain passes of the map render, kept in an offscreen canvas, so a pan copies pixels instead of drawing every tile again.</td></tr>
+            <tr><td><code>map/TileCatalog.js</code></td><td>The built-in tile catalog: one table per tile family, and the builder that turns the tables into palette entries.</td></tr>
+            <tr><td><code>map/TileCoords.js</code></td><td>The one place that converts between stored tile coordinates and the numbers a GM reads or types.</td></tr>
+            <tr><td><code>map/TileFreeze.js</code></td><td>Whether a tile entering a node is frozen.</td></tr>
+            <tr><td><code>map/TileGrid.js</code></td><td>The metadata of a tile with no point of interest, no discovery flags, and no notes: almost every tile of a campaign.</td></tr>
+            <tr><td><code>map/TileIndex.js</code></td><td>The lookup structures for one node.</td></tr>
+            <tr><td><code>map/TileKinds.js</code></td><td>The interior and town wall art that the game rules read, with the meaning of each piece.</td></tr>
+            <tr><td><code>map/TilePaint.js</code></td><td>Overlay families in draw order: shoreline under channel under road under dock under lighthouse.</td></tr>
+            <tr><td><code>map/TilePalette.js</code></td><td>A catalog tile or a paint brush.</td></tr>
+            <tr><td><code>map/TileRaster.js</code></td><td>The image cache the map renderer draws tiles from.</td></tr>
+            <tr><td><code>map/WorldStart.js</code></td><td>The neighbours of a cell, the four sides first and then the corners.</td></tr>
+            <tr><td><code>map/WorldTreeModel.js</code></td><td>A MapNode wrapped with its resolved children and depth.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>party/</code> <span class="modules-n">3 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>party/CharacterTokens.js</code></td><td>Pure logic behind per-character map tokens.</td></tr>
+            <tr><td><code>party/PartyTracker.js</code></td><td>Tracks the party's current position: which node, and which tile within it.</td></tr>
+            <tr><td><code>party/Sight.js</code></td><td>How far a move sees on a node.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>quest/</code> <span class="modules-n">5 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>quest/Objectives.js</code></td><td>Pure helpers for the objectives inside one quest.</td></tr>
+            <tr><td><code>quest/QuestLinks.js</code></td><td>Pure helpers for the links from a quest to the places and creatures of the campaign.</td></tr>
+            <tr><td><code>quest/QuestReward.js</code></td><td>Pure helpers for the reward of a quest: the gold pieces and experience points that completing it pays, to each character or split as a total.</td></tr>
+            <tr><td><code>quest/QuestUnlocks.js</code></td><td>Pure helpers for the quests that one quest unlocks.</td></tr>
+            <tr><td><code>quest/Quests.js</code></td><td>Pure helpers for the quest and session log.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>storage/</code> <span class="modules-n">39 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>storage/AssetMirror.js</code></td><td>The image payloads of a stored campaign, kept in an `AssetBackend` (IndexedDB in the browser), with an in-memory copy of every payload the backend has committed.</td></tr>
+            <tr><td><code>storage/AssetStore.js</code></td><td>The image payloads of a stored campaign, kept in their own localStorage key, and the retention rule that every store of the payloads uses.</td></tr>
+            <tr><td><code>storage/Assets.js</code></td><td>This module stores image payloads by content, so a save does not repeat them.</td></tr>
+            <tr><td><code>storage/Autosave.js</code></td><td>The condition that makes the periodic autosave write.</td></tr>
+            <tr><td><code>storage/CampaignFields.js</code></td><td>The top-level campaign fields other than `nodes`, `party`, and `version`, in save order.</td></tr>
+            <tr><td><code>storage/CampaignFile.js</code></td><td>The exported campaign file: the campaign save plus the GM's custom library, in one JSON document.</td></tr>
+            <tr><td><code>storage/EncodedNodes.js</code></td><td>The encoded form of each live node that holds no inline image payload, keyed on the live node.</td></tr>
+            <tr><td><code>storage/EntityPack.js</code></td><td>Packing an entity for storage.</td></tr>
+            <tr><td><code>storage/Footprint.js</code></td><td>A ledger of what each localStorage key costs, so the quota check after a save does not read every stored value again.</td></tr>
+            <tr><td><code>storage/GMLock.js</code></td><td>This module gives cross-tab exclusivity through heartbeat locks in localStorage.</td></tr>
+            <tr><td><code>storage/GearTable.js</code></td><td>A save-wide table for gear that repeats across records.</td></tr>
+            <tr><td><code>storage/HistoryAdoption.js</code></td><td>Cross-tab adoption through the undo log.</td></tr>
+            <tr><td><code>storage/HistoryAppend.js</code></td><td>The write side of the undo log: append the record of one save, trim the log to its byte budgets, and drop history when a campaign write needs the room.</td></tr>
+            <tr><td><code>storage/HistoryBudget.js</code></td><td>The byte budget of the undo log, as pure arithmetic over record sizes.</td></tr>
+            <tr><td><code>storage/HistoryCodec.js</code></td><td>Compact forms for the node ops of an undo record.</td></tr>
+            <tr><td><code>storage/HistoryLog.js</code></td><td>This module implements undo and redo as a log of invertible deltas against the persisted campaign.</td></tr>
+            <tr><td><code>storage/HistoryRecords.js</code></td><td>The stored records of the undo log: the index under `HISTORY_KEY`, and one record per step under `HISTORY_KEY:d&lt;seq&gt;`.</td></tr>
+            <tr><td><code>storage/ImageRefs.js</code></td><td>Which image references the app is willing to load.</td></tr>
+            <tr><td><code>storage/IndexedDbAssets.js</code></td><td>The IndexedDB `AssetBackend`: one database with one object store, whose keys are asset keys and whose values are payload strings.</td></tr>
+            <tr><td><code>storage/LibraryStore.js</code></td><td>The localStorage key that the custom library uses.</td></tr>
+            <tr><td><code>storage/Migrations.js</code></td><td>The campaign save's schema version, and the step transforms that carry an older save forward to the current version.</td></tr>
+            <tr><td><code>storage/NodePack.js</code></td><td>Tile packing for the save string and the undo log.</td></tr>
+            <tr><td><code>storage/PersistedCampaign.js</code></td><td>The last persisted campaign, cached in memory for the diff of the undo log.</td></tr>
+            <tr><td><code>storage/PlayerPatch.js</code></td><td>The edits that a player tab sends to the GM tab instead of a whole save.</td></tr>
+            <tr><td><code>storage/Reconcile.js</code></td><td>Keep the live objects when an adopted campaign says the same thing.</td></tr>
+            <tr><td><code>storage/RecordCoercion.js</code></td><td>The field coercers `deserialize` runs on the parts of a save that have no entity `withDefaults` of their own: the party position, a running combat, the game clock, the travelogue, the quest log, and the bestiary.</td></tr>
+            <tr><td><code>storage/RunLength.js</code></td><td>The run-length streams of the tile codec (`TileCodec.js`).</td></tr>
+            <tr><td><code>storage/SaveFollower.js</code></td><td>The cross-tab save detector that a follower tab runs on `storage` events.</td></tr>
+            <tr><td><code>storage/SaveManager.js</code></td><td>The campaign save as a value and as a string: `buildState` collects the live campaign, `serialize` packs it into the stored form, and `deserialize` reads a stored or imported string back into a fully defaulted state.</td></tr>
+            <tr><td><code>storage/SaveNotices.js</code></td><td>What the GM sees after a write.</td></tr>
+            <tr><td><code>storage/SaveStorage.js</code></td><td>The localStorage side of the campaign save: the save key and the save mark, the quota checks, the write of a packed campaign with its image payloads, and the `storage` event that reports a save from another tab.</td></tr>
+            <tr><td><code>storage/ShortenedLoad.js</code></td><td>A load that did not fit the decode limits, and the save hold that keeps the full campaign stored until the GM decides.</td></tr>
+            <tr><td><code>storage/StateApply.js</code></td><td>Apply the ops of a structural diff (`StateDiff.js`) to a campaign state.</td></tr>
+            <tr><td><code>storage/StateDiff.js</code></td><td>Structural diffs between two campaign states.</td></tr>
+            <tr><td><code>storage/StepSummary.js</code></td><td>The toast text after Undo or Redo.</td></tr>
+            <tr><td><code>storage/StringTable.js</code></td><td>The campaign-wide string table of a save.</td></tr>
+            <tr><td><code>storage/TileCodec.js</code></td><td>Positional encoding for the tiles of a node.</td></tr>
+            <tr><td><code>storage/TileRefs.js</code></td><td>The short form of a tile art ref inside an encoded node.</td></tr>
+            <tr><td><code>storage/fileIO.js</code></td><td>The two browser file input and output primitives the storage modules share: start a download of a JSON string, and read an uploaded File back to text.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>time/</code> <span class="modules-n">3 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>time/GameClock.js</code></td><td>The named watches that divide one in-game day, in order.</td></tr>
+            <tr><td><code>time/NightWalk.js</code></td><td>What the GM reads before a walk that runs into Night.</td></tr>
+            <tr><td><code>time/TravelTime.js</code></td><td>Minutes that one step across a tile costs, by how deep the map sits in the world tree.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>ui/</code> <span class="modules-n">112 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>ui/Breadcrumb.js</code></td><td>Mount a breadcrumb trail.</td></tr>
+            <tr><td><code>ui/BuildEmptyMap.js</code></td><td>Mount the empty state over the map canvas.</td></tr>
+            <tr><td><code>ui/BuildEncounterPanel.js</code></td><td>Mount the Build-rail encounter authoring list.</td></tr>
+            <tr><td><code>ui/BuildToolChip.js</code></td><td>Mount the Build-mode tool chip on the map toolbar.</td></tr>
+            <tr><td><code>ui/CampaignSearchBox.js</code></td><td>The header search box.</td></tr>
+            <tr><td><code>ui/CharacterBars.js</code></td><td>An empty compact track, for a character with no HP pool authored yet.</td></tr>
+            <tr><td><code>ui/CharacterChecks.js</code></td><td>The saving-throw and skill blocks on the character sheet.</td></tr>
+            <tr><td><code>ui/CharacterClaimPicker.js</code></td><td>The "Playing as" picker of a Player tab.</td></tr>
+            <tr><td><code>ui/CharacterConditions.js</code></td><td>The conditions section of the character sheet (see `CharacterSheet.js`): the condition chips, the held concentration with its Drop control, the exhaustion pips, and the death-save block.</td></tr>
+            <tr><td><code>ui/CharacterFeatures.js</code></td><td>The picks a claimed feature grant recorded, as one display line.</td></tr>
+            <tr><td><code>ui/CharacterHead.js</code></td><td>The headline lines of a character sheet: the HP line with its damage and heal steppers, the spell-slot pips, and the banner of level, AC, speed, and the other numbers a GM asks for in play.</td></tr>
+            <tr><td><code>ui/CharacterLevelBanner.js</code></td><td>The level-up line for a character, or null when no level-up step waits.</td></tr>
+            <tr><td><code>ui/CharacterProgress.js</code></td><td>This is the progression section of the character sheet.</td></tr>
+            <tr><td><code>ui/CharacterRoster.js</code></td><td>What the roster draws besides its rows: which row reads as the current one, and whether the rows carry a place-on-map action.</td></tr>
+            <tr><td><code>ui/CharacterSheet.js</code></td><td>This returns the pools the head and the stepper list do not already own.</td></tr>
+            <tr><td><code>ui/CharacterSpells.js</code></td><td>The title of the group of Mystic Arcanum spells.</td></tr>
+            <tr><td><code>ui/CharacterStatBadge.js</code></td><td>Open a popover that breaks one ability score into its parts: the base value, each source that shifts it, with its signed delta and how long it holds, and the resulting total and modifier.</td></tr>
+            <tr><td><code>ui/ChoiceModal.js</code></td><td>One button of a choice modal.</td></tr>
+            <tr><td><code>ui/CombatActionBar.js</code></td><td>This bar shows the active combatant's actions under an Actions heading.</td></tr>
+            <tr><td><code>ui/CombatActiveColumn.js</code></td><td>The left column of the combat screen.</td></tr>
+            <tr><td><code>ui/CombatLog.js</code></td><td>The combat screen's log column: the fight's slice of the travelogue, newest on top.</td></tr>
+            <tr><td><code>ui/CombatMap.js</code></td><td>The tiles shown on each side of the fight tile.</td></tr>
+            <tr><td><code>ui/CombatRibbon.js</code></td><td>The turn ribbon across the top of the combat screen.</td></tr>
+            <tr><td><code>ui/CombatScreen.js</code></td><td>What the host gives the screen.</td></tr>
+            <tr><td><code>ui/CombatSetup.js</code></td><td>Show the combat setup dialog.</td></tr>
+            <tr><td><code>ui/CombatSetupStealth.js</code></td><td>The optional Stealth contest of the combat setup dialog.</td></tr>
+            <tr><td><code>ui/CombatantCard.js</code></td><td>The reaction a combatant can take on somebody else's turn: an opportunity attack with one of its melee weapons, or a spell that casts as a reaction.</td></tr>
+            <tr><td><code>ui/ConditionsBar.js</code></td><td>The tooltip of a chip: what it does (see `ChipText.chipNotes`), then the cast that wrote it, so two chips of one name from two casters read apart.</td></tr>
+            <tr><td><code>ui/ContextMenu.js</code></td><td>A small floating menu anchored to a screen position.</td></tr>
+            <tr><td><code>ui/CreatureTemplateForm.js</code></td><td>The creature template create or edit form, inline in the Library rail like the item and spell forms.</td></tr>
+            <tr><td><code>ui/DeathSaveBlock.js</code></td><td>The death-save line, shared by the combat screen and the character sheet so both describe a dying character the same way.</td></tr>
+            <tr><td><code>ui/DiceTray.js</code></td><td>Mount a dice tray widget.</td></tr>
+            <tr><td><code>ui/Disclosure.js</code></td><td>Build a disclosure and wire it in one call: the header button, its chevron cue, and the `wireDisclosure` state over the body the caller passes.</td></tr>
+            <tr><td><code>ui/EffectPicks.js</code></td><td>Gather the picks an effect list needs, dialog by dialog.</td></tr>
+            <tr><td><code>ui/EncounterPanel.js</code></td><td>Mount the encounter panel: an Active encounter and Nearby encounters tab pair, always shown, each tab holding one compact list of foe groups (see `NearbyList.js`).</td></tr>
+            <tr><td><code>ui/ExhaustionBar.js</code></td><td>The exhaustion row: a label and one pip per level, shared by the character sheet and the two creature panels.</td></tr>
+            <tr><td><code>ui/ExitList.js</code></td><td>Mount the map's ways out as real buttons over the viewport.</td></tr>
+            <tr><td><code>ui/FactLine.js</code></td><td>A label with the value it names: a combatant's initiative and AC, a spell's casting time, the armor a foe wears.</td></tr>
+            <tr><td><code>ui/FeatForm.js</code></td><td>The dice a rider can use, the same list the spell form offers.</td></tr>
+            <tr><td><code>ui/FieldControl.js</code></td><td>The control of one modal field spec, for every field kind.</td></tr>
+            <tr><td><code>ui/FightBar.js</code></td><td>The bar above the Play map while a fight runs.</td></tr>
+            <tr><td><code>ui/FoldText.js</code></td><td>A text element that folds to a few lines behind a More button, which reads Less while the text is open.</td></tr>
+            <tr><td><code>ui/FullSheet.js</code></td><td>The full character sheet: a view the width of the page, in the way the combat screen takes the page.</td></tr>
+            <tr><td><code>ui/GenerateDialog.js</code></td><td>The Sub-maps choices.</td></tr>
+            <tr><td><code>ui/HandoutPanel.js</code></td><td>Append a handout's read-aloud body and any attached image.</td></tr>
+            <tr><td><code>ui/HpAmountField.js</code></td><td>The number field that sets how many HP a damage or heal button moves.</td></tr>
+            <tr><td><code>ui/ImagePickField.js</code></td><td>The image field of a form dialog.</td></tr>
+            <tr><td><code>ui/ImprovementFlow.js</code></td><td>The dialogs of a pending ability score improvement on the progression section of the character sheet (see `CharacterProgress.js`): a +2 split over the ability scores, or a feat from the catalog or by name.</td></tr>
+            <tr><td><code>ui/InitiativePanel.js</code></td><td>One line of status for a running fight: the round and whose turn it is.</td></tr>
+            <tr><td><code>ui/InventoryEquipment.js</code></td><td>This is the Equipment tab of the inventory panel: a paperdoll of slot cards around a plate with the character's name and AC.</td></tr>
+            <tr><td><code>ui/InventoryPanel.js</code></td><td>Mount the character's kit across two separate host elements.</td></tr>
+            <tr><td><code>ui/InventoryRows.js</code></td><td>This module builds the per-item rows of the inventory panel's Inventory tab: the row itself, its inline edit form, and the give form.</td></tr>
+            <tr><td><code>ui/InvocationLevelFlow.js</code></td><td>The warlock dialogs of a level-up and of the sheet's pending row: the pact boon, the new invocations, one optional swap, and the Mystic Arcanum spells.</td></tr>
+            <tr><td><code>ui/InvocationPicker.js</code></td><td>The warlock rows of the progression section: the pact boon from 3rd warlock level, and the eldritch invocations from 2nd, with a list of what each picked invocation does.</td></tr>
+            <tr><td><code>ui/ItemForm.js</code></td><td>The item types whose equipment slots 5e does not have.</td></tr>
+            <tr><td><code>ui/ItemFormEditors.js</code></td><td>This module builds the item form's two list editors: the structured damage-dice editor and the inflicted-status-effects chips.</td></tr>
+            <tr><td><code>ui/LevelAssignFlow.js</code></td><td>The dialogs of assigning a level from the progression section of the character sheet (see `CharacterProgress.js`): the class pick, the multiclass skill pick, the subclass pick, and the picks of each class feature the level unlocks.</td></tr>
+            <tr><td><code>ui/LibraryPanel.js</code></td><td>Mount one Library-rail list, for equipment, creatures, or spells.</td></tr>
+            <tr><td><code>ui/LoadoutBlock.js</code></td><td>A combatant's loadout as a short block of labeled lines: what the combatant wears, what it can swing, how many spells it has, and what is left in its slot pools.</td></tr>
+            <tr><td><code>ui/MapControls.js</code></td><td>Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, center on the party, and a live zoom-percentage readout.</td></tr>
+            <tr><td><code>ui/MiniMap.js</code></td><td>The longest side of the mini-map, in CSS pixels.</td></tr>
+            <tr><td><code>ui/Modal.js</code></td><td>This file holds small helpers around the native &lt;dialog&gt; element.</td></tr>
+            <tr><td><code>ui/ModalFields.js</code></td><td>This file holds the four composite fields a form dialog can hold: the checkbox group, the tag entry, the assignment pill grid, and the distribution grid.</td></tr>
+            <tr><td><code>ui/NPCPanel.js</code></td><td>How a disposition reads: a friend is good news, a hostile is bad news, and anyone else is neither.</td></tr>
+            <tr><td><code>ui/NearbyList.js</code></td><td>Mount a compact list of foes, as the Active encounter and Nearby encounters tabs show them.</td></tr>
+            <tr><td><code>ui/PalettePanel.js</code></td><td>localStorage key of the "Show variants" choice.</td></tr>
+            <tr><td><code>ui/PoolEditor.js</code></td><td>This file keeps the GM's controls for the custom resource pools of the character sheet: Add pool, and Edit and Remove on each pool that no rule derives.</td></tr>
+            <tr><td><code>ui/PurseFields.js</code></td><td>The coin row of the inventory: one number field per coin, most valuable first.</td></tr>
+            <tr><td><code>ui/QuestDetail.js</code></td><td>One link as the panel draws it.</td></tr>
+            <tr><td><code>ui/QuestPanel.js</code></td><td>Mount the quest/session log: active quests first, then completed quests below, each with a toggle-complete, a reveal, and a details control, plus a "New quest" control.</td></tr>
+            <tr><td><code>ui/RegionPicker.js</code></td><td>The picker value that paints no region: a stroke with it clears the link of every cell it crosses.</td></tr>
+            <tr><td><code>ui/ShortRestDialog.js</code></td><td>Ask how many hit dice each character spends in a short rest.</td></tr>
+            <tr><td><code>ui/SpecForm.js</code></td><td>The inline renderer for a modal field spec.</td></tr>
+            <tr><td><code>ui/SpellDetail.js</code></td><td>A button in the spell-detail modal.</td></tr>
+            <tr><td><code>ui/SpellForm.js</code></td><td>The component letters a spell can require, with their 5e meanings.</td></tr>
+            <tr><td><code>ui/SpellFormBuff.js</code></td><td>A number field for the buff rows, with its tooltip.</td></tr>
+            <tr><td><code>ui/SpellFormChipMods.js</code></td><td>The spell form's controls for the damage types a chip resists: a list of types split by commas (a chip that resists fire), and a box for bludgeoning, piercing, and slashing from nonmagical weapons (Stoneskin).</td></tr>
+            <tr><td><code>ui/SpellFormCure.js</code></td><td>The spell form's controls for a heal that ends conditions: the chips it always ends (Heal), and the chips of which it ends one (Lesser Restoration).</td></tr>
+            <tr><td><code>ui/SpellFormHP.js</code></td><td>The spell form's controls for a save spell that reads the hit points of its targets: an HP limit (Power Word Stun), an HP pool that the cast rolls in place of a save (Sleep), a failed save that kills (Power Word Kill), and a condition that damage ends.</td></tr>
+            <tr><td><code>ui/SpellFormLater.js</code></td><td>A starting term for a dice editor that has nothing to seed from.</td></tr>
+            <tr><td><code>ui/SpellFormOnHit.js</code></td><td>The spell form's controls for what an attack spell's hit does besides its damage: a condition the hit imposes, with or without a save against it, and the share of the damage the caster regains.</td></tr>
+            <tr><td><code>ui/SpellFormRider.js</code></td><td>The dice a rider can use.</td></tr>
+            <tr><td><code>ui/SpellFormScaling.js</code></td><td>The spell form's controls for scaling with the slot level: the toggle, the extra dice for each step, the extra targets for each step, and the slot levels in one step.</td></tr>
+            <tr><td><code>ui/SpellFormSlants.js</code></td><td>The choices of both slant selects.</td></tr>
+            <tr><td><code>ui/SpellFormTiming.js</code></td><td>How each casting-time kind reads in the picker.</td></tr>
+            <tr><td><code>ui/SpellFormTypedChip.js</code></td><td>The spell form's controls for the second chip that an attack spell's hit leaves only on a target of some creature types, as Chill Touch does on an undead target.</td></tr>
+            <tr><td><code>ui/SpellFormTypes.js</code></td><td>The spell form's creature-type rules: the types a save or heal spell has no effect on, the only types a save spell affects, the condition whose immunity passes a target over, and the types that save at disadvantage or take the maximum damage.</td></tr>
+            <tr><td><code>ui/SpellbookPanel.js</code></td><td>Mount the Spellbook tab: a browsable, per-level list of every spell the character's class can learn, merged with any spell the character already knows.</td></tr>
+            <tr><td><code>ui/StatBlockBar.js</code></td><td>A row of stat chips, for example "STR 14" or "AC 13", covering the fixed stat set: the six ability scores plus AC.</td></tr>
+            <tr><td><code>ui/StoryCards.js</code></td><td>Give each card of the Story tab a fold button, and put a jump row at the top of the tab: one button per card with its row count.</td></tr>
+            <tr><td><code>ui/SubclassPicker.js</code></td><td>The subclass dialog of the character sheet.</td></tr>
+            <tr><td><code>ui/Tabs.js</code></td><td>Wire an accessible tab strip that follows the ARIA tabs pattern.</td></tr>
+            <tr><td><code>ui/ThemeToggle.js</code></td><td>Mount the header's theme switch: a System, Light, Dark segmented group in the same shape as the mode and role switches.</td></tr>
+            <tr><td><code>ui/TileInspector.js</code></td><td>Mount the tile inspector: a form over a single tile's TileMetadata, with point-of-interest marker, discoverable flag, and notes.</td></tr>
+            <tr><td><code>ui/TileTooltip.js</code></td><td>A cursor-following tooltip that shows a tile's metadata, POI type and notes, while the map is hovered in Play mode.</td></tr>
+            <tr><td><code>ui/TimePanel.js</code></td><td>The tooltip of each button while time can pass.</td></tr>
+            <tr><td><code>ui/Toast.js</code></td><td>Mount a toast stack: small transient messages that confirm actions, for example Save, Export, or Undo, that otherwise succeed silently.</td></tr>
+            <tr><td><code>ui/TomeFlow.js</code></td><td>The Book of Shadows dialogs and rows of a Pact of the Tome warlock: the three cantrips from any class list, and the rituals of Book of Ancient Secrets.</td></tr>
+            <tr><td><code>ui/Tooltip.js</code></td><td>The app's tooltip.</td></tr>
+            <tr><td><code>ui/TravelogPanel.js</code></td><td>Every entry kind, for the filter classes of the list.</td></tr>
+            <tr><td><code>ui/TravelogTools.js</code></td><td>The note box of the travelogue: a text area, a GM only box, and an Add note button.</td></tr>
+            <tr><td><code>ui/WorldTree.js</code></td><td>A world with at least this many nodes gets the search box above the tree.</td></tr>
+            <tr><td><code>ui/buttons.js</code></td><td>This module builds the button idioms every panel uses: an icon-only square button and a text button with an optional leading icon.</td></tr>
+            <tr><td><code>ui/dialogFocus.js</code></td><td>The decisions `openDialog` makes without touching the DOM: which id a dialog's heading and message get, and where focus goes when the dialog closes.</td></tr>
+            <tr><td><code>ui/dom.js</code></td><td>The element-construction primitives every widget in `ui/` builds from.</td></tr>
+            <tr><td><code>ui/focusMemory.js</code></td><td>Focus that survives a panel rebuild.</td></tr>
+            <tr><td><code>ui/formFields.js</code></td><td>Shared building blocks for the inline Library-rail authoring forms.</td></tr>
+            <tr><td><code>ui/icons.js</code></td><td>This is an inline SVG icon set with zero dependencies.</td></tr>
+            <tr><td><code>ui/imageField.js</code></td><td>This file reads a GM-picked image into a bounded `data:` URL.</td></tr>
+            <tr><td><code>ui/listPanel.js</code></td><td>This is the list panel every rail builds from.</td></tr>
+            <tr><td><code>ui/pixelRatio.js</code></td><td>Call `onChange` each time the device pixel ratio changes, for example when the window moves from a 2x screen to a 1x projector.</td></tr>
+            <tr><td><code>ui/rovingIndex.js</code></td><td>The pure half of a roving tabindex over a grid of buttons.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>util/</code> <span class="modules-n">10 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>util/Rng.js</code></td><td>This module generates seeded pseudo-random numbers, so a generated map is reproducible from its seed.</td></tr>
+            <tr><td><code>util/deepFreeze.js</code></td><td>Freeze a value and everything reachable from it.</td></tr>
+            <tr><td><code>util/exhaustive.js</code></td><td>The last step of an `if` chain or a `switch` that handles every member of a union.</td></tr>
+            <tr><td><code>util/idle.js</code></td><td>The part of an `IdleDeadline` that the callers here read.</td></tr>
+            <tr><td><code>util/indexById.js</code></td><td>Build a Map from a collection keyed by id.</td></tr>
+            <tr><td><code>util/isRecord.js</code></td><td>True when the value is a plain record: an object that is neither null nor an array.</td></tr>
+            <tr><td><code>util/mapKeep.js</code></td><td>Map a list, and return the same list when every element maps to itself.</td></tr>
+            <tr><td><code>util/memoize.js</code></td><td>Memoize a one-argument pure function on the identity of its argument.</td></tr>
+            <tr><td><code>util/num.js</code></td><td>Clamp a number into the range `[min, max]` without changing its precision.</td></tr>
+            <tr><td><code>util/text.js</code></td><td>Small pure text helpers shared across the UI.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="modules">
+        <summary><code>view/</code> <span class="modules-n">48 modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><td><code>view/BuildTool.js</code></td><td>The id of the Build rail tab that shows the palette.</td></tr>
+            <tr><td><code>view/CampaignSearch.js</code></td><td>Campaign-wide search for the header search box.</td></tr>
+            <tr><td><code>view/CharacterBinding.js</code></td><td>Per-tab character binding for the Player view.</td></tr>
+            <tr><td><code>view/CharacterClaim.js</code></td><td>The claiming half of the per-tab character binding: taking a character, losing it to another tab, and the "Playing as" picker that the Player view binds through.</td></tr>
+            <tr><td><code>view/ChipText.js</code></td><td>What a condition chip says: the label on the chip itself, and the lines of its tooltip.</td></tr>
+            <tr><td><code>view/CombatHpTarget.js</code></td><td>Which combatant the GM's Damage and Heal box on the combat screen acts on.</td></tr>
+            <tr><td><code>view/CombatMode.js</code></td><td>What a following tab's mode must become when it adopts another tab's save.</td></tr>
+            <tr><td><code>view/CombatSelection.js</code></td><td>How long the board-picked target and the inspected combatant of the combat screen stay held.</td></tr>
+            <tr><td><code>view/CureDialog.js</code></td><td>How the log and the dialog name what a heal ends.</td></tr>
+            <tr><td><code>view/DeathSaveView.js</code></td><td>What a death-save tracker reads as on screen.</td></tr>
+            <tr><td><code>view/DeleteNodeText.js</code></td><td>The question of the confirm that deletes a node from the World tree.</td></tr>
+            <tr><td><code>view/EquipSlots.js</code></td><td>The text of the equipment slot cards and of the item picker that a slot card opens.</td></tr>
+            <tr><td><code>view/ExhaustionView.js</code></td><td>What an exhaustion level reads as on screen.</td></tr>
+            <tr><td><code>view/FeatureCards.js</code></td><td>One card of the Features section of the full character sheet.</td></tr>
+            <tr><td><code>view/FieldRules.js</code></td><td>The `enabledWhen` rule of a dialog field.</td></tr>
+            <tr><td><code>view/FoldMemory.js</code></td><td>Remember which panels and groups the GM folded, per browser.</td></tr>
+            <tr><td><code>view/HpAmount.js</code></td><td>The HP that a damage or heal amount field asks for: a whole number of 1 or more.</td></tr>
+            <tr><td><code>view/InitiativeBadge.js</code></td><td>The text of the initiative badge on the character sheet.</td></tr>
+            <tr><td><code>view/ItemTiles.js</code></td><td>The text of the item tiles in the Inventory tab, and which tile the detail pane shows.</td></tr>
+            <tr><td><code>view/LevelUpCue.js</code></td><td>The pending levels as the banner and the Progression panel word them.</td></tr>
+            <tr><td><code>view/NearbyGroups.js</code></td><td>One line of the Nearby encounters list.</td></tr>
+            <tr><td><code>view/NodeForms.js</code></td><td>The fields and the form reads of the New map and Map settings dialogs.</td></tr>
+            <tr><td><code>view/NpcCard.js</code></td><td>Whether an NPC card shows its condition chips and exhaustion pips.</td></tr>
+            <tr><td><code>view/PhoneViews.js</code></td><td>The views of the bottom bar that Play mode shows at phone width.</td></tr>
+            <tr><td><code>view/PlayerLock.js</code></td><td>A tab locked to the Player view.</td></tr>
+            <tr><td><code>view/ReloadView.js</code></td><td>The view that Undo and Redo keep across their reload.</td></tr>
+            <tr><td><code>view/ReplaceFlow.js</code></td><td>The messages of the header controls that replace the live campaign (New, Load example, Import).</td></tr>
+            <tr><td><code>view/RestSummary.js</code></td><td>The names of the pools that a rest refilled, across the whole party.</td></tr>
+            <tr><td><code>view/SaveReport.js</code></td><td>The toast decisions of the campaign writes in `app/campaignActions.js`.</td></tr>
+            <tr><td><code>view/SaveStatus.js</code></td><td>The save status line under the header title.</td></tr>
+            <tr><td><code>view/SheetStructure.js</code></td><td>Which pools exist, what they are named, and how big they are, as one comparable string.</td></tr>
+            <tr><td><code>view/SheetSwitcher.js</code></td><td>The character a key moves to in the party switcher of the full sheet.</td></tr>
+            <tr><td><code>view/Shortcuts.js</code></td><td>Which app-wide action a keypress means.</td></tr>
+            <tr><td><code>view/SpellCards.js</code></td><td>The text of the spell cards in the Spellbook tab and of the slot count in each level heading.</td></tr>
+            <tr><td><code>view/SpellEffectText.js</code></td><td>The lines of the spell detail modal that say what a spell does in play: the roll it makes and what it deals, and what it does on the turns after the cast.</td></tr>
+            <tr><td><code>view/StatBars.js</code></td><td>What the HP bar and the spell-slot pips say, apart from the elements that show it.</td></tr>
+            <tr><td><code>view/TeleportLanding.js</code></td><td>Where a GM teleport puts the party in a node.</td></tr>
+            <tr><td><code>view/TextFold.js</code></td><td>The note length in characters past which an NPC card folds its notes to two lines with a More button.</td></tr>
+            <tr><td><code>view/Theme.js</code></td><td>The localStorage key that stores the theme preference.</td></tr>
+            <tr><td><code>view/ToastPlace.js</code></td><td>Where the toast stack goes on the screen.</td></tr>
+            <tr><td><code>view/TreeKeys.js</code></td><td>One visible row of a tree view, in screen order.</td></tr>
+            <tr><td><code>view/ViewRole.js</code></td><td>The viewer-role split.</td></tr>
+            <tr><td><code>view/forms/casterFields.js</code></td><td>The caster picker's option value for a class and subclass pair.</td></tr>
+            <tr><td><code>view/forms/creatureFields.js</code></td><td>The creature's authoring fields, described once.</td></tr>
+            <tr><td><code>view/forms/creatureLayout.js</code></td><td>The layout of the creature form: the section headings and their order, the row breaks inside a section, and the fields that stay disabled until another field has a value.</td></tr>
+            <tr><td><code>view/forms/creatureRead.js</code></td><td>The read side of the creature form.</td></tr>
+            <tr><td><code>view/forms/gearFields.js</code></td><td>Build the weapon and armor picker options shared by the encounter dialog and the bestiary template form.</td></tr>
+            <tr><td><code>view/forms/statFields.js</code></td><td>The stat-block field group shared by the authoring surfaces.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </section>
+
     <footer>
-      <div class="stamp">Generated from the source tree by scripts/build-dev-guide.mjs, source fingerprint c2941898ef6d. Run <code>pnpm run guide</code> to rebuild.</div>
+      <div class="stamp">Generated from the source tree by scripts/build-dev-guide.mjs, source fingerprint 0d48c0c60e8a. Run <code>pnpm run guide</code> to rebuild.</div>
     </footer>
   </main>
 </div>
 
-<script>window.__GUIDE_DATA__ = {"sections":[{"id":"layers","short":"Module logic"},{"id":"root","short":"Composition root"},{"id":"panels","short":"Panel contract"},{"id":"map","short":"Map model"},{"id":"save","short":"Persistence"},{"id":"where","short":"Where code goes"},{"id":"work","short":"Working on it"},{"id":"review","short":"Pre-flight"}],"kindGroups":[["root","composition"],["wiring","wiring"],["glue","DOM glue"],["mixed","pure + glue"],["pure","pure logic"],["data","catalogs"],["types","declarations"],["unclassified","unclassified"]],"dirs":[{"id":"app","name":"app/","files":96,"lines":18015,"code":10691,"kind":"wiring","role":"One wireX(app) module per feature area. Mounts panels, registers views and actions, and keeps the per-feature UI state that is not saved.","imports":["campaign","combat","data","dice","entities","handout","library","log","map","party","quest","storage","time","ui","util","view"]},{"id":"campaign","name":"campaign/","files":12,"lines":3113,"code":2285,"kind":"pure","role":"Blank and example campaign builders, and the initial load.","imports":["data","entities","map","party","storage","time","util"]},{"id":"combat","name":"combat/","files":30,"lines":3812,"code":1533,"kind":"pure","role":"Initiative order, attack resolution, the action budget, reactions, and loadout reads.","imports":["data","dice","entities","map","util","view"]},{"id":"data","name":"data/","files":18,"lines":4629,"code":4256,"kind":"data","role":"Frozen catalogs: abilities, classes, races, backgrounds, skills, spells, feats, creatures, and challenge ratings.","imports":["util"]},{"id":"dice","name":"dice/","files":3,"lines":281,"code":141,"kind":"pure","role":"roll(selection, rng). The generator is an argument, so a test can pass a stub.","imports":["entities"]},{"id":"entities","name":"entities/","files":106,"lines":17293,"code":7709,"kind":"pure","role":"Characters, encounters, resources, equipment, and casting. Every writer returns a new object.","imports":["combat","data","dice","map","util"]},{"id":"handout","name":"handout/","files":2,"lines":382,"code":160,"kind":"pure","role":"Handout records, visibility filters, and dialog helpers.","imports":["map","util"]},{"id":"library","name":"library/","files":6,"lines":993,"code":519,"kind":"pure","role":"Merges the built-in catalogs with the GM customs, tagging each entry default, override, or custom.","imports":["combat","data","entities","util"]},{"id":"log","name":"log/","files":3,"lines":266,"code":96,"kind":"pure","role":"Travelogue entries and the incremental read the panel renders from.","imports":["time","view"]},{"id":"main","name":"main.js","files":1,"lines":171,"code":97,"kind":"root","role":"Builds the AppContext, then calls each wiring module in mount order.","imports":["app","campaign","map","party","storage","ui","view"]},{"id":"map","name":"map/","files":84,"lines":18035,"code":9075,"kind":"mixed","role":"Tile grid, node hierarchy, fog, and region grouping, plus the canvas renderer. The renderer is the glue half, and everything else is pure.","imports":["handout","storage","util"]},{"id":"party","name":"party/","files":3,"lines":414,"code":143,"kind":"pure","role":"Party position and split-party tokens. Moving the party reveals fog.","imports":["map","time"]},{"id":"quest","name":"quest/","files":5,"lines":579,"code":223,"kind":"pure","role":"Quest records, objectives, links, and status transitions.","imports":["combat","entities","map"]},{"id":"storage","name":"storage/","files":39,"lines":7678,"code":3349,"kind":"pure","role":"Serialize, pack, migrate, and the delta history. Browser APIs are confined to thin wrappers.","imports":["combat","entities","handout","library","map","quest","time","util"]},{"id":"time","name":"time/","files":3,"lines":259,"code":89,"kind":"pure","role":"The in-game clock of watches and days.","imports":["util"]},{"id":"types","name":"types/","files":22,"lines":3219,"code":1564,"kind":"types","role":"Declaration files only, with no runtime code. The .js files point here through JSDoc, so no import edge leads to this directory.","imports":[]},{"id":"ui","name":"ui/","files":112,"lines":19575,"code":11985,"kind":"glue","role":"DOM widgets: panels, dialogs, forms. Draws from callbacks and writes nothing.","imports":["combat","data","dice","entities","library","log","map","quest","storage","time","util","view"]},{"id":"util","name":"util/","files":10,"lines":339,"code":119,"kind":"pure","role":"Clamping, identity memos, deep freeze, seeded random, idle scheduling, and text helpers. Imports nothing.","imports":[]},{"id":"view","name":"view/","files":48,"lines":4047,"code":1904,"kind":"pure","role":"View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock.","imports":["combat","data","entities","handout","library","log","map","storage","util"]}],"steps":[{"call":"wireCampaignActions","line":101,"role":"dirty flag + header campaign controls; provides markDirty","why":"The order below is a dependency order, not a preference. Almost every cross-module reference resolves when an event fires, long after all of this has run. Three modules reach another module's registrations while they are still mounting, so those registrations must be in place first.","regs":[{"registry":"actions","name":"markDirty"},{"registry":"actions","name":"mergeQueuedPatches"}]},{"call":"wireLibrary","line":104,"role":"Library mode: equipment/bestiary/NPC templates + custom-library file","why":"The library loads before anything that offers its presets (the item form, the enemy gear pickers), so the merged lists are live from the first open.","regs":[]},{"call":"wireCombatScreen","line":108,"role":"combat mode's full-width board","why":"The combat screen mounts before the fight state, because that module's refresh paths reach `views.combatScreen` while it is still mounting.","regs":[{"registry":"views","name":"combatScreen"}]},{"call":"wireFightState","line":109,"role":"the running fight + the Initiative card","why":"","regs":[{"registry":"actions","name":"removeCombatant"},{"registry":"actions","name":"addCombatant"},{"registry":"actions","name":"spendBudget"},{"registry":"actions","name":"toggleBudget"},{"registry":"actions","name":"surgeBudget"},{"registry":"actions","name":"advanceCombatTurn"},{"registry":"actions","name":"endCombat"},{"registry":"actions","name":"syncCombatLocation"},{"registry":"views","name":"initiativePanel"}]},{"call":"wireEncounters","line":110,"role":"encounter panels + the combat setup dialog","why":"","regs":[]},{"call":"wireStory","line":111,"role":"travelogue (logEvent), NPCs, quests, handouts","why":"","regs":[{"registry":"actions","name":"logEvent"},{"registry":"views","name":"travelogPanel"},{"registry":"views","name":"npcPanel"},{"registry":"views","name":"buildNPCs"},{"registry":"views","name":"questPanel"}]},{"call":"wireParty","line":115,"role":"roster, sheet, inventory, time","why":"","regs":[{"registry":"actions","name":"getBoundCharacterId"},{"registry":"actions","name":"refreshSelectedCharacter"},{"registry":"actions","name":"getSelectedCharacterId"},{"registry":"views","name":"timePanel"},{"registry":"actions","name":"passTravelTime"},{"registry":"views","name":"partyPanels"}]},{"call":"wireMapView","line":119,"role":"canvas, trees, inspector, palette, fog, map tools","why":"This call draws the first map, which also marks the encounter and NPC tiles and rebuilds the Build-rail lists those markers share a node scope with. The two modules that own those lists are wired above.","regs":[{"registry":"actions","name":"undoStroke"},{"registry":"actions","name":"redoStroke"},{"registry":"actions","name":"meetCreatures"},{"registry":"actions","name":"syncPartyMarker"},{"registry":"actions","name":"syncExits"},{"registry":"actions","name":"syncCreatureMarkers"},{"registry":"actions","name":"refreshMapDescription"},{"registry":"actions","name":"resyncMap"},{"registry":"actions","name":"getSelectedTileId"},{"registry":"actions","name":"focusLocation"},{"registry":"actions","name":"centerOnLocation"},{"registry":"views","name":"regionTree"},{"registry":"views","name":"mapCanvas"},{"registry":"actions","name":"onModeChanged"},{"registry":"actions","name":"onRoleChanged"}]},{"call":"wireGenerateAction","line":120,"role":"shares the map's context rather than routing through actions","why":"","regs":[{"registry":"actions","name":"generateWorld"}]},{"call":"wireDiceTray","line":121,"role":"dice tray + the roll entries it writes to the travelogue","why":"","regs":[{"registry":"actions","name":"rollDice"}]},{"call":"wireSessionControls","line":126,"role":"mode/role switches (applies the initial role), tabs, sidebar","why":"This must run last: mounting the role switch applies the starting role straight away. That refreshes four panels and re-points the character sheet, so everything it touches must already be registered.","regs":[{"registry":"actions","name":"setMode"}]}],"stages":[{"id":"raw","name":"in-memory state","size":5855260,"note":"Every tile and every entity written in full, the way they sit in memory."},{"id":"tiles","name":"1. tile defaults","size":2178869,"note":"packTile deletes default-valued fields from a copy, so a field added later keeps its value through the round trip, and withTileDefaults puts the defaults back on load."},{"id":"entities","name":"2. entity defaults","size":2171335,"note":"packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier."},{"id":"assets","name":"3. assets hoisted","size":2171335,"note":"Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It saves space once a GM uploads art for a handout, and more once custom tile art ships."},{"id":"codec","name":"4. tile codec","size":245581,"note":"Each node becomes an art palette, a row-major run-length list of indices, and a run-length fog track. The codec is opt-in per node, and when it meets an id it cannot parse it returns the same object and leaves the node alone."},{"id":"strings","name":"5. string table","size":197929,"note":"Every palette string moves into one strings table at the top of the save, and each palette names it by index. Only the save string has the table, so one encoded node still decodes alone."}],"storageKeys":[{"key":"campaign-builder:assets","file":"src/storage/AssetStore.js","line":30},{"key":"campaign-builder:bound-character","file":"src/view/CharacterBinding.js","line":17},{"key":"campaign-builder:gm-lock","file":"src/storage/GMLock.js","line":25},{"key":"campaign-builder:history","file":"src/storage/HistoryLog.js","line":10},{"key":"campaign-builder:library","file":"src/storage/LibraryStore.js","line":11},{"key":"campaign-builder:minimap-hidden","file":"src/ui/MiniMap.js","line":20},{"key":"campaign-builder:onboarded","file":"src/app/onboarding.js","line":9},{"key":"campaign-builder:patch:","file":"src/storage/PlayerPatch.js","line":32},{"key":"campaign-builder:pending-toast","file":"src/ui/Toast.js","line":108},{"key":"campaign-builder:player-hint-shown","file":"src/app/sessionControls.js","line":11},{"key":"campaign-builder:player-lock","file":"src/boot.js","line":34},{"key":"campaign-builder:quest-groups","file":"src/ui/QuestPanel.js","line":12},{"key":"campaign-builder:reload-view","file":"src/view/ReloadView.js","line":16},{"key":"campaign-builder:role","file":"src/app/sessionControls.js","line":201},{"key":"campaign-builder:save","file":"src/storage/SaveStorage.js","line":21},{"key":"campaign-builder:save-mark","file":"src/storage/SaveStorage.js","line":38},{"key":"campaign-builder:show-variants","file":"src/ui/PalettePanel.js","line":10},{"key":"campaign-builder:story-cards","file":"src/ui/StoryCards.js","line":7},{"key":"campaign-builder:theme","file":"src/boot.js","line":24}],"commands":[{"command":"pnpm install","note":"Development tools only."},{"command":"pnpm run dev","note":"Dev server on 127.0.0.1:8080. Rebuilds on every source change. Reload the page to see the change."},{"command":"node --test tests/Character.test.js","note":"One file while you iterate."},{"command":"pnpm run test","note":"The whole suite. Run it before every commit."},{"command":"pnpm run coverage","note":"Line, branch, and function coverage across all of src/."},{"command":"pnpm run typecheck","note":"Typechecks src/ and docs/gallery/. Do not use pnpx tsc, which downloads a placeholder package and checks nothing."},{"command":"pnpm run lint","note":"ESLint over the tree."},{"command":"pnpm run build","note":"Minified production output in dist/."},{"command":"pnpm run guide","note":"Rebuilds this page from the source tree."},{"command":"git config core.hooksPath hooks","note":"Once per clone. Turns on the pre-commit gate."}],"checklist":[{"title":"Every new writer returns a new object","note":"No in-place mutation in entities/ or map/. The repaint guard and the WeakMap caches both depend on it.","refs":[{"file":"src/util/memoize.js","symbol":"memoizeByIdentity","line":15}]},{"title":"New pure logic has a test","note":"One tests/\u003cModule>.test.js per source module. Side effects arrive as arguments.","refs":[]},{"title":"New save fields are absorbed, not migrated","note":"withDefaults covers absence. Migrations.js is only for a change of meaning. Add the field to SYNCED_STATE_KEYS.","refs":[{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":40}]},{"title":"Handlers read app.views and app.actions at call time","note":"Capturing a registry entry during wiring breaks the mount order.","refs":[]},{"title":"Color, spacing, radius, and type come from tokens","note":"styles/base.css only, and never an inline var() fallback.","refs":[]},{"title":"Destructive actions confirm first","note":"confirmDelete for a plain entity delete, confirmModal with danger: true for anything else.","refs":[{"file":"src/ui/Modal.js","symbol":"confirmDelete","line":475}]},{"title":"Buttons and empty states come from ui/buttons.js","note":"iconButton, textButton, emptyState, segSwitch. An icon-only button needs an aria-label.","refs":[{"file":"src/ui/buttons.js","symbol":"emptyState","line":289}]},{"title":"Dismiss on the left, primary on the right","note":"Every modal, inline form, and action bar.","refs":[]},{"title":"The file is under 500 lines","note":"Split it by responsibility when it is not.","refs":[]},{"title":"DOM and canvas changes were opened in a browser","note":"Screenshot the change and read the console for 404s on asset paths.","refs":[]},{"title":"Lint, suite, and typecheck all pass","note":"The pre-commit hook runs the formatter and then all three.","refs":[]}],"routerTree":{"start":{"q":"Does the change need the DOM, a canvas, or a browser API?","opts":[{"label":"No","note":"Rules, math, data models, save format.","next":"pure"},{"label":"Yes","note":"Elements, events, drawing, storage APIs.","next":"glue"}]},"pure":{"q":"What does it operate on?","opts":[{"label":"Tiles, nodes, fog","note":"Geometry, hierarchy, reveal.","answer":"map"},{"label":"Characters or foes","note":"Stats, gear, spells, damage.","answer":"entities"},{"label":"The save format","note":"New field, new format, packing.","answer":"storage"},{"label":"Randomness","note":"Dice, rolls, checks.","answer":"dice"}]},"glue":{"q":"Is it one panel, or a behavior that crosses features?","opts":[{"label":"One panel","note":"A list, a form, a card.","answer":"ui"},{"label":"Crosses features","note":"A move triggers an encounter, a cast writes the log.","answer":"app"},{"label":"Drawing on the map","note":"A new render pass or marker.","answer":"canvas"}]}},"routerAnswers":{"map":{"where":"src/map/","test":"tests/\u003cModule>.test.js, with no DOM. Take the node as an argument and return a new node.","trap":"Return the same node object when nothing changed. TileIndex and every WeakMap cache are keyed on node identity, so a mutated node serves stale data forever.","refs":[{"file":"src/map/TileIndex.js","symbol":"tileAt","line":303},{"file":"src/map/FogOfWar.js","symbol":"revealAround","line":27}]},"entities":{"where":"src/entities/, with any catalog data in src/data/","test":"tests/\u003cModule>.test.js. Inject the generator so the result is deterministic.","trap":"Never mutate in place. A writer returns a new object, and the panel repaint guard depends on that. Catalogs in src/data/ are deep-frozen, so copy one before you write it into campaign state.","refs":[{"file":"src/util/deepFreeze.js","symbol":"deepFreeze","line":16},{"file":"src/entities/CreatureTemplate.js","symbol":"fromTemplate","line":64}]},"storage":{"where":"src/storage/","test":"A round trip through serialize and deserialize, plus a migration test if the meaning of a field changed.","trap":"A new field needs no migration, because withDefaults absorbs absence. Only a change of meaning goes in Migrations.js. Add the field to SYNCED_STATE_KEYS as well, which a test compares with the fields of Campaign.","refs":[{"file":"src/storage/Migrations.js","symbol":"migrateState","line":260},{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":40}]},"dice":{"where":"src/dice/, or src/combat/ if it resolves an attack","test":"Pass a stub generator and assert the exact output, the way tests/DiceRoller.test.js does.","trap":"The generator and the clock are arguments, never module state, because every test in this layer asserts an exact result and module state would make that impossible.","refs":[{"file":"src/dice/DiceRoller.js","symbol":"roll","line":34},{"file":"src/combat/AttackResolve.js","symbol":"resolveAttack","line":83}]},"ui":{"where":"src/ui/","test":"Nothing automated. Extract the rules into a pure module and test that, then check the widget itself in a browser.","trap":"Use mountListPanel, buttons.js, and the tokens in styles/base.css before you write new markup. Never write an inline token fallback such as var(--border, #ccc), because a missing token should render as nothing so that the mistake is visible.","refs":[{"file":"src/ui/listPanel.js","symbol":"mountListPanel","line":156},{"file":"src/ui/buttons.js","symbol":"iconButton","line":34}]},"app":{"where":"src/app/\u003cfeature>Wiring.js, or a helper beside it","test":"Split the rule out as a pure function and test that half. The wiring stays thin.","trap":"Read app.views and app.actions inside the handler, never during wiring. Capturing a registry entry at mount time breaks the mount order and brings back import cycles.","refs":[{"file":"src/app/mapTravel.js","symbol":"createMapTravel","line":40}]},"canvas":{"where":"src/map/MapRenderer.js and the render modules beside it, with pure helpers alongside","test":"Visual. Use tests/map-canvas-preview.html and read the console.","trap":"render() only schedules a frame. Add derived data to the shared frame object rather than re-scanning node.tiles, and iterate the visible cell range only.","refs":[{"file":"src/map/MapCanvas.js","symbol":"render","line":136},{"file":"src/map/MapRenderer.js","symbol":"anyRevealed","line":33}]}},"revealRadius":2};</script>
+<script>window.__GUIDE_DATA__ = {"sections":[{"id":"layers","short":"Module logic"},{"id":"root","short":"Composition root"},{"id":"panels","short":"Panel contract"},{"id":"map","short":"Map model"},{"id":"save","short":"Persistence"},{"id":"where","short":"Where code goes"},{"id":"work","short":"Working on it"},{"id":"review","short":"Pre-flight"},{"id":"modules","short":"Module index"}],"kindGroups":[["root","composition"],["wiring","wiring"],["glue","DOM glue"],["mixed","pure + glue"],["pure","pure logic"],["data","catalogs"],["types","declarations"],["unclassified","unclassified"]],"dirs":[{"id":"app","name":"app/","files":96,"lines":18015,"code":10691,"kind":"wiring","role":"One wireX(app) module per feature area. Mounts panels, registers views and actions, and keeps the per-feature UI state that is not saved.","imports":["campaign","combat","data","dice","entities","handout","library","log","map","party","quest","storage","time","ui","util","view"]},{"id":"campaign","name":"campaign/","files":12,"lines":3113,"code":2285,"kind":"pure","role":"Blank and example campaign builders, and the initial load.","imports":["data","entities","map","party","storage","time","util"]},{"id":"combat","name":"combat/","files":30,"lines":3812,"code":1533,"kind":"pure","role":"Initiative order, attack resolution, the action budget, reactions, and loadout reads.","imports":["data","dice","entities","map","util","view"]},{"id":"data","name":"data/","files":18,"lines":4629,"code":4256,"kind":"data","role":"Frozen catalogs: abilities, classes, races, backgrounds, skills, spells, feats, creatures, and challenge ratings.","imports":["util"]},{"id":"dice","name":"dice/","files":3,"lines":281,"code":141,"kind":"pure","role":"roll(selection, rng). The generator is an argument, so a test can pass a stub.","imports":["entities"]},{"id":"entities","name":"entities/","files":106,"lines":17293,"code":7709,"kind":"pure","role":"Characters, encounters, resources, equipment, and casting. Every writer returns a new object.","imports":["combat","data","dice","map","util"]},{"id":"handout","name":"handout/","files":2,"lines":382,"code":160,"kind":"pure","role":"Handout records, visibility filters, and dialog helpers.","imports":["map","util"]},{"id":"library","name":"library/","files":6,"lines":993,"code":519,"kind":"pure","role":"Merges the built-in catalogs with the GM customs, tagging each entry default, override, or custom.","imports":["combat","data","entities","util"]},{"id":"log","name":"log/","files":3,"lines":266,"code":96,"kind":"pure","role":"Travelogue entries and the incremental read the panel renders from.","imports":["time","view"]},{"id":"main","name":"main.js","files":1,"lines":171,"code":97,"kind":"root","role":"Builds the AppContext, then calls each wiring module in mount order.","imports":["app","campaign","map","party","storage","ui","view"]},{"id":"map","name":"map/","files":84,"lines":18035,"code":9075,"kind":"mixed","role":"Tile grid, node hierarchy, fog, and region grouping, plus the canvas renderer. The renderer is the glue half, and everything else is pure.","imports":["handout","storage","util"]},{"id":"party","name":"party/","files":3,"lines":414,"code":143,"kind":"pure","role":"Party position and split-party tokens. Moving the party reveals fog.","imports":["map","time"]},{"id":"quest","name":"quest/","files":5,"lines":579,"code":223,"kind":"pure","role":"Quest records, objectives, links, and status transitions.","imports":["combat","entities","map"]},{"id":"storage","name":"storage/","files":39,"lines":7678,"code":3349,"kind":"pure","role":"Serialize, pack, migrate, and the delta history. Browser APIs are confined to thin wrappers.","imports":["combat","entities","handout","library","map","quest","time","util"]},{"id":"time","name":"time/","files":3,"lines":259,"code":89,"kind":"pure","role":"The in-game clock of watches and days.","imports":["util"]},{"id":"types","name":"types/","files":22,"lines":3219,"code":1564,"kind":"types","role":"Declaration files only, with no runtime code. The .js files point here through JSDoc, so no import edge leads to this directory.","imports":[]},{"id":"ui","name":"ui/","files":112,"lines":19575,"code":11985,"kind":"glue","role":"DOM widgets: panels, dialogs, forms. Draws from callbacks and writes nothing.","imports":["combat","data","dice","entities","library","log","map","quest","storage","time","util","view"]},{"id":"util","name":"util/","files":10,"lines":339,"code":119,"kind":"pure","role":"Clamping, identity memos, deep freeze, seeded random, idle scheduling, and text helpers. Imports nothing.","imports":[]},{"id":"view","name":"view/","files":48,"lines":4047,"code":1904,"kind":"pure","role":"View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock.","imports":["combat","data","entities","handout","library","log","map","storage","util"]}],"steps":[{"call":"wireCampaignActions","line":101,"role":"dirty flag + header campaign controls; provides markDirty","why":"The order below is a dependency order, not a preference. Almost every cross-module reference resolves when an event fires, long after all of this has run. Three modules reach another module's registrations while they are still mounting, so those registrations must be in place first.","regs":[{"registry":"actions","name":"markDirty"},{"registry":"actions","name":"mergeQueuedPatches"}]},{"call":"wireLibrary","line":104,"role":"Library mode: equipment/bestiary/NPC templates + custom-library file","why":"The library loads before anything that offers its presets (the item form, the enemy gear pickers), so the merged lists are live from the first open.","regs":[]},{"call":"wireCombatScreen","line":108,"role":"combat mode's full-width board","why":"The combat screen mounts before the fight state, because that module's refresh paths reach `views.combatScreen` while it is still mounting.","regs":[{"registry":"views","name":"combatScreen"}]},{"call":"wireFightState","line":109,"role":"the running fight + the Initiative card","why":"","regs":[{"registry":"actions","name":"removeCombatant"},{"registry":"actions","name":"addCombatant"},{"registry":"actions","name":"spendBudget"},{"registry":"actions","name":"toggleBudget"},{"registry":"actions","name":"surgeBudget"},{"registry":"actions","name":"advanceCombatTurn"},{"registry":"actions","name":"endCombat"},{"registry":"actions","name":"syncCombatLocation"},{"registry":"views","name":"initiativePanel"}]},{"call":"wireEncounters","line":110,"role":"encounter panels + the combat setup dialog","why":"","regs":[]},{"call":"wireStory","line":111,"role":"travelogue (logEvent), NPCs, quests, handouts","why":"","regs":[{"registry":"actions","name":"logEvent"},{"registry":"views","name":"travelogPanel"},{"registry":"views","name":"npcPanel"},{"registry":"views","name":"buildNPCs"},{"registry":"views","name":"questPanel"}]},{"call":"wireParty","line":115,"role":"roster, sheet, inventory, time","why":"","regs":[{"registry":"actions","name":"getBoundCharacterId"},{"registry":"actions","name":"refreshSelectedCharacter"},{"registry":"actions","name":"getSelectedCharacterId"},{"registry":"views","name":"timePanel"},{"registry":"actions","name":"passTravelTime"},{"registry":"views","name":"partyPanels"}]},{"call":"wireMapView","line":119,"role":"canvas, trees, inspector, palette, fog, map tools","why":"This call draws the first map, which also marks the encounter and NPC tiles and rebuilds the Build-rail lists those markers share a node scope with. The two modules that own those lists are wired above.","regs":[{"registry":"actions","name":"undoStroke"},{"registry":"actions","name":"redoStroke"},{"registry":"actions","name":"meetCreatures"},{"registry":"actions","name":"syncPartyMarker"},{"registry":"actions","name":"syncExits"},{"registry":"actions","name":"syncCreatureMarkers"},{"registry":"actions","name":"refreshMapDescription"},{"registry":"actions","name":"resyncMap"},{"registry":"actions","name":"getSelectedTileId"},{"registry":"actions","name":"focusLocation"},{"registry":"actions","name":"centerOnLocation"},{"registry":"views","name":"regionTree"},{"registry":"views","name":"mapCanvas"},{"registry":"actions","name":"onModeChanged"},{"registry":"actions","name":"onRoleChanged"}]},{"call":"wireGenerateAction","line":120,"role":"shares the map's context rather than routing through actions","why":"","regs":[{"registry":"actions","name":"generateWorld"}]},{"call":"wireDiceTray","line":121,"role":"dice tray + the roll entries it writes to the travelogue","why":"","regs":[{"registry":"actions","name":"rollDice"}]},{"call":"wireSessionControls","line":126,"role":"mode/role switches (applies the initial role), tabs, sidebar","why":"This must run last: mounting the role switch applies the starting role straight away. That refreshes four panels and re-points the character sheet, so everything it touches must already be registered.","regs":[{"registry":"actions","name":"setMode"}]}],"stages":[{"id":"raw","name":"in-memory state","size":5855260,"note":"Every tile and every entity written in full, the way they sit in memory."},{"id":"tiles","name":"1. tile defaults","size":2178869,"note":"packTile deletes default-valued fields from a copy, so a field added later keeps its value through the round trip, and withTileDefaults puts the defaults back on load."},{"id":"entities","name":"2. entity defaults","size":2171335,"note":"packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier."},{"id":"assets","name":"3. assets hoisted","size":2171335,"note":"Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It saves space once a GM uploads art for a handout, and more once custom tile art ships."},{"id":"codec","name":"4. tile codec","size":245581,"note":"Each node becomes an art palette, a row-major run-length list of indices, and a run-length fog track. The codec is opt-in per node, and when it meets an id it cannot parse it returns the same object and leaves the node alone."},{"id":"strings","name":"5. string table","size":197929,"note":"Every palette string moves into one strings table at the top of the save, and each palette names it by index. Only the save string has the table, so one encoded node still decodes alone."}],"storageKeys":[{"key":"campaign-builder:assets","file":"src/storage/AssetStore.js","line":30},{"key":"campaign-builder:bound-character","file":"src/view/CharacterBinding.js","line":17},{"key":"campaign-builder:gm-lock","file":"src/storage/GMLock.js","line":25},{"key":"campaign-builder:history","file":"src/storage/HistoryLog.js","line":10},{"key":"campaign-builder:library","file":"src/storage/LibraryStore.js","line":11},{"key":"campaign-builder:minimap-hidden","file":"src/ui/MiniMap.js","line":20},{"key":"campaign-builder:onboarded","file":"src/app/onboarding.js","line":9},{"key":"campaign-builder:patch:","file":"src/storage/PlayerPatch.js","line":32},{"key":"campaign-builder:pending-toast","file":"src/ui/Toast.js","line":108},{"key":"campaign-builder:player-hint-shown","file":"src/app/sessionControls.js","line":11},{"key":"campaign-builder:player-lock","file":"src/boot.js","line":34},{"key":"campaign-builder:quest-groups","file":"src/ui/QuestPanel.js","line":12},{"key":"campaign-builder:reload-view","file":"src/view/ReloadView.js","line":16},{"key":"campaign-builder:role","file":"src/app/sessionControls.js","line":201},{"key":"campaign-builder:save","file":"src/storage/SaveStorage.js","line":21},{"key":"campaign-builder:save-mark","file":"src/storage/SaveStorage.js","line":38},{"key":"campaign-builder:show-variants","file":"src/ui/PalettePanel.js","line":10},{"key":"campaign-builder:story-cards","file":"src/ui/StoryCards.js","line":7},{"key":"campaign-builder:theme","file":"src/boot.js","line":24}],"commands":[{"command":"pnpm install","note":"Development tools only."},{"command":"pnpm run dev","note":"Dev server on 127.0.0.1:8080. Rebuilds on every source change. Reload the page to see the change."},{"command":"node --test tests/Character.test.js","note":"One file while you iterate."},{"command":"pnpm run test","note":"The whole suite. Run it before every commit."},{"command":"pnpm run coverage","note":"Line, branch, and function coverage across all of src/."},{"command":"pnpm run typecheck","note":"Typechecks src/ and docs/gallery/. Do not use pnpx tsc, which downloads a placeholder package and checks nothing."},{"command":"pnpm run lint","note":"ESLint over the tree."},{"command":"pnpm run build","note":"Minified production output in dist/."},{"command":"pnpm run guide","note":"Rebuilds this page from the source tree."},{"command":"git config core.hooksPath hooks","note":"Once per clone. Turns on the pre-commit gate."}],"checklist":[{"title":"Every new writer returns a new object","note":"No in-place mutation in entities/ or map/. The repaint guard and the WeakMap caches both depend on it.","refs":[{"file":"src/util/memoize.js","symbol":"memoizeByIdentity","line":15}]},{"title":"New pure logic has a test","note":"One tests/\u003cModule>.test.js per source module. Side effects arrive as arguments.","refs":[]},{"title":"New save fields are absorbed, not migrated","note":"withDefaults covers absence. Migrations.js is only for a change of meaning. Add the field to SYNCED_STATE_KEYS.","refs":[{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":40}]},{"title":"Handlers read app.views and app.actions at call time","note":"Capturing a registry entry during wiring breaks the mount order.","refs":[]},{"title":"Color, spacing, radius, and type come from tokens","note":"styles/base.css only, and never an inline var() fallback.","refs":[]},{"title":"Destructive actions confirm first","note":"confirmDelete for a plain entity delete, confirmModal with danger: true for anything else.","refs":[{"file":"src/ui/Modal.js","symbol":"confirmDelete","line":475}]},{"title":"Buttons and empty states come from ui/buttons.js","note":"iconButton, textButton, emptyState, segSwitch. An icon-only button needs an aria-label.","refs":[{"file":"src/ui/buttons.js","symbol":"emptyState","line":289}]},{"title":"Dismiss on the left, primary on the right","note":"Every modal, inline form, and action bar.","refs":[]},{"title":"The file is under 500 lines","note":"Split it by responsibility when it is not.","refs":[]},{"title":"DOM and canvas changes were opened in a browser","note":"Screenshot the change and read the console for 404s on asset paths.","refs":[]},{"title":"Lint, suite, and typecheck all pass","note":"The pre-commit hook runs the formatter and then all three.","refs":[]}],"routerTree":{"start":{"q":"Does the change need the DOM, a canvas, or a browser API?","opts":[{"label":"No","note":"Rules, math, data models, save format.","next":"pure"},{"label":"Yes","note":"Elements, events, drawing, storage APIs.","next":"glue"}]},"pure":{"q":"What does it operate on?","opts":[{"label":"Tiles, nodes, fog","note":"Geometry, hierarchy, reveal.","answer":"map"},{"label":"Characters or foes","note":"Stats, gear, spells, damage.","answer":"entities"},{"label":"The save format","note":"New field, new format, packing.","answer":"storage"},{"label":"Randomness","note":"Dice, rolls, checks.","answer":"dice"}]},"glue":{"q":"Is it one panel, or a behavior that crosses features?","opts":[{"label":"One panel","note":"A list, a form, a card.","answer":"ui"},{"label":"Crosses features","note":"A move triggers an encounter, a cast writes the log.","answer":"app"},{"label":"Drawing on the map","note":"A new render pass or marker.","answer":"canvas"}]}},"routerAnswers":{"map":{"where":"src/map/","test":"tests/\u003cModule>.test.js, with no DOM. Take the node as an argument and return a new node.","trap":"Return the same node object when nothing changed. TileIndex and every WeakMap cache are keyed on node identity, so a mutated node serves stale data forever.","refs":[{"file":"src/map/TileIndex.js","symbol":"tileAt","line":303},{"file":"src/map/FogOfWar.js","symbol":"revealAround","line":27}]},"entities":{"where":"src/entities/, with any catalog data in src/data/","test":"tests/\u003cModule>.test.js. Inject the generator so the result is deterministic.","trap":"Never mutate in place. A writer returns a new object, and the panel repaint guard depends on that. Catalogs in src/data/ are deep-frozen, so copy one before you write it into campaign state.","refs":[{"file":"src/util/deepFreeze.js","symbol":"deepFreeze","line":16},{"file":"src/entities/CreatureTemplate.js","symbol":"fromTemplate","line":64}]},"storage":{"where":"src/storage/","test":"A round trip through serialize and deserialize, plus a migration test if the meaning of a field changed.","trap":"A new field needs no migration, because withDefaults absorbs absence. Only a change of meaning goes in Migrations.js. Add the field to SYNCED_STATE_KEYS as well, which a test compares with the fields of Campaign.","refs":[{"file":"src/storage/Migrations.js","symbol":"migrateState","line":260},{"file":"src/app/rehydrate.js","symbol":"SYNCED_STATE_KEYS","line":40}]},"dice":{"where":"src/dice/, or src/combat/ if it resolves an attack","test":"Pass a stub generator and assert the exact output, the way tests/DiceRoller.test.js does.","trap":"The generator and the clock are arguments, never module state, because every test in this layer asserts an exact result and module state would make that impossible.","refs":[{"file":"src/dice/DiceRoller.js","symbol":"roll","line":34},{"file":"src/combat/AttackResolve.js","symbol":"resolveAttack","line":83}]},"ui":{"where":"src/ui/","test":"Nothing automated. Extract the rules into a pure module and test that, then check the widget itself in a browser.","trap":"Use mountListPanel, buttons.js, and the tokens in styles/base.css before you write new markup. Never write an inline token fallback such as var(--border, #ccc), because a missing token should render as nothing so that the mistake is visible.","refs":[{"file":"src/ui/listPanel.js","symbol":"mountListPanel","line":156},{"file":"src/ui/buttons.js","symbol":"iconButton","line":34}]},"app":{"where":"src/app/\u003cfeature>Wiring.js, or a helper beside it","test":"Split the rule out as a pure function and test that half. The wiring stays thin.","trap":"Read app.views and app.actions inside the handler, never during wiring. Capturing a registry entry at mount time breaks the mount order and brings back import cycles.","refs":[{"file":"src/app/mapTravel.js","symbol":"createMapTravel","line":40}]},"canvas":{"where":"src/map/MapRenderer.js and the render modules beside it, with pure helpers alongside","test":"Visual. Use tests/map-canvas-preview.html and read the console.","trap":"render() only schedules a frame. Add derived data to the shared frame object rather than re-scanning node.tiles, and iterate the visible cell range only.","refs":[{"file":"src/map/MapCanvas.js","symbol":"render","line":136},{"file":"src/map/MapRenderer.js","symbol":"anyRevealed","line":33}]}},"revealRadius":2};</script>
 <script>
 (function () {
   'use strict';

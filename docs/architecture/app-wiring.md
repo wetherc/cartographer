@@ -538,6 +538,11 @@ which re-reads everything those panels show, and the `timePanel` view. The
 starts or ends, because the Advance and rest buttons lock while
 `state.combat` is set.
 
+The inventory's "Use one" button on a healing potion calls `drinkPotion` in
+`potionsWiring.js`. Its dialog asks which character drinks the potion. The
+item leaves the stack first, and `applyToTarget` then writes the heal. On
+the drinker's own turn in a fight, the potion costs the action.
+
 It also mounts the full sheet (`ui/FullSheet.js`). The full sheet borrows the
 sheet card of the sidebar and moves it into a view the width of the page.
 The **Open full sheet** button of the card, the `onOpenSheet` action of a
@@ -724,6 +729,11 @@ bar starts. Casting a spell is the same job, split across five modules:
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 
+A heal that also ends a condition, such as Lesser Restoration, calls
+`cureTarget` in `healCurePrompt.js` from `spellOutcomes.js`. It asks the
+caster which condition ends only when the target has more than one of the
+conditions that the spell names.
+
 `weaponAttack.js` itself owns the dialog prompt, the budget spend, the dice
 tray call, the Shield pause, and the writes. `attackFields.js` builds the
 dialog's fields with no DOM code. Its roll mode select comes from
@@ -894,6 +904,11 @@ It also calls `wireHandoutCue` (`handoutCue.js`), which registers
 `cueHandouts`. `maybeTriggerEncounter` calls it after the encounter dialog
 closes, and the merge of a Player tab patch calls it too. It toasts each
 hidden handout on the party tile, or on a character tile, once per session.
+
+The NPC rows get two companion controls from `companions.js`.
+`toggleCompanion` sets **Travels with party**, and `bringToParty` moves
+the NPC onto the party tile. Both move the NPC with `moveCreature`, which
+keeps `met`, so the party does not meet a known NPC a second time.
 
 Last, `wireStory` calls `mountStoryCards` (`ui/StoryCards.js`) on the
 Story tab. It gives the Quests, NPCs, and Handouts cards a fold button,

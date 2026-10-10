@@ -23,6 +23,7 @@ import {
   scanStorageKeys,
   scanTests,
   scanPackage,
+  scanModules,
 } from './dev-guide/scan.mjs';
 import { snippet, region, assertSymbol, locate, MissingReference } from './dev-guide/extract.mjs';
 import { measureSave, measureDensestNode, measureRevealRadius } from './dev-guide/measure.mjs';
@@ -66,7 +67,10 @@ function collect() {
   }
 
   const measured = measureSave();
-  measured.stages = measured.stages.map((stage) => ({ ...stage, note: STAGE_NOTES[stage.id] || '' }));
+  measured.stages = measured.stages.map((stage) => ({
+    ...stage,
+    note: STAGE_NOTES[stage.id] || '',
+  }));
 
   const commands = COMMANDS.map((entry) => {
     if (!entry.script) return { command: entry.command, note: entry.note };
@@ -120,6 +124,7 @@ function collect() {
     checklist,
     routerTree: ROUTER_TREE,
     routerAnswers,
+    modules: scanModules(ROOT),
   };
 }
 

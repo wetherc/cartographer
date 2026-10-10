@@ -7,10 +7,7 @@ import { CLIENT } from './client.mjs';
 
 /** @param {string} text */
 function esc(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** @param {number} n */
@@ -19,11 +16,47 @@ function num(n) {
 }
 
 const KEYWORDS = [
-  'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
-  'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from',
-  'function', 'if', 'import', 'in', 'instanceof', 'interface', 'let', 'new', 'null',
-  'of', 'readonly', 'return', 'switch', 'this', 'throw', 'true', 'try', 'typeof',
-  'undefined', 'var', 'void', 'while', 'yield',
+  'async',
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'from',
+  'function',
+  'if',
+  'import',
+  'in',
+  'instanceof',
+  'interface',
+  'let',
+  'new',
+  'null',
+  'of',
+  'readonly',
+  'return',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typeof',
+  'undefined',
+  'var',
+  'void',
+  'while',
+  'yield',
 ].join('|');
 
 const PRIMITIVES = 'string|number|boolean|any|unknown|never|object|symbol|bigint';
@@ -93,6 +126,14 @@ function block(snip, note) {
 }
 
 const EXTRA_CSS = `
+  details.modules { margin-top: var(--sp-2); border-top: 1px solid var(--rule); }
+  details.modules summary { cursor: pointer; padding: var(--sp-2) 0; }
+  .modules-n { color: var(--text-muted); font-size: var(--step--1); margin-left: 1ch; }
+  details.modules table { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+  details.modules th, details.modules td {
+    text-align: left; vertical-align: top; padding: 0.3em 0.6em; border-bottom: 1px solid var(--rule);
+  }
+  details.modules td:first-child { overflow-wrap: anywhere; }
   .snip { margin-top: var(--sp-3); }
   .snippet-label {
     font-family: var(--f-mono);
@@ -125,6 +166,7 @@ export const SECTIONS = [
   { id: 'where', short: 'Where code goes' },
   { id: 'work', short: 'Working on it' },
   { id: 'review', short: 'Pre-flight' },
+  { id: 'modules', short: 'Module index' },
 ];
 
 /**
@@ -132,7 +174,7 @@ export const SECTIONS = [
  * @returns {string} the whole page
  */
 export function renderGuide(data) {
-  const { pkg, dirs, steps, snippets, measured, densest, tests, generatedAt } = data;
+  const { pkg, dirs, steps, snippets, measured, densest, tests, generatedAt, modules } = data;
   const totals = dirs.reduce(
     (acc, d) => ({
       files: acc.files + d.files,
@@ -445,6 +487,29 @@ export function renderGuide(data) {
         <div class="progress" id="checkProgress"></div>
       </div>
       <p class="caption"><code>docs/architecture/conventions.md</code> explains each rule. <code>docs/architecture.md</code> is authoritative for design questions.</p>
+    </section>
+
+    <section id="modules">
+      <div class="sec-head"><span class="sec-num">09</span><h2>Module index</h2></div>
+      <div class="prose">
+        <p>
+          The table of each area lists its modules under <code>src/</code> with the first
+          sentence of the first JSDoc comment of each module. Open an area to see its table.
+        </p>
+      </div>
+      ${modules
+        .map(
+          (group) => `<details class="modules">
+        <summary><code>${esc(group.area)}/</code> <span class="modules-n">${group.modules.length} modules</span></summary>
+        <table>
+          <thead><tr><th scope="col">Module</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+${group.modules.map((m) => `            <tr><td><code>${esc(m.path)}</code></td><td>${esc(m.summary)}</td></tr>`).join('\n')}
+          </tbody>
+        </table>
+      </details>`,
+        )
+        .join('\n      ')}
     </section>
 
     <footer>

@@ -231,7 +231,10 @@ export function scanTests(root) {
   const files = walk(dir);
   return {
     suites: files.filter((f) => f.endsWith('.test.js')).length,
-    previews: files.filter((f) => f.endsWith('.html')).map((f) => relative(dir, f)).sort(),
+    previews: files
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => relative(dir, f))
+      .sort(),
   };
 }
 
@@ -244,4 +247,44 @@ export function scanPackage(root) {
     runtimeDependencies: Object.keys(pkg.dependencies || {}).length,
     devDependencies: Object.keys(pkg.devDependencies || {}).length,
   };
+}
+
+/**
+ * The first sentence of the first JSDoc block in `text` that has prose, or
+ * an empty string. Tag lines (`@param`, `@typedef`, ...) end the prose of a
+ * block, so a block with only tags is skipped.
+ * @param {string} text the source of one module
+ * @returns {string}
+ */
+export function firstSentence(text) {
+  for (const match of text.matchAll(/\/\*\*([\s\S]*?)\*\//g)) {
+    const lines = match[1].split('\n').map((line) => line.replace(/^\s*\*?\s?/, ''));
+    const tag = lines.findIndex((line) => line.trimStart().startsWith('@'));
+    const prose = (tag < 0 ? lines : lines.slice(0, tag)).join(' ').replace(/\s+/g, ' ').trim();
+    if (!prose) continue;
+    const end = prose.search(/[.!?](\s|$)/);
+    return end < 0 ? prose : prose.slice(0, end + 1);
+  }
+  return '';
+}
+
+/**
+ * Every JavaScript module under `src/`, grouped by top-level area, with the
+ * first sentence of its first JSDoc block as a summary.
+ * @param {string} root
+ * @returns {{ area: string, modules: { path: string, summary: string }[] }[]}
+ */
+export function scanModules(root) {
+  const src = join(root, 'src');
+  /** @type {Map<string, { path: string, summary: string }[]>} */
+  const areas = new Map();
+  for (const file of walk(src).sort()) {
+    if (!file.endsWith('.js')) continue;
+    const parts = relative(src, file).split(/[\\/]/);
+    const area = parts.length === 1 ? 'src' : parts[0];
+    const path = parts.join('/');
+    if (!areas.has(area)) areas.set(area, []);
+    areas.get(area)?.push({ path, summary: firstSentence(readFileSync(file, 'utf8')) });
+  }
+  return [...areas].map(([area, modules]) => ({ area, modules }));
 }
