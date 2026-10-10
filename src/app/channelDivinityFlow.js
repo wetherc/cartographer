@@ -91,7 +91,7 @@ export async function turnUndead(
   if (!values) return false;
   const live = storedCleric(app, cleric.id);
   if (!live) return false;
-  if (app.actions.spendBudget && !app.actions.spendBudget(cleric.id, 'action')) {
+  if (!app.actions.spendBudget(cleric.id, 'action')) {
     app.toasts.show(`${found.label} has no action left this turn.`);
     return false;
   }
@@ -204,7 +204,7 @@ export async function preserveLife(app, found, { prompt = promptModal } = {}) {
   }
   const live = storedCleric(app, cleric.id);
   if (!live) return false;
-  if (app.actions.spendBudget && !app.actions.spendBudget(cleric.id, 'action')) {
+  if (!app.actions.spendBudget(cleric.id, 'action')) {
     app.toasts.show(`${found.label} has no action left this turn.`);
     return false;
   }

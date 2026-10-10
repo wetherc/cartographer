@@ -88,7 +88,7 @@ export async function offerRedirect(app, redirect, message, { prompt = promptMod
   );
   const ally = redirect.allies.find((a) => a.id === values?.ally);
   if (!ally) return null;
-  app.actions.spendBudget?.(redirect.id, 'reaction');
+  app.actions.spendBudget(redirect.id, 'reaction');
   app.actions.logEvent(
     'combat',
     `${redirect.name} uses Redirect Attack (reaction) and swaps places with ${ally.label ?? ally.name}, who becomes the target.`,

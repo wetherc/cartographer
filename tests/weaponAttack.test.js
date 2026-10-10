@@ -1156,7 +1156,7 @@ test('a creature at exhaustion 3 attacks at disadvantage, and its damage is unto
 
 /**
  * A stub app whose budget action records every spend and answers whatever the
- * test scripts. The real action lives in encounterWiring and writes
+ * test scripts. The real action lives in fightState and writes
  * `state.combat`; the attack only needs its yes or no.
  * @param {{ allow?: boolean }} [opts]
  */

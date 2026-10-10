@@ -1794,7 +1794,7 @@ modules use the same spelling.
 - `applyToTarget` in `app/combatantWrites.js` calls for the save on damage. Weapon
   hits and spell damage both arrive through this function. A character
   knocked to 0 HP loses the spell with no roll.
-- The round wrap in `app/encounterWiring.js` ticks the duration and logs a
+- The round wrap in `app/fightState.js` ticks the duration and logs a
   spell that ran out.
 - `storeCharacterChips` in `app/combatantWrites.js` stores a character whose chips
   changed, through `dropIfHelpless`. A spell that paralyzes the caster and a

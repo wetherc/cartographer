@@ -55,7 +55,7 @@ or `combat`) and `role` (`gm` or `player`). The role comes from
 The two registries let modules call each other without imports. For
 example, `partyWiring.js` registers a view when it mounts the character
 sheet. When `mapTravel.js` moves the party onto an encounter, it calls an
-action that `encounterWiring.js` registered. Neither file imports the other,
+action that `encounterPanels.js` registered. Neither file imports the other,
 so neither can create an import cycle or depend on the other's
 initialization order.
 
@@ -83,18 +83,22 @@ call order in `main.js` a dependency order:
 | --- | --- | --- |
 | 1 | `wireCampaignActions` | Registers `markDirty`, which every later module calls |
 | 2 | `wireLibrary` | Loads the custom library before any form offers its presets |
-| 3 | `wireCombatScreen` | Registers `views.combatScreen`, which the encounter module's refresh paths use while it mounts |
-| 4 | `wireEncounters` | Owns the Build-rail foe list that the first map draw rebuilds |
-| 5 | `wireStory` | Owns the Build-rail NPC list that the first map draw rebuilds |
-| 6 | `wireParty` | Mounts the roster, sheet, inventory, spellbook, and Time panel |
-| 7 | `wireMapView` | Draws the first map, and returns the `MapEnv` |
-| 8 | `wireGenerateAction` | Takes the `MapEnv` from step 7 |
-| 9 | `wireDiceTray` | Mounts the dice tray and registers `rollDice` |
-| 10 | `wireHeaderMenu` | Wires the phone Menu button of the header, which reads only the header markup |
-| 11 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
-| 12 | `wirePhoneViews` | Reads the sidebar tabs that step 11 wires, to follow the selected tab |
-| 13 | `wireSearch` | Mounts the header search box, which reads app state and the grid on each keystroke and jumps through `focusLocation` and `centerOnLocation` |
-| 14 | `wireShortcuts` | Adds the global key listener, and takes the search box from step 13 for the `/` key |
+| 3 | `wireCombatScreen` | Registers `views.combatScreen`, which the fight state's refresh paths use while it mounts |
+| 4 | `wireFightState` | Owns the running fight, and returns the hooks that the combat setup of step 5 writes through |
+| 5 | `wireEncounters` | Owns the Build-rail foe list that the first map draw rebuilds |
+| 6 | `wireStory` | Owns the Build-rail NPC list that the first map draw rebuilds |
+| 7 | `wireParty` | Mounts the roster, sheet, inventory, spellbook, and Time panel |
+| 8 | `wireMapView` | Draws the first map, and returns the `MapEnv` |
+| 9 | `wireGenerateAction` | Takes the `MapEnv` from step 8 |
+| 10 | `wireDiceTray` | Mounts the dice tray and registers `rollDice` |
+| 11 | `wireHeaderMenu` | Wires the phone Menu button of the header, which reads only the header markup |
+| 12 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
+| 13 | `wirePhoneViews` | Reads the sidebar tabs that step 12 wires, to follow the selected tab |
+| 14 | `wireSearch` | Mounts the header search box, which reads app state and the grid on each keystroke and jumps through `focusLocation` and `centerOnLocation` |
+| 15 | `wireShortcuts` | Adds the global key listener, and takes the search box from step 14 for the `/` key |
+
+`tests/mountOrder.test.js` reads `main.js` and checks the order of the
+calls that depend on each other, because a swap throws only in a browser.
 
 ### State that stays out of `app.state`
 
@@ -527,7 +531,7 @@ answers back.
 spellbook, and the Time panel. It registers `refreshSelectedCharacter`,
 `getBoundCharacterId`, `getSelectedCharacterId`, the `partyPanels` view,
 which re-reads everything those panels show, and the `timePanel` view. The
-`setCombat` helper of `encounterWiring.js` updates `timePanel` when a fight
+`setCombat` helper of `fightState.js` updates `timePanel` when a fight
 starts or ends, because the Advance and rest buttons lock while
 `state.combat` is set.
 
@@ -648,18 +652,23 @@ stamps that `findRegionGroups` in `map/RegionGroups.js` and `spanBlocks` in
 the object that those caches already know, so an adoption that moved nothing
 leaves them warm.
 
-### encounterWiring.js (plus encounterPanels.js, creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)
+### fightState.js and encounterWiring.js (plus encounterPanels.js, creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)
 
-`encounterWiring.js` owns the running fight and the sidebar's Initiative
-card, and it is the only module that writes `state.combat`. It mounts
+`fightState.js` owns the running fight, the sidebar's Initiative card, and
+the bar above the Play map, and it is the only module that writes
+`state.combat`. `encounterWiring.js` starts a fight. It owns the combat
+setup dialog, which builds the roster with the pure
+`combat/CombatRoster.js` and writes the new fight through the `setCombat`
+and `tickRound` hooks that `wireFightState` returns. It also mounts
 `encounterPanels.js`, which owns the Encounters panel, the Build-rail
 encounter list, the Build-mode right-click menu of a tile, and the alert
 when the party walks into an encounter (`maybeTriggerEncounter`). The
-Encounters panel's Start combat button calls back into `encounterWiring.js`,
-which builds the roster with the pure `combat/CombatRoster.js`.
+Start combat button of the Encounters panel and the Set up combat button
+of the alert both open the setup dialog.
 
-The turn flow is registered on `app.actions` (`advanceCombatTurn`,
-`endCombat`, `spendBudget`, `toggleBudget`, `addCombatant`, `removeCombatant`, and
+`fightState.js` registers the turn flow on `app.actions`
+(`advanceCombatTurn`, `endCombat`, `spendBudget`, `toggleBudget`,
+`surgeBudget`, `addCombatant`, `removeCombatant`, and
 `syncCombatLocation`), so the combat screen drives the same fight through
 the same code. The fight itself renders in combat mode, which
 [Combat](combat.md) describes. These helper modules support the turn flow:
@@ -667,7 +676,7 @@ the same code. The fight itself renders in combat mode, which
 | Module | Owns |
 | --- | --- |
 | `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and running the turn boundaries on the way |
-| `turnOrder.js` | The GM's corrections to a running order: Previous turn, a new initiative value for one combatant, and Delay. `encounterWiring.js` calls it with its `setCombat` |
+| `turnOrder.js` | The GM's corrections to a running order: Previous turn, a new initiative value for one combatant, and Delay. `fightState.js` calls it with its `setCombat` |
 | `turnEffectsWiring.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
 | `combatEnd.js` | The fight summary, the XP dialog that opens before the fight ends, the confirm for a fight with standing foes and no character to earn XP, and the award after the fight closes |
 | `summonsWiring.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
@@ -859,12 +868,12 @@ pick's callbacks as the usual ones and put them back on the map at the end.
 
 `combatWiring.js` mounts the combat screen (`ui/CombatScreen.js`) and
 registers `views.combatScreen`. It owns no combat state. The fight lives in
-`state.combat`, which `encounterWiring.js` writes, and
+`state.combat`, which `fightState.js` writes, and
 `combat/CombatView.js` derives the view on each render. This module keeps
 only two per-tab choices that are never saved: the combatant that the
 screen inspects, and the board card picked as the attack target.
 
-`main.js` wires this module before `wireEncounters`, so the view exists when
+`main.js` wires this module before `wireFightState`, so the view exists when
 the fight's refresh paths run. [Combat](combat.md) covers the details,
 including how the dice tray moves into the screen and back.
 

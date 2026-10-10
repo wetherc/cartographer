@@ -45,7 +45,7 @@ import { setCombatantExhaustion } from './exhaustionWrites.js';
  * This module wires the panels that list creatures by place: the Encounters
  * panel of the Play sidebar, the Build rail's foe list, and the Build-mode
  * right-click menu of a tile. It also registers `maybeTriggerEncounter`, the
- * alert when the party walks into a threat. The running fight is in
+ * alert when the party walks into a threat. The combat setup dialog is in
  * `encounterWiring.js`, which calls this function and passes the start of a
  * fight in as `onStartCombat`.
  * @param {AppContext} app

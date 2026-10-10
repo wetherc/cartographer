@@ -236,8 +236,8 @@ export function renderGuide(data) {
         <p>
           The wiring modules fill those registries with ${num(registered)} entries between them.
           A handler reads a registry when it runs rather than when it is wired, which lets an
-          early module call a late one: <code>partyWiring.js</code> triggers an encounter
-          without ever importing <code>encounterWiring.js</code>.
+          early module call a late one: <code>fightState.js</code> writes to the travelogue
+          without ever importing <code>storyWiring.js</code>.
         </p>
       </div>
 

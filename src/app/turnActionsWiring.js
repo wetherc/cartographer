@@ -33,7 +33,7 @@ import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
  * combatant has, spends the cost through `spendBudget`, and writes the log
  * line and the Dodging chip. A class action also spends one use of its
  * pool: Second Wind heals the fighter, and Action Surge gives the turn one
- * more action through the `surgeBudget` action of encounterWiring. Rage
+ * more action through the `surgeBudget` action of fightState. Rage
  * leaves a Raging chip whose mods give the Rage bonuses (see `combat/Rage.js`).
  */
 
@@ -90,7 +90,7 @@ export function takeTurnAction(app, id, action, { rng = Math.random } = {}) {
     if (found.kind !== 'character') return false;
     return useClassAction(app, found, action, rng);
   }
-  if (action.cost && app.actions.spendBudget && !app.actions.spendBudget(id, action.cost)) {
+  if (action.cost && !app.actions.spendBudget(id, action.cost)) {
     app.toasts.show(`${name} has no ${COST_LABELS[action.cost].toLowerCase()} left this turn.`);
     return false;
   }
@@ -107,7 +107,7 @@ export function takeTurnAction(app, id, action, { rng = Math.random } = {}) {
  * Mark one cost of a combatant's turn spent, or free it again. This is the
  * GM's manual override for a turn spent on something the app does not
  * model, or a spend made by mistake. The write goes through the
- * `toggleBudget` action of encounterWiring, the only writer of
+ * `toggleBudget` action of fightState, the only writer of
  * `state.combat`. A combatant not in the running fight changes nothing.
  * @param {AppContext} app
  * @param {string} id
@@ -118,7 +118,7 @@ export function toggleBudget(app, id, cost) {
   // the spare, and the Action pip stays free, so the log names the spare.
   const before = app.state.combat?.order.find((p) => p.id === id);
   const spare = cost === 'action' && budgetOf(before?.used).spare;
-  const spent = app.actions.toggleBudget?.(id, cost) ?? null;
+  const spent = app.actions.toggleBudget(id, cost);
   if (spent === null) return;
   // The log keeps a record of the override, because nothing else does.
   const name = findCombatant(app, id)?.label ?? 'Unknown combatant';
@@ -145,15 +145,11 @@ function useClassAction(app, found, action, rng) {
   if (action.id === 'turn-undead') return turnUndead(app, found, { rng });
   if (action.id === 'preserve-life') return preserveLife(app, found);
   if (poolId === ACTION_SURGE_ID) {
-    if (app.actions.surgeBudget && !app.actions.surgeBudget(entity.id)) {
+    if (!app.actions.surgeBudget(entity.id)) {
       app.toasts.show(`${found.label} already used Action Surge this turn.`);
       return false;
     }
-  } else if (
-    action.cost &&
-    app.actions.spendBudget &&
-    !app.actions.spendBudget(entity.id, action.cost)
-  ) {
+  } else if (action.cost && !app.actions.spendBudget(entity.id, action.cost)) {
     app.toasts.show(
       `${found.label} has no ${COST_LABELS[action.cost].toLowerCase()} left this turn.`,
     );

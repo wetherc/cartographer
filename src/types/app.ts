@@ -115,23 +115,23 @@ export interface AppActions {
   // took, tick timed effects for any watch the walk finished, and redraw
   // the clock readout.
   passTravelTime(minutes: number): void;
-  // encounterWiring: defaults to the party's position and "The party". A
+  // encounterPanels: defaults to the party's position and "The party". A
   // player who moves their own token passes that character's tile and name.
   maybeTriggerEncounter(position?: PartyPosition, subject?: string): Promise<void>;
-  // encounterWiring: the Build-mode right-click menu for a tile of the node
+  // encounterPanels: the Build-mode right-click menu for a tile of the node
   // in view. It creates a creature there, or edits one already staged
   // there, and floats at the pointer's screen position.
   openEncounterContextMenu(x: number, y: number, clientX: number, clientY: number): void;
-  // encounterWiring: remove a deleted entity from the running initiative
+  // fightState: remove a deleted entity from the running initiative
   // order. Every delete path calls this function instead of writing
-  // `state.combat` directly, because encounterWiring holds the live copy of
-  // the combat.
+  // `state.combat` directly, because fightState is the only writer of
+  // `state.combat`.
   removeCombatant(id: string): void;
-  // encounterWiring: put a new combatant into the running order, which is how
+  // fightState: put a new combatant into the running order, which is how
   // a creature that a spell summons mid-fight joins it. It does nothing when
   // no fight is running.
   addCombatant(participant: Participant): void;
-  // encounterWiring: advance the running fight's turn, with the round-wrap
+  // fightState: advance the running fight's turn, with the round-wrap
   // ticks, or end the fight. The combat screen and the sidebar panel share
   // these actions.
   advanceCombatTurn(): void;
@@ -143,7 +143,7 @@ export interface AppActions {
   retreatCombatTurn(): void;
   setCombatInitiative(id: string, initiative: number): void;
   delayCombatTurn(): void;
-  // encounterWiring: spend part of one combatant's turn, which is how an
+  // fightState: spend part of one combatant's turn, which is how an
   // attack or a cast pays for itself. 'attack' is the weapon swing, which
   // spends the Attack action and banks the extra swings of Extra Attack.
   // 'sneak' is the once-per-turn Sneak Attack flag, which costs no part of the
@@ -156,15 +156,15 @@ export interface AppActions {
     cost: ActionCost | TurnFlag | 'attack' | 'legendary',
     options?: { attacksPerAction?: number; extraAction?: boolean; legendaryActions?: number },
   ): boolean;
-  // encounterWiring: the GM's override on one cost of a turn. A free cost
+  // fightState: the GM's override on one cost of a turn. A free cost
   // becomes spent and a spent one becomes free. The return value is true
   // when the cost is spent afterward, and null when the id is not in a
   // running fight.
-  toggleBudget?(id: string, cost: ActionCost): boolean | null;
-  // encounterWiring: give one combatant one more action for Action Surge.
+  toggleBudget(id: string, cost: ActionCost): boolean | null;
+  // fightState: give one combatant one more action for Action Surge.
   // False when the turn already surged.
-  surgeBudget?(id: string): boolean;
-  // encounterWiring: drop the running fight when nothing is staged on the
+  surgeBudget(id: string): boolean;
+  // fightState: drop the running fight when nothing is staged on the
   // party's tile any more, because the party walked off or the last
   // creature there was deleted. Only the paths that change those two facts
   // call this function, never a plain panel refresh, so a refresh can never

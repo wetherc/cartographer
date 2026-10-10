@@ -20,6 +20,7 @@ import { wireGenerateAction } from './app/generateAction.js';
 import { wireParty } from './app/partyWiring.js';
 import { takeReloadView } from './view/ReloadView.js';
 import { wireEncounters } from './app/encounterWiring.js';
+import { wireFightState } from './app/fightState.js';
 import { wireCombatScreen } from './app/combatWiring.js';
 import { wireStory } from './app/storyWiring.js';
 import { wireLibrary } from './app/libraryWiring.js';
@@ -101,11 +102,12 @@ function start() {
   // The library loads before anything that offers its presets (the item form,
   // the enemy gear pickers), so the merged lists are live from the first open.
   wireLibrary(app); // Library mode: equipment/bestiary/NPC templates + custom-library file
-  // The combat screen mounts before the encounters module, because that
+  // The combat screen mounts before the fight state, because that
   // module's refresh paths reach `views.combatScreen` while it is still
   // mounting.
   wireCombatScreen(app); // combat mode's full-width board
-  wireEncounters(app); // encounter + initiative panels, bestiary
+  const fight = wireFightState(app); // the running fight + the Initiative card
+  wireEncounters(app, fight); // encounter panels + the combat setup dialog
   wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
   // An Undo or Redo reloads the page and keeps the selected character and the
   // open tabs for this start.
@@ -140,7 +142,7 @@ function start() {
   // the campaign was edited elsewhere. The reconcile runs once here, after
   // every module is wired, because it logs the end of the fight through
   // `logEvent` (from `wireStory`) and leaves combat mode through `setMode`
-  // (from `wireSessionControls`). A call inside `wireEncounters` throws on
+  // (from `wireSessionControls`). A call inside `wireFightState` throws on
   // the missing `logEvent` and stops the rest of the mount.
   app.actions.syncCombatLocation();
 

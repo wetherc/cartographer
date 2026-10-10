@@ -31,7 +31,7 @@ function fight() {
       },
     }),
   });
-  // The same budget write that encounterWiring registers.
+  // The same budget write that fightState registers.
   app.actions.spendBudget = (/** @type {string} */ id, /** @type {any} */ cost) => {
     const combat = app.state.combat;
     const i = combat.order.findIndex((/** @type {any} */ p) => p.id === id);
@@ -130,7 +130,7 @@ test('a budget chip outside a fight or for a stranger changes nothing', () => {
 
 /**
  * A fight whose fighter holds HP and both fighter pools, with the surge write
- * of encounterWiring.
+ * of fightState.
  * @param {number} [uses] uses left in each pool
  */
 function fighterFight(uses = 1) {

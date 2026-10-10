@@ -150,7 +150,7 @@ function mayRollNow(app, character) {
     );
     return false;
   }
-  if (app.actions.spendBudget && !app.actions.spendBudget(character.id, 'deathSave')) {
+  if (!app.actions.spendBudget(character.id, 'deathSave')) {
     app.toasts.show(`${logName(app, character)} already rolled a death save this turn.`);
     return false;
   }

@@ -231,6 +231,7 @@ const COMBAT_LOGGERS = [
   'app/combatantWrites.js',
   'app/deathSaveRolls.js',
   'app/encounterWiring.js',
+  'app/fightState.js',
   'app/exhaustionWrites.js',
   'app/healCurePrompt.js',
   'app/lethargyWrites.js',

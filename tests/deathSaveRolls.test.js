@@ -196,14 +196,6 @@ test('in a fight, a second death save on one turn is refused', () => {
   assert.equal(app.toastMessages.at(-1), 'Hero already rolled a death save this turn.');
 });
 
-test('a death save rolls on the character turn when no budget tracker is wired', () => {
-  const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
-  app.state.combat = /** @type {any} */ ({ order: [{ id: 'hero' }], index: 0 });
-  delete app.actions.spendBudget;
-  rollDeathSaveFor(app, 'hero');
-  assert.equal(app.rolls.length, 1);
-});
-
 test('a character outside the fight order rolls at any time', () => {
   const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
   app.state.combat = /** @type {any} */ ({ order: [{ id: 'goblin' }], index: 0 });

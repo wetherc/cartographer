@@ -27,10 +27,18 @@ import { createClock } from '../../src/time/GameClock.js';
  */
 
 /** The actions whose default returns null rather than undefined. */
-const NULL_GETTERS = ['getBoundCharacterId', 'getSelectedCharacterId', 'getSelectedTileId'];
+const NULL_GETTERS = [
+  'getBoundCharacterId',
+  'getSelectedCharacterId',
+  'getSelectedTileId',
+  'toggleBudget',
+];
 
-/** Every action a wiring module can reach for, in AppActions order. */
-const ACTION_NAMES = [
+/** The budget actions, whose default with no fight running is a spend that goes through. */
+const TRUE_GETTERS = ['spendBudget', 'surgeBudget'];
+
+/** Every action a wiring module can call, in AppActions order. */
+export const ACTION_NAMES = [
   'markDirty',
   'logEvent',
   'addHandoutAt',
@@ -47,6 +55,9 @@ const ACTION_NAMES = [
   'retreatCombatTurn',
   'setCombatInitiative',
   'delayCombatTurn',
+  'spendBudget',
+  'toggleBudget',
+  'surgeBudget',
   'syncCombatLocation',
   'syncPartyMarker',
   'syncExits',
@@ -60,6 +71,7 @@ const ACTION_NAMES = [
   'centerOnLocation',
   'undoStroke',
   'redoStroke',
+  'generateWorld',
   'onModeChanged',
   'onRoleChanged',
   'setMode',
@@ -143,6 +155,7 @@ export function stubApp(overrides = {}) {
   for (const name of ACTION_NAMES) {
     app.actions[name] = () => {
       app.calls.push(name);
+      if (TRUE_GETTERS.includes(name)) return true;
       return NULL_GETTERS.includes(name) ? null : undefined;
     };
   }

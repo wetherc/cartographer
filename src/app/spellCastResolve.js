@@ -177,7 +177,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   }
   // The cast marks the turn for the bonus action spell rule, also when the GM
   // ticked an opt-out, because the spell was still cast.
-  if (plan.spellFlag) app.actions.spendBudget?.(entity.id, plan.spellFlag);
+  if (plan.spellFlag) app.actions.spendBudget(entity.id, plan.spellFlag);
   // The rest of the cast rolls against the final targets, after any Redirect
   // Attack below has swapped one of them for an ally.
   const rest = () => {

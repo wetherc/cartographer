@@ -63,7 +63,7 @@ export async function drinkPotion(app, drinker, item, store, { prompt = promptMo
   }
   const combat = app.state.combat;
   const onTurn = combat?.order[combat.index]?.id === drinker.id;
-  if (onTurn && app.actions.spendBudget && !app.actions.spendBudget(drinker.id, 'action')) {
+  if (onTurn && !app.actions.spendBudget(drinker.id, 'action')) {
     app.toasts.show(`${logName(app, drinker)} has no action left this turn.`);
     return false;
   }

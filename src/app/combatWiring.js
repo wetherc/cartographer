@@ -39,11 +39,11 @@ export function focusMapCanvas() {
 
 /**
  * This is the combat screen: the full-width board shown in combat mode. It
- * owns no combat state. encounterWiring holds the running fight and writes
+ * owns no combat state. fightState.js holds the running fight and writes
  * `state.combat`. This module projects that state through `buildCombatView`,
- * routes the screen's turn controls to the actions encounterWiring
+ * routes the screen's turn controls to the actions fightState.js
  * registers, and keeps only the transient choice of which combatant the
- * screen inspects. This module mounts before wireEncounters, so
+ * screen inspects. This module mounts before wireFightState, so
  * `app.views.combatScreen` exists by the time the fight's refresh paths run.
  * @param {AppContext} app
  */

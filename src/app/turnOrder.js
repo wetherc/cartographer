@@ -13,7 +13,7 @@ import { startTurnEffects } from './turnEffectsWiring.js';
 
 /**
  * Register the GM's corrections to a running order: Previous turn, a new
- * initiative value for one combatant, and Delay. encounterWiring calls this
+ * initiative value for one combatant, and Delay. fightState.js calls this
  * and passes its `setCombat`, so it stays the only writer of `state.combat`.
  *
  * Previous turn moves only the pointer. The turn effects that ran on the way

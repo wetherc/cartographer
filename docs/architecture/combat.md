@@ -21,7 +21,7 @@ combat screen, because the player takes the turn of their own character
 there. A player tab hides the header's mode switch, so a player gets to the
 map through the ribbon's Back to map control.
 
-The [wiring layer](app-wiring.md#encounterwiringjs-plus-encounterpanelsjs-creatureformjs-weaponattackjs-attackfieldsjs-the-four-cast-modules-combatantsjs-combatantwritesjs)
+The [wiring layer](app-wiring.md#fightstatejs-and-encounterwiringjs-plus-encounterpanelsjs-creatureformjs-weaponattackjs-attackfieldsjs-the-four-cast-modules-combatantsjs-combatantwritesjs)
 and [Entities](entities.md) document the 5e resolution of an attack, a cast,
 and a damage application.
 
@@ -98,8 +98,9 @@ src/ui/InitiativePanel.js .... the sidebar card: one status line plus the
                                Open combat button
 src/app/combatWiring.js ...... mounts the screen, keeps its transient UI
                                state, and sends everything else to actions
-src/app/encounterWiring.js ... the only writer of state.combat, with the turn
+src/app/fightState.js ........ the only writer of state.combat, with the turn
                                flow as registered actions
+src/app/encounterWiring.js ... the combat setup dialog that starts a fight
 src/app/turnAdvance.js ....... the turn advance, with the turn boundaries
                                that it passes on the way
 src/app/turnOrder.js ......... the GM's corrections to the order: Previous
@@ -119,9 +120,19 @@ styles/combat-shell.css ...... the fixed frame on a wide window, the Gear
 
 ## The module that writes the fight
 
-`encounterWiring.js` owns the running fight. The fight lives only in
+`fightState.js` owns the running fight. The fight lives only in
 `state.combat`. Every read goes through a `current()` accessor and every
 write goes through `setCombat`, and both accessors are local to that module.
+The module registers the eight actions that change a running fight:
+`advanceCombatTurn`, `endCombat`, `spendBudget`, `toggleBudget`,
+`surgeBudget`, `addCombatant`, `removeCombatant`, and `syncCombatLocation`.
+It also mounts the sidebar's Initiative card and the bar above the Play map.
+
+`encounterWiring.js` starts a fight. It owns the combat setup dialog, which
+the Start combat button and the encounter alert open, and it mounts the
+encounter panels of `encounterPanels.js`. `wireFightState` returns its
+`setCombat` and `tickRound` as hooks, and the setup writes the new fight
+through them, so `state.combat` has one writer.
 
 A cross-tab rehydrate writes `state.combat` and nothing else. A follower tab
 whose fight ended in another tab therefore reads the ended fight from the
@@ -308,7 +319,7 @@ feet, so `Movement.walkSpeed` is for display only.
 
 `app.actions.spendBudget(id, cost, options)` is the write path for every
 spend, and `app.actions.toggleBudget(id, cost)` is the write path for the
-GM's pip override. `encounterWiring.js` registers both, so `state.combat`
+GM's pip override. `fightState.js` registers both, so `state.combat`
 keeps one writer. The cost of a spend is one of these values:
 
 - `'action'`, `'bonus'`, or `'reaction'`, for that part of the turn
@@ -371,7 +382,7 @@ offers the GM the waiver.
 
 Each pip is a toggle button with `aria-pressed`. A press calls
 `toggleBudget` in `src/app/turnActionsWiring.js`, which goes through the
-`toggleBudget` action of encounterWiring. That action spends the cost with
+`toggleBudget` action of fightState. That action spends the cost with
 `spend` or gives it back with `unspend` from `ActionBudget.js`. Giving back
 the action also drops the swings it banked, so the next Attack action banks
 them again. The press writes a log line, because no other record of the
@@ -383,9 +394,10 @@ the bonus action are spent too. `startCombat` gives that budget to every
 surprised participant, and `refreshTurn` gives it again when the pointer
 lands on one. `advanceTurn` runs `endSurprise` on the participant whose
 turn ends and on each participant it steps past, which drops the flag and
-frees the reaction. encounterWiring also puts a Surprised chip on each
-surprised combatant that ends at the end of its first turn, so the card
-shows the state. The setup dialog sets the flag from its Surprised boxes.
+frees the reaction. The combat setup in encounterWiring also puts a
+Surprised chip on each surprised combatant that ends at the end of its
+first turn, so the card shows the state. The setup dialog sets the flag
+from its Surprised boxes.
 
 ### Turn actions
 
@@ -413,7 +425,7 @@ Rage spends the bonus action and puts a Raging chip on the barbarian with
 `resist` for the weapon damage types, `saveAdvantage` and `checkAdvantage` for
 STR, and `meleeDamage` for the damage bonus, which `WeaponSwing.hitDamage`
 adds to a melee hit that uses STR.
-Action Surge calls the `surgeBudget` action of encounterWiring, which runs
+Action Surge calls the `surgeBudget` action of fightState, which runs
 `ActionBudget.surge`. The `surged` flag blocks a second surge on the same
 turn. With the action spent, the action becomes free, and the swings that
 Extra Attack banked stay banked. With the action free, the surge sets the
@@ -1176,7 +1188,7 @@ would read every row again, or read nothing.
 
 Each of these paths calls the registered `update`:
 
-- **The initiative-panel wrapper.** `encounterWiring.js` wraps
+- **The initiative-panel wrapper.** `fightState.js` wraps
   `views.initiativePanel.update()` and refreshes the combat screen inside it.
   Every call site that the sidebar card already has (party moves, role
   switches, the rehydrate loop, `commitCreatures`) reaches the screen with no
