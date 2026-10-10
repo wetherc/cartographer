@@ -1,13 +1,5 @@
 import { unlockedFeatures } from './LevelUp.js';
-import {
-  requestedGrants,
-  compactGrants,
-  grantDiff,
-  mergeGrants,
-  rebuildGrants,
-} from './GrantLedger.js';
-import { getProficiencies } from './Proficiencies.js';
-import { normalizeRider } from './Riders.js';
+import { claimGrants, grantedFromPicks, nextOrder, rebuildGrants } from './GrantLedger.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').FeatureChoice} FeatureChoice */
@@ -80,7 +72,6 @@ export function pendingFeatureGrants(character) {
  * @returns {FeatureStamp}
  */
 export function buildFeatureStamp(feature, picks) {
-  const proficiency = feature.effects.filter((e) => e.kind === 'proficiency');
   const rider = feature.effects.find((e) => e.kind === 'rider')?.rider;
   const styles = feature.effects.flatMap((e) => (e.kind === 'fightingStyle' ? e.from : []));
   const style = picks.style && styles.includes(picks.style) ? picks.style : undefined;
@@ -88,22 +79,10 @@ export function buildFeatureStamp(feature, picks) {
     classId: feature.classId,
     classLevel: feature.classLevel,
     name: feature.name,
-    granted: {
-      skills: picks.skills ?? [],
-      saves: picks.saves ?? [],
-      expertise: picks.expertise ?? [],
-      armor: proficiency.flatMap((e) => e.armor ?? []),
-      tools: proficiency.flatMap((e) => e.tools ?? []),
-      languages: proficiency.flatMap((e) => e.languages ?? []),
-    },
+    granted: grantedFromPicks(picks, feature.effects),
     ...(rider ? { rider } : {}),
     ...(style ? { style } : {}),
   };
-}
-
-/** @param {FeatureChoices} choices @returns {number} one past the highest order used */
-function nextOrder(choices) {
-  return Object.values(choices).reduce((max, choice) => Math.max(max, choice.order + 1), 0);
 }
 
 /**
@@ -123,12 +102,7 @@ export function applyFeatureGrant(character, stamp) {
   const pending = pendingFeatureGrants(character);
   if (!pending.some((feature) => featureKey(feature) === key)) return character;
 
-  const before = getProficiencies(character);
-  const wanted = requestedGrants(stamp.granted);
-  const merged = mergeGrants(before, [wanted]);
-  const requested = compactGrants(wanted);
-  const granted = grantDiff(merged, before);
-  const rider = normalizeRider(stamp.rider);
+  const { proficiencies: merged, requested, granted, rider } = claimGrants(character, stamp);
 
   const choices = getFeatureChoices(character);
   /** @type {FeatureChoice} */

@@ -1,5 +1,6 @@
 import { ABILITY_SCORES } from './Modifiers.js';
 import { getProficiencies, normalizeProficiencies, ARMOR_PROFICIENCIES } from './Proficiencies.js';
+import { normalizeRider } from './Riders.js';
 import { SKILL_IDS } from '../data/skills.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -113,6 +114,57 @@ export function mergeGrants(before, wanted) {
     tools: joined('tools'),
     languages: joined('languages'),
   });
+}
+
+/**
+ * One past the highest `order` among the recorded choices, so a new choice
+ * sorts after every earlier one. An empty record gives 0.
+ * @param {Record<string, { order: number }>} choices
+ * @returns {number}
+ */
+export function nextOrder(choices) {
+  return Object.values(choices).reduce((max, choice) => Math.max(max, choice.order + 1), 0);
+}
+
+/**
+ * Merge a stamp's grants into the character's proficiencies. The result
+ * has the merged lists, the compact request (`requested`), what the merge
+ * added (`granted`), and the stamp's rider in its normal form. An expertise
+ * grant lands only on a skill the character is proficient in after the skill
+ * grants merge. This function is pure.
+ * @param {Character} character
+ * @param {{ granted?: FeatGrants, rider?: unknown }} stamp
+ */
+export function claimGrants(character, stamp) {
+  const before = getProficiencies(character);
+  const wanted = requestedGrants(stamp.granted);
+  const proficiencies = mergeGrants(before, [wanted]);
+  return {
+    proficiencies,
+    requested: compactGrants(wanted),
+    granted: grantDiff(proficiencies, before),
+    rider: normalizeRider(stamp.rider),
+  };
+}
+
+/**
+ * The grant record of a feat or class feature stamp. The skill, save, and
+ * expertise lists come from the dialog's picks, and the armor, tool, and
+ * language lists come from the fixed proficiency effects.
+ * @param {{ skills?: string[], saves?: string[], expertise?: string[] }} picks
+ * @param {readonly import('../types/class.js').ClassFeatureEffect[]} effects
+ * @returns {Required<FeatGrants>}
+ */
+export function grantedFromPicks(picks, effects) {
+  const proficiency = effects.flatMap((e) => (e.kind === 'proficiency' ? [e] : []));
+  return {
+    skills: picks.skills ?? [],
+    saves: picks.saves ?? [],
+    expertise: picks.expertise ?? [],
+    armor: proficiency.flatMap((e) => e.armor ?? []),
+    tools: proficiency.flatMap((e) => e.tools ?? []),
+    languages: proficiency.flatMap((e) => e.languages ?? []),
+  };
 }
 
 /**

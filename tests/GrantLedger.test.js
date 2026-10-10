@@ -2,9 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GRANT_KEYS,
+  claimGrants,
   compactGrants,
+  grantedFromPicks,
   grantRecords,
   mergeGrants,
+  nextOrder,
   rebuildGrants,
   requestedGrants,
 } from '../src/entities/GrantLedger.js';
@@ -201,4 +204,38 @@ test('undoing a feature that added nothing only drops its record', () => {
   const undone = undoFeatureGrant(claimed, 'rogue 1 Expertise');
   assert.deepEqual(undone.featureChoices, {});
   assert.equal(undone.proficiencies, claimed.proficiencies, 'the lists are not rebuilt');
+});
+
+test('nextOrder is one past the highest order, and 0 for no choices', () => {
+  assert.equal(nextOrder({}), 0);
+  assert.equal(nextOrder({ a: { order: 2 }, b: { order: 0 } }), 3);
+});
+
+test('claimGrants merges the request and records what it added', () => {
+  const base = withProficiencies(fighter(), { skills: ['stealth'] });
+  const claim = claimGrants(base, {
+    granted: { skills: ['stealth', 'arcana'], tools: ['lute'] },
+    rider: { rolls: ['save'], flat: 1 },
+  });
+  assert.deepEqual([...claim.proficiencies.skills].sort(), ['arcana', 'stealth']);
+  assert.deepEqual(claim.requested?.skills, ['stealth', 'arcana']);
+  assert.deepEqual(claim.granted?.skills, ['arcana']);
+  assert.ok(claim.rider);
+  assert.equal(claimGrants(base, {}).rider, null);
+});
+
+test('grantedFromPicks takes picks for choices and effects for fixed lists', () => {
+  const effects = /** @type {const} */ ([
+    { kind: 'proficiency', armor: ['light'], tools: ['lute'], languages: ['Elvish'] },
+    { kind: 'proficiency' },
+    { kind: 'fightingStyle', from: ['archery'] },
+  ]);
+  assert.deepEqual(grantedFromPicks({ skills: ['arcana'] }, effects), {
+    skills: ['arcana'],
+    saves: [],
+    expertise: [],
+    armor: ['light'],
+    tools: ['lute'],
+    languages: ['Elvish'],
+  });
 });

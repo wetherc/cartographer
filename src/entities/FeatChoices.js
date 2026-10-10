@@ -1,5 +1,6 @@
 import { ABILITY_SCORES } from './Modifiers.js';
 import { ABILITY_MAX, listASIChoices } from './LevelUp.js';
+import { grantedFromPicks } from './GrantLedger.js';
 import { featureRiders } from './FeatureGrants.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -126,7 +127,6 @@ export function buildStamp(feat, picks) {
   /** @type {Record<string, number>} */
   const increases = {};
   for (const key of picks.abilities ?? []) increases[key] = (increases[key] ?? 0) + 1;
-  const proficiency = feat.effects.filter((e) => e.kind === 'proficiency');
   const rider = feat.effects.find((e) => e.kind === 'rider')?.rider;
   const hpPerLevel = feat.effects.reduce((sum, e) => sum + (e.kind === 'hp' ? e.perLevel : 0), 0);
   const initiativeBonus = feat.effects.reduce(
@@ -138,14 +138,7 @@ export function buildStamp(feat, picks) {
     name: feat.name,
     featId: feat.id,
     ...(Object.keys(increases).length > 0 ? { increases } : {}),
-    granted: {
-      skills: picks.skills ?? [],
-      saves: picks.saves ?? [],
-      expertise: picks.expertise ?? [],
-      armor: proficiency.flatMap((e) => e.armor ?? []),
-      tools: proficiency.flatMap((e) => e.tools ?? []),
-      languages: proficiency.flatMap((e) => e.languages ?? []),
-    },
+    granted: grantedFromPicks(picks, feat.effects),
     ...(rider ? { rider } : {}),
     ...(hpPerLevel > 0 ? { hpPerLevel } : {}),
     ...(initiativeBonus > 0 ? { initiativeBonus } : {}),

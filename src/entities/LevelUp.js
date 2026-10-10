@@ -2,15 +2,7 @@ import { getClass, featureEntry } from './Classes.js';
 import { getClasses } from './Multiclass.js';
 import { subclassDef } from './ClassCasting.js';
 import { ABILITY_SCORES } from './Modifiers.js';
-import { getProficiencies } from './Proficiencies.js';
-import {
-  requestedGrants,
-  compactGrants,
-  grantDiff,
-  mergeGrants,
-  rebuildGrants,
-} from './GrantLedger.js';
-import { normalizeRider } from './Riders.js';
+import { claimGrants, nextOrder, rebuildGrants } from './GrantLedger.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -62,11 +54,6 @@ export function listASIChoices(character) {
  */
 export function slotKey(slot) {
   return `${slot.classId}\u0000${slot.classLevel}`;
-}
-
-/** @param {AsiChoices} choices @returns {number} one past the highest order used */
-function nextOrder(choices) {
-  return Object.values(choices).reduce((max, choice) => Math.max(max, choice.order + 1), 0);
 }
 
 /**
@@ -232,12 +219,7 @@ export function takeFeat(character, feat) {
     }
   }
 
-  const before = getProficiencies(character);
-  const wanted = requestedGrants(stamp.granted);
-  const merged = mergeGrants(before, [wanted]);
-  const requested = compactGrants(wanted);
-  const granted = grantDiff(merged, before);
-  const rider = normalizeRider(stamp.rider);
+  const { proficiencies: merged, requested, granted, rider } = claimGrants(character, stamp);
   const hpPerLevel = Math.max(0, Math.floor(Number(stamp.hpPerLevel)) || 0);
   const initiativeBonus = Math.max(0, Math.floor(Number(stamp.initiativeBonus)) || 0);
 
