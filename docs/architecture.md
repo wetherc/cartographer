@@ -61,9 +61,9 @@ tested change.
 UI widgets and wiring modules call *down* into the pure modules. The pure
 modules do not import from `ui/` or `app/`, so `node --test` covers most of
 the codebase with no browser. A `no-restricted-imports` rule in
-`eslint.config.js` fails the lint on such an import, except in
-`view/CharacterClaim.js` (see below). A few files in the pure directories use a
-browser API directly, and the browser checks cover them:
+`eslint.config.js` fails the lint on such an import. A few files in the
+pure directories use a browser API directly, and the browser checks cover
+them:
 
 - `map/TileRaster.js` and `map/MapExport.js` draw to an offscreen canvas.
 - `map/CanvasFactory.js` creates the offscreen canvas of the map caches.
@@ -72,8 +72,8 @@ browser API directly, and the browser checks cover them:
 - `storage/fileIO.js` starts a file download.
 - `storage/SaveManager.js`, `storage/PlayerPatch.js`, and
   `storage/GMLock.js` listen for the `storage` event of other tabs.
-- `view/CharacterClaim.js` builds the character picker of a Player tab
-  with the helpers in `ui/`.
+- `view/CharacterClaim.js` stores the claim of a Player tab in
+  `sessionStorage` and reads `location`.
 
 The [Conventions](architecture/conventions.md) guide describes the pattern
 in detail.

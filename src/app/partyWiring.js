@@ -35,6 +35,7 @@ import { passTime, passTravelTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
+import { mountCharacterClaimPicker } from '../ui/CharacterClaimPicker.js';
 import { potionHeals } from '../entities/Potions.js';
 import { drinkPotion } from './potionsWiring.js';
 import { startingCharacterId } from '../view/ReloadView.js';
@@ -74,7 +75,7 @@ export function wireParty(app, reloadView = null) {
   // are mounted. The picker runs only on a GM's pick. The claim mounts only
   // here.
   const claim = createCharacterClaim({
-    container: mustGetElement('party-container'),
+    mountPicker: (onPick) => mountCharacterClaimPicker(mustGetElement('party-container'), onPick),
     getCharacters: () => state.characters,
     bind: (id) => selectCharacter(id),
     spectate: () => scope.reselect(),

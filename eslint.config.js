@@ -52,14 +52,11 @@ export default [
   { files: ['scripts/**/*.cjs'], languageOptions: { sourceType: 'commonjs' } },
   // The pure directories do not import the DOM widgets in ui/ or the wiring
   // modules in app/. A pure module that did would need a browser to load, and
-  // its unit tests under `node --test` would fail. view/CharacterClaim.js
-  // builds the character picker of a Player tab with the ui/ helpers, so it
-  // is the one exception.
+  // its unit tests under `node --test` would fail.
   {
     files: [
       'src/{map,entities,combat,data,campaign,party,quest,handout,time,log,dice,library,view,storage,util}/**/*.js',
     ],
-    ignores: ['src/view/CharacterClaim.js'],
     rules: {
       'no-restricted-imports': [
         'error',

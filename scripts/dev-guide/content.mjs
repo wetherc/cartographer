@@ -61,8 +61,8 @@ export const DIRECTORY_META = {
     role: 'Travelogue entries and the incremental read the panel renders from.',
   },
   view: {
-    kind: 'mixed',
-    role: 'View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock. CharacterClaim.js builds the Player-tab picker and is the glue half.',
+    kind: 'pure',
+    role: 'View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock.',
   },
   data: {
     kind: 'data',

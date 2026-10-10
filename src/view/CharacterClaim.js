@@ -20,14 +20,24 @@ import {
   initialBinding,
   pickerLocked,
 } from './CharacterBinding.js';
-import { el } from '../ui/dom.js';
-import { select, setOptions } from '../ui/formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
+ * The "Playing as" picker that `ui/CharacterClaimPicker.js` draws. This
+ * module passes it the options and the lock, so the claim rules run under
+ * `node --test` with a stub picker.
+ * @typedef {{
+ *   setLocked: (locked: boolean) => void,
+ *   paint: (options: { value: string, label: string }[], value: string) => void,
+ * }} ClaimPicker
+ */
+
+/**
  * Mount the picker, and resolve this tab's starting binding.
  *
+ * `mountPicker` builds the picker and returns it. It gets the handler for
+ * a player's pick, because that handler needs the claim built here.
  * The three callbacks keep this module out of the party panels. `bind` runs
  * when a pick takes effect, and must select that character. `spectate`
  * runs when the tab ends up with nothing (a cleared pick, a refused claim,
@@ -36,7 +46,7 @@ import { select, setOptions } from '../ui/formFields.js';
  * predict. These callbacks run later, not here, because the panels they
  * refresh mount after this function runs.
  * @param {{
- *   container: HTMLElement,
+ *   mountPicker: (onPick: (id: string | null) => void) => ClaimPicker,
  *   getCharacters: () => Character[],
  *   bind: (id: string) => void,
  *   spectate: () => void,
@@ -48,7 +58,7 @@ import { select, setOptions } from '../ui/formFields.js';
  *   updatePicker: () => void,
  * }}
  */
-export function createCharacterClaim({ container, getCharacters, bind, spectate, toast }) {
+export function createCharacterClaim({ mountPicker, getCharacters, bind, spectate, toast }) {
   /** This tab's bound character, Player view only: the one character this
    * tab can play. Bound through ?character=<id> or the picker below. */
   /** @type {string | null} */
@@ -101,18 +111,14 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     ),
   );
 
-  // The picker, Player view only (CSS hides it for the GM): binds this tab
-  // to one character, or to none for a spectator tab. The URL form
-  // (?character=<id>) survives reloads. The picker is per-tab session state.
-  const picker = select([], '', { ariaLabel: 'Character this tab plays as' });
-  container.appendChild(
-    el(
-      'label',
-      'party-binding u-row u-g2',
-      el('span', 'party-binding__label u-muted', 'Playing as'),
-      picker,
-    ),
-  );
+  // The picker, Player view only: binds this tab to one character, or to
+  // none for a spectator tab. The URL form (?character=<id>) stays across
+  // reloads. The picker is per-tab session state.
+  const picker = mountPicker((id) => {
+    const took = setBinding(id);
+    if (took) bind(took);
+    else spectate();
+  });
 
   // A tab opened from the GM's player-tab link (?character=<id>) plays
   // that character only, so the picker locks and a player cannot switch
@@ -121,19 +127,9 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   // takeover or a deletion becomes a spectator, and the picker unlocks so
   // the player can pick again without a reload.
   function lockPicker() {
-    picker.disabled = pickerLocked(location.search, boundId);
+    picker.setLocked(pickerLocked(location.search, boundId));
   }
   lockPicker();
-
-  picker.addEventListener('change', () => {
-    const took = setBinding(picker.value === '' ? null : picker.value);
-    if (took) bind(took);
-    else spectate();
-  });
-
-  /** The options the picker holds now, as one comparable string. */
-  /** @type {string | null} */
-  let painted = null;
 
   function updatePicker() {
     // A binding whose character left the roster resolves to spectator, with no message.
@@ -143,17 +139,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
       { value: '', label: 'Spectator (view only)' },
       ...getCharacters().map((character) => ({ value: character.id, label: character.name })),
     ];
-    // Every refresh of the party panels reaches this picker, and a cross-tab
-    // adoption fires one every few seconds. Replacing the options each time
-    // closes an open dropdown under the player's cursor.
-    // The displayed value is part of the check, not only the binding behind
-    // it. A pick that another tab already holds is refused, leaving the
-    // rejected name on screen with the binding unchanged, and that has to be
-    // put back.
-    const stamp = JSON.stringify([boundId ?? '', options]);
-    if (stamp === painted && picker.value === (boundId ?? '')) return;
-    painted = stamp;
-    setOptions(picker, options, boundId ?? '');
+    picker.paint(options, boundId ?? '');
   }
   updatePicker();
 

@@ -553,8 +553,8 @@ when it distributes the panel's own edit, because the panel already
 re-renders from its commit path. A new character panel needs one
 `register` call.
 
-`view/CharacterClaim.js` owns this tab's claim on one character and the
-"Playing as" picker. `splitParty.js` owns the GM's split switch and the
+`view/CharacterClaim.js` owns this tab's claim on one character, and
+`ui/CharacterClaimPicker.js` draws its "Playing as" picker. `splitParty.js` owns the GM's split switch and the
 regroup that it forces. `partyWiring.js` mounts both, and both call back
 into it: the claim to select a character or fall back to spectator, and the
 switch to redraw the roster, whose place buttons follow it.

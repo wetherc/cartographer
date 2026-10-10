@@ -86,7 +86,6 @@ rows pull the total down:
 | The small `src/app/` glue modules: `headerMenu`, `mapBuildTools`, `mapChrome`, `mapNarration`, `mapPick`, `mapTeleport`, `onboarding`, `onboardingNext`, `phoneViews`, `shortcuts`, `shortenedLoadPrompts`, and the dialog of `healCure` | They toggle elements, ask a question in a dialog, or move the view. `mapTeleport` reads its landing from `view/TeleportLanding.js`, and `healCure` builds its dialog with `view/CureDialog.js` |
 | The canvas modules: `MapCanvas`, `MapCanvasPointer`, `MapRenderer`, `MapMarkers`, `MapDecorations`, `RegionOverlay`, `CanvasText`, and `MapExport` | They draw to a 2D context or handle pointer events, and only a browser shows what they drew. Their layout math lives in tested modules such as `RegionOverlayLayout.js`, `RegionLabels.js`, `MapGeometry.js`, and `CoordLabels.js` |
 | `src/storage/fileIO.js` and `src/storage/IndexedDbAssets.js` | They keep the download, upload, and IndexedDB primitives, which need a browser |
-| `src/view/CharacterClaim.js` | It builds the character picker of a Player tab with the helpers in `ui/` |
 | `docs/gallery/runtime.js` | It runs the widget gallery page in a browser |
 
 A low score on one of these files is expected. A low score on any other
