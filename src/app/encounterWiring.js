@@ -26,7 +26,13 @@ import {
 import { elapse } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargyWrites.js';
 import { mapKeep } from '../util/mapKeep.js';
-import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
+import {
+  combatLabels,
+  commitCreatures,
+  describeCombatant,
+  findCombatant,
+  logName,
+} from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { wireTurnOrder } from './turnOrder.js';
@@ -339,8 +345,7 @@ export function wireEncounters(app) {
     state.characters = tickAll(state.characters);
     state.creatures = tickAll(state.creatures);
     app.actions.refreshSelectedCharacter();
-    app.views.encounterPanel.update();
-    app.views.npcPanel.update();
+    commitCreatures(app, { dirty: false });
     // The sweep runs only after both collections are reassigned. The
     // sweep writes to the same two collections. Run earlier, the tick's
     // own write restores its result.

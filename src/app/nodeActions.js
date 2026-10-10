@@ -23,6 +23,7 @@ import { keyItemNames, lockFields, readLockFields, unknownKeyWarning } from '../
 import { activeEquipment } from '../library/Library.js';
 import { linksIn } from '../quest/QuestLinks.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
+import { commitCreatures } from './combatants.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -119,12 +120,8 @@ export function createNodeActions(app, env) {
     state.characters = after.characters;
     state.creatures = after.creatures;
     state.handouts = after.handouts;
-    if (after.party !== before.party || after.creatures !== before.creatures) {
-      app.actions.syncCombatLocation();
-    }
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update();
-    app.views.npcPanel.update();
+    // The caller marks the campaign dirty once the node is gone.
+    commitCreatures(app, { dirty: false });
     app.views.handoutPanel.update();
   }
 
