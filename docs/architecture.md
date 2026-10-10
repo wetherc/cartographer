@@ -10,7 +10,11 @@ plain JavaScript and the DOM.
 
 esbuild bundles the sources for the dev server and for the production
 build, but the code does not depend on it. The same `index.html` runs the
-unbundled sources when a static server serves the repository root.
+unbundled sources when a static server serves the repository root. The
+unbundled app requests each of its several hundred modules at once, so use
+a server that queues them, such as `pnpm run dev` or `pnpx serve`.
+`python3 -m http.server` resets many of those connections and leaves a
+blank page.
 [CONTRIBUTING.md](../CONTRIBUTING.md) describes both builds.
 
 Each deeper subsystem has its own guide:

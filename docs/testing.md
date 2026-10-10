@@ -230,7 +230,7 @@ them. They read `src/` and `assets/` directly, so serve the project root:
 1. From the project root, start a static server:
 
    ```bash
-   python3 -m http.server 8934
+   pnpx serve -l 8934 .
    ```
 
 2. Open `http://localhost:8934/tests/tile-preview.html`.

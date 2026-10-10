@@ -8,7 +8,7 @@ This guide tells you how to set up the development tools, run the app and its ch
 
 - **Plain JavaScript.** The app is written in modern JavaScript as native ES modules, and it uses only standard browser APIs. It has no runtime dependencies and no framework.
 - **Types without a compile step.** Type declarations live in `.ts` files under `src/types/`, and the `.js` files use them through JSDoc comments, for example `@typedef {import('../types/map.js').Tile}`. TypeScript only checks the code. It emits nothing.
-- **A bundler for serving only.** esbuild bundles the sources for the dev server and for the production build. The runtime code does not depend on esbuild, and `index.html` loads `src/main.js` directly when a static server serves the repository root.
+- **A bundler for serving only.** esbuild bundles the sources for the dev server and for the production build. The runtime code does not depend on esbuild, and `index.html` loads `src/main.js` directly when a static server serves the repository root. Use `pnpx serve` for that. `python3 -m http.server` drops many of the hundreds of module requests that the unbundled app makes at once.
 - **Pure logic apart from DOM glue.** Rules, data models, and the save format live in modules that do not touch the DOM, so unit tests cover them in Node. [Architecture](docs/architecture.md) describes the split.
 
 ## Prerequisites

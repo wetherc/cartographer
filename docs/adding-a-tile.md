@@ -102,7 +102,7 @@ list, and a terrain type with more than 3 variants goes into `VARIANTS`.
 1. From the project root, serve the files:
 
    ```bash
-   python3 -m http.server 8934
+   pnpx serve -l 8934 .
    ```
 
 2. Open `http://localhost:8934/tests/tile-preview.html`.
