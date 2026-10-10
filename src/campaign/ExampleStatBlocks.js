@@ -25,8 +25,8 @@ export const SCORPION = block([15, 13, 15, 1, 9, 3], 15);
 export const WINTER_WOLF = block([18, 13, 14, 7, 12, 8], 13);
 // An earth spirit, near an SRD Dust Mephit in wits and a Gargoyle in build.
 export const KNOCKER = block([15, 11, 16, 6, 11, 7], 14);
-export const GREEN_HAG = block([18, 12, 16, 13, 14, 14], 15);
-export const WYVERN = block([19, 10, 16, 5, 12, 6], 16);
+export const GREEN_HAG = block([18, 12, 16, 13, 14, 14], 17);
+export const WYVERN = block([19, 10, 16, 5, 12, 6], 13);
 // The SRD Wraith scores, with a natural AC one above the Wraith.
 export const WRAITH = block([6, 16, 16, 12, 14, 15], 14);
 // Studded Leather at DEX 14 gives AC 14.

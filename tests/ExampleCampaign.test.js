@@ -305,6 +305,8 @@ test('example enemies reach their stat block AC, and beasts fight unarmored with
     'barrow-skeleton-1': 13,
     'gray-wolf-1': 13,
     'giant-scorpion': 15,
+    grelka: 17,
+    skalvyr: 13,
     snagtooth: 17,
     'grave-wight': 14,
     ostrand: 18,
