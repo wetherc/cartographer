@@ -4,13 +4,13 @@ import assert from 'node:assert/strict';
 import { storedAssetTable, useAssetBackend } from '../src/storage/AssetMirror.js';
 import { createMemoryBackend } from './helpers/memoryAssets.js';
 import { ASSETS_KEY } from '../src/storage/AssetStore.js';
+import { buildState } from '../src/storage/SaveManager.js';
 import {
   SAVE_MARK_KEY,
   STORAGE_KEY,
-  buildState,
   loadFromLocalStorage,
   trySaveToLocalStorage,
-} from '../src/storage/SaveManager.js';
+} from '../src/storage/SaveStorage.js';
 import {
   clearHistoryLog,
   replaceIsUndoable,

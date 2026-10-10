@@ -15,14 +15,14 @@
  * against a state that is no longer stored.
  */
 
+import { deserialize } from './SaveManager.js';
 import {
   STORAGE_KEY,
-  deserialize,
   clearSaveMark,
   readSaveMark,
   trySaveToLocalStorage,
   writeSaveMark,
-} from './SaveManager.js';
+} from './SaveStorage.js';
 import { storedAssetTable } from './AssetMirror.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */

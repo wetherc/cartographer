@@ -25,7 +25,7 @@ import { mulberry32 } from '../util/Rng.js';
  * and 98 to 147 of its places get no map. Its packed save is about 0.18
  * million characters, and localStorage stores two bytes per character, so
  * it adds about 0.36 MiB against the 3 MiB warning of
- * `SaveManager.QUOTA_WARN_BYTES`.
+ * `SaveStorage.QUOTA_WARN_BYTES`.
  * The undo log costs more on top of that. The generation's own undo record
  * is the smaller of the new nodes in the save's form and a snapshot of the
  * save before it. Over the example campaign, that is a snapshot of about

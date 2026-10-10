@@ -13,7 +13,7 @@
  * character.
  *
  * This module separates pure decision logic (claim, hold, expiry) from thin
- * localStorage wrappers, the same pattern as SaveManager. `createHeartbeatLock`,
+ * localStorage wrappers, the same pattern as SaveStorage. `createHeartbeatLock`,
  * at the bottom of the file, is the stateful driver that both callers use for
  * one tab.
  */

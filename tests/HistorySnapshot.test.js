@@ -9,7 +9,8 @@ import {
   undoRestoresSave,
 } from '../src/storage/HistoryLog.js';
 import { historyPosition, planAdoption } from '../src/storage/HistoryAdoption.js';
-import { buildState, loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveManager.js';
+import { buildState } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage, SAVE_MARK_KEY } from '../src/storage/SaveStorage.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';
 

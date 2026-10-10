@@ -9,7 +9,7 @@ import {
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
 import { ADOPTION_WALK, historyPosition, planAdoption } from '../src/storage/HistoryAdoption.js';
-import { STORAGE_KEY, SAVE_MARK_KEY, loadFromLocalStorage } from '../src/storage/SaveManager.js';
+import { STORAGE_KEY, SAVE_MARK_KEY, loadFromLocalStorage } from '../src/storage/SaveStorage.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage } from './helpers/env.js';
 

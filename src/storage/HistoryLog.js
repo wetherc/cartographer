@@ -49,7 +49,7 @@
  * log, and this module reports the failure. Without the report, undo drops
  * to a single step with no notice.
  *
- * The save mark (`SaveManager.SAVE_MARK_KEY`) is the last write of every
+ * The save mark (`SaveStorage.SAVE_MARK_KEY`) is the last write of every
  * save and every undo or redo step. Another tab adopts a save only on the
  * mark's `storage` event, because at the campaign key's event its view of
  * the index still names the previous step.
@@ -58,7 +58,8 @@
 import { applyOps, diffState, invertOps } from './StateDiff.js';
 import { compactOps, expandOps, historyForm, opsNameAssets } from './HistoryCodec.js';
 import { ASSET_PREFIX, restoreAssets } from './Assets.js';
-import { STORAGE_KEY, deserialize, packState, readSaveMark } from './SaveManager.js';
+import { deserialize, packState } from './SaveManager.js';
+import { STORAGE_KEY, readSaveMark } from './SaveStorage.js';
 import { lastPersisted, markSave, persistedSave, writeCampaign } from './PersistedCampaign.js';
 import { detachAssets } from './AssetStore.js';
 import { mirrorActive, storedAssetTable } from './AssetMirror.js';
@@ -201,7 +202,7 @@ export function applyHistoryOps(state, ops) {
  * adds an image whose IndexedDB put has not committed. The caller saves
  * again once the promise settles.
  * @param {CampaignState} state
- * @returns {ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
+ * @returns {ReturnType<typeof import('./SaveStorage.js').trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
  */
 export function saveCampaign(state) {
   const before = lastPersisted();
@@ -235,7 +236,7 @@ export function saveCampaign(state) {
   return { ...save, history: dropped ? { ...history, evictedAll: true } : history, mark };
 }
 
-/** @typedef {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState }} StepResult */
+/** @typedef {{ save: ReturnType<typeof import('./SaveStorage.js').trySaveToLocalStorage>, state: CampaignState }} StepResult */
 
 /**
  * Move the cursor by one record and persist the state it names. Undo and
@@ -353,7 +354,7 @@ function marked(result) {
 /**
  * Restore the state before the most recent recorded edit, and persist it.
  * This function returns null when there is nothing to undo.
- * @returns {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState } | null}
+ * @returns {{ save: ReturnType<typeof import('./SaveStorage.js').trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function undoCampaign() {
   return marked(step(-1));
@@ -362,7 +363,7 @@ export function undoCampaign() {
 /**
  * Reapply the edit that the last undo reversed, and persist the result. This
  * function returns null when the cursor is already at the head.
- * @returns {{ save: ReturnType<typeof import('./SaveManager.js').trySaveToLocalStorage>, state: CampaignState } | null}
+ * @returns {{ save: ReturnType<typeof import('./SaveStorage.js').trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function redoCampaign() {
   return marked(step(1));

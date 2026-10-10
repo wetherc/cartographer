@@ -287,7 +287,7 @@ pnpm bench -- --only=rehydrate-focus
 ## Check a browser-only wrapper
 
 Some modules wrap browser APIs that Node does not have. In
-`src/storage/SaveManager.js`, these are `trySaveToLocalStorage` and
+`src/storage/SaveStorage.js`, these are `trySaveToLocalStorage` and
 `loadFromLocalStorage`, and in `src/storage/CampaignFile.js`, these are
 `downloadCampaignFile` and `readCampaignFromFile`. The unit tests run the two `localStorage` wrappers over the in-memory stub in
 `tests/helpers/env.js`, and the other two have no unit tests. Check all

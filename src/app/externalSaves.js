@@ -1,7 +1,7 @@
 import { campaignFromLiveState, loadInitialCampaign } from '../campaign/Campaigns.js';
 import { rehydrateCampaign } from './rehydrate.js';
 import { confirmModal } from '../ui/Modal.js';
-import { STORAGE_KEY, onExternalSave, readSaveMark } from '../storage/SaveManager.js';
+import { STORAGE_KEY, onExternalSave, readSaveMark } from '../storage/SaveStorage.js';
 import { applyHistoryOps } from '../storage/HistoryLog.js';
 import { adoptPersisted, persistedSave } from '../storage/PersistedCampaign.js';
 import { historyPosition, planAdoption } from '../storage/HistoryAdoption.js';

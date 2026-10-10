@@ -21,12 +21,14 @@ import {
   serialize,
   deserialize,
   toTileGrid,
+} from '../src/storage/SaveManager.js';
+import {
   trySaveToLocalStorage,
   loadFromLocalStorage,
   onExternalSave,
   SAVE_MARK_KEY,
   QUOTA_WARN_BYTES,
-} from '../src/storage/SaveManager.js';
+} from '../src/storage/SaveStorage.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { freshBudget } from '../src/combat/ActionBudget.js';
 import { installLocalStorage, installWindow } from './helpers/env.js';
@@ -799,20 +801,20 @@ test('toTileGrid preserves node kind/environ and backfills older nodes as region
 });
 
 test('saveByteSize costs two bytes per UTF-16 code unit', async () => {
-  const { saveByteSize } = await import('../src/storage/SaveManager.js');
+  const { saveByteSize } = await import('../src/storage/SaveStorage.js');
   assert.equal(saveByteSize('abcd'), 8);
   assert.equal(saveByteSize(''), 0);
 });
 
 test('isNearQuota flags sizes at or past the warning threshold', async () => {
-  const { isNearQuota } = await import('../src/storage/SaveManager.js');
+  const { isNearQuota } = await import('../src/storage/SaveStorage.js');
   assert.equal(isNearQuota(QUOTA_WARN_BYTES - 1), false);
   assert.equal(isNearQuota(QUOTA_WARN_BYTES), true);
   assert.equal(isNearQuota(100, 100), true);
 });
 
 test('footprintBytes charges for keys and values, two bytes per code unit', async () => {
-  const { footprintBytes } = await import('../src/storage/SaveManager.js');
+  const { footprintBytes } = await import('../src/storage/SaveStorage.js');
   assert.equal(footprintBytes([]), 0);
   assert.equal(footprintBytes([['ab', 'cd']]), 8);
   assert.equal(
@@ -826,7 +828,7 @@ test('footprintBytes charges for keys and values, two bytes per code unit', asyn
 });
 
 test('localStorageFootprint sums every key on the origin, not just the save', async () => {
-  const { localStorageFootprint } = await import('../src/storage/SaveManager.js');
+  const { localStorageFootprint } = await import('../src/storage/SaveStorage.js');
   assert.equal(localStorageFootprint(), 0);
   localStorage.setItem('campaign-builder:save', 'x'.repeat(10));
   localStorage.setItem('campaign-builder:library', 'y'.repeat(20));
@@ -844,7 +846,7 @@ test('a stored save then loadFromLocalStorage round-trips a campaign', () => {
 });
 
 test('trySaveToLocalStorage reports success, byte cost, and quota headroom', async () => {
-  const { localStorageFootprint } = await import('../src/storage/SaveManager.js');
+  const { localStorageFootprint } = await import('../src/storage/SaveStorage.js');
   const state = buildState({ grid: sampleGrid() });
   const result = trySaveToLocalStorage(state);
   assert.deepEqual(result, {

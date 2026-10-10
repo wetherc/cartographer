@@ -63,7 +63,7 @@ export function wireHistorySteps(
   // presses Undo to take back an unsaved paint stroke otherwise loses that
   // stroke and everything else since the last save, and the tab leaves Build.
   /**
-   * @typedef {() => { save: import('../storage/SaveManager.js').SaveResult, state: CampaignState } | null} HistoryStep
+   * @typedef {() => { save: import('../storage/SaveStorage.js').SaveResult, state: CampaignState } | null} HistoryStep
    */
   /** @typedef {(before: CampaignState, after: CampaignState) => string} StepToast */
   /**

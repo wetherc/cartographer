@@ -1,4 +1,4 @@
-import { isNearQuota } from './SaveManager.js';
+import { isNearQuota } from './SaveStorage.js';
 import { MAX_NODES, MAX_TOTAL_CELLS } from './TileCodec.js';
 
 /**

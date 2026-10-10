@@ -405,7 +405,7 @@ the canvas, and you check the glue in a browser.
 | `roll(selection, rng)` | `ui/DiceTray.js` |
 | `MapNavigator`, `RegionGroups`, `FogOfWar`, `PartyTracker` | The event handlers of `MapCanvas` |
 | `Creature`, `Resource`, `Character` | `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, `ui/EncounterPanel.js` |
-| `serialize`, `deserialize`, and `toTileGrid` in `SaveManager` | The localStorage, download, and file wrappers in `SaveManager` |
+| `serialize`, `deserialize`, and `toTileGrid` in `SaveManager` | The localStorage, download, and file wrappers in `SaveStorage` and `CampaignFile` |
 | `combat/AttackResolve.js`, `combat/WeaponSwing.js` | The dialog and dice-tray code in `app/weaponAttack.js` |
 | `entities/ItemDraft.js`, `entities/SpellDraft.js` | `ui/ItemForm.js`, `ui/SpellForm.js` |
 | `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcutsWiring.js` |

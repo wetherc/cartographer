@@ -1,14 +1,8 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { restoreGear, tabulateGear } from '../src/storage/GearTable.js';
-import {
-  buildState,
-  deserialize,
-  packState,
-  serialize,
-  trySaveToLocalStorage,
-  loadFromLocalStorage,
-} from '../src/storage/SaveManager.js';
+import { buildState, deserialize, packState, serialize } from '../src/storage/SaveManager.js';
+import { trySaveToLocalStorage, loadFromLocalStorage } from '../src/storage/SaveStorage.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { applyDamage } from '../src/entities/Creature.js';

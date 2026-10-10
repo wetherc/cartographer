@@ -8,7 +8,7 @@ import {
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
 import { HISTORY_BYTE_CAP } from '../src/storage/HistoryAppend.js';
-import { loadFromLocalStorage } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage } from '../src/storage/SaveStorage.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage, installQuotaStorage } from './helpers/env.js';
 

@@ -19,7 +19,7 @@
  * a storage handle, or calls `localStorage.clear`.
  *
  * Other tabs write the same keys. Their writes reach this tab as `storage`
- * events, and `SaveManager.onExternalSave` passes every such event to
+ * events, and `SaveStorage.onExternalSave` passes every such event to
  * `recordExternalWrite`, so the ledger follows them without a re-read. The
  * ledger also re-reads the origin when the key count differs from its own
  * size, and when the `localStorage` object itself is a different one (a test

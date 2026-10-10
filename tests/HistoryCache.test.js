@@ -6,14 +6,8 @@ import {
   loadPersistedCampaign,
   persistedSave,
 } from '../src/storage/PersistedCampaign.js';
-import {
-  buildState,
-  deserialize,
-  loadFromLocalStorage,
-  serialize,
-  toTileGrid,
-  trySaveToLocalStorage,
-} from '../src/storage/SaveManager.js';
+import { buildState, deserialize, serialize, toTileGrid } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage, trySaveToLocalStorage } from '../src/storage/SaveStorage.js';
 import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
 import { loadInitialCampaign } from '../src/campaign/Campaigns.js';
 import { installLocalStorage } from './helpers/env.js';

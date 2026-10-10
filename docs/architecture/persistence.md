@@ -59,7 +59,8 @@ The top-level type is `CampaignState` (`src/types/storage.ts`). It has a flat
 `toTileGrid`, and all four are pure. `toTileGrid` rebuilds a working
 hierarchy by adding each node of the state as it is, because a `MapNode`
 already has its own `parentId`. The grid contains the parsed node objects
-themselves.
+themselves. `storage/SaveStorage.js` writes the save string to localStorage,
+reads it back, and reports saves from other tabs.
 
 `toTileGrid` runs no defaulting of its own, because `deserialize` has already
 defaulted every node. A second pass would re-map and re-freeze every tile of

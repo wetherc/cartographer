@@ -200,7 +200,7 @@ the hold.
 #### Cross-tab save adoption
 
 `externalSaves.js` handles a save from another tab.
-`SaveManager.onExternalSave` reports the save once its save mark lands in
+`SaveStorage.onExternalSave` reports the save once its save mark lands in
 storage. Then:
 
 - A Play-mode tab with nothing unsaved adopts that campaign in place,

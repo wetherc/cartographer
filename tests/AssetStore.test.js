@@ -10,14 +10,8 @@ import {
   pruneAssets,
 } from '../src/storage/AssetStore.js';
 import { hoistAssets, referencedAssetKeys } from '../src/storage/Assets.js';
-import {
-  buildState,
-  deserialize,
-  loadFromLocalStorage,
-  packState,
-  serialize,
-  trySaveToLocalStorage,
-} from '../src/storage/SaveManager.js';
+import { buildState, deserialize, packState, serialize } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage, trySaveToLocalStorage } from '../src/storage/SaveStorage.js';
 import { saveCampaign, undoCampaign } from '../src/storage/HistoryLog.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';

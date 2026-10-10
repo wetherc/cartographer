@@ -2,14 +2,13 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { redoCampaign, saveCampaign, undoCampaign } from '../src/storage/HistoryLog.js';
 import { loadPersistedCampaign } from '../src/storage/PersistedCampaign.js';
+import { buildState, serialize } from '../src/storage/SaveManager.js';
 import {
   SAVE_MARK_KEY,
   STORAGE_KEY,
-  buildState,
   readSaveMark,
-  serialize,
   writeSaveMark,
-} from '../src/storage/SaveManager.js';
+} from '../src/storage/SaveStorage.js';
 import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';
 

@@ -70,7 +70,7 @@ them:
   It returns null when there is no `document`, so a cache under `node --test`
   draws direct.
 - `storage/fileIO.js` starts a file download.
-- `storage/SaveManager.js`, `storage/PlayerPatch.js`, and
+- `storage/SaveStorage.js`, `storage/PlayerPatch.js`, and
   `storage/GMLock.js` listen for the `storage` event of other tabs.
 - `view/CharacterClaim.js` stores the claim of a Player tab in
   `sessionStorage` and reads `location`.

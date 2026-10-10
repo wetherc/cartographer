@@ -112,7 +112,7 @@ above the real score of the app code.
 ## Browser-only wrappers
 
 Some modules wrap browser APIs that Node does not have. In
-`src/storage/SaveManager.js`, these are `trySaveToLocalStorage` and
+`src/storage/SaveStorage.js`, these are `trySaveToLocalStorage` and
 `loadFromLocalStorage`. In `src/storage/CampaignFile.js`, these are
 `downloadCampaignFile` and `readCampaignFromFile`.
 

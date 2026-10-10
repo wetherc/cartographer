@@ -29,14 +29,8 @@ import { withNodeTiles } from '../src/map/TileIndex.js';
 import { revealAround } from '../src/map/FogOfWar.js';
 import { buildWorldTree } from '../src/map/WorldTreeModel.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
-import {
-  buildState,
-  serialize,
-  deserialize,
-  toTileGrid,
-  saveByteSize,
-  isNearQuota,
-} from '../src/storage/SaveManager.js';
+import { buildState, serialize, deserialize, toTileGrid } from '../src/storage/SaveManager.js';
+import { saveByteSize, isNearQuota } from '../src/storage/SaveStorage.js';
 import { diffState } from '../src/storage/StateDiff.js';
 import { reconcile } from '../src/storage/Reconcile.js';
 import { encodeNodeTiles } from '../src/storage/TileCodec.js';

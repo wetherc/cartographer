@@ -18,7 +18,8 @@
     import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
     import { createCharacter, addXP } from '../src/entities/Character.js';
     import { createCreature } from '../src/entities/Creature.js';
-    import { buildState, trySaveToLocalStorage, loadFromLocalStorage, toTileGrid } from '../src/storage/SaveManager.js';
+    import { buildState, toTileGrid } from '../src/storage/SaveManager.js';
+    import { trySaveToLocalStorage, loadFromLocalStorage } from '../src/storage/SaveStorage.js';
     import { downloadCampaignFile } from '../src/storage/CampaignFile.js';
 
     let world = createMapNode('world', 'World', null, 1, 1);

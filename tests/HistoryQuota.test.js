@@ -6,7 +6,7 @@ import {
   saveCampaign,
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
-import { loadFromLocalStorage, trySaveToLocalStorage } from '../src/storage/SaveManager.js';
+import { loadFromLocalStorage, trySaveToLocalStorage } from '../src/storage/SaveStorage.js';
 import { ASSETS_KEY } from '../src/storage/AssetStore.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage, installQuotaStorage } from './helpers/env.js';
