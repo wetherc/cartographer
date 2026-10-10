@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { combatState, gameClock, quests } from '../src/storage/RecordCoercion.js';
+import { combatState, gameClock, quests, uniqueIds } from '../src/storage/RecordCoercion.js';
 import { advanceWatches } from '../src/time/GameClock.js';
 
 test('gameClock keeps a valid clock and drops a value that is not a record', () => {
@@ -57,4 +57,17 @@ test('quests keep a paying reward and drop one that pays nothing', () => {
   ]);
   assert.deepEqual(paid.reward, { gp: 25, xp: 0, per: 'total' });
   assert.equal('reward' in empty, false);
+});
+
+test('uniqueIds renames each repeat and returns a list with no repeat as is', () => {
+  const clean = [{ id: 'a' }, { id: 'b' }, {}];
+  assert.equal(uniqueIds(clean), clean);
+  const first = { id: 'w', hp: 1 };
+  const out = uniqueIds([first, { id: 'w', hp: 2 }, { id: 'w', hp: 3 }, { id: 5 }, { id: 5 }]);
+  assert.equal(out[0], first, 'the first entry keeps its object');
+  assert.deepEqual(
+    out.map((e) => e.id),
+    ['w', 'w-2', 'w-3', 5, 5],
+  );
+  assert.equal(out[2].hp, 3);
 });

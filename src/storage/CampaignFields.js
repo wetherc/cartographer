@@ -19,6 +19,7 @@ import {
   logEntries,
   quests,
   records,
+  uniqueIds,
 } from './RecordCoercion.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
@@ -33,14 +34,23 @@ import {
  */
 
 /**
- * A record coercion followed by the entity defaults. This is the unpack half
+ * A record coercion followed by the entity defaults, with each repeated id
+ * made unique (see `uniqueIds`). This is the unpack half
  * of the omission in `packState`, so it runs on every load. A stored
  * character can have no `spellbook` key, and `undoHistory` and
  * `readCampaignFromFile` pass their result to callers that apply no defaults.
- * @param {(entry: any) => unknown} withDefaults
+ * @param {(entry: any) => { id?: unknown }} withDefaults
  * @returns {(value: unknown) => unknown[]}
  */
-const entityList = (withDefaults) => (value) => records(value).map((entry) => withDefaults(entry));
+const entityList = (withDefaults) => (value) =>
+  uniqueIds(records(value).map((entry) => withDefaults(entry)));
+
+/**
+ * A list coercion whose result has no repeated id (see `uniqueIds`).
+ * @param {(value: unknown) => { id?: unknown }[]} coerce
+ * @returns {(value: unknown) => unknown[]}
+ */
+const keyedList = (coerce) => (value) => uniqueIds(coerce(value));
 
 /**
  * One entry per key, typed against `CampaignState`. Typecheck fails when a
@@ -52,11 +62,11 @@ const BY_KEY = {
   entryTiles: { empty: () => ({}), coerce: entryTiles, label: null },
   characters: { empty: () => [], coerce: entityList(withCharacterDefaults), label: 'characters' },
   creatures: { empty: () => [], coerce: entityList(withCreatureDefaults), label: 'creatures' },
-  travelog: { empty: () => [], coerce: logEntries, label: 'the travelogue' },
-  quests: { empty: () => [], coerce: quests, label: 'quests' },
+  travelog: { empty: () => [], coerce: keyedList(logEntries), label: 'the travelogue' },
+  quests: { empty: () => [], coerce: keyedList(quests), label: 'quests' },
   clock: { empty: () => null, coerce: gameClock, label: 'the clock' },
   handouts: { empty: () => [], coerce: entityList(withHandoutDefaults), label: 'handouts' },
-  bestiary: { empty: () => [], coerce: creatureTemplates, label: 'the bestiary' },
+  bestiary: { empty: () => [], coerce: keyedList(creatureTemplates), label: 'the bestiary' },
   splitParty: { empty: () => false, coerce: (value) => value === true, label: 'party splitting' },
   combat: { empty: () => null, coerce: combatState, label: 'the fight' },
 };

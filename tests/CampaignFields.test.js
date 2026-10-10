@@ -67,3 +67,18 @@ test('the blank campaign has exactly the table fields beside grid and party', ()
   const keys = Object.keys(buildBlankCampaign()).filter((key) => key !== 'grid' && key !== 'party');
   assert.deepEqual(keys, [...CAMPAIGN_FIELD_KEYS]);
 });
+
+test('each id-keyed list gives a repeated id a fresh one on load', () => {
+  const byKey = Object.fromEntries(CAMPAIGN_FIELDS.map((f) => [f.key, f.coerce]));
+  const entry = (/** @type {string} */ name) => ({ id: 'a', name, title: name, message: name });
+  for (const key of ['characters', 'creatures', 'handouts', 'quests', 'travelog', 'bestiary']) {
+    const list = /** @type {any[]} */ (
+      byKey[key]([entry('one'), entry('two'), { ...entry('x'), id: 'a-2' }])
+    );
+    assert.deepEqual(
+      list.map((e) => e.id),
+      ['a', 'a-3', 'a-2'],
+      key,
+    );
+  }
+});

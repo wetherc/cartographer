@@ -378,3 +378,33 @@ export function creatureTemplates(value) {
     ];
   });
 }
+
+/**
+ * The list with each repeated id replaced by a fresh one. The first entry
+ * with an id keeps it, and a later one gets the id with the lowest free
+ * suffix, such as "wolf-2". The state diff and the cross-tab merge pair
+ * entries by id, and a list with a repeated id falls back to a whole-list
+ * diff, so one hit point edit would record the whole roster in undo history
+ * and in every cross-tab delta. A list with no repeats comes back as is.
+ * @template {{ id?: unknown }} T
+ * @param {T[]} list
+ * @returns {T[]}
+ */
+export function uniqueIds(list) {
+  const taken = new Set(list.map((entry) => entry.id));
+  const seen = new Set();
+  let changed = false;
+  const out = list.map((entry) => {
+    if (typeof entry.id !== 'string' || !seen.has(entry.id)) {
+      seen.add(entry.id);
+      return entry;
+    }
+    let n = 2;
+    while (taken.has(`${entry.id}-${n}`)) n += 1;
+    const fresh = `${entry.id}-${n}`;
+    taken.add(fresh);
+    changed = true;
+    return { ...entry, id: fresh };
+  });
+  return changed ? out : list;
+}
