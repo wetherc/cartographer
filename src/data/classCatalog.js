@@ -1,121 +1,19 @@
 import { deepFreeze } from '../util/deepFreeze.js';
-import { FIGHTING_STYLES } from './fightingStyles.js';
+import {
+  ARCANE_TRICKSTER,
+  ASI,
+  CHAMPION,
+  ELDRITCH_KNIGHT,
+  EXPERTISE,
+  RANGER_SKILLS,
+  ROGUE_SKILLS,
+  curve,
+  fightingStyleFeature,
+  multiclassGrant,
+} from './classParts.js';
+import { ARCANE_CLASSES } from './arcaneClasses.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
-
-/**
- * Expand a sparse {level: count} breakpoint map into a 20-entry per-level
- * curve (index 0 = level 1), each entry carrying forward until the next
- * breakpoint. Lookups past level 20 read the last entry.
- * @param {Record<number, number>} breakpoints
- * @returns {number[]}
- */
-function curve(breakpoints) {
-  const out = [];
-  let value = 0;
-  for (let level = 1; level <= 20; level++) {
-    if (breakpoints[level] !== undefined) value = breakpoints[level];
-    out.push(value);
-  }
-  return out;
-}
-
-/** The standard ability-score-improvement levels most classes share. */
-const ASI = [4, 8, 12, 16, 19];
-
-/** The Expertise feature the Bard and the Rogue grant twice each: double
- * proficiency on two skills the character is already proficient in. The
- * empty `from` means any proficient skill; the grant flow narrows the pool. */
-const EXPERTISE = {
-  name: 'Expertise',
-  effects: [{ kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } }],
-};
-
-/** The Fighting Style feature of one class: a pick of one style from the
- * styles that class offers (see data/fightingStyles.js).
- * @param {string} classId */
-const fightingStyleFeature = (classId) => ({
-  name: 'Fighting Style',
-  effects: [
-    {
-      kind: /** @type {const} */ ('fightingStyle'),
-      from: FIGHTING_STYLES.filter((style) => style.classes.includes(classId)).map((s) => s.id),
-    },
-  ],
-});
-
-/** @param {Partial<import('../types/class.js').MulticlassGrant>} [grant]
- * @returns {import('../types/class.js').MulticlassGrant} */
-function multiclassGrant(grant = {}) {
-  return { armor: [], weaponCategories: [], weaponNamed: [], tools: [], ...grant };
-}
-
-/** The Fighter subclass that crits more often and adds half proficiency to
- * physical checks. `Features.critRange` reads the two crit features, and
- * `Checks.halfProficiency` reads Remarkable Athlete. */
-const CHAMPION = {
-  id: 'champion',
-  name: 'Champion',
-  features: {
-    3: ['Improved Critical'],
-    7: ['Remarkable Athlete'],
-    15: ['Superior Critical'],
-  },
-};
-
-/** The Fighter subclass that casts from the wizard list with INT, on the
- * third-caster slot table. */
-const ELDRITCH_KNIGHT = {
-  id: 'eldritch-knight',
-  name: 'Eldritch Knight',
-  casting: {
-    casterType: /** @type {const} */ ('third'),
-    spellAbility: /** @type {const} */ ('INT'),
-    spellListId: 'wizard',
-    knownRule: /** @type {const} */ ('known'),
-    cantripsKnown: curve({ 3: 2, 10: 3 }),
-  },
-};
-
-/** The Rogue subclass that casts from the wizard list with INT, on the
- * third-caster slot table. It knows one more cantrip than the Eldritch
- * Knight, because Mage Hand is always one of them. */
-const ARCANE_TRICKSTER = {
-  id: 'arcane-trickster',
-  name: 'Arcane Trickster',
-  casting: {
-    casterType: /** @type {const} */ ('third'),
-    spellAbility: /** @type {const} */ ('INT'),
-    spellListId: 'wizard',
-    knownRule: /** @type {const} */ ('known'),
-    cantripsKnown: curve({ 3: 3, 10: 4 }),
-  },
-};
-
-const RANGER_SKILLS = [
-  'animal-handling',
-  'athletics',
-  'insight',
-  'investigation',
-  'nature',
-  'perception',
-  'stealth',
-  'survival',
-];
-
-const ROGUE_SKILLS = [
-  'acrobatics',
-  'athletics',
-  'deception',
-  'insight',
-  'intimidation',
-  'investigation',
-  'perception',
-  'performance',
-  'persuasion',
-  'sleight-of-hand',
-  'stealth',
-];
 
 /**
  * The playable classes. Each entry keeps the spellcasting fields that the
@@ -167,7 +65,10 @@ export const DEFAULT_CLASSES = deepFreeze(
         7: ['Feral Instinct'],
         9: ['Brutal Critical'],
         11: ['Relentless Rage'],
+        13: ['Brutal Critical (2)'],
         15: ['Persistent Rage'],
+        17: ['Brutal Critical (3)'],
+        18: ['Indomitable Might'],
         20: ['Primal Champion'],
       },
     },
@@ -218,9 +119,12 @@ export const DEFAULT_CLASSES = deepFreeze(
         1: ['Bardic Inspiration'],
         2: ['Jack of All Trades', 'Song of Rest'],
         3: [EXPERTISE, 'Bard College'],
-        5: ['Font of Inspiration'],
+        5: ['Font of Inspiration', 'Bardic Inspiration (d8)'],
         6: ['Countercharm'],
-        10: [EXPERTISE, 'Magical Secrets'],
+        10: [EXPERTISE, 'Magical Secrets', 'Bardic Inspiration (d10)'],
+        14: ['Magical Secrets'],
+        15: ['Bardic Inspiration (d12)'],
+        18: ['Magical Secrets'],
         20: ['Superior Inspiration'],
       },
     },
@@ -258,7 +162,11 @@ export const DEFAULT_CLASSES = deepFreeze(
         1: ['Divine Domain'],
         2: ['Channel Divinity'],
         5: ['Destroy Undead'],
+        8: ['Destroy Undead (CR 1)'],
         10: ['Divine Intervention'],
+        11: ['Destroy Undead (CR 2)'],
+        14: ['Destroy Undead (CR 3)'],
+        17: ['Destroy Undead (CR 4)'],
       },
     },
     {
@@ -386,8 +294,13 @@ export const DEFAULT_CLASSES = deepFreeze(
         3: ['Monastic Tradition', 'Deflect Missiles'],
         4: ['Slow Fall'],
         5: ['Extra Attack', 'Stunning Strike'],
+        6: ['Ki-Empowered Strikes'],
         7: ['Evasion', 'Stillness of Mind'],
+        10: ['Purity of Body'],
+        13: ['Tongue of the Sun and Moon'],
         14: ['Diamond Soul'],
+        15: ['Timeless Body'],
+        18: ['Empty Body'],
         20: ['Perfect Self'],
       },
     },
@@ -424,6 +337,7 @@ export const DEFAULT_CLASSES = deepFreeze(
         5: ['Extra Attack'],
         6: ['Aura of Protection'],
         10: ['Aura of Courage'],
+        11: ['Improved Divine Smite'],
         14: ['Cleansing Touch'],
       },
     },
@@ -460,6 +374,7 @@ export const DEFAULT_CLASSES = deepFreeze(
         8: ["Land's Stride"],
         10: ['Hide in Plain Sight'],
         14: ['Vanish'],
+        18: ['Feral Senses'],
         20: ['Foe Slayer'],
       },
     },
@@ -499,152 +414,6 @@ export const DEFAULT_CLASSES = deepFreeze(
         20: ['Stroke of Luck'],
       },
     },
-    {
-      id: 'sorcerer',
-      name: 'Sorcerer',
-      hitDie: 6,
-      casterType: 'full',
-      spellAbility: 'CHA',
-      spellListId: 'sorcerer',
-      knownRule: 'known',
-      cantripsKnown: curve({ 1: 4, 4: 5, 10: 6 }),
-      spellsKnown: curve({
-        1: 2,
-        2: 3,
-        3: 4,
-        4: 5,
-        5: 6,
-        6: 7,
-        7: 8,
-        8: 9,
-        9: 10,
-        10: 11,
-        11: 12,
-        13: 13,
-        15: 14,
-        17: 15,
-      }),
-      savingThrows: ['CON', 'CHA'],
-      armor: [],
-      weaponCategories: [],
-      weaponNamed: ['dagger', 'dart', 'sling', 'quarterstaff', 'light crossbow'],
-      skillChoice: {
-        choose: 2,
-        from: ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
-      },
-      subclassLevel: 1,
-      subclassLabel: 'Sorcerous Origin',
-      subclasses: [
-        {
-          id: 'draconic',
-          name: 'Draconic Bloodline',
-          features: { 1: ['Draconic Resilience'] },
-          // Draconic Resilience: +1 max HP per sorcerer level, and 13 + DEX
-          // while unarmored. A shield adds its own bonus on top.
-          unarmoredDefense: { base: 13, shield: true },
-          hpPerLevel: 1,
-        },
-      ],
-      asiLevels: ASI,
-      multiclassPrereq: [{ CHA: 13 }],
-      multiclassGrant: multiclassGrant(),
-      featuresByLevel: {
-        1: ['Sorcerous Origin'],
-        2: ['Font of Magic'],
-        3: ['Metamagic'],
-        20: ['Sorcerous Restoration'],
-      },
-    },
-    {
-      id: 'warlock',
-      name: 'Warlock',
-      hitDie: 8,
-      casterType: 'pact',
-      spellAbility: 'CHA',
-      spellListId: 'warlock',
-      knownRule: 'known',
-      cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
-      // Mystic Arcanum spells (6th level and up) do not count toward this.
-      spellsKnown: curve({
-        1: 2,
-        2: 3,
-        3: 4,
-        4: 5,
-        5: 6,
-        6: 7,
-        7: 8,
-        8: 9,
-        9: 10,
-        11: 11,
-        13: 12,
-        15: 13,
-        17: 14,
-        19: 15,
-      }),
-      savingThrows: ['WIS', 'CHA'],
-      armor: ['light'],
-      weaponCategories: ['simple'],
-      weaponNamed: [],
-      skillChoice: {
-        choose: 2,
-        from: [
-          'arcana',
-          'deception',
-          'history',
-          'intimidation',
-          'investigation',
-          'nature',
-          'religion',
-        ],
-      },
-      subclassLevel: 1,
-      subclassLabel: 'Otherworldly Patron',
-      subclasses: [{ id: 'fiend', name: 'The Fiend' }],
-      asiLevels: ASI,
-      multiclassPrereq: [{ CHA: 13 }],
-      multiclassGrant: multiclassGrant({
-        armor: ['light'],
-        weaponCategories: ['simple'],
-      }),
-      featuresByLevel: {
-        1: ['Otherworldly Patron', 'Pact Magic'],
-        2: ['Eldritch Invocations'],
-        3: ['Pact Boon'],
-        11: ['Mystic Arcanum'],
-        20: ['Eldritch Master'],
-      },
-    },
-    {
-      id: 'wizard',
-      name: 'Wizard',
-      hitDie: 6,
-      casterType: 'full',
-      spellAbility: 'INT',
-      spellListId: 'wizard',
-      knownRule: 'prepared',
-      ritual: true,
-      ritualFromBook: true,
-      cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
-      savingThrows: ['INT', 'WIS'],
-      armor: [],
-      weaponCategories: [],
-      weaponNamed: ['dagger', 'dart', 'sling', 'quarterstaff', 'light crossbow'],
-      skillChoice: {
-        choose: 2,
-        from: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion'],
-      },
-      subclassLevel: 2,
-      subclassLabel: 'Arcane Tradition',
-      subclasses: [{ id: 'evocation', name: 'School of Evocation' }],
-      asiLevels: ASI,
-      multiclassPrereq: [{ INT: 13 }],
-      multiclassGrant: multiclassGrant(),
-      featuresByLevel: {
-        1: ['Arcane Recovery'],
-        2: ['Arcane Tradition'],
-        18: ['Spell Mastery'],
-        20: ['Signature Spells'],
-      },
-    },
+    ...ARCANE_CLASSES,
   ]),
 );

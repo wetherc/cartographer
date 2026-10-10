@@ -90,6 +90,39 @@ test('every feature entry is a name or a named feature with known effect kinds',
   }
 });
 
+test('the higher-level SRD features sit at their class levels', () => {
+  /** @param {string} classId @param {number} level */
+  const namesAt = (classId, level) =>
+    (DEFAULT_CLASSES.find((c) => c.id === classId)?.featuresByLevel[level] ?? []).map((e) =>
+      typeof e === 'string' ? e : e.name,
+    );
+  /** @type {[string, number, string][]} */
+  const expected = [
+    ['barbarian', 13, 'Brutal Critical (2)'],
+    ['barbarian', 17, 'Brutal Critical (3)'],
+    ['barbarian', 18, 'Indomitable Might'],
+    ['bard', 5, 'Bardic Inspiration (d8)'],
+    ['bard', 10, 'Bardic Inspiration (d10)'],
+    ['bard', 15, 'Bardic Inspiration (d12)'],
+    ['bard', 14, 'Magical Secrets'],
+    ['bard', 18, 'Magical Secrets'],
+    ['cleric', 8, 'Destroy Undead (CR 1)'],
+    ['cleric', 11, 'Destroy Undead (CR 2)'],
+    ['cleric', 14, 'Destroy Undead (CR 3)'],
+    ['cleric', 17, 'Destroy Undead (CR 4)'],
+    ['monk', 6, 'Ki-Empowered Strikes'],
+    ['monk', 10, 'Purity of Body'],
+    ['monk', 13, 'Tongue of the Sun and Moon'],
+    ['monk', 15, 'Timeless Body'],
+    ['monk', 18, 'Empty Body'],
+    ['paladin', 11, 'Improved Divine Smite'],
+    ['ranger', 18, 'Feral Senses'],
+  ];
+  for (const [classId, level, name] of expected) {
+    assert.ok(namesAt(classId, level).includes(name), `${classId} ${level} ${name}`);
+  }
+});
+
 test('Expertise is structured at Rogue 1 and 6 and Bard 3 and 10', () => {
   /** @param {string} classId @param {number} level */
   const expertiseAt = (classId, level) => {

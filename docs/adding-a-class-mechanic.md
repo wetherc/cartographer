@@ -19,7 +19,8 @@ before you commit.
 ## Show a feature on the sheet
 
 1. Add the feature name to `featuresByLevel` of its class in
-   `src/data/classCatalog.js`, at the class level that grants it.
+   `src/data/classCatalog.js`, at the class level that grants it. The
+   Sorcerer, Warlock, and Wizard entries are in `src/data/arcaneClasses.js`.
 2. Leave it as a plain string when the app does not model it. The sheet then
    lists it as text, and the GM applies it at the table.
 
@@ -88,8 +89,8 @@ a Fighting Style.
 1. Write the feature in `featuresByLevel` as an object,
    `{ name, effects }` (`ClassFeatureDef` in `src/types/class.ts`). The
    effects use the feat effect vocabulary of `src/types/feat.ts`. The
-   `EXPERTISE` and `fightingStyleFeature` constants at the top of
-   `classCatalog.js` are the models.
+   `EXPERTISE` and `fightingStyleFeature` constants in
+   `src/data/classParts.js` are the models.
 2. Read the pick back where it applies. `entities/FightingStyle.js` reads
    the style ids from `character.featureChoices`, for example.
 3. Test the grant in `tests/FeatureGrants.test.js`.

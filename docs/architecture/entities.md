@@ -468,6 +468,9 @@ new value.
     data/classCatalog.js       hit die, proficiencies, skill choices, caster type,
                                subclasses (with subclass casting),
                                subclass level, ASI levels, features by level
+    data/arcaneClasses.js      the Sorcerer, Warlock, and Wizard entries
+    data/classParts.js         the curves, shared features, and subclasses
+                               that both class files build from
     data/raceCatalog.js        races and their traits
     data/backgroundCatalog.js  backgrounds
     data/skills.js             the ability of each of the 18 skills
