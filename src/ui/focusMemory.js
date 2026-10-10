@@ -21,8 +21,9 @@
  * `data-focus-key` to a name that does not change, and the signature is
  * that key alone.
  *
- * A signature that no longer exists restores nothing. This is the case
- * where the row went away, and the old behavior is the correct one.
+ * A signature that matches no control after the rebuild restores nothing.
+ * This is the case where the row went away. Focus on some other row would put
+ * the user in a place they did not choose.
  *
  * The functions read only `tagName`, `className`, `getAttribute`,
  * `textContent`, `contains`, `querySelectorAll`, and `focus`, so a test

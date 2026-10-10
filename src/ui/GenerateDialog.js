@@ -163,9 +163,9 @@ export function generateDialog(options) {
 
       const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
 
-      // Image loads arrive one per ref, and each one used to redraw the
-      // whole preview at once. One animation frame collects every load
-      // that lands before it, so a burst of arrivals costs one draw.
+      // Image loads arrive one per ref. A redraw of the whole preview on
+      // each load would draw it once per ref. One animation frame collects
+      // every load that lands before it, so a burst of arrivals costs one draw.
       let frame = 0;
       const scheduleRender = () => {
         if (frame || closed) return;

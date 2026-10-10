@@ -74,8 +74,9 @@ export function sizeKey(width, height) {
  * project-relative path and needs the leading slash. A GM-supplied tile's art
  * is a `data:` URL and is used as-is, because prefixing it produces an
  * unloadable path. Every place that turns a ref into an image goes through
- * here. The PNG export used to keep its own copy of this logic and lacked the
- * `data:` case, so custom art exported as placeholders. A ref that
+ * here, so the PNG export and the map draw custom `data:` art the same way.
+ * A copy of this logic without the `data:` case would export custom art as
+ * placeholders. A ref that
  * `ImageRefs.js` rejects gives an empty `src`, which no image loads, so the
  * renderer draws its placeholder fill instead of fetching from wherever the
  * ref pointed. This is a pure function.

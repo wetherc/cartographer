@@ -72,8 +72,8 @@ export function wireTabs(tablist, options = {}) {
  * Build a tab strip and pair it with panels the caller has already
  * created. Most strips are written out in `index.html` and need only
  * `wireTabs`. The encounter and library panels decide their tabs at
- * runtime instead, and both used to hand-roll the buttons, the ARIA
- * attributes, and the arrow keys. The tab and panel ids are generated
+ * runtime instead, and this function gives both the same buttons, ARIA
+ * attributes, and arrow keys. The tab and panel ids are generated
  * here, since `aria-controls` needs a pairing the caller has no reason to invent.
  *
  * A selection only flips `hidden` on the panels, so a tab click costs

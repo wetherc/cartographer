@@ -382,15 +382,14 @@ export class MapRenderer {
    * Rule a one-pixel line along every cell boundary in view, so a GM can count
    * cells and match a tile to its coordinate labels.
    *
-   * This grid used to be an accident. Each tile was drawn straight from its
-   * SVG, and the rasterizer left the outermost pixel row of each tile
-   * partly transparent, so the dark map backdrop showed through at every
-   * boundary. Drawing tiles from a cached raster fills those pixels, which
-   * took the grid away. It is drawn on purpose here instead, in the backdrop
-   * color it used to come from.
+   * Tiles draw from a cached raster, which fills every pixel of a cell, so
+   * no gap between tiles shows the backdrop. A tile drawn straight from its
+   * SVG leaves its outermost pixel row partly transparent, and the dark
+   * backdrop then shows through as a grid. This method draws that grid on
+   * purpose, in the backdrop color.
    *
-   * The grid stops at the fog, because a flat fog rectangle never showed the
-   * backdrop through and so never carried a grid. Cells are clipped rather
+   * The grid stops at the fog. A flat fog rectangle has no transparent edge,
+   * so fogged cells show no backdrop grid. Cells are clipped rather
    * than stroked one at a time, which would draw every shared boundary twice
    * and leave it darker than the outer edges.
    * A block past the raster ceiling drew from the vector art and so kept

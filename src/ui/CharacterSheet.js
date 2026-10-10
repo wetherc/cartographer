@@ -285,7 +285,7 @@ export function mountCharacterSheet(
     // the number a player rolls with. The base and every contributing
     // source sit one click away, in the breakdown popover. This answers
     // the common question "what is my STR" at a glance, without the need
-    // to parse "16 = 18 +4". Scores are no longer edited inline. A
+    // to parse "16 = 18 +4". The sheet does not edit scores inline. A
     // dedicated character or level-up editor owns that. Stats and
     // equipment are both part of the sheet's shape, so a badge is never
     // re-pointed. It is rebuilt when its score can have moved.

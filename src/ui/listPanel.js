@@ -3,12 +3,12 @@ import { el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 
 /**
- * This is the list panel every rail builds from. Six panels used to
- * hand-roll the same skeleton: a wrapper div, a `render()` that clears
+ * This is the list panel every rail builds from. It gives six panels the
+ * same skeleton: a wrapper div, a `render()` that clears
  * it, an empty-state branch, a row loop ending in edit or remove icon
- * buttons, a "New ..." control, and a returned `{ update: render }`. Each
- * panel also reimplemented the await-the-handler-then-rerender idiom per
- * button. That idiom is why this module exists. A click handler here is
+ * buttons, a "New ..." control, and a returned `{ update: render }`. It also
+ * owns the await-the-handler-then-rerender idiom, so no panel writes it per
+ * button. A click handler here is
  * awaited, and the panel rerenders unless the handler reports that
  * nothing happened, by returning `false` or `null`, the shape a
  * cancelled dialog already returns. A `void` handler counts as a change

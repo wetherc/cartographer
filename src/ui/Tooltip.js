@@ -1,8 +1,8 @@
 /**
- * The app's tooltip. Every hint used to be a native `title`, which the
- * browser draws in its own style, after its own delay, in a box nothing here
- * can theme. This module replaces that with one styled tooltip and one set of
- * delegated listeners.
+ * The app's tooltip. A native `title` hint uses the browser's own style and
+ * delay, in a box that the app themes cannot reach. So every hint goes through
+ * this module, which draws one styled tooltip from one set of delegated
+ * listeners.
  *
  * A widget marks an element with {@link setTip}, which writes `data-tip`.
  * {@link mountTooltips} watches the document for a pointer or the keyboard
@@ -91,8 +91,8 @@ export function setTip(element, text) {
  * Both a pointer and the keyboard show the tooltip, so a control reached by
  * Tab reads the same hint a hovered control does. A hovered control waits out
  * {@link HOVER_DELAY} first, and the keyboard does not wait. A press, a
- * scroll, or Escape hides it: a tooltip that outlived the click that opened a
- * dialog used to hang over the dialog. A click also focuses the control, and
+ * scroll, or Escape hides it, so a tooltip cannot stay on screen over the
+ * dialog that its click opened. A click also focuses the control, and
  * that focus must not bring the hint straight back, so the pressed element is
  * remembered until the pointer moves on. A control that leaves the page while
  * it holds focus fires no `focusout`, so a mutation observer watches for the
