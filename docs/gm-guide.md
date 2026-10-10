@@ -33,7 +33,7 @@ whether **Undo** can restore the old campaign.
 3. Switch to Play mode and move the party to see how the parts fit
    together.
 
-[The example campaign](gm-reference.md#the-example-campaign) in the GM
+[The example campaign](gm-reference/campaign.md#the-example-campaign) in the GM
 reference describes its world, story, and party.
 
 ### Start from a file
@@ -97,7 +97,7 @@ you close the tab or remove the URL parameter.
 > the URL. Put a player-facing tab only on hardware that you control, such
 > as a second screen or your own laptop.
 
-[Limits of the Player view](gm-reference.md#limits-of-the-player-view) in
+[Limits of the Player view](gm-reference/campaign.md#limits-of-the-player-view) in
 the GM reference gives the full list.
 
 ### Let one player run their own character
@@ -230,7 +230,7 @@ that number into **Seed**.
 
 The archetypes in the list depend on the node kind. A region offers climates
 such as **Wilderness** or **Desert**, a **Town**, and a **World**. An interior
-offers dungeon and castle layouts. [Map generation](gm-reference.md#map-generation)
+offers dungeon and castle layouts. [Map generation](gm-reference/build.md#map-generation)
 in the GM reference describes each one.
 
 If nothing on the parent map links to this node, the app adds an entrance
@@ -322,7 +322,7 @@ Build mode warns you when the party cannot get into a node or out of it.
    on the parent map beside the block of the region.
 
 The warning goes away when the link is fixed.
-[Link warnings](gm-reference.md#link-warnings) in the GM reference lists
+[Link warnings](gm-reference/build.md#link-warnings) in the GM reference lists
 each warning.
 
 ## Run a session
@@ -338,7 +338,7 @@ left of the map. The sidebar on the right has the **Session**, **Story**,
 
 1. Click a tile. The whole party walks there, and the fog clears along the
    walk. Walking on a region map moves the in-game clock on (see
-   [Party movement](gm-reference.md#party-movement)).
+   [Party movement](gm-reference/play.md#party-movement)).
 2. To move with the keyboard, click the map, move the cursor with the arrow
    keys, and press Enter or Space.
 3. To go into a region or a town, click a tile that links to it.
@@ -485,10 +485,10 @@ still open stays until you end the fight. To bring the foes back, click
    - If one side sneaks up on the other, set **Who sneaks** to that side,
      or to **Both sides** when each side sneaks, and click **Roll Stealth** or type each Stealth total. The app ticks
      **Surprised** on each watcher whose passive Perception notices no one.
-     See [Stealth contest](gm-reference.md#stealth-contest).
+     See [Stealth contest](gm-reference/combat.md#stealth-contest).
    - If the party talks its way out, click **Parley** instead. No fight
      starts, the foes become neutral, and the travelogue records the parley. See
-     [Parley](gm-reference.md#parley).
+     [Parley](gm-reference/combat.md#parley).
 6. Click **Start combat**. The app rolls for each row that you did not roll
    or type, and the combat screen replaces the map.
 
@@ -519,7 +519,7 @@ dialog.
 To leave the combat screen without ending the fight, click **Back to map**.
 To return, click **Open combat** in the **Initiative** card of the Session
 tab.
-[Combat screen](gm-reference.md#combat-screen) in the GM reference describes
+[Combat screen](gm-reference/combat.md#combat-screen) in the GM reference describes
 each area of the screen.
 
 ### Run a legendary creature
@@ -537,8 +537,8 @@ each area of the screen.
 
 The legendary actions come back when the turn of the creature starts. The
 uses of legendary resistance come back when the party takes a long rest.
-See [Legendary actions](gm-reference.md#legendary-actions) and
-[Legendary resistance](gm-reference.md#legendary-resistance).
+See [Legendary actions](gm-reference/combat.md#legendary-actions) and
+[Legendary resistance](gm-reference/combat.md#legendary-resistance).
 
 ### Adjust a stat for a few rounds
 
@@ -674,7 +674,7 @@ the level-up rules. To copy a ritual into the Book of Shadows later, click
 **Add ritual** on the **Book rituals** row.
 
 The spells that the invocations cast appear with the other spells of the
-warlock. The [GM reference](gm-reference.md#eldritch-invocations) lists
+warlock. The [GM reference](gm-reference/characters.md#eldritch-invocations) lists
 what the app does for each invocation.
 
 ### Equip and carry items

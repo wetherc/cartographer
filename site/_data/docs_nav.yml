@@ -13,8 +13,28 @@
       url: /docs/tutorial-gm-first-session.html
     - title: GM guide
       url: /docs/gm-guide.html
-    - title: GM reference
+- section: GM reference
+  pages:
+    - title: Overview
       url: /docs/gm-reference.html
+    - title: Roles and campaigns
+      url: /docs/gm-reference/campaign.html
+    - title: Build mode
+      url: /docs/gm-reference/build.html
+    - title: Play mode
+      url: /docs/gm-reference/play.html
+    - title: Combat
+      url: /docs/gm-reference/combat.html
+    - title: Spellcasting
+      url: /docs/gm-reference/spellcasting.html
+    - title: Characters
+      url: /docs/gm-reference/characters.html
+    - title: Time, story, and dice
+      url: /docs/gm-reference/story.html
+    - title: The library
+      url: /docs/gm-reference/library.html
+    - title: Keyboard and mouse control
+      url: /docs/gm-reference/controls.html
 - section: For contributors
   pages:
     - title: Your first code change

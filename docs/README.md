@@ -44,7 +44,16 @@ describes how the site is built.
 
 | Document | What it describes |
 | --- | --- |
-| [GM reference](gm-reference.md) | Modes, roles, panels, keyboard control, and the rules the app applies |
+| [GM reference](gm-reference.md) | The modes, and an index of the reference pages below |
+| [Roles and campaigns](gm-reference/campaign.md) | The GM and Player roles, campaign search, the campaign controls, storage, and the example campaign |
+| [Build mode](gm-reference/build.md) | The world tree, the paint tools, the tile inspector, map generation, and the Encounters tab |
+| [Play mode](gm-reference/play.md) | Map controls, party movement, the mini-map, the Encounters panel, and creature fields |
+| [Combat](gm-reference/combat.md) | The combat screen, attacks, reactions, and the combat rules the app applies |
+| [Spellcasting](gm-reference/spellcasting.md) | The Spellbook tab, the cast dialog, concentration, and summons |
+| [Characters](gm-reference/characters.md) | The party roster, the character sheet, level-up, class features, and inventory |
+| [Time, story, and dice](gm-reference/story.md) | The clock and rests, quests, NPCs, handouts, the travelogue, and the dice tray |
+| [The library](gm-reference/library.md) | The Library tabs and the library file |
+| [Keyboard and mouse control](gm-reference/controls.md) | Every keyboard shortcut, and the mouse and touch gestures |
 | [Tile assets](tile-assets.md) | The tile catalog and the art conventions for each tile family |
 | [UI components](architecture/ui-components.md) | The shared widget builders, the panel contract, and the CSS vocabulary |
 | [The app wiring layer](architecture/app-wiring.md) | The `AppContext` object and what each `src/app/` module owns |

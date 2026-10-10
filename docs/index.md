@@ -83,7 +83,7 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Bind a Player tab to one character, so that player runs their own turns in a fight.
 - Keep the tabs of one browser in step. Each save in the GM tab reaches the other tabs without a reload.
 
-The Player role hides GM information on the screen, but it is not a security control. A person at that browser can read the whole campaign from its storage. See [Limits of the Player view](gm-reference.md#limits-of-the-player-view).
+The Player role hides GM information on the screen, but it is not a security control. A person at that browser can read the whole campaign from its storage. See [Limits of the Player view](gm-reference/campaign.md#limits-of-the-player-view).
 
 ### Appearance
 

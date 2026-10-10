@@ -445,7 +445,7 @@ spells of this group by hand with the least work of any group.
 The app models the SRD eldritch invocations of the warlock. The ones that
 change Eldritch Blast, cast a spell, or grant skills have rules in the app,
 and the rest, such as Devil's Sight, are text for the GM. The
-[GM reference](gm-reference.md#eldritch-invocations) lists each effect and
+[GM reference](gm-reference/characters.md#eldritch-invocations) lists each effect and
 the rules that the GM enforces. The app models the Book of Shadows of the
 Pact of the Tome, with its cantrips from any class and the rituals of Book
 of Ancient Secrets, and the Mystic Arcanum. It does not model the pact

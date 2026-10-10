@@ -12,7 +12,7 @@
  * table it describes, so a new shortcut and its documentation are one edit,
  * not two. Escape and the edge exit are handled by the dialog code and the
  * map canvas, not by `shortcutFor`, but a reader of this list expects to
- * find every key here. `docs/gm-reference.md` has the same table.
+ * find every key here. `docs/gm-reference/controls.md` has the same table.
  */
 export const SHORTCUT_HELP = [
   '?: show this list',

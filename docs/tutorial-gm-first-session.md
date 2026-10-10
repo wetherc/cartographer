@@ -194,5 +194,5 @@ You have done each part of a session: build, play, fight, and save.
 - To find what a control or a rule does, read the
   [GM reference](gm-reference.md).
 - To see what the example campaign contains, read
-  [The example campaign](gm-reference.md#the-example-campaign) in the GM
+  [The example campaign](gm-reference/campaign.md#the-example-campaign) in the GM
   reference.
