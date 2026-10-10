@@ -132,7 +132,8 @@ export function parleyLine(foes) {
  * @param {Character | Creature} entity
  * @param {'character' | 'creature'} kind
  * @param {() => number} [rng]
- * @returns {number} the total
+ * @returns {{ total: number, rider: { spent: string[] } | null }} the total, and
+ *   the riders it used up, which the caller spends once the result counts
  */
 export function rollStealth(entity, kind, rng = Math.random) {
   const query = /** @type {const} */ ({
@@ -153,11 +154,12 @@ export function rollStealth(entity, kind, rng = Math.random) {
     bonus = creatureCheckBonus(/** @type {Creature} */ (entity), 'stealth');
   }
   const mode = rollMode(query, wear);
-  return resolveCheck(bonus, null, {
+  const { total, rider } = resolveCheck(bonus, null, {
     ...(mode ? { mode } : {}),
     rng,
     conditions: riderSources(entity),
-  }).total;
+  });
+  return { total, rider };
 }
 
 /**

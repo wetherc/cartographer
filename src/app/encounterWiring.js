@@ -35,6 +35,7 @@ import {
 } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld, startLandingTurn } from './turnAdvance.js';
+import { spendRollRiders } from './riderSpend.js';
 import { wireTurnOrder } from './turnOrder.js';
 import { dropTurnChips, endFightEffects } from './turnEffectsWiring.js';
 import { focusMapCanvas } from './combatWiring.js';
@@ -238,6 +239,8 @@ export function wireEncounters(app) {
     // The dialog logs the "Initiative rolled" line, and it belongs to this
     // fight's log.
     const startedAt = Date.now();
+    /** @type {Map<string, { spent: string[] } | null>} */
+    const stealthRiders = new Map();
     const position = app.partyTracker.getPosition();
     const roster = combatRoster(state.characters, state.creatures, position);
     const away = awayCharacters(state.characters, position);
@@ -261,11 +264,16 @@ export function wireEncounters(app) {
       // log again.
       onRolled: (results) => app.actions.logEvent('roll', initiativeLine(results)),
       // The Stealth contest is optional. A row that nothing holds any more
-      // rolls a bare d20 and has a passive Perception of 10.
+      // rolls a bare d20 and has a passive Perception of 10. Each press records
+      // the riders of the latest roll, and Start spends them, so a Guidance
+      // chip adds to every press but leaves once.
       stealth: {
         rollStealth: (p) => {
           const found = findCombatant(app, p.id);
-          return found ? rollStealth(found.entity, found.kind) : Math.floor(Math.random() * 20) + 1;
+          if (!found) return Math.floor(Math.random() * 20) + 1;
+          const { total, rider } = rollStealth(found.entity, found.kind);
+          stealthRiders.set(p.id, rider);
+          return total;
         },
         passivePerception: (p) => {
           const found = findCombatant(app, p.id);
@@ -284,6 +292,7 @@ export function wireEncounters(app) {
       },
     });
     if (!participants) return;
+    for (const [id, rider] of stealthRiders) spendRollRiders(app, id, rider);
     const started = startCombat(participants, (p) => describe(p)?.name ?? '', startedAt);
     setCombat(started);
     // A surprised combatant wears a Surprised chip that ends with its first

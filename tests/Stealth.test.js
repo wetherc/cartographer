@@ -84,21 +84,18 @@ test('rollStealth adds the Stealth bonus, and noisy armor rolls with disadvantag
     const faces = [0.95, 0];
     return () => faces.shift() ?? 0;
   };
-  assert.equal(rollStealth(hero, 'character', seq()), 22, 'a straight roll keeps 20 + 2');
+  assert.equal(rollStealth(hero, 'character', seq()).total, 22, 'a straight roll keeps 20 + 2');
   const plated = equip(
     addItem(hero, item('p', 'Plate', { type: 'armor', baseAC: 18, stealthDisadvantage: true })),
     'chest',
     'p',
   );
-  assert.equal(rollStealth(plated, 'character', seq()), 3, 'disadvantage keeps 1 + 2');
+  assert.equal(rollStealth(plated, 'character', seq()).total, 3, 'disadvantage keeps 1 + 2');
 });
 
 test('rollStealth and passivePerceptionOf read a creature from its stat block', () => {
   const wolf = createCreature('w', 'Wolf', { stats: { DEX: 16, WIS: 12 } });
-  assert.equal(
-    rollStealth(wolf, 'creature', () => 0),
-    4,
-  );
+  assert.equal(rollStealth(wolf, 'creature', () => 0).total, 4);
   assert.equal(passivePerceptionOf(wolf, 'creature'), 11);
   assert.equal(passivePerceptionOf(createCharacter('c', 'C', { WIS: 8 }), 'character'), 9);
 });
@@ -145,4 +142,15 @@ test('sideContests with no totals on a side decides nothing for it', () => {
     { side: 'party', surprised: [], noticed: [], rolled: [] },
     { side: 'foe', surprised: ['a'], noticed: [], rolled: [{ id: 'g', total: 20 }] },
   ]);
+});
+
+test('rollStealth reports a once rider it used up', () => {
+  const guided = {
+    ...createCharacter('c1', 'Hero', { DEX: 14 }),
+    conditions: [{ name: 'Guidance', rider: { rolls: ['check'], dice: 1, die: 'd4', once: true } }],
+  };
+  const result = rollStealth(/** @type {any} */ (guided), 'character', () => 0);
+  assert.equal(result.total, 4, '1 + 2 + 1 for the d4');
+  assert.deepEqual(result.rider?.spent, ['Guidance']);
+  assert.equal(rollStealth(createCharacter('c2', 'Plain'), 'character', () => 0).rider, null);
 });
