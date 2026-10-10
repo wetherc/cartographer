@@ -108,30 +108,51 @@ export function proficientSave(character, ability) {
  *
  * With `lucky` (the Halfling trait), a natural 1 on the kept die rolls the
  * d20 again, and the new roll stands.
+ *
+ * With `minFace` (Reliable Talent), a kept face below it counts as
+ * `minFace` in the total. `natural` still reports the face the die showed.
  * @param {number} bonus
  * @param {number | null} dc
  * @param {import('../types/entities.js').RiderRoll} kind
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean }} opts
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean, minFace?: number }} opts
  * @returns {CheckResult}
  */
 function resolveD20(
   bonus,
   dc,
   kind,
-  { mode = 'normal', rng = Math.random, conditions = [], lucky = false },
+  { mode = 'normal', rng = Math.random, conditions = [], lucky = false, minFace = 1 },
 ) {
   const rider = rollRiders(conditions, kind, rng);
   const once = () => roll({ counts: { d20: 1 }, modifier: bonus + rider.modifier, mode }, rng);
   const first = once();
   const result = lucky && first.results[0]?.rolls[0] === 1 ? once() : first;
+  const natural = result.results[0]?.rolls[0] ?? 0;
+  const total = result.total + Math.max(0, minFace - natural);
   return {
     roll: result,
-    total: result.total,
+    total,
     dc,
-    natural: result.results[0]?.rolls[0] ?? 0,
-    success: dc === null ? null : result.total >= dc,
+    natural,
+    success: dc === null ? null : total >= dc,
     rider: rider.note ? rider : null,
   };
+}
+
+/** The Rogue 11 feature that treats a d20 below 10 as a 10 on a proficient
+ * ability check. */
+const RELIABLE_TALENT = 'Reliable Talent';
+
+/**
+ * The lowest d20 face a character's check on `key` can count as: 10 when the
+ * character has Reliable Talent and is proficient in the skill, else 1.
+ * Attack rolls and saves never read this.
+ * @param {Character} character
+ * @param {string} key a skill id or one of the six ability keys
+ * @returns {number}
+ */
+export function checkMinFace(character, key) {
+  return isProficientSkill(character, key) && hasFeature(character, RELIABLE_TALENT) ? 10 : 1;
 }
 
 /**
@@ -311,9 +332,10 @@ export function initiativeBonus(character) {
  *
  * `conditions` are the chips the roller holds. Any of them that rides on a
  * check rolls here and joins the bonus, which is how Guidance reaches a check.
+ * `minFace` comes from {@link checkMinFace}.
  * @param {number} bonus
  * @param {number | null} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[], lucky?: boolean, minFace?: number }} [opts]
  * @returns {CheckResult}
  */
 export function resolveCheck(bonus, dc, opts = {}) {
@@ -341,6 +363,7 @@ export function abilityCheck(character, key, dc = null, opts = {}) {
     ...resolveCheck(checkBonus(character, key), dc, {
       conditions: riderSources(character),
       lucky: isLucky(character),
+      minFace: checkMinFace(character, key),
       ...(tiredCheck(character) ? { mode: /** @type {const} */ ('disadvantage') } : {}),
       ...opts,
     }),

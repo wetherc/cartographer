@@ -37,6 +37,14 @@ test('a fighter gets Second Wind at 1, Action Surge at 2, and a second surge at 
   assert.deepEqual(uses('fighter', 17)['action-surge'], [2, 'short']);
 });
 
+test('a fighter gets Indomitable at 9, with a second use at 13 and a third at 17', () => {
+  assert.equal(uses('fighter', 8).indomitable, undefined);
+  assert.deepEqual(uses('fighter', 9).indomitable, [1, 'long']);
+  assert.deepEqual(uses('fighter', 12).indomitable, [1, 'long']);
+  assert.deepEqual(uses('fighter', 13).indomitable, [2, 'long']);
+  assert.deepEqual(uses('fighter', 17).indomitable, [3, 'long']);
+});
+
 test('a barbarian rages by the SRD table and has no pool at level 20', () => {
   const rage = (/** @type {number} */ level) => uses('barbarian', level).rage?.[0] ?? 0;
   assert.deepEqual(

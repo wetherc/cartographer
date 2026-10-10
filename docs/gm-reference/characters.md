@@ -134,7 +134,11 @@ proficiency. Remarkable Athlete (Champion 7) adds half, rounded up, to a
 STR, DEX, or CON check without proficiency. Aura of Protection (paladin 6)
 adds the paladin's CHA modifier, at least +1, to its own saves, and the
 GM applies the aura to allies. Diamond Soul (monk 14) makes every save
-proficient, so every save shows the solid dot.
+proficient, so every save shows the solid dot. Reliable Talent (rogue 11)
+counts a d20 face below 10 as a 10 on a check with a proficient skill. The
+tray still shows the face it rolled, and the log line names the lift, such as
+"Reliable Talent, 4 counts as 10". A save, an attack, and a check without
+proficiency get no lift.
 
 Passive Perception is 10 plus the Perception bonus. Compare it against a
 hidden thing when nobody says they are looking.
@@ -322,6 +326,7 @@ class that the character no longer has takes its pool away.
 | --- | --- | --- | --- |
 | Second Wind | Fighter 1 | 1 | Short rest |
 | Action Surge | Fighter 2 | 1, or 2 from level 17 | Short rest |
+| Indomitable | Fighter 9 | 1, then 2 at level 13, 3 at 17. The GM spends a use and rerolls the failed save at the table | Long rest |
 | Rage | Barbarian 1 | 2, then 3 at level 3, 4 at 6, 5 at 12, 6 at 17. No pool at 20, where rage has no limit | Long rest |
 | Bardic Inspiration | Bard 1 | The CHA modifier, at least 1 | Long rest, or short rest from level 5 |
 | Channel Divinity | Cleric 2, Paladin 3 | Cleric: 1, then 2 at level 6, 3 at 18. Paladin: 1. A character with both classes gets the larger count | Short rest |

@@ -14,6 +14,7 @@ import {
   auraBonus,
   checkAbility,
   checkBonus,
+  checkMinFace,
   halfProficiency,
   proficientSave,
   saveBonus,
@@ -187,6 +188,11 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
     parts.push(`not proficient with ${badWear.join(' and ')}, disadvantage`);
   }
   if (noisy) parts.push(`wearing ${noisy}, disadvantage`);
+  // Reliable Talent counts a low face as 10. The tray shows the face it
+  // rolled, so the log names the lift and the total includes it.
+  const minFace = event.kind === 'check' ? checkMinFace(character, event.key) : 1;
+  const total = result.total + Math.max(0, minFace - natural);
+  if (total > result.total) parts.push(`Reliable Talent, ${natural} counts as ${minFace}`);
   // An advantage or disadvantage roll names the discarded d20, matching the
   // tray's own readout. The tray injects its standing toggle when the caller
   // names no mode, so the note can appear without this module asking for it.
@@ -195,11 +201,11 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const verdict =
     dc === null
       ? ''
-      : ` against DC ${dc} from the dice tray: ${result.total >= dc ? 'success' : 'failure'}`;
+      : ` against DC ${dc} from the dice tray: ${total >= dc ? 'success' : 'failure'}`;
   app.actions.logEvent(
     'roll',
-    `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}${verdict}.${naturalNote}`,
+    `${character.name} rolls ${phrase} (${parts.join(', ')}): ${total}${modeNote}${verdict}.${naturalNote}`,
   );
-  app.toasts.show(`${character.name} rolls ${result.total} on ${phrase}${verdict}.`);
+  app.toasts.show(`${character.name} rolls ${total} on ${phrase}${verdict}.`);
   spendRollRiders(app, character.id, rider);
 }

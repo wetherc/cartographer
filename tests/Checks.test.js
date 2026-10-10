@@ -6,6 +6,7 @@ import {
   resolveSave,
   checkAbility,
   checkBonus,
+  checkMinFace,
   resolveCheck,
   abilityCheck,
   passiveScore,
@@ -350,4 +351,26 @@ test('resolveSave with an ability reads the slant of the chips', () => {
   assert.equal(set.total, 5);
   // With no ability, the chips add riders only.
   assert.equal(resolveSave(0, 15, { conditions: [haste], rng: faces() }).total, 5);
+});
+
+test('Reliable Talent counts a face below 10 as 10 on a proficient check only', () => {
+  /** @param {number} level */
+  const rogue = (level) =>
+    withProficiencies(hero({ classes: [{ classId: 'rogue', level }], level }), {
+      skills: ['stealth'],
+    });
+  const talented = rogue(11);
+  assert.equal(checkMinFace(talented, 'stealth'), 10);
+  assert.equal(checkMinFace(talented, 'arcana'), 1, 'not proficient');
+  assert.equal(checkMinFace(talented, 'DEX'), 1, 'a bare ability is never proficient');
+  assert.equal(checkMinFace(rogue(10), 'stealth'), 1, 'the feature comes at rogue 11');
+  const bonus = checkBonus(talented, 'stealth');
+  const low = abilityCheck(talented, 'stealth', 15, { rng: seq([face(20, 3)]) });
+  assert.equal(low.natural, 3, 'the die still reports its face');
+  assert.equal(low.total, bonus + 10);
+  assert.equal(low.success, true);
+  const high = abilityCheck(talented, 'stealth', null, { rng: seq([face(20, 14)]) });
+  assert.equal(high.total, bonus + 14);
+  const save = savingThrow(talented, 'DEX', 15, { rng: seq([face(20, 3)]) });
+  assert.equal(save.total, saveBonus(talented, 'DEX') + 3, 'a save gets no floor');
 });

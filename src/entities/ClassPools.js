@@ -7,6 +7,7 @@ import {
   CLASS_POOL_IDS,
   DIVINE_SENSE_ID,
   HP_RESOURCE_ID,
+  INDOMITABLE_ID,
   KI_ID,
   LAY_ON_HANDS_ID,
   LEGACY_HIT_DICE_ID,
@@ -80,6 +81,18 @@ const POOL_RULES = [
         [17, 2],
       ]),
       recharge: 'short',
+    }),
+  },
+  {
+    id: INDOMITABLE_ID,
+    name: 'Indomitable',
+    uses: (level) => ({
+      max: tier(level('fighter'), [
+        [9, 1],
+        [13, 2],
+        [17, 3],
+      ]),
+      recharge: 'long',
     }),
   },
   {

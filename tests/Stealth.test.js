@@ -14,6 +14,7 @@ import {
 import { addItem, createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { equip } from '../src/entities/Equipment.js';
+import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { item } from './helpers/fixtures.js';
 
 test('isSurprised needs every total to meet the passive score, and no sneaker surprises no one', () => {
@@ -91,6 +92,15 @@ test('rollStealth adds the Stealth bonus, and noisy armor rolls with disadvantag
     'p',
   );
   assert.equal(rollStealth(plated, 'character', seq()).total, 3, 'disadvantage keeps 1 + 2');
+});
+
+test('rollStealth counts a low face as 10 for a rogue 11 proficient in Stealth', () => {
+  const rogue = withProficiencies(
+    { ...createCharacter('r', 'Rogue', { DEX: 10 }), classes: [{ classId: 'rogue', level: 11 }] },
+    { skills: ['stealth'] },
+  );
+  // Rogue 11 has a +4 proficiency bonus, and the face of 1 counts as 10.
+  assert.equal(rollStealth(rogue, 'character', () => 0).total, 14);
 });
 
 test('rollStealth and passivePerceptionOf read a creature from its stat block', () => {

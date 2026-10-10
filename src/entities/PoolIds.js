@@ -41,6 +41,10 @@ export const SECOND_WIND_ID = 'second-wind';
 /** Fighter: Action Surge, 1 use per short rest (2 from level 17). */
 export const ACTION_SURGE_ID = 'action-surge';
 
+/** Fighter: Indomitable rerolls of a failed save, per long rest (1 at
+ * level 9, 2 at 13, 3 at 17). */
+export const INDOMITABLE_ID = 'indomitable';
+
 /** Cleric and paladin: Channel Divinity uses, per short rest. */
 export const CHANNEL_DIVINITY_ID = 'channel-divinity';
 
@@ -72,6 +76,7 @@ export const DIVINE_SENSE_ID = 'divine-sense';
 export const CLASS_POOL_IDS = Object.freeze([
   SECOND_WIND_ID,
   ACTION_SURGE_ID,
+  INDOMITABLE_ID,
   RAGE_ID,
   BARDIC_INSPIRATION_ID,
   CHANNEL_DIVINITY_ID,

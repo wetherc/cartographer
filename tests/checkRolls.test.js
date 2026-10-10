@@ -97,6 +97,25 @@ test('a proficient check adds the bonus once', () => {
   assert.match(app.log[0], /proficiency \+3/);
 });
 
+test('Reliable Talent lifts a low face to 10 on a proficient check and names it', () => {
+  const rogue = withProficiencies(hero({ level: 11, classes: [{ classId: 'rogue', level: 11 }] }), {
+    skills: ['stealth'],
+  });
+  const app = stubApp({ rng: scripted([face(20, 4)]), dc: 15 });
+  rollCheck(app, rogue, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  // DEX +3 and proficiency +4 make +7, and the 4 counts as 10.
+  assert.equal(
+    app.log[0],
+    'Rook rolls a Stealth check (DEX +3, proficiency +4, Reliable Talent, 4 counts as 10): 17 against DC 15 from the dice tray: success.',
+  );
+  const high = stubApp({ rng: scripted([face(20, 12)]) });
+  rollCheck(high, rogue, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.doesNotMatch(high.log[0], /Reliable Talent/);
+  const save = stubApp({ rng: scripted([face(20, 4)]) });
+  rollCheck(save, rogue, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.match(save.log[0], /: 7\.$/, 'a save gets no floor');
+});
+
 test('an untrained check rolls the bare ability modifier', () => {
   const app = stubApp({ rng: scripted([face(20, 12)]) });
   rollCheck(app, hero(), { kind: 'check', key: 'acrobatics' }, { rng: () => 0 });

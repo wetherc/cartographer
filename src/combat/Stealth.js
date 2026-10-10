@@ -14,7 +14,13 @@ import { exhaustionLevel } from '../entities/Exhaustion.js';
  */
 
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
-import { checkBonus, passivePerception, passiveScore, resolveCheck } from '../entities/Checks.js';
+import {
+  checkBonus,
+  checkMinFace,
+  passivePerception,
+  passiveScore,
+  resolveCheck,
+} from '../entities/Checks.js';
 import { rollMode } from '../entities/ConditionEffects.js';
 import { creatureCheckBonus } from '../entities/CreatureChecks.js';
 import { riderSources } from '../entities/FeatChoices.js';
@@ -145,11 +151,13 @@ export function rollStealth(entity, kind, rng = Math.random) {
   /** @type {import('../entities/ConditionEffects.js').Slant[]} */
   const wear = [];
   let bonus;
+  let minFace = 1;
   if (kind === 'character') {
     const character = /** @type {Character} */ (entity);
     if (unproficientWear(character).length > 0) wear.push('disadvantage');
     if (stealthPenalty(character)) wear.push('disadvantage');
     bonus = checkBonus(character, 'stealth');
+    minFace = checkMinFace(character, 'stealth');
   } else {
     bonus = creatureCheckBonus(/** @type {Creature} */ (entity), 'stealth');
   }
@@ -158,6 +166,7 @@ export function rollStealth(entity, kind, rng = Math.random) {
     ...(mode ? { mode } : {}),
     rng,
     conditions: riderSources(entity),
+    minFace,
   });
   return { total, rider };
 }

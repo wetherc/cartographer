@@ -527,7 +527,7 @@ what the character already spent from each pool. A character whose pools
 already match comes back as the same object.
 
 `ClassPools.js` derives the pools of the class features that have a count of
-uses: Second Wind, Action Surge, Rage, Bardic Inspiration, Channel Divinity,
+uses: Second Wind, Action Surge, Indomitable, Rage, Bardic Inspiration, Channel Divinity,
 Divine Sense, Lay on Hands, ki, Wild Shape, sorcery points, and Arcane
 Recovery. A table of rules gives the 5e SRD count at each class level. Some
 counts also read the CHA modifier: Bardic Inspiration uses at least 1, and
