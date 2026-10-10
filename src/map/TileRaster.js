@@ -36,8 +36,8 @@ const BYTE_LIMIT = 32 * 1024 * 1024;
  * The raster size for a destination edge length: the destination itself,
  * rounded up to a whole pixel.
  *
- * An earlier version quantized this to powers of two, to keep a zoom sweep
- * from minting a raster per scale. That cost visible quality. Tile art carries
+ * A raster quantized to powers of two would keep a zoom sweep from minting a
+ * raster per scale, but it costs visible quality. Tile art has
  * hairline strokes, such as the grid lines on grass and the ripples on water.
  * A vector rasterizer keeps a hairline visible at any size, but a 32-pixel
  * raster scaled down to 17.8 pixels averages it away, and the whole map goes

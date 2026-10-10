@@ -1,9 +1,9 @@
 /**
  * The selected-character scope. It owns which character the character panels
  * point at, writes an edited character back into the roster, and passes the
- * new value out to every panel registered with it. Panels no longer name each
- * other, so a new tab costs one registration instead of an edit to every
- * panel already there.
+ * new value out to every panel registered with it. Panels do not name each
+ * other, so a new tab needs one registration and no edit to the panels
+ * already there.
  *
  * This is pure logic: it holds ids and callbacks, never touches the DOM, and
  * reads the roster through the getter it receives.

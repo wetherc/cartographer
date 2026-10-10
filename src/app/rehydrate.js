@@ -2,12 +2,11 @@
  * Adopt a campaign that another tab saved, without a page reload.
  *
  * A tab that only follows along, such as a player-facing display or a second
- * screen, used to answer every external save with `location.reload()`.
- * Autosave writes every ten idle seconds while the GM works. As a result, that
- * display re-parsed the save and remounted every panel every couple of
- * minutes. This discarded its scroll position, its open sidebar tab, the
+ * screen, receives a save every ten idle seconds while the GM works. A
+ * `location.reload()` on each save would re-parse the save and remount every
+ * panel, and it would discard the scroll position, the open sidebar tab, the
  * map's pan and zoom, and anything staged in the dice tray. Reading the new
- * campaign is cheap. Rebuilding the whole UI around it is what costs time.
+ * campaign is cheap, while a rebuild of the whole UI around it takes time.
  *
  * This module writes a loaded campaign over the running one in place. It
  * takes an already-built `Campaign` instead of reading storage itself. This

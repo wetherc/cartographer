@@ -3,8 +3,8 @@
  * for a refresh. The first request in a synchronous burst schedules the run.
  * Every request after it, until the run happens, does nothing. One weapon
  * attack spends the budget, logs the roll, logs the damage, writes the
- * target, and logs a defeat. Each of those used to rebuild the combat screen.
- * With this scheduler they cost one rebuild.
+ * target, and logs a defeat. Each of those requests a rebuild of the combat
+ * screen, and the scheduler runs one rebuild for all of them.
  *
  * `schedule` defaults to a microtask. A microtask runs after the current
  * handler finishes and before the browser paints, so the screen never shows a

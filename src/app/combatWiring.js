@@ -322,9 +322,8 @@ export function wireCombatScreen(app) {
 
   // The rebuild itself is deferred and coalesced. One weapon attack reaches
   // this view four or five times: the budget spend, the attack line, the
-  // damage line, the target write, and the defeat line. Each of these used to
-  // rebuild the whole screen. The scheduler runs one rebuild per burst, in a
-  // microtask, before the browser paints. While the tab is on another mode
+  // damage line, the target write, and the defeat line. The scheduler runs one
+  // rebuild per burst, in a microtask, before the browser paints. While the tab is on another mode
   // with the fight still running, for example a player looking at the map
   // mid-fight, the rebuild is skipped, because nothing is visible, and the
   // mode switch back is itself a refresh that redraws everything. The
