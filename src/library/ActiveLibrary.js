@@ -13,6 +13,7 @@ import { WEAPON_TYPES } from '../entities/Equipment.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
 import { DEFAULT_FEATS } from '../data/feats.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
+import { DEFAULT_TABLES } from '../data/tables.js';
 import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { indexById } from '../util/indexById.js';
 import {
@@ -51,6 +52,7 @@ let active = emptyLibrary();
  *   spellIndex?: Map<string, Spell>,
  *   feats?: { entry: Feat, source: LibrarySource }[],
  *   featList?: Feat[],
+ *   tables?: { entry: import('../types/table.js').RandomTable, source: LibrarySource }[],
  * }}
  */
 let cache = {};
@@ -182,6 +184,17 @@ export function activeFeatEntries() {
  * @returns {Feat[]} */
 export function activeFeats() {
   return (cache.featList ??= activeFeatEntries().map((e) => e.entry));
+}
+
+/** The merged random tables: the built-in examples plus the active
+ * customizations, tagged by source.
+ * @returns {{ entry: import('../types/table.js').RandomTable, source: LibrarySource }[]} */
+export function activeTableEntries() {
+  return (cache.tables ??= mergedEntries(
+    /** @type {import('../types/table.js').RandomTable[]} */ (DEFAULT_TABLES),
+    active.tables,
+    nameKey,
+  ));
 }
 
 /** A merged feat by name, or null for a name no entry carries. The name is

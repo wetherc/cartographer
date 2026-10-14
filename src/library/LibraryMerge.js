@@ -71,7 +71,7 @@ export function defaultEquipmentTemplates() {
 
 /** @returns {CustomLibrary} A library with no customizations. */
 export function emptyLibrary() {
-  return { equipment: [], creatures: [], spells: [], feats: [] };
+  return { equipment: [], creatures: [], spells: [], feats: [], tables: [] };
 }
 
 /** True when a custom library has no entries in any list.
@@ -82,7 +82,8 @@ export function isLibraryEmpty(library) {
     library.equipment.length === 0 &&
     library.creatures.length === 0 &&
     library.spells.length === 0 &&
-    library.feats.length === 0
+    library.feats.length === 0 &&
+    library.tables.length === 0
   );
 }
 

@@ -406,3 +406,15 @@ test('normalizeLibrary reads a weapon list and coerces each entry', () => {
     ['Beak', 'Claws'],
   );
 });
+
+test('normalizeLibrary repairs random tables and keeps one per name', () => {
+  const library = normalizeLibrary({
+    tables: [
+      { name: 'Weather', rows: [{ weight: 2, text: 'Rain' }] },
+      { name: ' weather ', rows: [{ text: 'Sun' }] },
+      { name: 'Broken', rows: [] },
+      'nope',
+    ],
+  });
+  assert.deepEqual(library.tables, [{ name: 'weather', rows: [{ weight: 1, text: 'Sun' }] }]);
+});

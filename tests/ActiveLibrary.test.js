@@ -16,8 +16,10 @@ import {
   activeSpellIndex,
   activeFeatEntries,
   activeFeats,
+  activeTableEntries,
   resolveSpellIds,
 } from '../src/library/ActiveLibrary.js';
+import { DEFAULT_TABLES } from '../src/data/tables.js';
 import { DEFAULT_CREATURES } from '../src/data/creatures.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { DEFAULT_FEATS } from '../src/data/feats.js';
@@ -238,6 +240,22 @@ test('the feat registry merges customs and memoizes until the library changes', 
     const added = activeFeatEntries().find((e) => e.entry.name === 'Iron Will');
     assert.equal(added?.source, 'custom');
     assert.equal(activeFeatEntries().length, DEFAULT_FEATS.length + 1);
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
+});
+
+test('activeTableEntries merges custom tables over the built-in ones', () => {
+  const builtIn = DEFAULT_TABLES[0];
+  const override = { name: builtIn.name, rows: [{ weight: 1, text: 'Only this' }] };
+  const added = { name: 'Weather', rows: [{ weight: 1, text: 'Rain' }] };
+  try {
+    setActiveLibrary({ ...emptyLibrary(), tables: [override, added] });
+    const entries = activeTableEntries();
+    assert.deepEqual(entries[0], { entry: override, source: 'override' });
+    assert.deepEqual(entries.at(-1), { entry: added, source: 'custom' });
+    assert.equal(entries.length, DEFAULT_TABLES.length + 1);
+    assert.equal(activeTableEntries(), entries);
   } finally {
     setActiveLibrary(emptyLibrary());
   }

@@ -31,6 +31,7 @@ import { idClaimer } from './LibraryIdentity.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
 import { normalizeFeatRequirement } from '../entities/FeatRequirement.js';
 import { equipmentKey, nameKey } from './LibraryMerge.js';
+import { normalizeTable } from '../dice/RandomTable.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -395,7 +396,14 @@ export function normalizeLibrary(parsed) {
     return normalizeFeat(e, id);
   });
 
-  return { equipment, creatures, spells, feats };
+  const tables = dedupeByKey(
+    /** @type {import('../types/table.js').RandomTable[]} */ (
+      arrayOf(source.tables).map(normalizeTable).filter(Boolean)
+    ),
+    nameKey,
+  );
+
+  return { equipment, creatures, spells, feats, tables };
 }
 
 /* --------------------------------------------------------------------------

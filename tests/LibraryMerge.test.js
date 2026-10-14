@@ -149,3 +149,9 @@ test('an empty library carries an empty spells list; isLibraryEmpty counts spell
   assert.equal(isLibraryEmpty(emptyLibrary()), true);
   assert.equal(isLibraryEmpty({ ...emptyLibrary(), spells: [DEFAULT_SPELLS[0]] }), false);
 });
+
+test('isLibraryEmpty counts random tables', () => {
+  assert.deepEqual(emptyLibrary().tables, []);
+  const table = { name: 'Weather', rows: [{ weight: 1, text: 'Rain' }] };
+  assert.equal(isLibraryEmpty({ ...emptyLibrary(), tables: [table] }), false);
+});

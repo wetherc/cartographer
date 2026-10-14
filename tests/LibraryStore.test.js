@@ -72,6 +72,7 @@ test('fetchLibraryFile returns the normalized library on a good response', async
     creatures: [],
     spells: [],
     feats: [],
+    tables: [],
   });
 });
 
@@ -96,6 +97,7 @@ test('fetchLibraryFile returns null on a missing file, bad JSON, or network erro
 test('isLibraryFile accepts an object with at least one library list', () => {
   assert.equal(isLibraryFile(emptyLibrary()), true);
   assert.equal(isLibraryFile({ spells: [] }), true);
+  assert.equal(isLibraryFile({ tables: [] }), true);
   assert.equal(isLibraryFile({ feats: [{ name: 'Alert' }], extra: 1 }), true);
 });
 
@@ -106,5 +108,8 @@ test('isLibraryFile refuses JSON that is not a library file', () => {
 });
 
 test('libraryCounts names the size of each list', () => {
-  assert.equal(libraryCounts(sample()), '1 equipment, 0 creature, 0 spell, 0 feat entries');
+  assert.equal(
+    libraryCounts(sample()),
+    '1 equipment, 0 creature, 0 spell, 0 feat, 0 table entries',
+  );
 });

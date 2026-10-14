@@ -12,6 +12,7 @@
 
 import { DEFAULT_FEATS } from '../data/feats.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
+import { DEFAULT_TABLES } from '../data/tables.js';
 import { renameConflict, storedEntryId } from './LibraryIdentity.js';
 
 export {
@@ -41,13 +42,14 @@ export {
   activeSpellIndex,
   activeFeatEntries,
   activeFeats,
+  activeTableEntries,
   resolveSpellIds,
 } from './ActiveLibrary.js';
 
-// The built-in creature and feat templates live with the other authored
+// The built-in creature and feat templates and the built-in random tables live with the other authored
 // corpora in src/data/. The re-exports keep this module the one import site
 // for the built-in defaults of every library kind.
-export { DEFAULT_CREATURES, DEFAULT_FEATS };
+export { DEFAULT_CREATURES, DEFAULT_FEATS, DEFAULT_TABLES };
 
 // The id rules for the name-keyed lists live in LibraryIdentity.js. The
 // re-export keeps this module the one import site for the library wiring.

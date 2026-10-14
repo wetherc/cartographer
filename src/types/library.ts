@@ -11,6 +11,7 @@ import type {
 import type { CreatureTemplate } from './creature.js';
 import type { Spell } from './spell.js';
 import type { Feat } from './feat.js';
+import type { RandomTable } from './table.js';
 
 /** A reusable item blueprint: an InventoryItem minus identity and stack
  * fields. The built-in 5e preset lists and the GM's custom entries share
@@ -51,6 +52,7 @@ export interface CustomLibrary {
   creatures: CreatureTemplate[];
   spells: Spell[];
   feats: Feat[];
+  tables: RandomTable[];
 }
 
 /** Where a merged library entry comes from: a built-in default, a custom

@@ -87,12 +87,18 @@ export function downloadLibrary(library, filename = 'campaign-library.json') {
   downloadJSON(JSON.stringify(library, null, 2), filename);
 }
 
-/** The four lists of a library file. */
-const LIBRARY_LISTS = /** @type {const} */ (['equipment', 'creatures', 'spells', 'feats']);
+/** The five lists of a library file. */
+const LIBRARY_LISTS = /** @type {const} */ ([
+  'equipment',
+  'creatures',
+  'spells',
+  'feats',
+  'tables',
+]);
 
 /**
  * Whether parsed JSON looks like a library file: an object with at least one
- * of the four library lists as an array. A campaign export, a bare array, or
+ * of the five library lists as an array. A campaign export, a bare array, or
  * any other JSON fails this test. Without it, such a file normalizes to an
  * empty library, and Replace then deletes every customization.
  * @param {unknown} raw
@@ -106,13 +112,13 @@ export function isLibraryFile(raw) {
 
 /**
  * The entry counts of a library, for the import confirm and toast, for
- * example "2 equipment, 0 creature, 5 spell, 1 feat entries".
+ * example "2 equipment, 0 creature, 5 spell, 1 feat, 0 table entries".
  * @param {CustomLibrary} library
  * @returns {string}
  */
 export function libraryCounts(library) {
-  const { equipment, creatures, spells, feats } = library;
-  return `${equipment.length} equipment, ${creatures.length} creature, ${spells.length} spell, ${feats.length} feat entries`;
+  const { equipment, creatures, spells, feats, tables } = library;
+  return `${equipment.length} equipment, ${creatures.length} creature, ${spells.length} spell, ${feats.length} feat, ${tables.length} table entries`;
 }
 
 /**
