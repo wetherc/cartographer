@@ -359,7 +359,7 @@ test('a malformed encoded node degrades instead of throwing', () => {
     cells: [0],
     tiles: [{ id: '4,4', childNodeId: 'c' }],
   });
-  assert.deepEqual(dimensionless.tiles, [{ id: '4,4', childNodeId: 'c' }]);
+  assert.deepEqual(dimensionless.tiles, full([{ id: '4,4', childNodeId: 'c' }]));
   // One bad dimension is enough, whichever of the two it is.
   const flat = decodeNodeTiles({
     ...base,
@@ -368,7 +368,7 @@ test('a malformed encoded node degrades instead of throwing', () => {
     cells: [0],
     tiles: [{ id: '4,4', childNodeId: 'c' }],
   });
-  assert.deepEqual(flat.tiles, [{ id: '4,4', childNodeId: 'c' }]);
+  assert.deepEqual(flat.tiles, full([{ id: '4,4', childNodeId: 'c' }]));
   // The codec's own fields win over a leftover record that contradicts them.
   const contradicted = decodeNodeTiles({
     ...base,

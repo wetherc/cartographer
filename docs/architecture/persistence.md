@@ -78,8 +78,10 @@ down the whole map.
    table and the string table back inline.
 2. The schema migrations (`Migrations.js`).
 3. The tile decoder (`decodeNodeList`), which also reuses unchanged live
-   nodes.
-4. `restoreAssets`, which inlines the image payloads again.
+   nodes. It restores the image refs of each palette entry with
+   `refRestorer`.
+4. `restoreAssets`, which inlines the image payloads again in the nodes
+   stored in the per-tile form and in the handouts.
 5. `withNodeDefaults` on each node, then `withRepairedParents` and
    `withRepairedLinks`.
 6. Field coercion, one function per top-level field, with the entity
@@ -284,7 +286,7 @@ apply them to the blank campaign.
 
 ### Shortened loads
 
-`decodeNodeList` (`TileCodec.js`) loads at most `MAX_NODES` (10,000) nodes
+`decodeNodeList` (`TileDecode.js`) loads at most `MAX_NODES` (10,000) nodes
 and `MAX_TOTAL_CELLS` (2,000,000) tiles. The limit exists because a run of
 `[index, count]` costs a few characters in the file but one tile object in
 memory per cell. The decoder drops the nodes past the node limit, loads a
@@ -465,7 +467,8 @@ payload's content. `restoreAssets` inlines the payloads again inside
 `deserialize`. The 18.5 MB example becomes 58 KB, because the save stores the
 payload once and references it 900 times.
 
-`restoreAssets` also checks every ref through `storage/ImageRefs.js`. The app
+`restoreAssets` also checks every ref through `storage/ImageRefs.js`, and so
+does the tile decoder through the same `refRestorer` function. The app
 loads three kinds of ref: an inline image payload, an `asset:` key, or a
 relative path on this origin with no `..` segment. The load blanks any other
 ref, such as a protocol-relative URL to another host, and the renderer draws
@@ -703,7 +706,8 @@ one.
 The node list is the only part of a save that grows without limit. Authoring
 adds tiles, and fog reveals only increase and are never taken back.
 
-`storage/TileCodec.js` encodes a node's tiles by position instead:
+`storage/TileCodec.js` encodes a node's tiles by position instead, and
+`storage/TileDecode.js` reads them back:
 
 ```
   per-cell form                        encoded form
@@ -803,11 +807,14 @@ represent and writes out of line whatever it does not represent:
   stream. Import persists what it reads before it reloads, so an error thrown
   here produces a save that cannot start.
 - **Order of stages.** For a node with an inline payload, the codec runs
-  after the asset hoist in `packState` and before the asset restore in
-  `deserialize`. A node with no payload skips the hoist. The hoist walks
-  `node.tiles[].imageRef`, which an encoded node does not have. With the codec
-  after the hoist, the palette already contains `asset:` refs, so `Assets.js`
-  needs no knowledge of the encoding.
+  after the asset hoist in `packState`. A node with no payload skips the
+  hoist. The hoist walks `node.tiles[].imageRef`, which an encoded node does
+  not have. With the codec after the hoist, the palette already contains
+  `asset:` refs, so `Assets.js` needs no knowledge of the encoding. On load,
+  the decoder passes each palette entry through `refRestorer` from
+  `Assets.js`. A large map repeats a few dozen palette entries over tens of
+  thousands of cells, so the decoder restores and checks each entry once
+  instead of once per tile.
 
 ### The encoded-node cache
 
@@ -822,8 +829,8 @@ whole session, about 44 MB at 400 extra regions.
 
 `packState` fills the cache, and `encodeHistoryNode` reads it. `deserialize`
 fills it too. Each decoded node keeps the record that it was decoded from,
-when that record names no image payload and no `asset:` key and the asset
-walk left its refs unchanged. The first save after a load then writes those
+when that record names no image payload and no `asset:` key and the decoder
+left its refs unchanged. The first save after a load then writes those
 records with no pack and no encode.
 
 ### Node reuse

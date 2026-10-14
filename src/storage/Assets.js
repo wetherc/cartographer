@@ -282,6 +282,24 @@ export function hoistAssets(state, hash) {
 }
 
 /**
+ * The function that `restoreAssets` maps each ref of `state` through: an
+ * `asset:` reference becomes its payload from the `assets` table of `state`,
+ * and any ref that `ImageRefs.js` refuses becomes the empty string. The tile
+ * decoder takes this function too, so it restores each palette entry once
+ * instead of once per tile.
+ * @param {RawSave} state
+ * @returns {(ref: string) => string}
+ */
+export function refRestorer(state) {
+  const table = isRecord(state.assets) ? state.assets : null;
+  return (ref) => {
+    if (!table || !ref.startsWith(ASSET_PREFIX)) return safeImageRef(ref);
+    const payload = table[ref.slice(ASSET_PREFIX.length)];
+    return safeImageRef(typeof payload === 'string' ? payload : ref);
+  };
+}
+
+/**
  * The inverse of `hoistAssets`: every reference into the `assets` table
  * replaced by its payload, with the table itself removed. The function is
  * pure.
@@ -298,24 +316,16 @@ export function hoistAssets(state, hash) {
  * image element. A save with no table still takes this walk.
  *
  * `untouched` skips the nodes it already contains, and the walk adds each
- * node that it leaves unchanged, so a caller can tell which decoded nodes
- * came through with every ref as stored.
+ * node that it leaves unchanged, so a caller can tell which nodes came
+ * through with every ref as stored. `deserialize` puts each node that the
+ * tile decoder built in `untouched`, because the decoder has already passed
+ * every ref of that node through `refRestorer`.
  * @param {RawSave} state
  * @param {WeakSet<object>} [untouched]
  * @returns {RawSave}
  */
 export function restoreAssets(state, untouched) {
-  const raw = state.assets;
-  const table = isRecord(raw) ? raw : null;
-  const mapped = mapStateRefs(
-    state,
-    (ref) => {
-      if (!table || !ref.startsWith(ASSET_PREFIX)) return safeImageRef(ref);
-      const payload = table[ref.slice(ASSET_PREFIX.length)];
-      return safeImageRef(typeof payload === 'string' ? payload : ref);
-    },
-    untouched,
-  );
+  const mapped = mapStateRefs(state, refRestorer(state), untouched);
   if (!('assets' in mapped)) return mapped;
   const next = { ...mapped };
   delete next.assets;

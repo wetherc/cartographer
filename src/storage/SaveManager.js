@@ -9,7 +9,7 @@
 import { TileGrid } from '../map/TileGrid.js';
 import { withNodeDefaults, withRepairedLinks, withRepairedParents } from '../map/NodeDefaults.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
-import { hoistAssets, restoreAssets } from './Assets.js';
+import { hoistAssets, refRestorer, restoreAssets } from './Assets.js';
 import { createEntityPacker } from './EntityPack.js';
 import { packForSave } from './NodePack.js';
 import { restoreGear, tabulateGear } from './GearTable.js';
@@ -183,7 +183,7 @@ export function serialize(state) {
  * previous node with the same id (`EncodedNodes.nodeReuser`) comes back as
  * that node, with no decode, no asset walk, and no defaults pass. Every other
  * node decodes. A decoded node whose record names no image payload and no
- * `asset:` key, and whose refs the asset walk left unchanged, caches that
+ * `asset:` key, and whose refs the decoder left unchanged, caches that
  * record as its encoded form, so the first save after a load and the next
  * read of a save string skip it.
  * @param {string} json
@@ -204,13 +204,12 @@ export function deserialize(json, assets, previous = []) {
   // cheaper order: no step so far reads image payloads, and restoring
   // first makes every step pay the cost of inlining them.
   const migrated = record(migrateState(raw, stateVersion(raw))) ?? {};
-  // Decoding the positional tile form comes before the asset restore, to
-  // mirror `packState`'s encode-last order. The restore walks
-  // `node.tiles[].imageRef`, a field an encoded node does not have. Without
-  // this order, a palette reference never resolves. The decoder builds
-  // each tile in its final form, and `withNodeDefaults` below keeps such a
-  // tile list as it is (`markDefaulted`). A node stored in the unencoded
-  // form passes through the decoder unchanged.
+  // The decoder restores the image refs of each palette entry through
+  // `refRestorer`, so it reads the asset table before `restoreAssets` drops
+  // it. The asset walk then covers only the nodes stored in the per-tile
+  // form, which pass through the decoder unchanged. The decoder builds each
+  // tile in its final form, and `withNodeDefaults` below keeps such a tile
+  // list as it is (`markDefaulted`).
   const decoded = { ...migrated };
   let report = { dropped: 0, emptied: 0 };
   /** @type {WeakSet<object>} */
@@ -219,6 +218,11 @@ export function deserialize(json, assets, previous = []) {
   const untouched = new WeakSet();
   /** @type {Map<object, Record<string, any>>} */
   const sources = new Map();
+  if (assets && Object.keys(assets).length) {
+    // The sidecar table is a fallback under whatever the string itself
+    // carries, so a save holding its own table resolves from that table alone.
+    decoded.assets = { ...assets, ...(record(decoded.assets) ?? {}) };
+  }
   if (Array.isArray(decoded.nodes)) {
     const reuseNode = nodeReuser(previous);
     const { nodes, dropped, emptied } = decodeNodeList(decoded.nodes, {
@@ -230,17 +234,16 @@ export function deserialize(json, assets, previous = []) {
         }
         return live;
       },
-      onDecode(node, stored) {
-        if (!namesImageData(stored)) sources.set(node, stored);
+      // The decoder restores the refs of each palette entry, so the asset
+      // walk below skips a decoded node.
+      restoreRef: refRestorer(decoded),
+      onDecode(node, stored, refsKept) {
+        untouched.add(node);
+        if (refsKept && !namesImageData(stored)) sources.set(node, stored);
       },
     });
     decoded.nodes = nodes;
     report = { dropped, emptied };
-  }
-  if (assets && Object.keys(assets).length) {
-    // The sidecar table is a fallback under whatever the string itself
-    // carries, so a save holding its own table resolves from that table alone.
-    decoded.assets = { ...assets, ...(record(decoded.assets) ?? {}) };
   }
   const parsed = restoreAssets(decoded, untouched);
   /** @type {Map<object, Record<string, any>>} */
@@ -250,7 +253,7 @@ export function deserialize(json, assets, previous = []) {
     .map((node) => {
       if (reused.has(node)) return /** @type {import('../types/map.js').MapNode} */ (node);
       const full = withNodeDefaults(node);
-      const source = untouched.has(node) ? sources.get(node) : undefined;
+      const source = sources.get(node);
       if (source) seeds.set(full, source);
       return full;
     });
