@@ -17,7 +17,9 @@ import { hpBand } from '../view/ViewRole.js';
 
 /**
  * The alert's title and message for the threats on a tile, or null when the
- * tile holds none. The GM sees exact hit points. A player sees the coarse
+ * tile holds none. Threats that share a name read as one group ("4 Gray
+ * Wolves"), in the order each name first appears. Only a hurt creature shows
+ * its health. The GM sees exact hit points, and a player sees the coarse
  * band, the same rule the panels follow.
  * @param {ArrivalThreat[]} threats
  * @param {{ gm: boolean, subject: string, region: string }} context
@@ -25,13 +27,39 @@ import { hpBand } from '../view/ViewRole.js';
  */
 export function arrivalAlert(threats, { gm, subject, region }) {
   if (threats.length === 0) return null;
-  const names = threats.map((t) =>
-    gm ? `${t.name} (${t.currentHP}/${t.maxHP} HP)` : `${t.name} (${hpBand(t.currentHP, t.maxHP)})`,
-  );
+  /** @type {Map<string, ArrivalThreat[]>} */
+  const groups = new Map();
+  for (const t of threats) groups.set(t.name, [...(groups.get(t.name) ?? []), t]);
+  const health = (/** @type {ArrivalThreat} */ t) =>
+    gm ? `${t.currentHP}/${t.maxHP} HP` : hpBand(t.currentHP, t.maxHP);
+  const names = [...groups].map(([name, members]) => {
+    const hurt = members.filter((t) => t.currentHP < t.maxHP).map(health);
+    if (members.length === 1) return hurt.length ? `${name} (${hurt[0]})` : name;
+    const label = `${members.length} ${pluralName(name)}`;
+    return hurt.length ? `${label} (hurt: ${hurt.join(', ')})` : label;
+  });
   return {
     title: threats.length > 1 ? 'Encounters!' : 'Encounter!',
     message: `${subject} has come upon ${nameList(names)} here in ${region}.`,
   };
+}
+
+/** Last words whose plural changes the f to "ves". */
+const VES = /(wolf|dwarf|elf|thief)$/i;
+
+/**
+ * The plural of a creature name, by its last word: "Gray Wolf" to "Gray
+ * Wolves", "Harpy" to "Harpies", "Bandit Captain" to "Bandit Captains". The
+ * rules cover regular English plurals and the common f-to-ves words. A name
+ * outside them, such as "Sheep", gets a plain "s".
+ * @param {string} name
+ * @returns {string}
+ */
+export function pluralName(name) {
+  if (VES.test(name)) return `${name.slice(0, -1)}ves`;
+  if (/[^aeiou]y$/i.test(name)) return `${name.slice(0, -1)}ies`;
+  if (/(s|x|z|ch|sh)$/i.test(name)) return `${name}es`;
+  return `${name}s`;
 }
 
 /**

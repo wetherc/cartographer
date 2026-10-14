@@ -91,7 +91,7 @@ the party, so move closer if you do not see the diamond.
 
 3. Move the party onto the tile of the Goblin Scout.
 
-A dialog that reads **Encounter!** names the creature, its HP, and the map.
+A dialog that reads **Encounter!** names the creature and the map.
 The dialog also names any other foe on a tile next to the party, because
 those foes are part of the same encounter.
 

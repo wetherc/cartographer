@@ -465,7 +465,9 @@ still open stays until you end the fight. To bring the foes back, click
 
 1. Move the party onto or next to a tile with a live hostile creature. A
    dialog that reads **Encounter!** names each hostile creature on the tile
-   of the party and on the eight tiles around it. A friendly or neutral
+   of the party and on the eight tiles around it. Creatures with the same
+   name show as one group, such as "4 Gray Wolves", and only a hurt creature
+   shows its HP. A friendly or neutral
    creature opens no dialog, and it stays in the **NPCs** panel.
 2. Click **Set up combat** to go straight to step 5, or click **Not now**.
 3. In the **Encounters** panel, open the **Active encounter** tab. It lists
