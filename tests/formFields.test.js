@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { captionWrapperKind } from '../src/ui/formFields.js';
+import { captionWrapperKind, keptOrFirst } from '../src/ui/formFields.js';
 import { uniqueId } from '../src/ui/dom.js';
 
 /**
@@ -30,4 +30,14 @@ test('each generated id carries its prefix and is unique', () => {
   const second = uniqueId('caption');
   assert.match(first, /^caption-\d+$/);
   assert.notEqual(first, second);
+});
+
+test('keptOrFirst keeps an offered value and falls back to the first option', () => {
+  const options = [{ value: 'a' }, { value: 'b' }];
+  assert.equal(keptOrFirst(options, 'b'), 'b');
+  // A fresh picker has no value yet, so it selects the first option.
+  assert.equal(keptOrFirst(options, ''), 'a');
+  // A value that a refill no longer offers, such as a deleted table.
+  assert.equal(keptOrFirst(options, 'gone'), 'a');
+  assert.equal(keptOrFirst([], 'a'), '');
 });

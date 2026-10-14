@@ -249,6 +249,9 @@ export interface AppActions {
   // outside the tray and calls this, so the tray does not show an earlier
   // roll as the result of the cast.
   clearDiceResult(): void;
+  // diceWiring: refill the random table picker of the tray. Library
+  // wiring calls this after each change to the custom library.
+  refreshDiceTables(): void;
 }
 
 /** The `AppState` lists whose panels are built by `app/entityList.js`. A new

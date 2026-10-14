@@ -933,6 +933,7 @@ numberField(value, opts?)           -> HTMLInputElement
 textareaField(value, opts?)         -> HTMLTextAreaElement
 select(options, value, opts?)       -> HTMLSelectElement
 setOptions(select, options, value)                        // refill an existing picker
+keptOrFirst(options, value)         -> string             // the value to pass a refill
 buildInlineForm({ nameInput, nameLabel?, rows, assemble, submitLabel, onSubmit,
                   onCancel?, afterSubmit?, className? }) -> HTMLDivElement
 ```

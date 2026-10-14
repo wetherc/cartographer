@@ -118,6 +118,7 @@ export function wireLibrary(app) {
     resetButton.disabled = isLibraryEmpty(custom);
     for (const panel of panels ?? []) panel.update();
     app.actions.refreshSelectedCharacter();
+    app.actions.refreshDiceTables();
   };
 
   /** Apply a new custom library, store it, and refresh the display. @param {CustomLibrary} next */

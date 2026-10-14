@@ -229,6 +229,19 @@ export function select(options, value, opts = {}) {
 }
 
 /**
+ * The value a refilled picker selects: the current value while the new
+ * options still offer it, and the first option otherwise. A `<select>` given
+ * a value that none of its options has shows a blank box, so a refill that
+ * passes an empty or stale value through would hide the choices.
+ * @param {{ value: string }[]} options
+ * @param {string} value
+ * @returns {string}
+ */
+export function keptOrFirst(options, value) {
+  return options.some((o) => o.value === value) ? value : (options[0]?.value ?? '');
+}
+
+/**
  * Replace a `<select>`'s options and selection. A picker whose choices
  * depend on another field, for example the item form's preset list
  * following the item type, refills itself through this function, so

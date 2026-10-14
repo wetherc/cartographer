@@ -11,6 +11,7 @@ import { textButton } from './buttons.js';
 import { el, uniqueId } from './dom.js';
 import {
   checkboxInput,
+  keptOrFirst,
   numberField,
   select,
   setOptions,
@@ -97,10 +98,7 @@ function buildControl(field, hooks) {
         ...valueOf(picker),
         // A plain select keeps its choice while that choice is still offered,
         // and falls back to the first option otherwise.
-        setOptions: (options) => {
-          const kept = options.some((o) => o.value === picker.value);
-          setOptions(picker, options, kept ? picker.value : (options[0]?.value ?? ''));
-        },
+        setOptions: (options) => setOptions(picker, options, keptOrFirst(options, picker.value)),
         layout: 'plain',
       };
     }

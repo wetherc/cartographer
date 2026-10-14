@@ -82,6 +82,7 @@ export const ACTION_NAMES = [
   'mergeQueuedPatches',
   'rollDice',
   'clearDiceResult',
+  'refreshDiceTables',
 ];
 
 /** Every panel a wiring module can refresh, in AppViews order. */

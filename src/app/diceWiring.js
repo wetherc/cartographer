@@ -53,4 +53,7 @@ export function wireDiceTray(app) {
     diceTray.rollSelection(selection, target, options);
   // A spell cast rolls outside the tray, so it clears the tray's last result.
   app.actions.clearDiceResult = () => diceTray.clearResult();
+  // The library wiring calls this after each library change, so the table
+  // picker lists a table that the GM added or renamed.
+  app.actions.refreshDiceTables = () => diceTray.refreshTables();
 }
