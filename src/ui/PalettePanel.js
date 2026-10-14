@@ -162,12 +162,10 @@ export function mountPalettePanel(
    * @param {string} label
    * @param {import('./icons.js').IconName} glyph
    * @param {Brush} value
-   * @param {import('./buttons.js').ButtonVariant} [variant]
    */
-  function toolButton(label, glyph, value, variant) {
+  function toolButton(label, glyph, value) {
     const node = textButton(label, () => select(value, node), {
       icon: glyph,
-      variant,
       className: 'palette__item',
     });
     selectables.push(node);
@@ -175,14 +173,19 @@ export function mountPalettePanel(
     return node;
   }
 
-  // Inspect is the starting brush. It carries the active styling from mount.
+  // Inspect is the starting brush, so the panel starts with its active
+  // styling and with the swatches dimmed, the same as a later pick of Inspect.
   const inspectBtn = toolButton('Inspect', 'pointer', null);
   inspectBtn.classList.add('palette__item--active');
   inspectBtn.setAttribute('aria-pressed', 'true');
+  root.classList.add('palette--tool');
 
   const regionBtn = toolButton('Region', 'map', 'region');
   const erasePathBtn = toolButton('Erase path', 'remove', 'erase-path');
-  const eraseBtn = toolButton('Erase tile', 'remove', 'erase', 'danger');
+  // Only the icon of Erase tile is red. A red border would match the ring of
+  // the active tool, and the palette would show two tools as picked.
+  const eraseBtn = toolButton('Erase tile', 'remove', 'erase');
+  eraseBtn.classList.add('palette__item--erase');
 
   // Grid order (row-major): Inspect, Region, Erase path, Erase tile.
   tools.append(inspectBtn, regionBtn, erasePathBtn, eraseBtn);

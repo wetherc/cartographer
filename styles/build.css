@@ -227,6 +227,10 @@ body.mode-build .app-sidebar {
   outline-offset: 1px;
 }
 
+.palette__item--erase .icon {
+  color: var(--danger);
+}
+
 /* Art-size row: 1x/2x/3x stamp footprint for the next painted tile. */
 /* The Region brush picker, shown under the tools while that brush is active. */
 .palette__region {
