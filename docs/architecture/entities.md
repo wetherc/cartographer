@@ -1093,6 +1093,18 @@ weapon stores its two-handed dice as a full `versatileDamage` array, so the
 damage code needs no special case for it. A permanent rider term therefore
 appears in both arrays.
 
+`entities/WeaponProperties.js` applies three of the properties in combat.
+`ammunitionStack(attacker, weapon)` finds the inventory stack that feeds a
+weapon with the Ammunition property. It matches by item name, so "Arrows"
+feeds a bow and "Crossbow Bolts" feeds a crossbow, and
+`app/ammunitionSpend.js` takes one piece from that stack for each paid shot.
+A character with no matching stack gets a toast, and the shot still rolls.
+`heavySlant(attacker, weapon)` adds one disadvantage slant to the swing of a
+heavy weapon when the attacker's `raceTraits.size` is `'small'`.
+`loadedSwings` caps the Extra Attack count of a loading weapon at one swing,
+unless the attacker took the Crossbow Expert feat. A creature's Multiattack
+count ignores that cap, because a stat block already counts its shots.
+
 The strings `light` and `heavy` are also armor weight classes. The two
 vocabularies are separate constants (`WEAPON_PROPERTIES` in `Weapons.js` and
 `ARMOR_WEIGHTS` in `Equipment.js`), and the code never mixes them.

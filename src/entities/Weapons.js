@@ -27,8 +27,9 @@ export const WEAPON_KINDS = [
 
 /**
  * The 5e weapon property flags, with form labels. `finesse` and `versatile`
- * change the attack math now. The rest are stored and shown; later combat
- * work reads them.
+ * change the attack math. `WeaponProperties.js` applies `ammunition`,
+ * `heavy`, and `loading`. `reach` is stored and shown only, because the app
+ * tracks no distance.
  * @type {{ key: WeaponProperty, label: string }[]}
  */
 export const WEAPON_PROPERTIES = [

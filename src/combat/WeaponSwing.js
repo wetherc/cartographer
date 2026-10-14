@@ -13,6 +13,7 @@ import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { attackerType } from '../entities/ChipSlants.js';
+import { heavySlant } from '../entities/WeaponProperties.js';
 import { allowsSneakAttack, hasFreeHandFor } from './AttackOptions.js';
 import { coverBonus, coverNote } from './Cover.js';
 import { offhandDamageModifier } from './TwoWeapon.js';
@@ -61,6 +62,7 @@ import {
  *   longSlant: 'disadvantage' | null,
  *   badWear: string[],
  *   wearSlant: 'disadvantage' | null,
+ *   heavy: 'disadvantage' | null,
  *   mode: import('../types/dice.js').RollMode | null,
  *   cover: number,
  *   ac: number,
@@ -137,6 +139,9 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   const longSlant = tweaks.longRange ? 'disadvantage' : null;
   const badWear = unproficientWear(attacker);
   const wearSlant = badWear.length > 0 ? 'disadvantage' : null;
+  // A heavy weapon in the hands of a Small attacker adds one disadvantage
+  // slant.
+  const heavy = heavySlant(attacker, weapon);
   // A chip from the defender's own spell can slant the swing (Chill Touch on
   // an undead attacker).
   const sourced = sourceSlant(attacker.conditions, defender.id);
@@ -147,7 +152,8 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   // goblin boss, adds one disadvantage slant.
   const weakSlant = tweaks.weak ? 'disadvantage' : null;
   const mode =
-    picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced, packSlant, weakSlant]);
+    picked ??
+    rollMode(conditionQuery, [longSlant, wearSlant, heavy, sourced, packSlant, weakSlant]);
   // Cover is the GM's call in the dialog, and it raises the AC of this one
   // swing. Nothing on the map says who stands behind what, so no rule here
   // could work it out.
@@ -167,6 +173,7 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     longSlant,
     badWear,
     wearSlant,
+    heavy,
     mode,
     cover,
     ac: defender.ac + cover,
@@ -202,7 +209,7 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
  */
 export function attackLine(setup, roll) {
   const { attacker, defender, weapon, tweaks, raised } = roll;
-  const { tweak, rider, picked, conditionQuery, longSlant, wearSlant, badWear } = setup;
+  const { tweak, rider, picked, conditionQuery, longSlant, wearSlant, badWear, heavy } = setup;
   const warded = setup.ac + raised;
   // An advantage or disadvantage attack notes the discarded d20, so the log
   // shows both dice and matches the tray's own readout.
@@ -217,6 +224,7 @@ export function attackLine(setup, roll) {
     modeReasons(conditionQuery),
     longSlant && !picked ? 'long range disadvantage' : '',
     wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
+    heavy && !picked ? 'heavy weapon for a Small attacker, disadvantage' : '',
     tweaks.pack && !picked ? 'Pack Tactics advantage' : '',
     tweaks.weak && !picked ? 'Multiattack disadvantage' : '',
   ]

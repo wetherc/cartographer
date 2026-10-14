@@ -1721,3 +1721,114 @@ test('two foes of one name keep their numbers in the attack and hit lines', () =
   assert.match(app.log[1], /^Sword hits Gray Wolf 2 for /);
   assert.match(app.toastMessages[0], /^Hit! Gray Wolf 2 takes /);
 });
+
+/** A light crossbow, which needs bolts and fires once per action. */
+const CROSSBOW = {
+  id: 'xbow',
+  name: 'Light Crossbow',
+  type: 'bow',
+  kind: 'ranged',
+  category: 'simple',
+  quantity: 1,
+  properties: ['ammunition', 'loading', 'two-handed'],
+  range: { normal: 80, long: 320 },
+  damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
+};
+
+/** @param {number} [bolts] how many bolts the hero carries, none when absent */
+function crossbowFight(bolts) {
+  const base = makeHero({ DEX: 14 });
+  const inventory = [
+    CROSSBOW,
+    ...(bolts ? [{ id: 'bolts', name: 'Crossbow Bolts', quantity: bolts, type: 'gear' }] : []),
+  ];
+  const hero = { ...base, inventory };
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 30 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
+  const shoot = () =>
+    rollWeaponAttack(app, {
+      attacker: app.state.characters[0],
+      defender: { id: 'goblin', name: 'Goblin', ac: 30 },
+      weapon: /** @type {any} */ (CROSSBOW),
+      rng: () => 0,
+    });
+  return { app, shoot };
+}
+
+test('a shot from a crossbow takes one bolt from the stack', () => {
+  const { app, shoot } = crossbowFight(2);
+  shoot();
+  const stack = app.state.characters[0].inventory.find((/** @type {any} */ i) => i.id === 'bolts');
+  assert.equal(stack.quantity, 1);
+  assert.equal(
+    app.toastMessages.some((/** @type {string} */ m) => /last of/.test(m)),
+    false,
+  );
+  shoot();
+  assert.equal(
+    app.state.characters[0].inventory.some((/** @type {any} */ i) => i.id === 'bolts'),
+    false,
+    'the empty stack leaves the inventory',
+  );
+  assert.ok(
+    app.toastMessages.some((/** @type {string} */ m) =>
+      /fires the last of the Crossbow Bolts/.test(m),
+    ),
+  );
+});
+
+test('a shot with no bolts warns and still rolls', () => {
+  const { app, shoot } = crossbowFight();
+  shoot();
+  assert.ok(
+    app.toastMessages.some((/** @type {string} */ m) => /has no bolts in the inventory/.test(m)),
+  );
+  assert.equal(app.rolls.length, 1);
+});
+
+test('a creature shot spends no ammunition', () => {
+  const archer = createCreature('archer', 'Archer', {
+    disposition: 'hostile',
+    maxHP: 10,
+    location: HERE,
+    level: 1,
+  });
+  const hero = makeHero({});
+  const app = stubApp({ characters: [hero], creatures: [archer] });
+  rollWeaponAttack(app, {
+    attacker: archer,
+    defender: { id: 'hero', name: 'Hero', ac: 30 },
+    weapon: /** @type {any} */ (CROSSBOW),
+    rng: () => 0,
+  });
+  assert.equal(
+    app.toastMessages.some((/** @type {string} */ m) => /bolts/.test(m)),
+    false,
+  );
+});
+
+test('a Small attacker rolls a heavy weapon at disadvantage and the log says why', () => {
+  const hero = { ...makeHero({ STR: 16 }), raceTraits: { size: 'small' } };
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ ({ ...SWORD, properties: ['heavy', 'two-handed'] }),
+    rng: () => 0.5,
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /heavy weapon for a Small attacker, disadvantage/);
+});

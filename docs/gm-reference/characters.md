@@ -587,7 +587,7 @@ pane sits beside the tiles, and on a narrow one it sits under them.
 | Damage roll | Structured dice terms: a base roll plus optional permanent riders |
 | Category | simple, martial, or none for a natural weapon such as a bite |
 | Kind | melee (STR) or ranged (DEX) |
-| Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, and loading |
+| Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, and loading. Each shot from an ammunition weapon takes one piece from a stack whose name matches, such as "Arrows" for a bow, "Crossbow Bolts" for a crossbow, or "Sling Bullets" for a sling. A toast warns when the character has no such stack, and the shot still rolls. A Small character attacks with a heavy weapon at disadvantage. A loading weapon fires once per Attack action, even with Extra Attack, unless the character took the Crossbow Expert feat |
 | Range | Normal and long range in feet, for a ranged or thrown weapon. A blank or unreadable field takes 80/320 for a ranged weapon and 20/60 for a melee weapon. The long range never saves shorter than the normal range |
 | Two-handed damage | The other dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |

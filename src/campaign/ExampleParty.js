@@ -326,6 +326,7 @@ function wren() {
       range: { normal: 80, long: 320 },
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     },
+    { id: 'arrows', name: 'Arrows', quantity: 20, type: 'gear' },
     {
       id: 'leather-armor',
       name: 'Leather Armor',
@@ -439,6 +440,7 @@ function brannoc() {
       range: { normal: 80, long: 320 },
       damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
     },
+    { id: 'crossbow-bolts', name: 'Crossbow Bolts', quantity: 20, type: 'gear' },
     {
       id: 'splint',
       name: 'Splint Armor',

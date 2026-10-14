@@ -308,7 +308,8 @@ export type { WeaponCategory };
 
 /** 5e weapon property flags. `finesse` uses the higher of STR and DEX.
  * `versatile` swaps to the alternate damage dice when held two-handed.
- * The other flags are stored and shown; later combat work reads them. */
+ * `entities/WeaponProperties.js` applies `ammunition`, `heavy`, and
+ * `loading`. `reach` is stored and shown only. */
 export type WeaponProperty =
   | 'finesse'
   | 'versatile'

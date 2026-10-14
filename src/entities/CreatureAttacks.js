@@ -15,6 +15,7 @@
  */
 
 import { attacksPerAction } from './Features.js';
+import { loadedSwings } from './WeaponProperties.js';
 
 /** The most swings one Multiattack may list. A sanity ceiling on typed
  * input: the largest SRD Multiattack by weapon count stays under it. */
@@ -95,12 +96,18 @@ export function attackTraitFields(value) {
  * How many swings one Attack action buys this attacker with this weapon. A
  * character reads its Extra Attack features, and a creature reads its
  * Multiattack count. The larger number wins, because the two never add up.
+ * A loading weapon caps the Extra Attack count at one swing (see
+ * `WeaponProperties.js`). A Multiattack ignores the cap, because a stat block
+ * already counts its crossbow shots.
  * @param {any} attacker a character or a creature
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').CreatureWeapon} weapon
  * @returns {number}
  */
 export function swingsPerAction(attacker, weapon) {
-  return Math.max(attacksPerAction(attacker, weapon), coerceMultiattack(attacker.multiattack) ?? 1);
+  return Math.max(
+    loadedSwings(attacker, weapon, attacksPerAction(attacker, weapon)),
+    coerceMultiattack(attacker.multiattack) ?? 1,
+  );
 }
 
 /** The die sizes a Surprise Attack may roll. */

@@ -37,6 +37,7 @@ import { offerRedirect, pendingRedirect } from './redirectWard.js';
 import { resolveCast } from './spellCastResolve.js';
 import { attackDialog } from './attackFields.js';
 import { rollD20InTray } from './luckyRoll.js';
+import { spendAmmunition } from './ammunitionSpend.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
@@ -172,6 +173,8 @@ export function rollWeaponAttack(
       return;
     }
   }
+  // A paid shot from a bow or a crossbow takes one piece of its ammunition.
+  spendAmmunition(app, attacker, weapon);
   // A defender with Redirect Attack can swap places with an ally once the
   // attack targets it, before the roll. The whole swing then rolls against
   // the ally.
