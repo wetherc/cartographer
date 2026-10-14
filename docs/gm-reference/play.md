@@ -161,12 +161,10 @@ return arrows. A click on an arrow travels.
 An exit arrow that the mini-map would cover moves along its side of the map
 until it is clear.
 
-In Play mode, the mini-map floats over the top-left corner of the map, and
-the map fits the canvas as if it were not there. Coordinate digits and
-region names under the mini-map hide. Collapse the mini-map to see them. In
-Build mode, the mini-map floats over the bottom-right corner of the map, away
-from the coordinate digits, and the map again fits as if it were not there.
-Tiles can pass under the mini-map in either mode, and a click or a paint
+The mini-map floats over the bottom-right corner of the map in every mode,
+away from the coordinate digits, and the map fits the canvas as if it were
+not there. A region name under the mini-map hides. Tiles can pass under the
+mini-map, and a click or a paint
 stroke there does nothing. Pan the map, or collapse the mini-map, to paint
 those tiles. On a narrow screen the mini-map starts collapsed.
 
@@ -261,7 +259,7 @@ so a tile out of range says nothing.
 ## The mini-map
 
 Inside a sub-region, a small picture of the map one level up sits in the
-top-left corner of the map. On the world map, the mini-map is hidden.
+bottom-right corner of the map. On the world map, the mini-map is hidden.
 
 | Element | Meaning |
 | --- | --- |

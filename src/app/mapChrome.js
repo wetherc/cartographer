@@ -49,9 +49,8 @@ export function mountMapChrome(app, env, hooks) {
   // observers fire when either shows, hides, or changes size. A canvas
   // resize changes the buffer scale, so the resize handler calls this too.
   // The mini-map floats over the map in every mode, so a fit keeps no column
-  // for it and the map gets the full width. In Play mode it sits in the
-  // top-left corner and the coordinate digits under it hide. In Build mode
-  // CSS moves it to the bottom-right corner, away from the coordinate labels.
+  // for it and the map gets the full width. CSS puts it in the bottom-right
+  // corner, away from the coordinate labels.
   // The GM can pan a cell out from under it, or close it from the toolbar.
   const syncMapOccluders = () => {
     const canvasRect = canvasEl.getBoundingClientRect();

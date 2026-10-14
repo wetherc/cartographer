@@ -97,7 +97,7 @@ export function followOffset(view, tileId, occluders = []) {
 /**
  * The smallest pan that moves a tile rect off an occluder, on an axis that
  * pans. It tries each of the four directions and keeps the shortest one, so
- * a tile under the mini-map in the top-left corner moves right or down, by
+ * a tile under the mini-map in the bottom-right corner moves left or up, by
  * whichever is less. A move that would put the tile past the edge of the
  * canvas does not count. A tile that does not overlap the box, or that no
  * move clears, does not move.

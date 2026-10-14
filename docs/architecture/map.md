@@ -1355,7 +1355,7 @@ an axis where the whole map fits the canvas never pans. `followOffset` also
 reads the occluders of the canvas, the rects of the mini-map and the zoom
 toolbar. When the deadzone pan leaves the tile under one of them,
 `clearOf` adds the shortest further pan that moves the tile off it and
-keeps it on the canvas. Without that pan, a party near the top-left corner
+keeps it on the canvas. Without that pan, a party near the bottom-right corner
 of a large map on a narrow screen stands under the mini-map. `FollowScheduler`
 holds the pan while the pointer is over the canvas and runs it when the
 pointer leaves or 600 ms after the last click. Without the wait, a pan
@@ -1635,9 +1635,9 @@ box sits at an edge scales with the pixel ratio. The mini-map rectangle has
 passes under it.
 `visibleCoordLabels` (`CoordLabels.js`) drops each coordinate digit whose
 plate overlaps a floating box, and a region name skips any spot under one.
-The GM collapses the mini-map to see those digits. In Build mode CSS moves
-the mini-map to the bottom-right corner, where no digit draws. It still
-catches the clicks and paint strokes aimed at the cells under it, so the GM
+CSS puts the mini-map in the bottom-right corner in every mode, where no
+digit draws, so this rule hides only the digits under the zoom toolbar. The
+mini-map still catches the clicks and paint strokes aimed at the cells under it, so the GM
 pans those cells out or collapses it. `onModeChanged` in `mapWiring.js`
 sends the rectangles again on each mode switch. A pan or a zoom by the GM can
 still move cells under the mini-map in either mode. A west or east band is
@@ -1762,8 +1762,8 @@ delete does, focus moves to its parent row.
 
 ## The mini-map
 
-The mini-map is the small picture of the parent map in the top-left corner of
-the map. `src/map/MiniMapLayout.js` computes what it shows, and `src/ui/MiniMap.js`
+The mini-map is the small picture of the parent map in the bottom-right
+corner of the map. `src/map/MiniMapLayout.js` computes what it shows, and `src/ui/MiniMap.js`
 draws it.
 
 `miniMapView(node, parent, position, throughTileId)` returns the parent, the

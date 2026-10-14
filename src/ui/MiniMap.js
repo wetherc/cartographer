@@ -21,7 +21,7 @@ const HIDDEN_KEY = 'campaign-builder:minimap-hidden';
 
 /**
  * Mount the mini-map: a small picture of the parent of the node in view,
- * pinned to the top-left corner of the map. It outlines the block of parent
+ * pinned to the bottom-right corner of the map. It outlines the block of parent
  * cells that leads into the node and puts a dot where the party is. The
  * parent draws one small image per tile, so the picture costs one draw pass
  * per parent node object and fog rule. A party step inside the node redraws

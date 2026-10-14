@@ -129,28 +129,20 @@ body.mode-build .map-controls__fog {
   background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
 }
 
-/* The mini-map of the parent map, opposite the controls. It takes pointer
-   events, so a click on it never reaches the tile underneath and moves the
-   party. */
+/* The mini-map of the parent map sits in the bottom-right corner. The column
+   labels run along the top of the map and the row labels down its left side,
+   so this corner covers no coordinate digit, and the zoom toolbar at the top
+   stays clear. It takes pointer events, so a click on it never reaches the
+   tile underneath and moves the party. */
 .minimap {
   position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
+  right: var(--space-2);
+  bottom: var(--space-2);
   margin: 0;
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--overlay-bg) 80%, transparent);
   box-shadow: var(--shadow-2);
-}
-
-/* In Build mode the mini-map moves to the bottom-right corner. The column
-   labels run along the top of the map and the row labels down its left
-   side, so this corner covers no label, and a fit keeps no column for it. */
-body.mode-build .minimap {
-  top: auto;
-  left: auto;
-  right: var(--space-2);
-  bottom: var(--space-2);
 }
 
 .minimap[hidden] {
