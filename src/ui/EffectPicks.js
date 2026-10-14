@@ -128,8 +128,9 @@ export async function gatherEffectPicks(title, effects, taker) {
       picks.expertise.push(...pool);
       continue;
     }
+    // The Expertise feature of the bard and the rogue names itself already.
     const values = await promptModal(
-      `${title}: expertise`,
+      /expertise/i.test(title) ? title : `${title}: expertise`,
       [
         {
           name: `expertise${i}`,

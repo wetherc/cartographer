@@ -18,6 +18,12 @@ import { countNoun, capitalize, splitList, splitTrimmedList } from '../util/text
 import { statFields, readStats } from '../view/forms/statFields.js';
 import { raceCantripLabel, raceCantripOptions } from './raceEdit.js';
 import {
+  classSkillCaption,
+  grantedSkills,
+  openSkillChoices,
+  raceSkillChoice,
+} from './characterSkillPicks.js';
+import {
   POINT_BUY_BUDGET,
   STANDARD_ARRAY,
   pointBuyRemaining,
@@ -40,45 +46,6 @@ import {
 /** @param {{ id: string, name: string }[]} defs @param {string} noneLabel */
 function catalogOptions(defs, noneLabel) {
   return [{ value: '', label: noneLabel }, ...defs.map((d) => ({ value: d.id, label: d.name }))];
-}
-
-/**
- * The class's skill-choice list. An empty `from` list means the class can
- * choose from any skill, for example the bard.
- * @param {string | undefined} classId
- * @returns {string[]}
- */
-function skillChoiceList(classId) {
-  const choice = getClass(classId)?.skillChoice;
-  if (!choice) return [];
-  return choice.from.length ? choice.from : SKILL_IDS;
-}
-
-/**
- * The skills that the race and the background already give: the race's
- * fixed skills, the race skill picks (the Half-Elf), and the background's
- * two skills. A class pick of one of these adds nothing, because the
- * proficiency lists drop duplicates.
- * @param {{ race?: string, raceSkills?: string, background?: string }} values
- * @returns {Set<string>}
- */
-function grantedSkills(values) {
-  return new Set([
-    ...(getRace(values.race)?.skills ?? []),
-    ...(getRace(values.race)?.skillChoice ? splitList(values.raceSkills ?? '') : []),
-    ...(getBackground(values.background)?.skills ?? []),
-  ]);
-}
-
-/**
- * The class skill picks still open, with the race and background skills
- * left out.
- * @param {string | undefined} classId
- * @param {Set<string>} granted
- * @returns {string[]}
- */
-function openSkillChoices(classId, granted) {
-  return skillChoiceList(classId).filter((id) => !granted.has(id));
 }
 
 /** The HP a classless character starts with. This character has no hit die to derive HP from. */
@@ -106,17 +73,6 @@ function raceAbilityChoice(raceId) {
   }));
   const label = `Race ability increases (choose ${choice.count}, +${choice.amount} each)`;
   return { options, count: choice.count, label };
-}
-
-/**
- * The options, pick count, and caption of the race skill multiselect.
- * @param {string} raceId
- * @returns {{ options: { value: string, label: string }[], count: number, label: string }}
- */
-function raceSkillChoice(raceId) {
-  const count = getRace(raceId)?.skillChoice?.count ?? 0;
-  const options = count ? SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })) : [];
-  return { options, count, label: `Race skills (choose ${count})` };
 }
 
 /** The class list that a race cantrip pick offers. Only the High Elf has
@@ -343,7 +299,7 @@ export function characterFormChange(name, form, rng = Math.random) {
     const raceId = form.get('race');
     for (const [field, choice] of /** @type {const} */ ([
       ['raceAbilities', raceAbilityChoice(raceId)],
-      ['raceSkills', raceSkillChoice(raceId)],
+      ['raceSkills', raceSkillChoice(raceId, form.get('background'))],
     ])) {
       form.setOptions(field, choice.options, choice.count);
       form.setLabel(field, choice.label);
@@ -352,6 +308,12 @@ export function characterFormChange(name, form, rng = Math.random) {
     form.setHidden('raceResistance', !getRace(raceId)?.resistanceChoice?.length);
     form.setHidden('raceTool', !getRace(raceId)?.toolChoice?.length);
     form.setHidden('raceCantrip', !getRace(raceId)?.cantripChoice);
+  }
+  // A background pick refilters the race skill picks, so a Half-Elf does not
+  // pick a skill the background already gives.
+  if (name === 'background') {
+    const choice = raceSkillChoice(form.get('race'), form.get('background'));
+    form.setOptions('raceSkills', choice.options, choice.count);
   }
   if (['class', 'race', 'raceSkills', 'background'].includes(name)) {
     const classId = form.get('class');
@@ -366,7 +328,7 @@ export function characterFormChange(name, form, rng = Math.random) {
       label: skillName(id),
     }));
     form.setOptions('skills', options, choice?.choose ?? 0);
-    form.setLabel('skills', choice ? `Class skills (choose ${choice.choose})` : 'Class skills');
+    form.setLabel('skills', classSkillCaption(classId, granted));
   }
   if (name === 'statMethod' || name === 'reroll') applyStatMethod(form, rng);
   if (name === 'statPills') {

@@ -193,7 +193,10 @@ export function buildProgressSection(getCharacter, opts) {
       [
         {
           name: 'skills',
-          label: 'Skills with a doubled proficiency',
+          label:
+            tools.length > 0
+              ? 'Skills and tools with doubled proficiency'
+              : 'Skills with doubled proficiency',
           type: 'multiselect',
           options: [...p.skills, ...tools].map((id) => ({ value: id, label: skillName(id) })),
           value: p.expertise.join(','),

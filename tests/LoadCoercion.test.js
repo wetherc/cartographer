@@ -202,6 +202,15 @@ test('asiChoicesOf keeps the record entries of either stored form', () => {
   assert.deepEqual(asiChoicesOf('x'), {});
 });
 
+test('asiChoicesOf gives a Durable feat record its hit-die minimum', () => {
+  const durable = { type: 'feat', feat: 'Durable', featId: 'durable' };
+  assert.deepEqual(asiChoicesOf({ a: durable }), { a: { ...durable, hitDieFloor: true } });
+  const flagged = { ...durable, hitDieFloor: true };
+  assert.equal(asiChoicesOf({ a: flagged }).a, flagged);
+  const tough = { type: 'feat', feat: 'Tough', featId: 'tough' };
+  assert.equal(asiChoicesOf({ a: tough }).a, tough);
+});
+
 test('levelOf reads a whole number in range, or undefined', () => {
   assert.equal(levelOf(4.7, 1, 20), 4);
   assert.equal(levelOf('6', 1, 20), 6);

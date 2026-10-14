@@ -584,6 +584,7 @@ The helper modules below contain the rest of the character flows:
 | --- | --- |
 | `rosterActions.js` | The roster's GM controls: place one character, edit its name, scores, proficiencies, HP, and AC, grant or award XP, and add or delete a character |
 | `characterCreate.js` | The fields of the New character dialog and `buildCharacter`, which turns the submitted values into a level 1 character. Both are free of DOM code |
+| `characterSkillPicks.js` | The class and race skill picks of the New character dialog: the open choices, the skills that the race and the background already give, and the class skill caption that names them |
 | `characterEdit.js` | The fields of the Edit character dialog and the pure functions that apply them: `applyBasics` for the name, scores, and proficiency lists, and `applyVitals` for HP and AC |
 | `raceEdit.js` | The race pick fields of the Edit character dialog and `applyRacePicks`, which moves a Half-Elf's floating increases or swaps a Dragonborn's ancestry resistance or a High Elf's cantrip, and `raceCantripOptions`, the wizard cantrip list that the New character dialog also offers |
 | `checkRolls.js` | Saving throws and ability checks rolled from the sheet |

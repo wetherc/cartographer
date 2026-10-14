@@ -41,14 +41,25 @@ export function resourceList(value) {
  * Stored ASI choices: either the record keyed by slot, or the older array.
  * Both keep only their record entries, and any other value reads as an
  * empty record. `migrateASIChoices` reads each array entry with `in`, which
- * throws on null.
+ * throws on null. A record of the built-in Durable feat always gets the
+ * `hitDieFloor` flag, since `spendHitDie` reads only the flag, and a stored
+ * record without it would heal with no minimum.
  * @param {unknown} value
  * @returns {Record<string, any> | any[]}
  */
 export function asiChoicesOf(value) {
   if (Array.isArray(value)) return value.filter(isRecord);
   if (!isRecord(value)) return {};
-  return Object.fromEntries(Object.entries(value).filter(([, choice]) => isRecord(choice)));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, choice]) => isRecord(choice))
+      .map(([key, choice]) => [
+        key,
+        choice.featId === 'durable' && !choice.hitDieFloor
+          ? { ...choice, hitDieFloor: true }
+          : choice,
+      ]),
+  );
 }
 
 /**
