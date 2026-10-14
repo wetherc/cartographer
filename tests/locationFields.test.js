@@ -18,7 +18,10 @@ const world = createMapNode('world', 'Aldenmoor', null, 8, 8);
 const region = createMapNode('vale', 'Green Vale', 'world', 4, 6);
 // The fields read the grid alone: the node lookup, and the breadcrumb walk the
 // picker labels each map by.
-const app = stubApp({ grid: stubGrid([world, region]) });
+const app = stubApp({
+  grid: stubGrid([world, region]),
+  navigator: /** @type {any} */ ({ currentNodeId: 'world' }),
+});
 
 test('the picker offers the unplaced option first, then every map under its parent', () => {
   const [picker] = locationFields(app, null);
@@ -289,4 +292,26 @@ test('a cancelled map pick leaves the fields as they were', async () => {
   const { values, calls } = await pickForm(null);
   assert.deepEqual(values, { nodeId: 'world', tileX: '1', tileY: '1' });
   assert.deepEqual(calls, [['suspend', 'pickOnMap']]);
+});
+
+test('a map pick opens the chosen map first when another map is in view', async () => {
+  /** @type {string[]} */
+  const opened = [];
+  const local = stubApp({
+    grid: app.grid,
+    navigator: /** @type {any} */ ({ currentNodeId: 'world' }),
+    actions: { goToNode: (/** @type {string} */ id) => opened.push(id) },
+  });
+  /** @type {Promise<void>[]} */
+  const pending = [];
+  for (const nodeId of ['vale', 'world', '', 'gone']) {
+    const form = /** @type {any} */ ({
+      get: () => nodeId,
+      suspend: (/** @type {string} */ _n, /** @type {() => Promise<void>} */ work) =>
+        pending.push(work()),
+    });
+    pickOnMapChange(local, async () => null)('pickOnMap', form);
+  }
+  await Promise.all(pending);
+  assert.deepEqual(opened, ['vale']);
 });

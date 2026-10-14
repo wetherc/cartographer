@@ -22,6 +22,7 @@ import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountBuildToolChip } from '../ui/BuildToolChip.js';
 import { PAINT_TAB, effectiveBrush, toolChipLabel } from '../view/BuildTool.js';
+import { isTilePickWaiting } from './mapPick.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM, seesThroughFog } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
@@ -455,8 +456,11 @@ export function wireMapView(app) {
   const { syncMapOccluders } = chrome;
   const toolChip = mountBuildToolChip(mapControls.element, () => {
     const region = grid.getNode(palettePanel?.regionPicker.getTarget() ?? '');
-    return toolChipLabel(effectiveBrush(env.activeBrush, buildTab), region?.name ?? null);
+    const brush = effectiveBrush(env.activeBrush, buildTab);
+    return toolChipLabel(brush, region?.name ?? null, isTilePickWaiting());
   });
+  app.actions.syncToolChip = () => syncToolChip();
+  app.actions.goToNode = goToNode;
   // While the Region brush paints, the map draws the blocks of its target
   // region with emphasis, so the GM sees which cells already link there.
   syncToolChip = () => {

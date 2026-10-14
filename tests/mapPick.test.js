@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { armTilePick, canPickOnMap } from '../src/app/mapPick.js';
+import { armTilePick, canPickOnMap, isTilePickWaiting, pickHint } from '../src/app/mapPick.js';
 
 /** A stand-in for the MapCanvas callbacks, which record each call. */
 function host() {
@@ -79,4 +79,12 @@ test('canPickOnMap is true only in the modes that show the map', () => {
     /** @type {const} */ (['play', 'build', 'library', 'combat']).map(canPickOnMap),
     [true, true, false, false],
   );
+});
+
+test('the pick hint names the map in view, and no pick waits at load', () => {
+  assert.equal(
+    pickHint('Corby'),
+    'Click a tile of Corby to place the creature. Press Escape to cancel.',
+  );
+  assert.equal(isTilePickWaiting(), false);
 });

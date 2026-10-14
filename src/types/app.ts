@@ -196,6 +196,11 @@ export interface AppActions {
   // somewhere new.
   meetCreatures(): void;
   refreshMapDescription(): void;
+  // mapWiring: rewrite the Build tool chip, for a change of tool that the
+  // palette does not make (a map pick that starts or ends).
+  syncToolChip(): void;
+  // mapWiring: open a map by node id, framed to fit the view.
+  goToNode(nodeId: string): void;
   // mapWiring: reread the node in view and every location view from the
   // grid, for a caller that replaced the world underneath them. The view
   // keeps its pan and zoom while the node in view keeps its id and size.

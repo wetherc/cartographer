@@ -161,7 +161,9 @@ function setPlacement(form, { nodeId, tileId }) {
  * the map waits for one click, and then it opens again with every value
  * kept. A pick writes the map in view and the clicked column and row into
  * the placement fields and updates the warning line. A cancel leaves the
- * fields as they were. It answers true when it handled the change.
+ * fields as they were. It answers true when it handled the change. When the
+ * fields name a map other than the one in view, the pick opens that map
+ * first, so the click lands on the map the GM chose.
  *
  * The GM can add a map while the dialog waits and then click a tile of it.
  * The map choices are built again before the pick goes in, so the picker
@@ -176,6 +178,10 @@ export function pickOnMapChange(app, pick = pickMapTile) {
   return (name, form) => {
     if (name !== 'pickOnMap') return false;
     form.suspend?.(name, async () => {
+      const chosen = form.get('nodeId');
+      if (app.grid.getNode(chosen) && chosen !== app.navigator.currentNodeId) {
+        app.actions.goToNode(chosen);
+      }
       const at = await pick(app);
       if (!at) return;
       form.setOptions('nodeId', mapChoices(app));

@@ -21,10 +21,13 @@ export function effectiveBrush(brush, tabId) {
  * map does in Build mode.
  * @param {Brush} brush the effective brush (see `effectiveBrush`)
  * @param {string | null} regionName the region that the Region brush paints,
- *   or null for "No region"
+ *   or null for "None (clear link)"
+ * @param {boolean} [picking] whether a "Pick on map" waits for a click,
+ *   which takes over the click from the brush
  * @returns {string}
  */
-export function toolChipLabel(brush, regionName) {
+export function toolChipLabel(brush, regionName, picking = false) {
+  if (picking) return 'Placing creature';
   if (brush === null) return 'Inspect';
   if (brush === 'erase') return 'Erasing tiles';
   if (brush === 'erase-path') return 'Erasing paths';

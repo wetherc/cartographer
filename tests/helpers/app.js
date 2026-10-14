@@ -65,6 +65,8 @@ export const ACTION_NAMES = [
   'cueHandouts',
   'meetCreatures',
   'refreshMapDescription',
+  'syncToolChip',
+  'goToNode',
   'resyncMap',
   'getSelectedTileId',
   'focusLocation',

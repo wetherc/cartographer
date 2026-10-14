@@ -85,6 +85,25 @@ export function armTilePick(host, onPick) {
 let cancelWaiting = null;
 
 /**
+ * Whether a map pick waits for its click. The Build tool chip reads it, so
+ * the chip names the pick in place of the brush that the pick takes over.
+ * @returns {boolean}
+ */
+export function isTilePickWaiting() {
+  return cancelWaiting !== null;
+}
+
+/**
+ * The text of the hint over the map while a creature pick waits. It names the
+ * map in view, so the GM knows which map the click places the creature on.
+ * @param {string} mapName
+ * @returns {string}
+ */
+export function pickHint(mapName) {
+  return `Click a tile of ${mapName} to place the creature. Press Escape to cancel.`;
+}
+
+/**
  * Wait for the GM to click one tile of the map in view. A hint over the map
  * says what to do, and Escape or its Cancel button cancels. The button
  * gives a touch screen, which has no Escape key, a way out. On a phone the
@@ -92,13 +111,10 @@ let cancelWaiting = null;
  * comes back after it. The result is the map and tile that the GM clicked,
  * or null on cancel.
  * @param {AppContext} app
- * @param {string} [hint]
+ * @param {string} [hint] the default names the map in view (see `pickHint`)
  * @returns {Promise<EncounterLocation | null>}
  */
-export function pickMapTile(
-  app,
-  hint = 'Click a tile to place the creature. Press Escape to cancel.',
-) {
+export function pickMapTile(app, hint = pickHint(app.navigator.getCurrentNode().name)) {
   cancelWaiting?.();
   const canvas = app.views.mapCanvas;
   const body = document.body;
@@ -131,6 +147,7 @@ export function pickMapTile(
       cancelWaiting = null;
       document.removeEventListener('keydown', onKey, true);
       note.remove();
+      app.actions.syncToolChip();
       // A tap on the bottom bar during the pick chose a view, which stays.
       if (view && body.dataset.phoneView === 'map') body.dataset.phoneView = view;
       resolve(result);
@@ -146,6 +163,7 @@ export function pickMapTile(
       finish({ nodeId: app.navigator.getCurrentNode().id, tileId: tileIdAt(x, y) }),
     );
     cancelWaiting = cancel;
+    app.actions.syncToolChip();
     document.addEventListener('keydown', onKey, true);
     canvas.canvas.focus();
   });

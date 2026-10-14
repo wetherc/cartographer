@@ -887,6 +887,11 @@ combat screen, which hide the map. On a phone, `pickMapTile` sets
 view back after it. A second `pickMapTile` cancels the pick that waits, so
 one pick waits at a time. Two waiting picks would save the first
 pick's callbacks as the usual ones and put them back on the map at the end.
+Before the wait, `pickOnMapChange` calls the `goToNode` action when the fields
+name a map other than the one in view, so the click lands on the map the GM
+chose. While
+a pick waits, `isTilePickWaiting` is true, and the Build tool chip reads
+"Placing creature" through the `syncToolChip` action.
 
 ### combatWiring.js
 

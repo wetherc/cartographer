@@ -18,6 +18,7 @@ test('the chip names what a click on the map does', () => {
   assert.equal(toolChipLabel('region', 'Ashogate'), 'Linking to Ashogate');
   assert.equal(toolChipLabel('region', null), 'Clearing links');
   assert.equal(toolChipLabel(grass, null), 'Painting: Grass');
+  assert.equal(toolChipLabel(grass, null, true), 'Placing creature');
 });
 
 test('a map is blank until one cell has tile art', () => {
