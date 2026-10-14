@@ -37,6 +37,7 @@ export function showNextSteps(app, partyStart) {
     mustGetElement('map-canvas').focus();
     overlay.remove();
   };
+  labelOverlay(overlay, heading, close);
 
   /** @param {string} label @param {string} hint @param {() => void} action */
   const option = (label, hint, action) => {
@@ -63,4 +64,23 @@ export function showNextSteps(app, partyStart) {
 
   viewport.appendChild(overlay);
   heading.focus();
+}
+
+/**
+ * Names a Welcome overlay for assistive tech after its heading, and closes
+ * it on Escape. Only one Welcome overlay is open at a time, so the heading
+ * id is fixed. Escape marks itself used, so an open full sheet stays open.
+ * @param {HTMLElement} overlay
+ * @param {HTMLElement} heading
+ * @param {() => void} close
+ */
+export function labelOverlay(overlay, heading, close) {
+  heading.id = 'onboarding-title';
+  overlay.setAttribute('role', 'region');
+  overlay.setAttribute('aria-labelledby', heading.id);
+  overlay.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    close();
+  });
 }

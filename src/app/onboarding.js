@@ -2,7 +2,7 @@ import { el, mustGetElement } from '../ui/dom.js';
 import { textButton } from '../ui/buttons.js';
 import { isBlankCampaign } from '../campaign/Campaigns.js';
 import { tryWriteStored } from '../storage/Footprint.js';
-import { showNextSteps } from './onboardingNext.js';
+import { labelOverlay, showNextSteps } from './onboardingNext.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -32,6 +32,9 @@ export function maybeShowOnboarding(app) {
  * @param {AppContext} app
  */
 function showOnboarding(app) {
+  // Library mode hides the map, and the card with it, so the card opens on
+  // the Play map instead of waiting unseen for the next switch to Play.
+  if (app.state.mode === 'library') app.actions.setMode('play');
   const viewport = mustGetElement('map-viewport');
   const open = /** @type {HTMLElement | null} */ (viewport.querySelector('.onboarding h2'));
   if (open) {
@@ -61,6 +64,7 @@ function showOnboarding(app) {
     mustGetElement('map-canvas').focus();
     overlay.remove();
   };
+  labelOverlay(overlay, heading, dismiss);
 
   /** @param {string} label @param {string} hint @param {() => void} action @param {boolean} [primary] */
   const option = (label, hint, action, primary = false) => {

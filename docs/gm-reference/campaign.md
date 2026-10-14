@@ -157,7 +157,7 @@ header.
 
 | Control | What it does |
 | --- | --- |
-| Welcome | Opens the Welcome card on the map, with its three ways to start: build by hand, generate a world, or load the example campaign. The card opens by itself only on the first visit with a blank campaign |
+| Welcome | Opens the Welcome card on the map, with its three ways to start: build by hand, generate a world, or load the example campaign. The card opens by itself only on the first visit with a blank campaign. In Library mode, the button switches to Play mode first. Escape closes the card, the same as Dismiss |
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The line under the title reads "No unsaved changes" after the page loads, "Unsaved changes" while changes wait for a write, and "Saved just now", "Saved 5 min ago", or "Saved 2 h ago" after a manual save or an autosave from this tab. The button keeps an outline while changes are unsaved |
