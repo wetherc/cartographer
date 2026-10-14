@@ -25,6 +25,50 @@ The [wiring layer](app-wiring.md#fightstatejs-and-encounterwiringjs-plus-encount
 and [Entities](entities.md) document the 5e resolution of an attack, a cast,
 and a damage application.
 
+## Contents
+
+- [Modules](#modules)
+- [The module that writes the fight](#the-module-that-writes-the-fight)
+  - [Names in the log](#names-in-the-log)
+  - [The turn advance](#the-turn-advance)
+  - [The round wrap](#the-round-wrap)
+  - [Per-tab UI state](#per-tab-ui-state)
+- [The action budget](#the-action-budget)
+  - [Spending the budget](#spending-the-budget)
+  - [Turn actions](#turn-actions)
+  - [Two-weapon fighting](#two-weapon-fighting)
+  - [Reactions](#reactions)
+  - [Legendary actions](#legendary-actions)
+  - [Legendary resistance](#legendary-resistance)
+  - [The Shield pause](#the-shield-pause)
+  - [The damage reaction pause](#the-damage-reaction-pause)
+  - [The Redirect Attack pause](#the-redirect-attack-pause)
+  - [Weapon options in the attack dialog](#weapon-options-in-the-attack-dialog)
+  - [One-shot chips on an attack](#one-shot-chips-on-an-attack)
+  - [Cover and Sneak Attack](#cover-and-sneak-attack)
+  - [Pack Tactics, on-hit saves, Multiattack, and Surprise Attack](#pack-tactics-on-hit-saves-multiattack-and-surprise-attack)
+  - [Hit riders and the pact weapon](#hit-riders-and-the-pact-weapon)
+  - [Creature-type rules and caster slants](#creature-type-rules-and-caster-slants)
+- [The combat view](#the-combat-view)
+  - [Loadout visibility](#loadout-visibility)
+- [The layout](#the-layout)
+  - [The active column](#the-active-column)
+  - [The board](#the-board)
+  - [The log column](#the-log-column)
+  - [GM-only lines](#gm-only-lines)
+  - [The turn ribbon](#the-turn-ribbon)
+- [Starting a fight](#starting-a-fight)
+  - [Rolling initiative](#rolling-initiative)
+- [Ending a fight](#ending-a-fight)
+  - [The End combat control](#the-end-combat-control)
+  - [The automatic end](#the-automatic-end)
+  - [The outcome banner](#the-outcome-banner)
+- [Refreshing the screen](#refreshing-the-screen)
+  - [The deferred rebuild](#the-deferred-rebuild)
+  - [Refresh paths](#refresh-paths)
+- [Accessibility](#accessibility)
+- [The sidebar card](#the-sidebar-card)
+
 ## Modules
 
 ```

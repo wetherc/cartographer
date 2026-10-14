@@ -6,6 +6,31 @@ Code in this repository follows fixed rules for hot-path performance, for
 UI and CSS, and for the split between unit-tested logic and DOM glue. Each
 rule names the failure that follows when new code departs from it.
 
+## Contents
+
+- [Performance](#performance)
+  - [Coalesced canvas redraws](#coalesced-canvas-redraws)
+  - [TileIndex](#tileindex)
+  - [Frozen tiles](#frozen-tiles)
+  - [WeakMap caches per node](#weakmap-caches-per-node)
+  - [Deferred work during a stroke](#deferred-work-during-a-stroke)
+  - [Fog reveal cost](#fog-reveal-cost)
+  - [Delta saves](#delta-saves)
+  - [Incremental rendering of growing lists](#incremental-rendering-of-growing-lists)
+  - [Memoized library lists](#memoized-library-lists)
+- [UI and style](#ui-and-style)
+  - [Design tokens](#design-tokens)
+  - [Choosing a dialog](#choosing-a-dialog)
+  - [Confirmation before destructive actions](#confirmation-before-destructive-actions)
+  - [Shared button builders](#shared-button-builders)
+  - [Numeric coercion](#numeric-coercion)
+  - [Danger styling](#danger-styling)
+  - [Button order in forms and dialogs](#button-order-in-forms-and-dialogs)
+  - [HP icons](#hp-icons)
+  - [Shared widget classes](#shared-widget-classes)
+  - [Overlay tokens](#overlay-tokens)
+- [Testing](#testing)
+
 ## Performance
 
 Most collections (characters, creatures, quests, handouts, library

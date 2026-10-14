@@ -30,6 +30,51 @@ guide: it says what any function in `src/ui/` looks like. The rest of the
 guide describes the builders that exist. [Known gaps](#known-gaps) lists the
 places where the code does not meet the contract.
 
+## Contents
+
+- [The layers](#the-layers)
+- [The builder contract](#the-builder-contract)
+  - [Naming](#naming)
+  - [Arguments](#arguments)
+  - [The `className` option](#the-classname-option)
+  - [Semantic options](#semantic-options)
+  - [The vocabulary test](#the-vocabulary-test)
+  - [Settled decisions](#settled-decisions)
+- [Mount points](#mount-points)
+  - [DOM helpers](#dom-helpers)
+- [The panel contract](#the-panel-contract)
+  - [The character sheet's structure check](#the-character-sheets-structure-check)
+  - [Handles that are not `{ update }`](#handles-that-are-not--update-)
+- [The list panel](#the-list-panel)
+- [Buttons, icons, and empty states](#buttons-icons-and-empty-states)
+  - [`src/ui/buttons.js`](#srcuibuttonsjs)
+  - [`src/ui/icons.js`](#srcuiiconsjs)
+- [Stat bars](#stat-bars)
+- [Fact lines](#fact-lines)
+- [Death-save block](#death-save-block)
+- [Exhaustion bar](#exhaustion-bar)
+- [Dialogs](#dialogs)
+  - [`promptModal` fields](#promptmodal-fields)
+- [Inline forms](#inline-forms)
+  - [Spec forms](#spec-forms)
+- [Tabs and disclosures](#tabs-and-disclosures)
+- [Keyboard grids](#keyboard-grids)
+- [Toasts](#toasts)
+- [Tooltips](#tooltips)
+- [Context menus](#context-menus)
+- [Image input](#image-input)
+- [The CSS layer](#the-css-layer)
+  - [The import manifest](#the-import-manifest)
+  - [Tokens](#tokens)
+  - [Theming](#theming)
+  - [Shared classes](#shared-classes)
+  - [Utilities](#utilities)
+  - [Layout and responsiveness](#layout-and-responsiveness)
+  - [First paint stability](#first-paint-stability)
+- [Accessibility](#accessibility)
+- [Known gaps](#known-gaps)
+- [Testing UI code](#testing-ui-code)
+
 ## The layers
 
 ```

@@ -10,6 +10,41 @@ Image payloads live apart from the campaign, in IndexedDB. A large picture
 then cannot fill the localStorage quota, and a failed image write cannot take
 down the whole map.
 
+## Contents
+
+- [The save pipeline](#the-save-pipeline)
+  - [Campaign fields](#campaign-fields)
+  - [The footprint ledger](#the-footprint-ledger)
+  - [Campaign files](#campaign-files)
+- [Load-time validation](#load-time-validation)
+  - [Shortened loads](#shortened-loads)
+- [Tile defaults](#tile-defaults)
+- [Entity defaults](#entity-defaults)
+  - [The gear table](#the-gear-table)
+- [The asset table](#the-asset-table)
+  - [The image store](#the-image-store)
+- [The tile codec](#the-tile-codec)
+  - [Palette refs](#palette-refs)
+  - [Codec rules](#codec-rules)
+  - [The encoded-node cache](#the-encoded-node-cache)
+  - [Node reuse](#node-reuse)
+  - [Encoded form in the rest of the app](#encoded-form-in-the-rest-of-the-app)
+  - [The string table](#the-string-table)
+- [Schema versions and migrations](#schema-versions-and-migrations)
+- [Undo and redo](#undo-and-redo)
+  - [Snapshot records](#snapshot-records)
+  - [Compact ops](#compact-ops)
+  - [The byte cap](#the-byte-cap)
+  - [Header controls](#header-controls)
+  - [Storage layout](#storage-layout)
+  - [Cross-tab adoption](#cross-tab-adoption)
+  - [No base snapshot](#no-base-snapshot)
+  - [Log rules](#log-rules)
+  - [The cached base state](#the-cached-base-state)
+- [The custom library store](#the-custom-library-store)
+  - [Changing the spell or feat schema](#changing-the-spell-or-feat-schema)
+- [File IO](#file-io)
+
 ## The save pipeline
 
 ```

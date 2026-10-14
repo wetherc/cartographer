@@ -7,6 +7,57 @@ explores in Play mode. A small data model of nodes and tiles is under it. The
 hierarchy, regions, drawing, fog of war, and party movement all build on that
 model, so read the first section before any later one.
 
+## Contents
+
+- [The data model](#the-data-model)
+  - [The node registry](#the-node-registry)
+  - [Grid coordinates](#grid-coordinates)
+- [Region grouping and multi-tile art](#region-grouping-and-multi-tile-art)
+  - [Region overlay](#region-overlay)
+  - [Group images](#group-images)
+  - [Spans](#spans)
+- [Drawing and input](#drawing-and-input)
+  - [Canvas colors and labels](#canvas-colors-and-labels)
+  - [Tile rasters](#tile-rasters)
+  - [The cell grid](#the-cell-grid)
+  - [The terrain layer](#the-terrain-layer)
+  - [Clicks and navigation](#clicks-and-navigation)
+- [The tile catalog and generation](#the-tile-catalog-and-generation)
+  - [Tile kinds](#tile-kinds)
+  - [Autotiling](#autotiling)
+  - [Climate model](#climate-model)
+  - [Rivers](#rivers)
+  - [Guided terrain](#guided-terrain)
+  - [Sites and roads](#sites-and-roads)
+  - [Town layout](#town-layout)
+  - [Interior layouts](#interior-layouts)
+  - [Furnishings](#furnishings)
+  - [Nested generation](#nested-generation)
+  - [Generator modules](#generator-modules)
+  - [Overlay stacks](#overlay-stacks)
+- [Fog of war](#fog-of-war)
+  - [Lit rooms](#lit-rooms)
+  - [Marker range](#marker-range)
+  - [Fog reads](#fog-reads)
+- [The party](#the-party)
+  - [Walls and paths](#walls-and-paths)
+  - [Individual character tokens and the split party](#individual-character-tokens-and-the-split-party)
+  - [View follow](#view-follow)
+- [Leaving a sub-region](#leaving-a-sub-region)
+  - [The parent block](#the-parent-block)
+  - [Exit tests](#exit-tests)
+  - [Stairway direction](#stairway-direction)
+  - [Entry landing](#entry-landing)
+  - [Return landing](#return-landing)
+  - [Border crossing](#border-crossing)
+  - [Drawing and taking an exit](#drawing-and-taking-an-exit)
+  - [Exit bands](#exit-bands)
+  - [Exit travel](#exit-travel)
+  - [The Build warning](#the-build-warning)
+  - [Warning badges in the world tree](#warning-badges-in-the-world-tree)
+- [The mini-map](#the-mini-map)
+
+## The data model
 
 `src/types/map.ts` declares both types of the model:
 

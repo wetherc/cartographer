@@ -6,6 +6,31 @@
 the **AppContext**, and passes it to a series of `wireX(app)` functions. Each
 function lives in its own file under `src/app/` and wires one feature area.
 
+## Contents
+
+- [Boot sequence](#boot-sequence)
+- [The AppContext](#the-appcontext)
+  - [Reads at call time](#reads-at-call-time)
+  - [Mount order](#mount-order)
+  - [State that stays out of `app.state`](#state-that-stays-out-of-appstate)
+  - [Reads after an await](#reads-after-an-await)
+- [The wiring modules](#the-wiring-modules)
+  - [campaignActions.js (plus externalSaves.js, historySteps.js, replaceActions.js)](#campaignactionsjs-plus-externalsavesjs-historystepsjs-replaceactionsjs)
+  - [mapWiring.js (plus mapAuthoring.js and mapTravel.js)](#mapwiringjs-plus-mapauthoringjs-and-maptraveljs)
+  - [generateAction.js and nodeActions.js](#generateactionjs-and-nodeactionsjs)
+  - [partyWiring.js](#partywiringjs)
+  - [rehydrate.js](#rehydratejs)
+  - [fightState.js and encounterWiring.js (plus encounterPanels.js, creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)](#fightstatejs-and-encounterwiringjs-plus-encounterpanelsjs-creatureformjs-weaponattackjs-attackfieldsjs-the-four-cast-modules-combatantsjs-combatantwritesjs)
+  - [combatWiring.js](#combatwiringjs)
+  - [storyWiring.js](#storywiringjs)
+  - [libraryWiring.js](#librarywiringjs)
+  - [sessionControls.js](#sessioncontrolsjs)
+  - [headerMenu.js](#headermenujs)
+  - [phoneViewsWiring.js](#phoneviewswiringjs)
+  - [diceWiring.js](#dicewiringjs)
+  - [shortcutsWiring.js and onboarding.js](#shortcutswiringjs-and-onboardingjs)
+  - [searchWiring.js](#searchwiringjs)
+
 ## Boot sequence
 
 The boot runs in this order:
