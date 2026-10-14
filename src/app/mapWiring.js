@@ -393,16 +393,22 @@ export function wireMapView(app) {
   /** @type {ReturnType<typeof import('../ui/MiniMap.js').mountMiniMap> | null} assigned after mapCanvas exists */
   let miniMap = null;
 
+  // The Build-mode Place labels checkbox. mapBuildTools.js restores and
+  // stores its state.
+  const placeLabels = /** @type {HTMLInputElement} */ (mustGetElement('place-labels-toggle'));
   const mapCanvas = new MapCanvas(canvasEl, palette, {
     tileSize: 48,
     // Encounter, NPC, and point-of-interest markers appear out to twice the
     // fog reveal radius around the party, and around any split-off
     // character, and no further.
     markerRange: partyTracker.revealRadius * 2,
-    // Build mode marks a locked map on its region plate. Play mode shows
-    // the plain name, because a Player tab sees the same plates.
-    getNodeName: (nodeId) =>
-      state.mode === 'build' ? plateName(grid.getNode(nodeId)) : grid.getNode(nodeId)?.name,
+    // Build mode marks a locked map on its region plate, or shows no plate
+    // while Place labels is off. Play mode shows the plain name, because a
+    // Player tab sees the same plates.
+    getNodeName: (nodeId) => {
+      if (state.mode !== 'build') return grid.getNode(nodeId)?.name;
+      return placeLabels.checked ? plateName(grid.getNode(nodeId)) : undefined;
+    },
     onViewChange: () => {
       mapControls?.update();
       syncEmptyMap();

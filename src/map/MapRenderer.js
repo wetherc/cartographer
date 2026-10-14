@@ -90,6 +90,10 @@ export class MapRenderer {
     this.tileSize = options.tileSize;
     this.getNodeName = options.getNodeName;
     this.onImageLoad = options.onImageLoad;
+    // The child node ids of the region names that the last draw left out
+    // for lack of room. The map hover names those places instead.
+    /** @type {Set<string>} */
+    this.hiddenNames = new Set();
     // Offscreen canvases for cached sprites. Tests inject a fake, and
     // without a DOM the default returns null, which draws straight onto ctx.
     this.createCanvas = options.createCanvas;
@@ -594,7 +598,7 @@ export class MapRenderer {
   /** @param {MapView} view
    * @param {{ revealedIds: RevealedIds | null }} frame */
   _renderRegionNames(view, frame) {
-    renderRegionNames(
+    const hidden = renderRegionNames(
       this.ctx,
       view,
       frame.revealedIds,
@@ -602,6 +606,7 @@ export class MapRenderer {
       this.getNodeName,
       this._labelBlockers(view),
     );
+    this.hiddenNames = new Set(hidden);
   }
 
   /**

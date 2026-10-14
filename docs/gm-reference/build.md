@@ -162,16 +162,28 @@ road, the road stays on top.
 ## Map tools row
 
 The **Generate map...** and **Export PNG** buttons share one row above the
-Palette card on the Paint tab.
+Palette card on the Paint tab, and the **Place labels** checkbox sits under
+them.
 
 | Control | What it does |
 | --- | --- |
 | Generate map... | Opens the Generate dialog. See [Map generation](#map-generation) |
 | Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A margin on the top and left shows the column and row numbers. A map with no tiles downloads nothing, and a message says so |
+| Place labels | Shows or hides the name of each linked map on the map in Build mode. It starts ticked, and each browser stores its own choice. Play mode and the PNG export always show the names |
 
 If a map is too large for 64 pixels per tile, Export PNG uses a smaller
 size and names the size it used. If no size fits, the app refuses the
 export.
+
+## Place names on the map
+
+The name of each linked map draws on a plate centered over the tiles that
+link to it. When the center is taken, the name tries the space just above
+those tiles and then just below them. In a town, a name is often wider than
+its building. A name that would cover much of a nearby building, another
+name, the party, or a creature marker at all three spots is left out at
+that zoom. Zoom in and the name shows again once it fits. In Play mode, a
+hover on the tiles of a place whose name is left out names the place.
 
 ## Stroke undo and redo
 

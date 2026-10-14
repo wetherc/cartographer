@@ -174,17 +174,34 @@ draws the box. `groupOutline` in `src/map/RegionOutline.js` lists the cell
 edges that the border follows, which are the sides of member cells whose
 neighbor on that side is outside the group.
 
-A region name tries a list of spots from `labelSpots` in
-`src/map/RegionLabels.js`, and `placeLabels` keeps the first spot that is
-clear of the names already placed. The renderer also passes the tiles of the
-party token, each character token, and each visible creature marker. A name
-skips a spot that covers one of those tiles, and often moves to the spot
-above the region instead.
+A region name centers on its region. `labelCandidates` in
+`src/map/RegionLabels.js` gives three boxes to try: centered over the
+region's cells, centered just above them, and centered just below them.
+The center is the mean of the cell centers, or the nearest cell when that
+point falls outside an L-shaped or ring-shaped region. `placeLabels` takes
+the first box that clears the names already placed, the tiles of the party
+token, each character token, and each visible creature marker, and the
+cells of every other region. A box clears a region when it covers no more
+than 5% of that region's area. In a town each building is a region of one
+to four cells, and a name wider than its building covers well past that
+share of the next building, so the name is left out instead of hiding the
+art. A large region, such as a province on the world map, has hundreds of
+cells, so the name of a small region inside it still draws. Under solid fog
+only the revealed cells of each region count.
+A name that does not fit is left out at that zoom. `regionNameLayout`
+returns its child node id, `MapRenderer` stores the ids from the last draw
+in `hiddenNames`, and `MapCanvas.nameHidden` lets the Play-mode hover in
+`src/app/mapHover.js` name the place instead. A zoom makes the cells larger
+and the plates keep their size, so a name shows again once it fits.
+The **Place labels** checkbox on the Build Paint tab hides every name in
+Build mode. `getNodeName` in `src/app/mapWiring.js` returns nothing while
+the box is clear, and `src/app/mapBuildTools.js` stores the choice in
+`localStorage`.
 After the layout, `keepClearOfEdges` checks each name against the left and
 top edges of the map area. Those edges are the canvas edges, or the far side
-of a row or column digit strip pinned there. A name whose anchor cell lies
-past an edge is left out, so the name of a region just off the left edge does
-not draw as a fragment over the row digits. A name whose anchor cell still
+of a row or column digit strip pinned there. A name whose region lies wholly
+past an edge is left out, so the name of a region just off the left edge
+does not draw as a fragment over the row digits. A name whose region still
 shows slides right or down to the edge.
 The names draw in their own pass after the selection outline, so the outline
 of a selected tile never cuts through a name plate.

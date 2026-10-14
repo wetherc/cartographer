@@ -97,8 +97,8 @@ const names = { town: 'Corby', fen: 'Mirefen', far: 'Far' };
 const nameOf = (/** @type {string} */ id) => names[/** @type {keyof typeof names} */ (id)];
 const measure = (/** @type {string} */ name) => name.length * 6;
 
-test('regionNameLayout puts each name at the first cell of its region', () => {
-  const labels = regionNameLayout(
+test('regionNameLayout centers each name over its region', () => {
+  const layout = regionNameLayout(
     named([group('town', [[1, 1]]), group('fen', [[5, 5]]), group('nameless', [[8, 8]])]),
     null,
     40,
@@ -106,40 +106,85 @@ test('regionNameLayout puts each name at the first cell of its region', () => {
     [],
     measure,
   );
-  assert.deepEqual(labels, [
-    { name: 'Corby', box: { x: 140, y: 140, w: 38, h: 16 } },
-    { name: 'Mirefen', box: { x: 300, y: 300, w: 50, h: 16 } },
-  ]);
+  assert.deepEqual(layout, {
+    placed: [
+      { name: 'Corby', box: { x: 141, y: 152, w: 38, h: 16 } },
+      { name: 'Mirefen', box: { x: 295, y: 312, w: 50, h: 16 } },
+    ],
+    hidden: [],
+  });
+});
+
+test('regionNameLayout hides a name that would cover the building beside it', () => {
+  const layout = regionNameLayout(
+    named(
+      [
+        group('fen', [[1, 1]]),
+        group('nameless', [
+          [2, 0],
+          [2, 1],
+          [2, 2],
+        ]),
+      ],
+      { scale: 0.5 },
+    ),
+    null,
+    40,
+    nameOf,
+    [],
+    measure,
+  );
+  assert.deepEqual(layout.placed, []);
+  assert.deepEqual(layout.hidden, ['fen']);
+  // At twice the zoom the name fits inside its own cell.
+  const zoomed = regionNameLayout(
+    named(
+      [
+        group('fen', [[1, 1]]),
+        group('nameless', [
+          [2, 0],
+          [2, 1],
+          [2, 2],
+        ]),
+      ],
+      {
+        scale: 2,
+        offsetX: 0,
+      },
+    ),
+    null,
+    40,
+    nameOf,
+    [],
+    measure,
+  );
+  assert.deepEqual(zoomed.hidden, []);
+  assert.equal(zoomed.placed[0].name, 'Mirefen');
 });
 
 test('regionNameLayout leaves out unrevealed regions, off-canvas names, and a view with no node', () => {
   const groups = [group('town', [[1, 1]]), group('fen', [[5, 5]]), group('far', [[9, 9]])];
+  const shown = (/** @type {{ placed: { name: string }[] }} */ l) => l.placed.map((p) => p.name);
   const fogged = regionNameLayout(named(groups), new Set(['1,1', '9,9']), 40, nameOf, [], measure);
-  assert.deepEqual(
-    fogged.map((l) => l.name),
-    ['Corby', 'Far'],
-  );
+  assert.deepEqual(shown(fogged), ['Corby', 'Far']);
   const small = named(groups, { canvasWidth: 200, canvasHeight: 200 });
-  assert.deepEqual(
-    regionNameLayout(small, null, 40, nameOf, [], measure).map((l) => l.name),
-    ['Corby'],
-  );
+  assert.deepEqual(shown(regionNameLayout(small, null, 40, nameOf, [], measure)), ['Corby']);
   const left = named(groups, { offsetX: -1000, offsetY: -1000 });
-  assert.deepEqual(regionNameLayout(left, null, 40, nameOf, [], measure), []);
-  assert.deepEqual(
-    regionNameLayout(named(groups, { node: null }), null, 40, nameOf, [], measure),
-    [],
-  );
+  assert.deepEqual(shown(regionNameLayout(left, null, 40, nameOf, [], measure)), []);
+  assert.deepEqual(regionNameLayout(named(groups, { node: null }), null, 40, nameOf, [], measure), {
+    placed: [],
+    hidden: [],
+  });
 });
 
 test('regionNameLayout moves a name off a tile with a token and out from under a floating box', () => {
   const town = group('town', [
-    [1, 1],
-    [2, 1],
+    [1, 2],
+    [2, 2],
   ]);
-  const [moved] = regionNameLayout(named([town]), null, 40, nameOf, ['1,1'], measure);
-  assert.deepEqual(moved.box, { x: 180, y: 140, w: 38, h: 16 });
-  const float = { x: 130, y: 130, w: 20, h: 20, float: true };
+  const [moved] = regionNameLayout(named([town]), null, 40, nameOf, ['1,2'], measure).placed;
+  assert.deepEqual(moved.box, { x: 161, y: 164, w: 38, h: 16 });
+  const float = { x: 170, y: 190, w: 20, h: 20, float: true };
   const [clear] = regionNameLayout(
     named([town], { occluders: [float] }),
     null,
@@ -147,8 +192,8 @@ test('regionNameLayout moves a name off a tile with a token and out from under a
     nameOf,
     [],
     measure,
-  );
-  assert.deepEqual(clear.box, { x: 180, y: 140, w: 38, h: 16 });
+  ).placed;
+  assert.deepEqual(clear.box, { x: 161, y: 164, w: 38, h: 16 });
   // A box that does not float, such as a docked mini-map column, moves no name.
   const [kept] = regionNameLayout(
     named([town], { occluders: [{ ...float, float: false }] }),
@@ -157,6 +202,6 @@ test('regionNameLayout moves a name off a tile with a token and out from under a
     nameOf,
     [],
     measure,
-  );
-  assert.deepEqual(kept.box, { x: 140, y: 140, w: 38, h: 16 });
+  ).placed;
+  assert.deepEqual(kept.box, { x: 161, y: 192, w: 38, h: 16 });
 });

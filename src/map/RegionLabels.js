@@ -1,50 +1,17 @@
 /**
- * The placement of region names on the map. Buildings in a town sit one or
- * two cells apart, and a name is often wider than its building, so two names
- * drawn at their default spots can overlap and hide each other. This module
- * gives each name a list of spots to try and keeps the first spot that is
- * clear of the names already placed. It is pure, so tests cover it without a
- * canvas.
+ * The placement of region names on the map. In a town each building is a
+ * region, buildings sit one or two cells apart, and a name is often wider
+ * than its building. A name centers over its own region, and it tries the
+ * space just above and just below the region when the center is taken. A
+ * name that would cover much of another region, another name, or a marker
+ * at every one of those spots is left out at this zoom, and the map hover
+ * names the place instead. It is pure, so tests cover it without a canvas.
  */
 
 /**
- * A spot to try for one name, in grid units. The plate's top-left corner goes
- * on the corner of cell (x, y). With `above` set, the plate's bottom edge
- * goes on that corner instead, so the plate sits over the cell above.
- * @typedef {{ x: number, y: number, above: boolean }} LabelSpot
- */
-
-/**
- * A label box in screen pixels.
+ * A box in screen pixels.
  * @typedef {{ x: number, y: number, w: number, h: number }} LabelBox
  */
-
-/**
- * The spots to try for a region's name, in order of preference. These are
- * the top-left corner of each cell in reading order, then the space just
- * above the region's top row, then the space just below its bottom row. The
- * first spot is the default spot, where the name sits when nothing else is
- * near. The spots outside the region are left out on the first and last rows
- * of the map, where a plate would cover the coordinate digits or hang off
- * the grid.
- * @param {{ x: number, y: number }[]} cells the region's cells, in any order
- * @param {number} height the node's height in cells
- * @returns {LabelSpot[]}
- */
-export function labelSpots(cells, height) {
-  if (cells.length === 0) return [];
-  const sorted = [...cells].sort((a, b) => a.y - b.y || a.x - b.x);
-  /** @type {LabelSpot[]} */
-  const spots = sorted.map(({ x, y }) => ({ x, y, above: false }));
-  const top = sorted[0];
-  if (top.y > 0) spots.push({ x: top.x, y: top.y, above: true });
-  // Step back from the last cell to the left end of the bottom row.
-  let b = sorted.length - 1;
-  while (b > 0 && sorted[b - 1].y === sorted[b].y) b--;
-  const bottom = sorted[b];
-  if (bottom.y + 1 < height) spots.push({ x: bottom.x, y: bottom.y + 1, above: false });
-  return spots;
-}
 
 /**
  * Whether two boxes overlap, or come closer than `gap` pixels on both axes.
@@ -61,29 +28,124 @@ export function boxesOverlap(a, b, gap = 0) {
 }
 
 /**
- * Place labels greedily, in the order given. Each label takes the first of
- * its spots whose box overlaps no label placed before it. A label whose
- * every box overlaps is left out, and its entry is null. An earlier label
- * keeps its spot, so the order sets the priority. `boxAt` turns a spot into
- * a box only when the loop reaches it, because a large region has one spot
- * per cell and most labels fit at their first spot.
- * @param {LabelSpot[][]} spots the spots to try for each label, in order
- * @param {(index: number, spot: LabelSpot) => LabelBox} boxAt the box of label `index` at a spot
- * A label also skips a spot whose box overlaps one of the `blocked` boxes,
- * such as the tile of the party token or of a creature marker, so a name
- * plate never hides a marker.
- * @param {number} [gap] the least space, in pixels, kept between two labels
- * @param {LabelBox[]} [blocked] boxes that no label may overlap
+ * The share of a region's area that another name may cover. A town building
+ * is one to four cells, so a name that runs over a neighbor covers well past
+ * this share and hides the art of that building. A large region, such as a
+ * province on the world map, has hundreds of cells, so the name of a small
+ * region inside it covers far less and still draws.
+ */
+const COVER_SHARE = 0.05;
+
+/**
+ * The area where two boxes overlap, or 0.
+ * @param {LabelBox} a
+ * @param {LabelBox} b
+ * @returns {number}
+ */
+export function overlapArea(a, b) {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/**
+ * The smallest box around every listed box.
+ * @param {LabelBox[]} boxes at least one box
+ * @returns {LabelBox}
+ */
+export function boundsOf(boxes) {
+  let x1 = Infinity;
+  let y1 = Infinity;
+  let x2 = -Infinity;
+  let y2 = -Infinity;
+  for (const b of boxes) {
+    x1 = Math.min(x1, b.x);
+    y1 = Math.min(y1, b.y);
+    x2 = Math.max(x2, b.x + b.w);
+    y2 = Math.max(y2, b.y + b.h);
+  }
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+
+/**
+ * The point that a name centers on: the mean of the cell centers. For an
+ * L-shaped or ring-shaped region that point can fall outside the region, so
+ * then the center of the cell nearest to it is used instead.
+ * @param {LabelBox[]} cells the screen boxes of the region's cells, at least one
+ * @returns {{ x: number, y: number }}
+ */
+export function footprintCenter(cells) {
+  let sx = 0;
+  let sy = 0;
+  for (const c of cells) {
+    sx += c.x + c.w / 2;
+    sy += c.y + c.h / 2;
+  }
+  const mean = { x: sx / cells.length, y: sy / cells.length };
+  const inside = (/** @type {LabelBox} */ c) =>
+    mean.x >= c.x && mean.x <= c.x + c.w && mean.y >= c.y && mean.y <= c.y + c.h;
+  if (cells.some(inside)) return mean;
+  let best = cells[0];
+  let bestD = Infinity;
+  for (const c of cells) {
+    const d = (c.x + c.w / 2 - mean.x) ** 2 + (c.y + c.h / 2 - mean.y) ** 2;
+    if (d < bestD) [best, bestD] = [c, d];
+  }
+  return { x: best.x + best.w / 2, y: best.y + best.h / 2 };
+}
+
+/**
+ * The boxes to try for one name, in order of preference: centered on the
+ * region, then centered just above it, then centered just below it. The
+ * spots outside the region are left out on the first and last rows of the
+ * map, where a plate would cover the coordinate digits or hang off the grid.
+ * @param {LabelBox[]} cells the screen boxes of the region's cells, at least one
+ * @param {number} w the plate width
+ * @param {number} h the plate height
+ * @param {{ above: boolean, below: boolean }} room whether the map has a row above and below the region
+ * @returns {LabelBox[]}
+ */
+export function labelCandidates(cells, w, h, room) {
+  const c = footprintCenter(cells);
+  const bounds = boundsOf(cells);
+  const x = c.x - w / 2;
+  const boxes = [{ x, y: c.y - h / 2, w, h }];
+  if (room.above) boxes.push({ x, y: bounds.y - h, w, h });
+  if (room.below) boxes.push({ x, y: bounds.y + bounds.h, w, h });
+  return boxes;
+}
+
+/**
+ * Place names greedily, in the order given, so the order sets the priority.
+ * Each name takes the first of its candidate boxes that overlaps no name
+ * placed before it, no `blocked` box, and no more than `COVER_SHARE` of the
+ * area of another region. A name with no such box is left out, and its entry
+ * is null.
+ * @param {{ candidates: LabelBox[], cells: LabelBox[] }[]} labels the boxes to try and the region cells of each name
+ * @param {number} [gap] the least space, in pixels, kept between two names
+ * @param {LabelBox[]} [blocked] boxes that no name may overlap, such as a marker's tile
  * @returns {(LabelBox | null)[]}
  */
-export function placeLabels(spots, boxAt, gap = 0, blocked = []) {
+export function placeLabels(labels, gap = 0, blocked = []) {
+  // A bounds check per region skips the cell loop of every far region.
+  const bounds = labels.map((l) => (l.cells.length ? boundsOf(l.cells) : null));
+  const areas = labels.map((l) => l.cells.reduce((sum, c) => sum + c.w * c.h, 0));
+  /** @param {LabelBox} box @param {number} own */
+  const coversOther = (box, own) =>
+    labels.some((l, j) => {
+      const b = bounds[j];
+      if (j === own || b === null || !boxesOverlap(box, b)) return false;
+      let covered = 0;
+      for (const c of l.cells) covered += overlapArea(box, c);
+      return covered > areas[j] * COVER_SHARE;
+    });
   /** @type {LabelBox[]} */
   const placed = [];
-  return spots.map((list, index) => {
-    for (const spot of list) {
-      const box = boxAt(index, spot);
+  return labels.map((label, i) => {
+    for (const box of label.candidates) {
       if (blocked.some((b) => boxesOverlap(box, b))) continue;
       if (placed.some((p) => boxesOverlap(box, p, gap))) continue;
+      if (coversOther(box, i)) continue;
       placed.push(box);
       return box;
     }
@@ -94,19 +156,18 @@ export function placeLabels(spots, boxAt, gap = 0, blocked = []) {
 /**
  * Keep a placed name clear of the left and top edges of the map area. The
  * edges are the canvas edges, or the far side of a coordinate digit strip
- * pinned there. A name whose anchor cell lies wholly past an edge is left
- * out, and the result is null. Without this rule, a name whose region sits
- * just off the left edge draws as a fragment over the row digits. A name
- * whose anchor cell still shows past the edge slides right or down to the
- * edge, so the plate reads in full and does not cover a digit. The slide
- * comes after `placeLabels`, so the layout does not change as a pan moves
- * the edge.
+ * pinned there. A name whose region lies wholly past an edge is left out,
+ * and the result is null. Without this rule, a name whose region sits just
+ * off the left edge draws as a fragment over the row digits. A name whose
+ * region still shows past the edge slides right or down to the edge, so the
+ * plate reads in full and does not cover a digit. The slide comes after
+ * `placeLabels`, so the layout does not change as a pan moves the edge.
  * @param {LabelBox} box the placed box of the name
- * @param {LabelBox} cell the screen box of the name's anchor cell
+ * @param {LabelBox} region the screen bounds of the name's region
  * @param {{ x: number, y: number }} edge the least x and y where a plate may start
  * @returns {LabelBox | null}
  */
-export function keepClearOfEdges(box, cell, edge) {
-  if (cell.x + cell.w <= edge.x || cell.y + cell.h <= edge.y) return null;
+export function keepClearOfEdges(box, region, edge) {
+  if (region.x + region.w <= edge.x || region.y + region.h <= edge.y) return null;
   return { ...box, x: Math.max(box.x, edge.x), y: Math.max(box.y, edge.y) };
 }

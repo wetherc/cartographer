@@ -1,5 +1,5 @@
 import { cellEdge, parseCoords } from './MapGeometry.js';
-import { keepClearOfEdges, labelSpots, placeLabels } from './RegionLabels.js';
+import { boundsOf, keepClearOfEdges, labelCandidates, placeLabels } from './RegionLabels.js';
 import { coordLabelLayout } from './CoordLabels.js';
 
 /**
@@ -12,7 +12,6 @@ import { coordLabelLayout } from './CoordLabels.js';
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 /** @typedef {import('./RegionLabels.js').LabelBox} LabelBox */
-/** @typedef {import('./RegionLabels.js').LabelSpot} LabelSpot */
 /** @typedef {import('./TileIndex.js').RevealedIds} RevealedIds */
 
 /** The font size of a region name, in CSS pixels. */
@@ -72,72 +71,61 @@ export function regionLabelMetrics(px) {
 }
 
 /**
- * Where each region name goes, as the plate box of each name that draws.
- * A name with no revealed cell, a name that `placeLabels` cannot fit, and a
- * name whose box `keepClearOfEdges` drops or that lies off the canvas are
- * left out. `measure` gives the text width of a name in the label font.
+ * Where each region name goes, as the plate box of each name that draws,
+ * and the child node ids of the names that do not fit at this zoom. A name
+ * with no revealed cell, and a name whose box `keepClearOfEdges` drops or
+ * that lies off the canvas, is in neither list. `measure` gives the text
+ * width of a name in the label font.
  * @param {MapView} view
  * @param {RevealedIds | null} revealedIds
  * @param {number} tileSize base tile size in buffer px at scale 1
  * @param {(nodeId: string) => string | undefined} getNodeName
  * @param {string[]} blockedIds tiles with a token or marker, which no name plate covers
  * @param {(name: string) => number} measure
- * @returns {{ name: string, box: LabelBox }[]}
+ * @returns {{ placed: { name: string, box: LabelBox }[], hidden: string[] }}
  */
 export function regionNameLayout(view, revealedIds, tileSize, getNodeName, blockedIds, measure) {
+  /** @type {{ placed: { name: string, box: LabelBox }[], hidden: string[] }} */
+  const out = { placed: [], hidden: [] };
   const node = view.node;
-  if (!node) return [];
+  if (!node) return out;
   const size = tileSize * view.scale;
   const px = view.pixelRatio ?? 1;
   const { padX, h } = regionLabelMetrics(px);
-  /** @type {string[]} */
-  const names = [];
-  /** @type {number[]} */
-  const widths = [];
-  /** @type {LabelSpot[][]} */
-  const spots = [];
+  /** @type {{ name: string, nodeId: string, candidates: LabelBox[], cells: LabelBox[] }[]} */
+  const labels = [];
   for (const group of view.regionGroups) {
-    const name = getNodeName(group.childNodeId);
-    if (!name) continue;
-    const cells = revealedIds
-      ? group.cells.filter((_, i) => revealedIds.has(group.tileIds[i]))
-      : group.cells;
+    const cells = regionCellBoxes(group, view, size, revealedIds);
     if (cells.length === 0) continue;
-    names.push(name);
-    widths.push(measure(name) + padX * 2);
-    spots.push(labelSpots(cells, node.height));
+    const name = getNodeName(group.childNodeId);
+    if (!name) {
+      // Other names still stay off the cells of a nameless region.
+      labels.push({ name: '', nodeId: group.childNodeId, candidates: [], cells });
+      continue;
+    }
+    const room = { above: group.minY > 0, below: group.maxY + 1 < node.height };
+    const candidates = labelCandidates(cells, measure(name) + padX * 2, h, room);
+    labels.push({ name, nodeId: group.childNodeId, candidates, cells });
   }
-  // placeLabels stops at the spot that it keeps, so the last spot asked for
-  // each name is the anchor of its placed box.
-  /** @type {LabelSpot[]} */
-  const anchors = [];
   const boxes = placeLabels(
-    spots,
-    (i, spot) => {
-      anchors[i] = spot;
-      const y = cellEdge(spot.y, size, view.offsetY);
-      return {
-        x: cellEdge(spot.x, size, view.offsetX),
-        y: spot.above ? y - h : y,
-        w: widths[i],
-        h,
-      };
-    },
+    labels,
     px,
     // A name also keeps out from under the floating mini-map.
     [...cellBoxes(blockedIds, view, size), ...(view.occluders ?? []).filter((o) => o.float)],
   );
   const edge = mapAreaEdge(view, tileSize);
-  /** @type {{ name: string, box: LabelBox }[]} */
-  const placed = [];
   boxes.forEach((kept, i) => {
-    const { x, y } = anchors[i];
-    const box = kept && keepClearOfEdges(kept, cellBoxes([`${x},${y}`], view, size)[0], edge);
+    const { name, nodeId, cells } = labels[i];
+    if (!name) return;
+    if (!kept) {
+      out.hidden.push(nodeId);
+      return;
+    }
+    const box = keepClearOfEdges(kept, boundsOf(cells), edge);
     if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;
-    if (box.x + box.w < 0 || box.y + box.h < 0) return;
-    placed.push({ name: names[i], box });
+    out.placed.push({ name, box });
   });
-  return placed;
+  return out;
 }
 
 /**

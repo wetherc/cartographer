@@ -115,6 +115,11 @@
   margin: var(--space-3) 0;
 }
 
+/* The Place labels checkbox takes a row of its own under the two buttons. */
+.map-tools__labels {
+  grid-column: 1 / -1;
+}
+
 /* Thin, quiet scrollbars on the Build boxes that scroll. The colours come
    from the theme tokens, so they follow the light and dark themes. */
 body.mode-build .world-tree,

@@ -10,6 +10,10 @@ import { mustGetElement } from '../ui/dom.js';
 import { setTip } from '../ui/Tooltip.js';
 import { mountBuildEmptyMap } from '../ui/BuildEmptyMap.js';
 import { isBlankMap, PAINT_TAB } from '../view/BuildTool.js';
+import { removeStored, tryWriteStored } from '../storage/Footprint.js';
+
+/** localStorage key of an unticked Place labels box. Absent means ticked. */
+const HIDE_PLACE_LABELS_KEY = 'campaign-builder:hide-place-labels';
 
 /**
  * Wire the Build map tools: the header Undo stroke and Redo stroke buttons,
@@ -42,6 +46,19 @@ export function wireMapBuildTools(app, env, strokes, buildTabs) {
     redoBtn.disabled = !redo;
     setTip(undoBtn, undo ? `Undo the ${undo} (Ctrl/Cmd+Z)` : 'Nothing to undo on the map');
     setTip(redoBtn, redo ? `Redo the ${redo} (Ctrl/Cmd+Shift+Z)` : 'Nothing to redo on the map');
+  });
+  // Place labels hides every region name in Build mode, per browser. The
+  // map reads the box through getNodeName in mapWiring.js.
+  const labelsBox = /** @type {HTMLInputElement} */ (mustGetElement('place-labels-toggle'));
+  try {
+    labelsBox.checked = localStorage.getItem(HIDE_PLACE_LABELS_KEY) !== '1';
+  } catch {
+    // Blocked storage leaves the box ticked.
+  }
+  labelsBox.addEventListener('change', () => {
+    if (labelsBox.checked) removeStored(HIDE_PLACE_LABELS_KEY);
+    else tryWriteStored(HIDE_PLACE_LABELS_KEY, '1');
+    env.mapCanvas.render();
   });
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();

@@ -253,8 +253,10 @@ Travelogue logs "Sighted" and the name of the sub-map. A discoverable site
 that the party has not found stays out of the log.
 
 A hover on a tile in Play mode names the point of interest and the NPCs on
-it. The keyboard cursor does the same. The hover uses the detection range,
-so a tile out of range says nothing.
+it. It also names a linked map whose name plate does not fit on the map at
+that zoom, such as a small building in a town. The keyboard cursor does the
+same. The hover names points of interest and NPCs only within the detection
+range, so a tile out of range does not name them.
 
 ## The mini-map
 

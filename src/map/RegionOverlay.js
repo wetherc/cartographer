@@ -75,35 +75,43 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
 /**
  * Draw the name of each region, after every tint and after the selection
  * outline, so neither a later region's tint nor the outline crosses a name.
- * A name draws outside the region's
- * clip, so a long name on a small region reads in full. Its default spot is
- * the region's first cell in reading order. In Play mode that is the first
- * revealed cell, so the plate never sits in fog. `placeLabels` moves a name
- * that would overlap an earlier one to a later spot, or leaves it out until
- * a zoom makes room. A name also moves off a tile with the party token, a
- * character token, or a visible creature marker, often to the spot above
- * the region. The layout covers the regions out of view too, so a
- * name does not change spot when a pan moves another region off the canvas.
- * After the layout, `keepClearOfEdges` slides a name off the pinned
- * coordinate digits, or leaves it out when its anchor cell is out of view.
+ * A name draws outside the region's clip, centered over the region. In Play
+ * mode only the revealed cells count, so the plate never centers on fog.
+ * When the center would cover a cell of another region, another name, the
+ * party token, a character token, or a visible creature marker, the name
+ * tries the spot centered just above the region and then just below it.
+ * With no clear spot, the name is left out until a zoom makes room, and the
+ * caller gets its child node id so the map hover can name the place. The
+ * layout covers the regions out of view too, so a name does not change spot
+ * when a pan moves another region off the canvas. After the layout,
+ * `keepClearOfEdges` slides a name off the pinned coordinate digits, or
+ * leaves it out when its region is out of view.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds
  * @param {number} tileSize base tile size in buffer px at scale 1
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
  * @param {string[]} [blockedIds] tiles with a token or marker, which no name plate covers
+ * @returns {string[]} the child node ids of the names left out for lack of room
  */
 export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName, blockedIds = []) {
-  if (!view.node || !getNodeName || view.regionGroups.length === 0) return;
+  if (!view.node || !getNodeName || view.regionGroups.length === 0) return [];
   const { fontSize, padX, padY } = regionLabelMetrics(view.pixelRatio ?? 1);
   ctx.save();
   ctx.font = labelFont(fontSize, '400');
   const measure = (/** @type {string} */ name) => ctx.measureText(name).width;
-  const labels = regionNameLayout(view, revealedIds, tileSize, getNodeName, blockedIds, measure);
+  const { placed, hidden } = regionNameLayout(
+    view,
+    revealedIds,
+    tileSize,
+    getNodeName,
+    blockedIds,
+    measure,
+  );
   ctx.restore();
   drawPlatedLabels(
     ctx,
-    labels.map(({ name, box }) => ({ text: name, x: box.x + padX, y: box.y + padY })),
+    placed.map(({ name, box }) => ({ text: name, x: box.x + padX, y: box.y + padY })),
     {
       fontSize,
       weight: '400',
@@ -116,4 +124,5 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
       padY,
     },
   );
+  return hidden;
 }

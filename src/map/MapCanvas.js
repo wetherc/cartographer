@@ -508,6 +508,15 @@ export class MapCanvas {
   }
 
   /**
+   * Whether the last draw left out the name of a region for lack of room.
+   * @param {string} nodeId the child node that the region links to
+   * @returns {boolean}
+   */
+  nameHidden(nodeId) {
+    return this.renderer.hiddenNames.has(nodeId);
+  }
+
+  /**
    * Set the per-character tokens to draw in the current node: one named
    * marker for each character standing here. The wiring resolves each token
    * from the character's own location or the shared party position.

@@ -12,7 +12,7 @@ import { capitalize } from '../util/text.js';
  * @param {MapEnv} env
  */
 export function createCellHover(app, env) {
-  const { navigator, state } = app;
+  const { grid, navigator, state } = app;
 
   // Play-mode read side of the Build-mode tile inspector. Hovering over a
   // revealed tile with metadata shows what the GM authored there. Build mode
@@ -52,14 +52,22 @@ export function createCellHover(app, env) {
     // Notes are the GM's secret. Players see the POI type and who stands
     // here.
     const gm = isGM(state.role);
-    const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
+    // A region whose name does not fit on the map at this zoom, such as a
+    // small building in a town, is named here instead.
+    const place =
+      tile.childNodeId && env.mapCanvas.nameHidden(tile.childNodeId)
+        ? grid.getNode(tile.childNodeId)?.name
+        : undefined;
+    const kind = poiType ? capitalize(poiType) : '';
+    const title = place && kind ? `${place} (${kind})` : place || kind;
+    const visible = title || npcNames.length > 0 || (gm && tile.metadata.notes);
     if (!visible) {
       env.tileTooltip.hide();
       return;
     }
     env.tileTooltip.show(
       {
-        title: poiType ? capitalize(poiType) : '',
+        title,
         npcs: npcNames.join(', '),
         notes: gm ? tile.metadata.notes : '',
       },
