@@ -194,7 +194,7 @@ what it returns. A test can then check the layout in Node.
 
 The view field `highlightRegionId` names one child node. Its groups draw the
 tint three times over and a border twice as wide. Build mode sets it to the
-target of the Region brush while that brush paints on the Paint tab, so the
+target of the Link tool while that tool paints on the Paint tab, so the
 GM sees which cells already link to the region.
 
 Each region takes a color from `INK.regionHues`. `regionSlots` gives two
@@ -1752,7 +1752,7 @@ nothing to the node.
 The text inside `#build-warning` is a permanent `role="status"` live region,
 and CSS hides the box while the text is empty. When nothing leads to the node
 (`needsLink`), a "Link from <parent>" button sits beside the text. It opens
-the parent on the Paint tab with the Region brush set to the node. Its writes are compared against the last
+the parent on the Paint tab with the Link tool set to the node. Its writes are compared against the last
 text, because `syncExits` runs on every party step and every paint stroke,
 and an unchanged sentence would otherwise be announced again each time.
 Outside Build mode the sync returns at once, since the rail is hidden and a

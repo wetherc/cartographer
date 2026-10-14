@@ -1435,8 +1435,7 @@ The few layout switches are in known places:
   - `@media (max-width: 68rem)` stacks the main columns with the map first
     (`.app-center` takes `order: -1`, because the Build rail comes before
     it in the markup) and shortens the map viewport.
-  - `@media (max-width: 40rem)` shrinks the mini-map and moves it below
-    the map controls.
+  - `@media (max-width: 40rem)` shrinks the mini-map.
 
   `combat.css` has one more, `@media (max-width: 68rem)`, which stacks the
   combat screen's columns. `combat-shell.css` makes the combat screen a

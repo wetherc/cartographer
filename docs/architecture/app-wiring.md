@@ -116,7 +116,7 @@ call order in `main.js` a dependency order:
 | 8 | `wireMapView` | Draws the first map, and returns the `MapEnv` |
 | 9 | `wireGenerateAction` | Takes the `MapEnv` from step 8 |
 | 10 | `wireDiceTray` | Mounts the dice tray and registers `rollDice` |
-| 11 | `wireHeaderMenu` | Wires the phone Menu button of the header, which reads only the header markup |
+| 11 | `wireHeaderMenu` | Wires the Menu button of the narrow header, which reads only the header markup |
 | 12 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
 | 13 | `wirePhoneViews` | Reads the sidebar tabs that step 12 wires, to follow the selected tab |
 | 14 | `wireSearch` | Mounts the header search box, which reads app state and the grid on each keystroke and jumps through `focusLocation` and `centerOnLocation` |
@@ -1141,8 +1141,9 @@ Player view. `view/CharacterClaim.js` claims a per-character key from
 ### headerMenu.js
 
 `headerMenu.js` wires the Menu button of the header. The stylesheet shows
-the button only at phone width, where the class `app-header--menu-open` on
-the header shows the folded actions and view switches. A press on a button
+the button up to 56.25rem (900 pixels), where the actions and view switches
+fold away. The class `app-header--menu-open` on the header shows them, and
+the button reads Close while the menu is open. A press on a button
 inside the menu runs that action and closes the menu. The closed menu hides
 the pressed button, so the module moves focus to the Menu button when focus
 was inside the menu. An action that opens a dialog moves focus into the
