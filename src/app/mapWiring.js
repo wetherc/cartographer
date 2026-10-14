@@ -1,22 +1,19 @@
-import { getTile } from '../map/TileGrid.js';
 import { createBuildWarning, mountMapNarration } from './mapNarration.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
-import { discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens, followedPosition } from '../party/CharacterTokens.js';
 import { ancestorMarkerTile } from '../map/AncestorMarker.js';
-import { authoringWarning } from '../map/MapExits.js';
-import { lockBadge, plateName } from '../map/NodeLock.js';
+import { plateName } from '../map/NodeLock.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
+import { createMapSelection } from './mapSelection.js';
+import { mountMapTrees } from './mapTrees.js';
+import { wireMapModes, wireBuildRailMount } from './mapModes.js';
 import { resyncMapViews } from './mapResync.js';
 import { mountMapChrome } from './mapChrome.js';
 import { wireMapBuildTools } from './mapBuildTools.js';
 import { mustGetElement } from '../ui/dom.js';
-import { mountBreadcrumb } from '../ui/Breadcrumb.js';
-import { mountWorldTree } from '../ui/WorldTree.js';
-import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
@@ -24,10 +21,8 @@ import { mountBuildToolChip } from '../ui/BuildToolChip.js';
 import { PAINT_TAB, effectiveBrush, toolChipLabel } from '../view/BuildTool.js';
 import { isTilePickWaiting } from './mapPick.js';
 import { isDefeated } from '../entities/Creature.js';
-import { isGM, seesThroughFog } from '../view/ViewRole.js';
+import { isGM } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
-import { watchPixelRatio } from '../ui/pixelRatio.js';
-import { deferMount } from '../util/deferMount.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/mapEnv.js').MapEnv} MapEnv */
@@ -42,7 +37,10 @@ import { deferMount } from '../util/deferMount.js';
  * This function owns the mounts and the location-sync actions. The
  * Build-mode authoring gestures live in mapAuthoring.js. The Play-mode
  * movement lives in mapTravel.js. Both share state through the returned
- * MapEnv object, so wireGenerateAction can also use it.
+ * MapEnv object, so wireGenerateAction can also use it. The tile selection
+ * is in mapSelection.js, the breadcrumb and both trees mount from
+ * mapTrees.js, and the mode and role switch effects and the Build rail
+ * mount are in mapModes.js.
  * @param {AppContext} app
  * @returns {MapEnv}
  */
@@ -80,14 +78,23 @@ export function wireMapView(app) {
       fogTool: null, // active Play-mode GM fog brush
       syncBuildTool: () => syncToolChip(),
       goToNode,
-      selectTile,
-      clearSelection,
       syncPartyMarker,
       syncExits,
       syncPaletteKind,
       refreshMapDescription,
     })
   );
+
+  const { clearSelection, selectTile, focusLocation, centerOnLocation } = createMapSelection(
+    app,
+    env,
+    buildTabs,
+  );
+  env.selectTile = selectTile;
+  env.clearSelection = clearSelection;
+  app.actions.getSelectedTileId = () => env.selectedTileId;
+  app.actions.focusLocation = focusLocation;
+  app.actions.centerOnLocation = centerOnLocation;
 
   const authoring = createMapAuthoring(app, env);
   const travel = createMapTravel(app, env);
@@ -280,113 +287,11 @@ export function wireMapView(app) {
 
   /** Show only the palette terrain that the current node's kind can use. */
   function syncPaletteKind() {
-    palettePanel?.setKind(navigator.getCurrentNode().kind);
+    env.palettePanel?.setKind(navigator.getCurrentNode().kind);
   }
 
-  /** Remove any Build-mode tile selection and its inspector and canvas
-   * highlight. */
-  function clearSelection() {
-    env.selectedTileId = null;
-    mapCanvas.setSelectedTile(null);
-    inspector.setTile(null);
-  }
-  app.actions.getSelectedTileId = () => env.selectedTileId;
-
-  /**
-   * Select a tile within the current node and point the inspector at it.
-   * Bring the Tile tab forward so the inspector is visible.
-   * @param {string} tileId
-   */
-  function selectTile(tileId) {
-    env.selectedTileId = tileId;
-    mapCanvas.setSelectedTile(tileId);
-    inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
-    buildTabs.select('build-tab-tile');
-  }
-
-  /**
-   * Bring a staged location into view. Navigate to its node if the GM looks
-   * elsewhere, center the canvas on its tile, and select the tile so it
-   * shows highlighted. Unlike selectTile, this does not change the Build
-   * rail's active tab. This is how a click on an encounter in the Build list
-   * lands on the encounter.
-   * @param {import('../types/entities.js').EncounterLocation} location
-   */
-  function focusLocation(location) {
-    if (navigator.getCurrentNode().id !== location.nodeId) {
-      if (!grid.getNode(location.nodeId)) return;
-      goToNode(location.nodeId);
-    }
-    env.selectedTileId = location.tileId;
-    mapCanvas.setSelectedTile(location.tileId);
-    inspector.setTile(getTile(navigator.getCurrentNode(), location.tileId) ?? null, true);
-    mapCanvas.centerOnTile(location.tileId);
-  }
-  app.actions.focusLocation = focusLocation;
-
-  /**
-   * Bring a position into view without changing the Build-mode tile
-   * selection. Navigate to its node when the view looks elsewhere, then
-   * center the canvas on the tile at the current zoom. This is how selecting
-   * a character in the roster follows the character around a split party.
-   * @param {import('../types/entities.js').EncounterLocation} location
-   */
-  function centerOnLocation(location) {
-    if (navigator.getCurrentNode().id !== location.nodeId) {
-      if (!grid.getNode(location.nodeId)) return;
-      goToNode(location.nodeId);
-    }
-    mapCanvas.centerOnTile(location.tileId);
-  }
-  app.actions.centerOnLocation = centerOnLocation;
-
-  const breadcrumb = mountBreadcrumb(mustGetElement('breadcrumb-container'), goToNode);
-  env.breadcrumb = breadcrumb;
-
-  // A Player tab gets an empty Build-rail tree. The rail is hidden in that
-  // role, but a filled tree would still put the name of every node, such as
-  // an undiscovered dungeon, into the page for anyone who reads the DOM.
-  // The tree mounts on the first switch to Build mode (showBuild below).
-  const worldTree = deferMount(() =>
-    mountWorldTree(mustGetElement('world-tree-container'), {
-      getNodes: () => (isGM(state.role) ? grid.allNodes() : []),
-      getCurrentId: () => navigator.getCurrentNode().id,
-      onSelect: goToNode,
-      // The new map opens at once, and the tree opens the rows above it and
-      // selects its row, so the GM sees where it went.
-      onAddChild: async (id) => {
-        const child = await nodeActions.addChildNode(id);
-        if (child) goToNode(child);
-      },
-      onEdit: (id) => nodeActions.editNode(id),
-      onDelete: (id) => nodeActions.deleteNode(id),
-      // Badge every unreachable or sealed node. Unlinking a tile flags the
-      // orphaned child node here, instead of only when the GM next views it.
-      // This check runs in Build mode only: the tree sits in a Build-only rail.
-      // Adding the check to the signature costs a world scan on every
-      // Play-mode party step.
-      getWarning: (node) =>
-        state.mode === 'build' ? authoringWarning(node, grid.getParent(node)) : null,
-      getLock: lockBadge,
-    }),
-  );
-  env.worldTree = worldTree;
-
-  // The Play-mode counterpart to the Build-mode world tree. It shows the same
-  // hierarchy, but read-only, with no add or delete controls. A player sees
-  // only the nodes that the party has discovered, so unexplored regions stay
-  // hidden from the table. The GM always sees the whole world. Selecting a
-  // node offers to teleport the party there.
-  const regionTree = mountWorldTree(mustGetElement('region-tree-container'), {
-    getNodes: () =>
-      isGM(state.role)
-        ? grid.allNodes()
-        : discoveredNodes(grid.allNodes(), partyTracker.getPosition()),
-    getCurrentId: () => navigator.getCurrentNode().id,
-    onSelect: travel.teleportToNode,
-  });
-  app.views.regionTree = regionTree;
-  env.regionTree = regionTree;
+  mountMapTrees(app, env, travel.teleportToNode);
+  const { breadcrumb } = env;
 
   /** @type {ReturnType<typeof import('../ui/MapControls.js').mountMapControls> | null} assigned after mapCanvas exists */
   let mapControls = null;
@@ -438,14 +343,10 @@ export function wireMapView(app) {
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
 
-  const inspector = authoring.mountInspector(mustGetElement('inspector-container'));
-  env.inspector = inspector;
+  env.inspector = authoring.mountInspector(mustGetElement('inspector-container'));
 
-  const tileTooltip = mountTileTooltip(document.body);
-  env.tileTooltip = tileTooltip;
+  env.tileTooltip = mountTileTooltip(document.body);
 
-  /** @type {ReturnType<typeof mountPalettePanel> | null} mounted by showBuild below */
-  let palettePanel = null;
   env.palettePanel = null;
 
   authoring.wireCanvasDrop(canvasEl);
@@ -461,7 +362,7 @@ export function wireMapView(app) {
   mapControls = chrome.mapControls;
   const { syncMapOccluders } = chrome;
   const toolChip = mountBuildToolChip(mapControls.element, () => {
-    const region = grid.getNode(palettePanel?.regionPicker.getTarget() ?? '');
+    const region = grid.getNode(env.palettePanel?.regionPicker.getTarget() ?? '');
     const brush = effectiveBrush(env.activeBrush, buildTab);
     return toolChipLabel(brush, region?.name ?? null, isTilePickWaiting());
   });
@@ -474,7 +375,7 @@ export function wireMapView(app) {
     const painting =
       state.mode === 'build' && effectiveBrush(env.activeBrush, buildTab) === 'region';
     mapCanvas.setHighlightRegion(
-      painting ? (palettePanel?.regionPicker.getTarget() ?? null) : null,
+      painting ? (env.palettePanel?.regionPicker.getTarget() ?? null) : null,
     );
   };
 
@@ -493,113 +394,16 @@ export function wireMapView(app) {
 
   narration = mountMapNarration(app, mapCanvas);
 
-  // A GM in Play mode sees the art under the fog, dimmed. A player sees solid
-  // fog, so the screen the players watch shows nothing ahead.
-  const syncFogDim = () => mapCanvas.setFogDim(seesThroughFog(state.mode, state.role));
-  syncFogDim();
-
-  // The map-facing effects of a mode switch. sessionControls calls this
-  // after it flips the body classes.
-  app.actions.onModeChanged = (mode) => {
-    mapCanvas.setRevealAll(mode === 'build');
-    syncFogDim();
-    syncMapOccluders();
-    // A Play view frames the revealed tiles, at a zoom that can cut off the
-    // rest of the map. Build mode edits the whole map, so it fits it.
-    if (mode === 'build') {
-      mapCanvas.fit();
-      palettePanel?.show();
-    }
-    syncToolChip();
-    tileTooltip.hide();
-    // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
-    // down settles the authoring gesture and the crosshair for the new mode.
-    setFogTool(null);
-    if (mode !== 'build') clearSelection();
-    buildWarning.reset();
-    // Build mode offers no ways out, and it drops the party focus of the fit.
-    // Play mode draws the exits again.
-    syncPartyMarker();
-    worldTree.update();
-    regionTree.update();
-    refreshMapDescription();
-    // Play mode is about the party. Bring it into view, from whatever node
-    // Build had open.
-    if (mode === 'play') {
-      const at = followedView();
-      if (navigator.getCurrentNode().id !== at.nodeId && grid.getNode(at.nodeId)) {
-        goToNode(at.nodeId);
-      } else mapCanvas.bringTileIntoView(at.tileId);
-    }
-  };
-
-  // This handles a role switch in the same way. A player role gets no fog
-  // brush and no authoring gesture. An open tooltip can now show too much.
-  app.actions.onRoleChanged = (role) => {
-    if (role === 'player') setFogTool(null);
-    syncFogDim();
-    tileTooltip.hide();
-    // The sidebar world tree shows everything to the GM, but shows only
-    // discovered nodes to a player. The Build-rail tree is empty for a
-    // player. A role flip changes the contents of both.
-    regionTree.update();
-    worldTree.update();
-  };
-
-  // Keep the canvas buffer matched to the CSS size of the element, times the
-  // device pixel ratio. This lets the map fill the fluid layout column,
-  // instead of staying a fixed 720x540 island. Each resize re-frames the node.
-  // Combat and Library mode hide the map with display: none, which reports a
-  // size of zero. The buffer keeps its size while hidden, so the pan and zoom
-  // of the GM come back unchanged when the map shows again.
-  const resizeMapToViewport = () => {
-    if (canvasEl.clientWidth === 0 || canvasEl.clientHeight === 0) return;
-    const dpr = window.devicePixelRatio || 1;
-    mapCanvas.resize(
-      Math.max(1, Math.round(canvasEl.clientWidth * dpr)),
-      Math.max(1, Math.round(canvasEl.clientHeight * dpr)),
-    );
-    syncMapOccluders();
-  };
-  new ResizeObserver(resizeMapToViewport).observe(canvasEl);
-  // A move to a screen with another pixel ratio keeps the CSS size, so the
-  // ResizeObserver stays quiet and the ratio needs its own watch.
-  watchPixelRatio(resizeMapToViewport);
+  wireMapModes(app, env, {
+    canvasEl,
+    setFogTool,
+    syncMapOccluders,
+    followedView,
+    resetBuildWarning: () => buildWarning.reset(),
+  });
 
   syncEmptyMap = wireMapBuildTools(app, env, authoring, buildTabs).syncEmptyMap;
-
-  // The Build rail's palette, world tree, and foe and NPC lists contain about
-  // half of the page's elements, and only Build mode shows them. They mount
-  // on the first switch to Build mode, which sessionControls reports before
-  // onModeChanged. A Player tab cannot enter Build mode, so it never builds
-  // them. The tile inspector is small and mounts at startup.
-  app.actions.showBuild = () => {
-    if (!isGM(state.role)) return;
-    if (!palettePanel) {
-      // The tooltip doubles as the palette's hover label, naming each
-      // image-only swatch.
-      palettePanel = mountPalettePanel(
-        mustGetElement('palette-container'),
-        palette,
-        (brush) => {
-          env.activeBrush = brush;
-          syncToolChip();
-        },
-        tileTooltip,
-        {
-          list: () =>
-            grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
-          create: () => env.nodeActions.addChildNode(navigator.currentNodeId),
-        },
-      );
-      env.palettePanel = palettePanel;
-      palettePanel.regionPicker.root.addEventListener('change', syncToolChip);
-      syncPaletteKind();
-    }
-    worldTree.mount();
-    app.views.buildFoes.mount();
-    app.views.buildNPCs.mount();
-  };
+  wireBuildRailMount(app, env);
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();

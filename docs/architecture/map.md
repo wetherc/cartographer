@@ -1382,7 +1382,7 @@ place action, which reaches nodes that are not on screen.
 When the GM picks a character in the roster while the party is split, the map
 brings that character into view. `followCharacter` in `app/partyWiring.js`
 resolves the character's `characterPosition` and passes it to
-`centerOnLocation` in `app/mapWiring.js`. `centerOnLocation` moves to that
+`centerOnLocation` in `app/mapSelection.js`. `centerOnLocation` moves to that
 node if the view is elsewhere and centers the canvas on the tile at the
 current zoom. It is the lighter half of `focusLocation`, with no tile
 selection and no inspector, so it does not interrupt Play mode.
@@ -1706,7 +1706,7 @@ plate overlaps a floating box, and a region name skips any spot under one.
 CSS puts the mini-map in the bottom-right corner in every mode, where no
 digit draws, so this rule hides only the digits under the zoom toolbar. The
 mini-map still catches the clicks and paint strokes aimed at the cells under it, so the GM
-pans those cells out or collapses it. `onModeChanged` in `mapWiring.js`
+pans those cells out or collapses it. `onModeChanged` in `mapModes.js`
 sends the rectangles again on each mode switch. A pan or a zoom by the GM can
 still move cells under the mini-map in either mode. A west or east band is
 wide, so a fit keeps no room for it, and the band slides clear instead. The exits and the occluders reach

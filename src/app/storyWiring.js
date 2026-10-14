@@ -264,7 +264,7 @@ export function wireStory(app) {
   // the GM views, plus unplaced ones, and lets the GM edit them without
   // moving the party there. New NPCs default onto the Build-mode selected
   // tile of the viewed node. The list mounts on the first switch to Build
-  // mode (mapWiring's showBuild).
+  // mode (showBuild in mapModes.js).
   app.views.buildNPCs = deferMount(() =>
     mountNPCPanel(mustGetElement('build-npcs-container'), {
       getNPCs: () => folkAt({ nodeId: app.navigator.getCurrentNode().id }),

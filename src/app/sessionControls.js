@@ -19,7 +19,7 @@ const PLAYER_HINT_KEY = 'campaign-builder:player-hint-shown';
  * role, the latter guarded by the cross-tab GM lock), the sidebar tab
  * group, and the sidebar collapse toggle. It registers `setMode` on
  * `app.actions`. It delegates the map-specific consequences of a switch to
- * mapWiring's onModeChanged and onRoleChanged.
+ * onModeChanged and onRoleChanged in mapModes.js.
  * @param {AppContext} app
  */
 export function wireSessionControls(app) {

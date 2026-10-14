@@ -212,10 +212,10 @@ export interface AppActions {
   // mapWiring: the Build-mode selected tile id, or null. This is the default
   // spot for authoring flows that place something "here".
   getSelectedTileId(): string | null;
-  // mapWiring: navigate to and center the map on a staged location, and
+  // mapSelection: navigate to and center the map on a staged location, and
   // select its tile (the Build foe list's "show on map").
   focusLocation(location: EncounterLocation): void;
-  // mapWiring: navigate to and center the map on a position, and leave the
+  // mapSelection: navigate to and center the map on a position, and leave the
   // Build-mode tile selection alone (the roster follows a split party).
   centerOnLocation(location: EncounterLocation): void;
   undoStroke(): Promise<void>;
@@ -228,7 +228,7 @@ export interface AppActions {
   onModeChanged(mode: AppMode): void;
   // libraryWiring: mount the Library lists on the first visit to Library mode.
   showLibrary(): void;
-  // mapWiring: mount the Build rail on the first visit to Build mode.
+  // mapModes: mount the Build rail on the first visit to Build mode.
   showBuild(): void;
   onRoleChanged(role: ViewRole): void;
   // sessionControls

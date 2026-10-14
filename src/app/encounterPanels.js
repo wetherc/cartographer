@@ -243,7 +243,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
   // lets the GM edit them without moving the party there. A new foe
   // defaults to the Build-mode selected tile of the viewed node, so the GM
   // can select a tile and add a foe there directly. The list mounts on the
-  // first switch to Build mode (mapWiring's showBuild).
+  // first switch to Build mode (showBuild in mapModes.js).
   app.views.buildFoes = deferMount(() =>
     mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
       getEncounters: () =>

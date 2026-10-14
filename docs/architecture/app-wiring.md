@@ -323,8 +323,14 @@ others) and returns the shared `MapEnv` context. `src/types/mapEnv.ts`
 declares that type. Every module around the map takes `MapEnv` as its second
 argument.
 
-`mapWiring.js` mounts three helpers at fixed points of its mount order:
+`mapWiring.js` mounts these helpers at fixed points of its mount order:
 
+- `mapSelection.js` builds the Build-mode tile selection (`selectTile` and
+  `clearSelection` on the `MapEnv`) and the `focusLocation` and
+  `centerOnLocation` actions. They read the canvas and the inspector from
+  the `MapEnv` when they run, so they exist before either view mounts.
+- `mapTrees.js` mounts the breadcrumb, the Build-rail world tree, and the
+  Play-mode region tree, and stores each one on the `MapEnv`.
 - `mapChrome.js` mounts the HTML over the canvas: the mini-map and the zoom
   and fog toolbar. It reports their rectangles to the canvas as occluders,
   and it returns `syncMapOccluders` for the resize handler.
@@ -341,6 +347,10 @@ argument.
   It also mounts the empty-map card of `ui/BuildEmptyMap.js` over the canvas,
   and it returns `syncEmptyMap`, which `wireMapView` calls after each draw so
   the card shows only while the map in view has no tiles.
+- `mapModes.js` registers `onModeChanged` and `onRoleChanged`, the fog dim
+  of a GM in Play mode, and the resize handler that keeps the canvas buffer
+  at the element size times the pixel ratio. It also registers `showBuild`,
+  which mounts the Build rail.
 
 The palette, the Build-rail world tree, and the foe and NPC authoring lists
 mount on the first switch to Build mode, through `app.actions.showBuild`,
