@@ -108,7 +108,7 @@ test('a tile image load drops the cached terrain', () => {
 test('the layer restores the map context when a pass throws', () => {
   const { renderer, main } = harness();
   renderer.render(view());
-  renderer._renderTiles = () => {
+  renderer._terrainPasses.renderTiles = () => {
     throw new Error('boom');
   };
   assert.throws(() => renderer.render(view()), /boom/);

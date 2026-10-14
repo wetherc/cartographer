@@ -194,7 +194,7 @@ export const ROUTER_ANSWERS = {
     trap: 'render() only schedules a frame. Add derived data to the shared frame object rather than re-scanning node.tiles, and iterate the visible cell range only.',
     refs: [
       ['src/map/MapCanvas.js', 'render'],
-      ['src/map/MapRenderer.js', 'anyRevealed'],
+      ['src/map/TerrainPasses.js', 'anyRevealed'],
     ],
   },
 };

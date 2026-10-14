@@ -241,7 +241,7 @@ its block. For a chunk's image (`groupImageRef`), it uses the art of a tile
 marked as a point of interest if the chunk has one. Otherwise, it uses the
 art of the top-left tile.
 
-`MapRenderer._renderGroupImages` draws these chunks, and the ordinary
+`TerrainPasses.renderGroupImages` draws these chunks, and the ordinary
 per-tile pass then skips the base images of the covered cells. Fog
 rectangles and path overlays still draw per tile, on top of the stretched
 image. A partly explored block then reveals piece by piece, and a road
@@ -264,7 +264,7 @@ at that tile. Near the right or bottom edge of the map, the block moves up or
 left as needed to stay in bounds.
 
 `spanBlocks(node)` in `TilePaint.js` lists these blocks with pure geometry.
-`MapRenderer._renderSpanImages` draws them right after the region-group
+`TerrainPasses.renderSpanImages` draws them right after the region-group
 chunks. Span blocks add to the same set of covered cells, so the per-tile
 pass skips the base images under them, while fog and overlays stay per tile,
 as with group images.
@@ -284,7 +284,8 @@ The canvas code is split so that each file owns one concern:
     |
     +-- MapCanvasView ....... fit, center, follow, zoom, resize, and
     |                         the view snapshot handed to the renderer
-    +-- MapRenderer ......... terrain / fog / grid / region passes
+    +-- MapRenderer ......... the frame, region overlays and names
+    |     +-- TerrainPasses .... backdrop, block and span art, tiles and fog, grid
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- TerrainLayer ..... terrain pixels kept across a pan
     |     |     +-- TerrainDirty ... the cells a step or stroke repaints
@@ -383,7 +384,7 @@ most recently used sizes.
 
 ### The cell grid
 
-`MapRenderer._renderCellGrid` draws the one-pixel grid along the cell
+`TerrainPasses.renderCellGrid` draws the one-pixel grid along the cell
 boundaries as its own pass. The SVG rasterizer leaves the outermost pixel row
 of each tile partly transparent. Tiles drawn from vector art therefore show
 the dark map backdrop at every boundary, which reads as a grid. A cached
@@ -398,7 +399,7 @@ boundary gets a second, darker line.
 ### The terrain layer
 
 The live map stores its terrain in an offscreen canvas, so a pan copies
-pixels and does not draw every tile again. `MapRenderer._renderTerrain` runs
+pixels and does not draw every tile again. `TerrainPasses.render` runs
 the terrain passes: the map backdrop, the region-block and span images, the
 tiles with their fog, overlays, and POI outlines, and the cell grid.
 `TerrainLayer` (`src/map/TerrainLayer.js`) calls it to fill the layer, and

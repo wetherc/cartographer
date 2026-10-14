@@ -49,7 +49,7 @@ const view = (fogDim) =>
 
 test('see-through fog draws the art, then a dim fill, and no POI outline', () => {
   const { renderer, calls, outlines } = recorder();
-  /** @type {any} */ (renderer)._renderTile(
+  /** @type {any} */ (renderer)._terrainPasses.renderTile(
     view(true),
     poiTile,
     0,
@@ -68,7 +68,7 @@ test('see-through fog draws the art, then a dim fill, and no POI outline', () =>
 
 test('see-through fog on a frontier tile uses the frontier tint', () => {
   const { renderer, calls } = recorder();
-  /** @type {any} */ (renderer)._renderTile(
+  /** @type {any} */ (renderer)._terrainPasses.renderTile(
     view(true),
     poiTile,
     0,
@@ -83,7 +83,7 @@ test('see-through fog on a frontier tile uses the frontier tint', () => {
 
 test('solid fog draws no image for a fogged tile', () => {
   const { renderer, calls, outlines } = recorder();
-  /** @type {any} */ (renderer)._renderTile(
+  /** @type {any} */ (renderer)._terrainPasses.renderTile(
     view(false),
     poiTile,
     0,
@@ -107,6 +107,15 @@ test('see-through fog gates no multi-tile art on the revealed set', () => {
 test('a revealed point of interest in range gets its outline', () => {
   const { renderer, outlines } = recorder();
   const tile = { ...poiTile, revealed: true };
-  /** @type {any} */ (renderer)._renderTile(view(true), tile, 0, 0, 32, 32, new Set(), new Set());
+  /** @type {any} */ (renderer)._terrainPasses.renderTile(
+    view(true),
+    tile,
+    0,
+    0,
+    32,
+    32,
+    new Set(),
+    new Set(),
+  );
   assert.deepEqual(outlines, [0], 'the outline stand-in records a real draw');
 });

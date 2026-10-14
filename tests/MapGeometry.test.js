@@ -20,7 +20,7 @@ import {
   NEIGHBORS4,
   NEIGHBORS8,
 } from '../src/map/MapGeometry.js';
-import { anyRevealed } from '../src/map/MapRenderer.js';
+import { anyRevealed } from '../src/map/TerrainPasses.js';
 
 test('the neighbour offsets are the four orthogonals, plus the diagonals', () => {
   assert.deepEqual(NEIGHBORS4, [
