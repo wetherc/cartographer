@@ -400,7 +400,6 @@ export function buildItemForm({
       description: descriptionInput.value,
       quantity: quantityInput.value,
       type: typeSelect.value,
-      notes: item?.notes ?? '',
       armorWeight: weightSelect.value,
       baseAC: baseACInput.value,
       strength: strengthInput.value,

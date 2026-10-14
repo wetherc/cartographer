@@ -283,7 +283,6 @@ export function wireLibrary(app) {
             ? /** @type {import('../types/entities.js').InventoryItem} */ ({
                 id: 'library',
                 quantity: 1,
-                notes: '',
                 ...found.entry,
               })
             : null,
@@ -291,7 +290,7 @@ export function wireLibrary(app) {
           submitLabel: found ? 'Save' : 'Add',
           onCancel: close,
           onSubmit: (fields) => {
-            const { quantity: _quantity, notes: _notes, ...rest } = fields;
+            const { quantity: _quantity, ...rest } = fields;
             const entry = /** @type {EquipmentTemplate} */ (rest);
             const newKey = equipmentKey(entry);
             const target = activeEquipmentEntries().find((e) => equipmentKey(e.entry) === newKey);

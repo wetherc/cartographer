@@ -45,7 +45,6 @@ export function foeGear(foe) {
     gear.push({
       name: w.name,
       quantity: 1,
-      notes: '',
       type: w.kind === 'ranged' && !w.properties?.includes('thrown') ? 'bow' : 'weapon',
       kind: w.kind,
       category: w.category,
@@ -63,7 +62,6 @@ export function foeGear(foe) {
     gear.push({
       name: a.name,
       quantity: 1,
-      notes: '',
       type: 'armor',
       armorWeight: a.armorWeight,
       baseAC: a.baseAC,

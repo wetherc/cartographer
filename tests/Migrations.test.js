@@ -313,3 +313,36 @@ test('step 7 turns the XP banked toward the next level into a total', () => {
   const none = { nodes: [] };
   assert.equal(MIGRATIONS[7](none), none, 'a save with no character list is left alone');
 });
+
+test('step 8 folds the notes of an inventory item into its description', () => {
+  const state = {
+    characters: [
+      {
+        id: 'c1',
+        inventory: [
+          { id: 'a', name: 'Potion', notes: 'Restores 2d4+2 HP.' },
+          { id: 'b', name: 'Ring', description: 'A signet.', notes: ' Opens the gate. ' },
+          { id: 'c', name: 'Rope', notes: '' },
+          { id: 'd', name: 'Torch', notes: 7 },
+          { id: 'e', name: 'Lamp' },
+          'junk',
+        ],
+      },
+      { id: 'c2', inventory: 5 },
+      null,
+    ],
+  };
+  const migrated = /** @type {any} */ (MIGRATIONS[8](state));
+  assert.deepEqual(migrated.characters[0].inventory, [
+    { id: 'a', name: 'Potion', description: 'Restores 2d4+2 HP.' },
+    { id: 'b', name: 'Ring', description: 'A signet. Opens the gate.' },
+    { id: 'c', name: 'Rope' },
+    { id: 'd', name: 'Torch' },
+    { id: 'e', name: 'Lamp' },
+    'junk',
+  ]);
+  assert.equal(migrated.characters[0].inventory[4], state.characters[0].inventory[4]);
+  assert.deepEqual(migrated.characters.slice(1), state.characters.slice(1));
+  const none = { nodes: [] };
+  assert.equal(MIGRATIONS[8](none), none, 'a save with no character list is left alone');
+});

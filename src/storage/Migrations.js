@@ -27,7 +27,7 @@ import { isRecord } from '../util/isRecord.js';
  * The schema version `buildState` stamps on every save it writes. Version 0
  * is every save written before this field existed.
  */
-export const CURRENT_VERSION = 8;
+export const CURRENT_VERSION = 9;
 
 /**
  * Step transforms keyed by the version being migrated from. `MIGRATIONS[n]`
@@ -222,6 +222,28 @@ export const MIGRATIONS = {
       return { ...record, xp: xpForLevel(record.level) + record.xp };
     };
     return { ...state, characters: state.characters.map(total) };
+  },
+  // 8 -> 9: an inventory item has no `notes` field, and the item rows show
+  // only `description`. A version-8 item can keep text in `notes`, so the
+  // step appends that text to the description and drops the field, so the
+  // text shows in the item row and in the item form.
+  8: (state) => {
+    if (!Array.isArray(state.characters)) return state;
+    /** @type {(item: unknown) => unknown} */
+    const fold = (item) => {
+      if (!isRecord(item) || !('notes' in item)) return item;
+      const { notes, ...rest } = /** @type {Record<string, any>} */ (item);
+      const text = typeof notes === 'string' ? notes.trim() : '';
+      if (!text) return rest;
+      const prior = typeof rest.description === 'string' ? rest.description.trim() : '';
+      return { ...rest, description: prior ? `${prior} ${text}` : text };
+    };
+    /** @type {(c: unknown) => unknown} */
+    const foldCharacter = (c) => {
+      if (!isRecord(c) || !Array.isArray(c.inventory)) return c;
+      return { ...c, inventory: c.inventory.map(fold) };
+    };
+    return { ...state, characters: state.characters.map(foldCharacter) };
   },
 };
 

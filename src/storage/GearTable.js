@@ -11,12 +11,13 @@
  * `deserialize`, before the migrations, so no other load step sees a
  * reference. The undo log diffs parsed state, so its ops hold gear inline.
  *
- * An inventory item also has fields that belong to the one copy a character
- * carries: `quantity` and `notes`. The table entry keeps those keys with a
- * null value, and the reference fills them: `{"@": 2, "quantity": 5,
- * "notes": ""}`. The restore spreads the entry first and the reference
- * second, so the restored item has its keys in the stored order. A save
- * string that goes through a load and a save again comes out unchanged.
+ * An inventory item also has a field that belongs to the one copy a character
+ * carries: `quantity`. A version-8 save also keeps `notes` on each copy. The
+ * table entry keeps those keys with a null value, and the reference fills
+ * them: `{"@": 2, "quantity": 5}`. The restore spreads the entry first and
+ * the reference second, so the restored item has its keys in the stored
+ * order. A save string that goes through a load and a save again comes out
+ * unchanged.
  *
  * Only a piece used twice or more goes into the table. A reference to a
  * piece used once costs more than the piece inline. The table lists pieces

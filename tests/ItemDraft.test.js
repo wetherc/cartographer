@@ -16,7 +16,6 @@ function draft(extra = {}) {
     description: '',
     quantity: 1,
     type: 'gear',
-    notes: '',
     armorWeight: 'medium',
     baseAC: 14,
     strength: 0,
@@ -41,7 +40,6 @@ test('a plain stack keeps only the fields every item has', () => {
   assert.deepEqual(assembleItem(draft()), {
     name: 'Rope',
     quantity: 1,
-    notes: '',
     type: 'gear',
   });
 });
@@ -202,10 +200,6 @@ test('inflicted effects ride along only when there are some, and only on a weapo
     'statusEffects' in assembleItem(draft({ type: 'gear', statusEffects: ['Poisoned'] })),
     false,
   );
-});
-
-test('notes come through from the item being edited rather than from a control', () => {
-  assert.equal(assembleItem(draft({ notes: 'from the smith' }))?.notes, 'from the smith');
 });
 
 test('a weapon preset is labelled by its damage die', () => {

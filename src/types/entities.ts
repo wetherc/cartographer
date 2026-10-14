@@ -357,7 +357,6 @@ export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
-  notes: string;
   /** Optional flavor or rules text shown with the item. */
   description?: string;
   /** Gear that sheds light, such as a torch or a lantern. A moving group in

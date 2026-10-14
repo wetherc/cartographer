@@ -53,7 +53,6 @@ export const EQUIPPABLE_TYPES = [
  * @property {string} description
  * @property {unknown} quantity
  * @property {string} type
- * @property {string} notes carried from the original item during an edit
  * @property {string} armorWeight
  * @property {unknown} baseAC
  * @property {unknown} strength 0 for no requirement
@@ -103,7 +102,6 @@ export function assembleItem(draft) {
   return {
     name: draft.name.trim(),
     quantity,
-    notes: draft.notes,
     type,
     ...(description ? { description } : {}),
     ...(type === 'armor'
