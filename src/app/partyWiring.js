@@ -290,9 +290,13 @@ export function wireParty(app, reloadView = null) {
         if (character) applyToTarget(app, character.id, amount, isHeal);
       },
     },
-    // The Level up button of the sheet's banner opens the full sheet, where
-    // the progression section is.
-    () => fullSheet.open(),
+    // The Level up button of the sheet's banner opens the full sheet on its
+    // Character tab, where the progression section is. The sidebar summary
+    // shows that panel whatever tab the full sheet last had open.
+    () => {
+      sheetTabs.select('tab-sheet');
+      fullSheet.open();
+    },
     // A hand edit of the chips settles HP buffs and adds the lethargy that a
     // removed Haste leaves, the same as the creature and NPC panels.
     (character, conditions) => settleChips(app, character, conditions),
@@ -362,7 +366,7 @@ export function wireParty(app, reloadView = null) {
     },
   );
 
-  wireTabs(mustGetElement('sheet-tabs'));
+  const sheetTabs = wireTabs(mustGetElement('sheet-tabs'));
 
   // Time does not pass during a fight. A rest would heal and refill the
   // party while the turn order and budgets stayed where they were, and

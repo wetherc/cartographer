@@ -54,12 +54,14 @@ export function levelUpBanner(character, opts) {
   if (!opts.editBase) return banner;
   const onClick = () => {
     opts.openFull?.();
+    // The progression section scrolls into view first, so the new class
+    // level shows there when the assign dialog closes.
+    const progress = opts.getProgress();
+    progress?.scrollIntoView({ block: 'nearest' });
     if (levels > 0) {
       assignLevelFlow(opts.live, opts);
       return;
     }
-    const progress = opts.getProgress();
-    progress?.scrollIntoView({ block: 'nearest' });
     // The improvement and feature-choice buttons sit after the subclass and
     // "Add a class" buttons, so the banner looks for its own mark.
     /** @type {HTMLButtonElement | null | undefined} */ (

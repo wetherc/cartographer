@@ -101,7 +101,8 @@ such as "Level 1 slots: 3 of 4 free".
 While a character has a level to assign, an ability score improvement, or a
 class feature choice left, a banner at the top of the sheet says so, such as
 "Ready to level up: 1 level to assign." The GM's **Level up** button opens
-the full sheet. For a pending level, it then opens **Assign a level**. For
+the full sheet on its Character tab and scrolls to the Progression block.
+For a pending level, it then opens **Assign a level**. For
 an improvement or a feature choice, it moves focus to the **+2 ability** or
 **Choose** button of the Progression block.
 A Player tab shows the banner with no button. The party row of the character
