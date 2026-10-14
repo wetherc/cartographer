@@ -2,8 +2,8 @@
 
 *Reference. Part of the [GM reference](../gm-reference.md). For the steps of a task, read the [GM guide](../gm-guide.md).*
 
-Library mode curates the templates that the preset pickers offer. It has
-four tabs.
+Library mode curates the templates that the preset pickers offer, and the
+random tables that the dice tray rolls. It has five tabs.
 
 | Tab | Contents |
 | --- | --- |
@@ -11,6 +11,7 @@ four tabs.
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
 | Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 131 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
+| Tables | The random tables that the dice tray rolls. The app ships three built-in tables: Wilderness encounters, Trinkets and loot, and Settlement names |
 
 | Row badge | Meaning | Row control |
 | --- | --- | --- |
@@ -38,7 +39,7 @@ customizations, and a campaign import offers to restore them. See
 | Library file control | What it does |
 | --- | --- |
 | Export library | Downloads `campaign-library.json` |
-| Import library | Loads an exported file into this browser. When you have customizations, a confirmation shows the entry counts of your library and of the file before it replaces them. A file with none of the four library lists (equipment, creatures, spells, feats), such as a campaign export, is refused with "That file is not a library file." |
+| Import library | Loads an exported file into this browser. When you have customizations, a confirmation shows the entry counts of your library and of the file before it replaces them. A file with none of the five library lists (equipment, creatures, spells, feats, tables), such as a campaign export, is refused with "That file is not a library file." |
 | Reset library | Removes all customizations and restores the built-in defaults. It is disabled while the library has no customizations |
 
 The Library file card sits at the top of Library mode, above the tabs.
@@ -50,3 +51,22 @@ return to the row that you edited.
 At startup, if the browser has no customizations, the app loads
 `library/campaign-library.json` from the project directory. The merged
 lists apply at once everywhere that the app reads the presets.
+
+## Random tables
+
+A random table has a name and a list of rows. Each row has a weight and a
+text. A roll picks one row, and a row with weight 2 comes up twice as often
+as a row with weight 1.
+
+| Table form field | What it does |
+| --- | --- |
+| Name | The table name. It is the merge key, so a table with the name of a built-in table overrides it |
+| Weight | A whole number from 1 to 1000. An empty or invalid weight saves as 1 |
+| Row | The text that the roll gives. Write `{place}` for a generated place name, such as "Ashford" or "Kelamere". A row with no text is dropped on save |
+| Chance | The percent chance of the row, from its weight and the total of all weights. It updates as you type |
+| Add row, Remove row | Add an empty row at the end, or remove one row |
+
+A table with no row text cannot be saved, and the form shows "Add at least
+one row with text." The app does not roll dice that a row names, such as
+"1d4 + 2 wolves". Roll them in the dice tray. To roll a table, see
+[Dice tray](story.md#dice-tray).

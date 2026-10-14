@@ -841,9 +841,9 @@ links, the notes, or a GM-only step.
 
 ## Curate the library
 
-The library keeps templates that do not belong to one campaign: equipment,
-creatures, spells, and feats. Switch to **Library** mode. It has the
-**Equipment**, **Creatures**, **Spells**, and **Feats** tabs. The Equipment
+The library stores templates that do not belong to one campaign: equipment,
+creatures, spells, feats, and random tables. Switch to **Library** mode. It
+has the **Equipment**, **Creatures**, **Spells**, **Feats**, and **Tables** tabs. The Equipment
 tab splits into categories such as **Weapons** and **Armor**. The Creatures
 tab splits into **Foes** and **People** by disposition.
 
@@ -861,7 +861,7 @@ default**).
 ### Add your own entry
 
 1. Click the add button of the tab: **New item**, **New creature**, **New
-   spell**, or **New feat**.
+   spell**, **New feat**, or **New table**.
 2. Fill in the form and submit it.
 
 If the entry has the same name as a built-in default, it replaces that
@@ -946,6 +946,29 @@ can write it this way:
    **Repeat (no slot)**.
 6. Write the disadvantage on ability checks of one ability in the
    description, because you apply it at the table.
+
+### Roll on a random table
+
+The library ships three random tables: Wilderness encounters, Trinkets and
+loot, and Settlement names. To make your own table:
+
+1. In Library mode, open the **Tables** tab and click **New table**.
+2. Type a name. For each result, type a weight and the row text. Click
+   **Add row** for more rows. A row with weight 2 comes up twice as often as
+   a row with weight 1, and the **Chance** column shows the percent.
+3. To get a generated place name in a row, write `{place}`, as in
+   "{place} Crossing".
+4. Click **Add**.
+
+To roll a table during a session:
+
+1. In Play mode, open the dice tray.
+2. Pick the table in the **Random table** picker under the Roll button.
+3. To keep the result from the players, tick **Hidden roll**.
+4. Click **Roll table**.
+
+The result shows at the top of the tray and goes into the Travelogue. A
+hidden roll shows the players only "The GM rolls in secret."
 
 ### Move your library between browsers
 

@@ -30,7 +30,7 @@ export function trayRollLine(roller, text, { hidden = false, gm = false } = {}) 
 /**
  * The message and visibility options of a roll on a random table. The row
  * text ends the line, and a period closes it unless the text already ends a
- * sentence. A hidden roll keeps the table and the result from a Player tab,
+ * sentence. A hidden roll hides the table and the result from a Player tab,
  * the same way a hidden tray roll does.
  * @param {string} roller the name of who rolled, such as "The GM"
  * @param {string} table the table name

@@ -72,7 +72,8 @@ The data model accepts custom tile images, but the app has no control that adds 
 
 ### Library
 
-- Curate templates for equipment, creatures, spells, and feats in Library mode. The templates do not belong to one campaign.
+- Curate templates for equipment, creatures, spells, feats, and random tables in Library mode. The templates do not belong to one campaign.
+- Roll on a weighted random table from the dice tray, such as wilderness encounters or loot. The result goes into the travelogue, and a hidden roll hides it from the players.
 - Start from the built-in 5th edition (5e) defaults, and override or add entries.
 - Export your library to a JSON file. Save the file over `library/campaign-library.json`, and every new browser or clone loads it at startup.
 - Include the library in a campaign export. A campaign import offers to restore it.

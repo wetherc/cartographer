@@ -236,6 +236,7 @@ steppers, and it does not read typed dice expressions.
 | DC | The field beside the Roll button: an optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
 | Hidden roll | A box beside the Roll button, in a GM tab only. A ticked box makes each **Roll** secret. The box stays ticked until you clear it |
 | Roll | Rolls the selection |
+| Random table, Roll table | A row under the Roll button, in a GM tab only: a picker over the random tables of the library, and a button that rolls the chosen table |
 
 The tray shows the latest result at its top. The total is large, and the dice faces and
 the modifier sit beside it in small type, as in "d20 (5) + 3". A roll with a
@@ -247,8 +248,17 @@ for a spectator tab.
 A hidden roll goes into the Travelogue as a GM-only line, such as "The GM
 rolls in secret: d20[4]=4 + modifier=3 -> total: 7". A Player tab reads only "The GM rolls in
 secret." Use it for a Perception check that the players do not know about,
-or for the save of a foe. The box applies only to the **Roll** button. An
+or for the save of a foe. The box applies to the **Roll** and **Roll table** buttons. An
 attack, a save, or a check that the app rolls logs its own line, and the box does not change it.
+
+A roll on a random table picks one row by its weight. The tray shows the
+table name and the row text at its top, and the Travelogue gets a line such
+as "The GM rolls on Trinkets and loot: A silver locket with a faded
+portrait." A hidden table roll logs "The GM rolls on Trinkets and loot in
+secret: ..." as a GM-only line, and a Player tab reads only "The GM rolls in
+secret." The picker lists the built-in tables and your own, and a table that
+you add in Library mode shows the next time you open the picker. See
+[Random tables](library.md#random-tables).
 
 An attack or a death save from the app opens the tray and shows its roll
 there. The dice counts and the modifier keep what you set, so your next

@@ -1157,8 +1157,8 @@ reconciled live state does not share.
 
 ## The custom library store
 
-The GM's custom library (equipment, creature, spell, and feat overrides)
-persists separately, in `storage/LibraryStore.js`, under its own localStorage
+The GM's custom library (equipment, creature, spell, feat, and random table
+overrides) persists separately, in `storage/LibraryStore.js`, under its own localStorage
 key (`campaign-builder:library`). New, Import, and Load example therefore
 never change it.
 
@@ -1175,6 +1175,8 @@ ignores everything else under `library/`.
 it drops invalid entries instead of throwing an error. The library file has
 no version field. A file that has separate `bestiary` and `npcs` lists loads
 with both read into the one `creatures` list.
+A file with no `tables` list loads with no custom tables, and `normalizeTable`
+drops a table with no name or no row text.
 
 A campaign export also includes the custom library, as a `library` field
 beside the save (see [The save pipeline](#the-save-pipeline)). On import,

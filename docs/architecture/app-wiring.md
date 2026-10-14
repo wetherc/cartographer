@@ -1023,13 +1023,13 @@ removal of every hidden objective to the GM tab.
 
 ### libraryWiring.js
 
-`libraryWiring.js` owns the four template lists of Library mode (equipment,
-creatures, spells, and feats) and the custom-library file controls: export,
+`libraryWiring.js` owns the five lists of Library mode (equipment,
+creatures, spells, feats, and random tables) and the custom-library file controls: export,
 import, reset, and the automatic load at startup. The creature list has two
 subtabs: Foes for the hostile templates, and People for the rest. An edit
 that changes a template's disposition moves it to the other subtab. "Add to
 campaign" opens the campaign's creature dialog, seeded from the template.
-The four lists mount on the first switch to Library mode, through
+The five lists mount on the first switch to Library mode, through
 `app.actions.showLibrary`, which `sessionControls.js` calls on that switch.
 They contain about a quarter of the page's elements, and a Player tab cannot
 enter Library mode, so a Player tab never builds them. `refresh` updates only
@@ -1061,6 +1061,12 @@ Inside the wiring:
   stored library first and applies the edit to that copy, so two tabs that
   edit the library do not erase each other's work.
 - The row summaries live in `app/librarySummaries.js`.
+- The Tables list mounts from `app/libraryTables.js`. A table has no id,
+  because no campaign record points at one, so an edit stores under the name
+  key alone. The table form is `ui/TableForm.js`, and the pure model (the
+  weighted pick, the `{place}` token, and the load-time repair in
+  `normalizeTable`) is `dice/RandomTable.js`. The built-in tables are in
+  `data/tables.js`.
 
 ### sessionControls.js
 
@@ -1138,6 +1144,10 @@ logged to the travelogue. Each entry names the GM, the character that this
 tab is bound to, or "A player" when the tab is a spectator. When the GM
 ticks the tray's **Hidden roll** box, `trayRollLine` (`log/TrayRollLine.js`)
 makes the line GM-only, and a Player tab reads "The GM rolls in secret."
+The tray also has a random table row in a GM tab. Its picker lists
+`activeTableEntries()`, and a roll goes through `rollTable` with
+`Math.random`. `tableRollLine` builds the travelogue line, and the Hidden
+roll box makes it GM-only the same way.
 
 ### shortcutsWiring.js and onboarding.js
 
