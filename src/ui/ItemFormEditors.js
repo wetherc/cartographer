@@ -179,6 +179,7 @@ export function buildEffectsEditor(initial) {
     }
     const effectInput = textField('', {
       placeholder: 'e.g. burning',
+      ariaLabel: 'Status effect name',
       className: 'item-form__effect-input',
     });
     const addEffect = () => {

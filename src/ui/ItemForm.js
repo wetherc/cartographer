@@ -323,6 +323,7 @@ export function buildItemForm({
   const damageRow = fieldRow(damageField);
   const versatileRow = fieldRow(versatileField);
   const effectsRow = fieldRow(effectsField, magicField);
+  effectsRow.classList.add('item-form__top-row');
   // The flat AC bonus shares a row with the stat buff. Both are small
   // worn-item numbers, and each hides on its own when the type drops it.
   const acRow = fieldRow(acField, buffStatField, buffAmountField);

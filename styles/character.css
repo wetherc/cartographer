@@ -704,6 +704,12 @@
   width: 8rem;
 }
 
+/* The Inflicts and Magic captions start on one line. The add row is taller
+   than the checkbox, so the default bottom alignment sets them apart. */
+.item-form__top-row {
+  align-items: flex-start;
+}
+
 /* Weapon property flags: one checkbox per 5e property, wrapped as a row
    of compact labels. */
 .item-form__properties {
