@@ -312,7 +312,7 @@ export class MapCanvas {
   /**
    * Draw the blocks linked to one child node with a stronger tint and a
    * wider border, or none with null. Build mode passes the region that the
-   * Region brush paints, so the GM sees which cells already belong to it.
+   * Link tool paints, so the GM sees which cells already belong to it.
    * @param {string | null} nodeId
    */
   setHighlightRegion(nodeId) {

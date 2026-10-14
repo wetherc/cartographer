@@ -45,7 +45,7 @@ export { imageSrcForRef };
  * @property {import('./ExitBands.js').Rect[]} [occluders] rects in buffer px that HTML over the canvas covers. Edge exit bands move off them.
  * @property {import('../types/map.js').ExitSide | null} [armedExitSide] edge exit a cursor key has armed, drawn with emphasis: the next press of the same arrow key takes it.
  * @property {string | null} selectedTileId
- * @property {string | null} [highlightRegionId] the child node whose region blocks draw with a stronger tint and border (the target of the Region brush)
+ * @property {string | null} [highlightRegionId] the child node whose region blocks draw with a stronger tint and border (the target of the Link tool)
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
  * @property {number} [pixelRatio] buffer pixels per CSS pixel, from devicePixelRatio. A label sized in CSS pixels multiplies by it, so it reads at one size on every screen. It defaults to 1.
