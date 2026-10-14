@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { variantIndexAt } from '../src/map/TileCatalog.js';
+import { buildBuiltins, variantCount, variantIndexAt } from '../src/map/TileCatalog.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 /**
@@ -52,5 +52,43 @@ test('variantIndexAt returns int32 values below count', () => {
   for (const [x, y] of positions()) {
     const n = variantIndexAt(32768, x, y);
     assert.ok(n >= 0 && n < 32768 && (n | 0) === n);
+  }
+});
+
+/** Every variant family with its count, from the terrain and floor tables. */
+const FAMILIES = {
+  grass: 3,
+  forest: 3,
+  mountain: 5,
+  water: 3,
+  desert: 3,
+  swamp: 3,
+  snow: 3,
+  hills: 3,
+  farmland: 3,
+  'deep-water': 3,
+  jungle: 3,
+  taiga: 4,
+  savanna: 3,
+  badlands: 5,
+  volcanic: 3,
+  glacier: 3,
+  'snow-hills': 3,
+  'snow-mountain': 5,
+  plaza: 5,
+  'interior-floor': 3,
+  'interior-cave-floor': 2,
+};
+
+test('variantCount gives the count of every family', () => {
+  for (const [family, count] of Object.entries(FAMILIES)) {
+    assert.equal(variantCount(family), count, family);
+  }
+});
+
+test('variantCount gives 0 for palette ids, inherited names, and other strings', () => {
+  const others = ['', 'Grass', 'grass-1', 'road', '__proto__', 'constructor', 'toString'];
+  for (const name of [...others, ...buildBuiltins().map((e) => e.id)]) {
+    if (!Object.hasOwn(FAMILIES, name)) assert.equal(variantCount(name), 0, name);
   }
 });

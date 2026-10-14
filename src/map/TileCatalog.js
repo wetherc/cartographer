@@ -67,6 +67,17 @@ export function isVariantType(type) {
 const FLOOR_VARIANT_COUNTS = { 'interior-floor': 3, 'interior-cave-floor': 2 };
 
 /**
+ * The variant count of every variant family, from both tables above. A Map
+ * lookup does not match inherited names such as `toString`, and it costs
+ * one hash lookup per call.
+ * @type {ReadonlyMap<string, number>}
+ */
+const FAMILY_COUNTS = new Map([
+  ...Object.entries(FLOOR_VARIANT_COUNTS),
+  ...Object.entries(VARIANT_COUNTS),
+]);
+
+/**
  * The number of variants of a variant family, or 0 for any other name. A
  * variant family is a terrain type with variants, such as `grass`, or an
  * interior floor family, such as `interior-floor`. Its variants have the
@@ -75,10 +86,7 @@ const FLOOR_VARIANT_COUNTS = { 'interior-floor': 3, 'interior-cave-floor': 2 };
  * @returns {number}
  */
 export function variantCount(family) {
-  const has = (/** @type {Record<string, number>} */ table) =>
-    Object.prototype.hasOwnProperty.call(table, family);
-  if (has(VARIANT_COUNTS)) return VARIANT_COUNTS[family];
-  return has(FLOOR_VARIANT_COUNTS) ? FLOOR_VARIANT_COUNTS[family] : 0;
+  return FAMILY_COUNTS.get(family) ?? 0;
 }
 
 /**
