@@ -14,6 +14,7 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { RIDER_ROLLS, DEFAULT_RIDER_DIE } from '../entities/Riders.js';
 import { normalizeFeat } from '../library/Library.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/feat.js').Feat} Feat */
 /** @typedef {import('../types/feat.js').ProficiencyChoice} ProficiencyChoice */
@@ -116,7 +117,10 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
     'Expertise doubles a proficiency. The taker picks among skills they are proficient in.',
   );
   const armorChecks = ARMOR_OPTIONS.map((key) => {
-    const check = checkbox(key, profEffect?.armor?.includes(/** @type {never} */ (key)) ?? false);
+    const check = checkbox(
+      capitalize(key),
+      profEffect?.armor?.includes(/** @type {never} */ (key)) ?? false,
+    );
     check.input.value = key;
     return check;
   });
@@ -132,11 +136,11 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
 
   // Each option grid is its own full-width row, the way the spell form lays
   // out its class list. A flex field row would shrink-wrap the grid instead.
-  const skillsRow = fieldRow(labeled('Skills', skills.countInput));
+  const skillsRow = fieldRow(labeled('Skill choices', skills.countInput));
   const skillsFromRow = labeled('From', skills.grid);
-  const savesRow = fieldRow(labeled('Saving throws', saves.countInput));
+  const savesRow = fieldRow(labeled('Saving throw choices', saves.countInput));
   const savesFromRow = labeled('From', saves.grid);
-  const expertiseRow = fieldRow(labeled('Expertise', expertise.countInput));
+  const expertiseRow = fieldRow(labeled('Expertise choices', expertise.countInput));
   const expertiseFromRow = labeled('From', expertise.grid);
   const toolsRow = fieldRow(labeled('Tools', toolsInput), labeled('Languages', languagesInput));
 
