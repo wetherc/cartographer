@@ -83,7 +83,7 @@ test('the spent slot lands on the caster as it is at submit time', () => {
   assert.equal(written.length, 1);
   assert.deepEqual(written[0].conditions, ['Blessed'], 'the newer entity is kept');
   assert.equal(written[0].resources[0].current, 3, 'and the slot is spent on it');
-  assert.deepEqual(app.toasted, ['Detect Magic cast.']);
+  assert.deepEqual(app.toasted, ['Detect Magic cast. Apply its effect at the table.']);
 });
 
 test('a slot spent elsewhere while the dialog was open is not spent twice', () => {

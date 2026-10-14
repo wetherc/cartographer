@@ -49,7 +49,9 @@ but no actions.
 
 If you press **Cast** with no target or recipient ticked, the dialog stays
 open and shows "Pick at least one target." No slot is spent. A utility spell
-or a summons needs no target.
+or a summons needs no target. A utility spell changes nothing that the app
+tracks. Its cast shows "Detect Magic cast. Apply its effect at the table."
+for Detect Magic, and the log line quotes the rules text of the spell.
 
 The spell attack bonus is the proficiency bonus plus the spell ability
 modifier. From exhaustion level 3, the spell attack rolls at disadvantage.

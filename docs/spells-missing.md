@@ -306,17 +306,18 @@ that the GM removes by hand. Outside a fight the chip lasts one round.
 
 ### Spells described in prose
 
-Twenty-five built-in spells have the `utility` effect kind. Their rules
+Twenty-two built-in spells have the `utility` effect kind. Their rules
 exist only as text in the description of each spell, and the GM applies
-them. Light, Counterspell, and eight cantrips are in the list because a GM
+them. A cast of one shows "Apply its effect at the table." and logs the
+description. Light, Counterspell, and eight cantrips are in the list because a GM
 notices when a spell this common is missing. The cantrips sit in
 `src/data/spells/cantrips.js`: Mage Hand, Prestidigitation, Thaumaturgy,
 Druidcraft, Mending, Message, Minor Illusion, and Dancing Lights.
 
-The other fifteen are in `src/data/spells/utility.js`: Detect Magic,
+The other twelve are in `src/data/spells/utility.js`: Detect Magic,
 Disguise Self, Jump, Silent Image, Speak with Animals, Alter Self,
-Levitate, Bestow Curse, Slow, Speak with Dead, Arcane Eye, Compulsion,
-Confusion, Polymorph, and Conjure Elemental. The eldritch invocations of a
+Levitate, Speak with Dead, Arcane Eye, Compulsion, Polymorph, and Conjure
+Elemental. The eldritch invocations of a
 warlock cast most of them.
 
 ### Partial rules
@@ -363,6 +364,16 @@ that it can. The description of each entry states the difference:
 - Greater Restoration ends one level of exhaustion, or a Charmed, Petrified,
   or Bestow Curse chip. The GM rules a curse without a chip, an ability score
   reduction, and an HP maximum reduction.
+- Slow writes a Slowed chip with -2 AC on each creature that fails its
+  save, and the creature retries the save at the end of each of its turns.
+  The GM applies the -2 to DEX saves, the half speed, the lost reaction,
+  and the limit of one action or bonus action.
+- Confusion writes a Confused chip with the same retry. The GM rolls the
+  d10 that picks what the creature does, and grows the sphere at a higher
+  slot.
+- Bestow Curse writes a Bestow Curse chip on a failed save. The GM applies
+  the curse that the caster picks, and tracks the longer duration of a
+  higher slot.
 - A restoration that ends a chip from a concentration spell leaves the
   caster concentrating.
 
@@ -375,8 +386,8 @@ apply.
 ### Movement and turn control
 
 Examples: Banishment, Command, and Dominate Person. Slow and Confusion ship
-as prose entries (see [Spells described in prose](#spells-described-in-prose)),
-and their rules need the mechanics below.
+as save spells with a chip (see [Partial rules](#partial-rules)), and the
+rest of their rules need the mechanics below.
 
 A failed save can add a condition chip, and this part works. Hold Person,
 Hold Monster, Blindness/Deafness, Fear, and Sunburst all ship. The other

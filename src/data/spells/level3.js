@@ -294,4 +294,61 @@ export const LEVEL_3 = [
       'move or take actions until after its next turn.',
     effect: { kind: 'buff', mods: { ac: 2, saveAdvantage: ['DEX'], extraAction: true } },
   },
+  {
+    id: 'bestow-curse',
+    name: 'Bestow Curse',
+    level: 3,
+    school: 'necromancy',
+    classes: ['bard', 'cleric', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'The creature you touch makes a WIS save. On a failure, you pick a curse: disadvantage ' +
+      'on the checks and saves of one ability, disadvantage on its attack rolls against you, a ' +
+      'WIS save at the start of each of its turns or it does nothing that turn, or 1d8 more ' +
+      'necrotic damage from your attacks and spells. The app writes a Bestow Curse chip, and ' +
+      'the GM applies the curse that the caster picks. A higher slot makes the curse last ' +
+      'longer with no concentration, which the GM tracks.',
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Bestow Curse',
+    },
+  },
+  {
+    id: 'slow',
+    name: 'Slow',
+    level: 3,
+    school: 'transmutation',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a drop of molasses', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Up to six creatures in a 40-foot cube make a WIS save. On a failure, a creature has ' +
+      'half speed, -2 to AC and DEX saves, and no reactions. On its turn it takes an action ' +
+      'or a bonus action, not both, and makes one attack at most. It repeats the save at the ' +
+      'end of each of its turns. The Slowed chip applies the -2 to AC, and the GM applies ' +
+      'the rest.',
+    targetCount: 6,
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Slowed',
+      saveEnds: true,
+      mods: { ac: -2 },
+    },
+  },
 ];

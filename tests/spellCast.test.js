@@ -800,12 +800,13 @@ test('a restrained target rolls its Dexterity save at disadvantage', () => {
   assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\), takes 18 fire damage\.$/);
 });
 
-test('a utility cast logs the spell and says only that it was cast', () => {
+test('a utility cast logs its rules text and asks the GM to apply it', () => {
   const caster = mage();
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, detectMagic);
   resolveCast(app, plan, submit(), { writeBack: () => {} });
-  assert.deepEqual(app.toasted, ['Detect Magic cast.']);
+  assert.deepEqual(app.toasted, ['Detect Magic cast. Apply its effect at the table.']);
+  assert.match(app.log.at(-1), /Detect Magic has no automatic effect: /);
 });
 
 test('a ritual cast spends no slot and states the extra ten minutes', () => {

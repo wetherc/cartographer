@@ -263,7 +263,10 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
   // A utility spell changes nothing that the app tracks. Any other kind that
   // reaches this line has no branch above, which fails the typecheck.
   if (kind !== 'utility') exhaustive(kind, undefined);
-  app.toasts.show(`${spell.name} cast.`);
+  // The log line names the rules text, so the GM can apply it without
+  // opening the spell card.
+  app.actions.logEvent('combat', `${spell.name} has no automatic effect: ${spell.description}`);
+  app.toasts.show(`${spell.name} cast. Apply its effect at the table.`);
 }
 
 /**

@@ -121,6 +121,35 @@ export const LEVEL_4_TO_5 = [
       },
     },
   },
+  {
+    id: 'confusion',
+    name: 'Confusion',
+    level: 4,
+    school: 'enchantment',
+    classes: ['bard', 'druid', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '90 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'three nut shells', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Each creature in a 10-foot-radius sphere makes a WIS save. On a failure, it has no ' +
+      'reactions, and a d10 at the start of each of its turns decides what it does: it ' +
+      'wanders, does nothing, attacks a random creature, or acts normally. It repeats the ' +
+      'save at the end of each of its turns. The app writes a Confused chip and retries the ' +
+      'save, and the GM rolls the d10. The sphere grows 5 feet for each slot level above 4th.',
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Confused',
+      saveEnds: true,
+    },
+  },
   // 5th level
   {
     id: 'cone-of-cold',
