@@ -9,6 +9,14 @@ import {
 } from '../src/storage/TileCodec.js';
 import { gridTiles } from './helpers/grid.js';
 import { variantIdAt } from '../src/map/TileCatalog.js';
+import { withTileDefaults } from '../src/map/NodeDefaults.js';
+
+/**
+ * Tiles in the form a load builds from packed records.
+ * @param {Record<string, any>[]} tiles
+ * @returns {Record<string, any>[]}
+ */
+const full = (tiles) => tiles.map((t) => withTileDefaults(/** @type {any} */ (t)));
 
 /**
  * A packed tile: only the fields a real save would carry, since the codec runs
@@ -54,7 +62,7 @@ function roundTrip(node) {
   const decoded = decodeNodeTiles(JSON.parse(JSON.stringify(encoded)));
   const byId = (/** @type {Record<string, any>[]} */ tiles) =>
     [...tiles].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  assert.deepEqual(byId(decoded.tiles), byId(node.tiles), 'tiles round trip');
+  assert.deepEqual(byId(decoded.tiles), byId(full(node.tiles)), 'tiles round trip');
   const {
     tiles: _tiles,
     refs: _refs,
@@ -176,10 +184,13 @@ test('a save with links in the leftover records still reads them', () => {
     cells: [0, 0],
     tiles: [{ id: '1,0', childNodeId: 'old' }],
   });
-  assert.deepEqual(decoded.tiles, [
-    { id: '0,0', imageRef: 'a' },
-    { id: '1,0', childNodeId: 'old', imageRef: 'a' },
-  ]);
+  assert.deepEqual(
+    decoded.tiles,
+    full([
+      { id: '0,0', imageRef: 'a' },
+      { id: '1,0', childNodeId: 'old', imageRef: 'a' },
+    ]),
+  );
 });
 
 test('the link stream wins over a leftover link, and a bad stream degrades', () => {
@@ -195,7 +206,7 @@ test('the link stream wins over a leftover link, and a bad stream degrades', () 
   });
   assert.deepEqual(
     decoded.tiles.map((/** @type {any} */ t) => t.childNodeId),
-    ['c', undefined, undefined],
+    ['c', null, null],
     'a non-string palette entry and an unreadable run both read as no link',
   );
   assert.equal('links' in decoded, false);
@@ -365,7 +376,7 @@ test('a malformed encoded node degrades instead of throwing', () => {
     cells: [0],
     tiles: [{ id: '0,0', imageRef: 'b', overlayRef: 'o', revealed: true, span: 3 }],
   });
-  assert.deepEqual(contradicted.tiles, [{ id: '0,0', imageRef: 'a', span: 3 }]);
+  assert.deepEqual(contradicted.tiles, full([{ id: '0,0', imageRef: 'a', span: 3 }]));
 });
 
 test('the encoded form never leaks the codec fields back into a decoded node', () => {

@@ -34,7 +34,7 @@ function dimension(value) {
  * @param {unknown} value
  * @returns {string | string[] | null}
  */
-function overlayRefOf(value) {
+export function overlayRefOf(value) {
   if (typeof value === 'string') return value;
   if (!Array.isArray(value)) return null;
   const refs = value.filter((ref) => typeof ref === 'string');
@@ -82,6 +82,46 @@ export function withTileDefaults(tile) {
   if (hasUnknownField(source)) next = { ...next, ...unknownFields(source) };
   if (cells > 1) next.span = cells;
   return /** @type {Tile} */ (next);
+}
+
+/**
+ * A tile with default metadata and no field outside the codec's own, in the
+ * same form and field order that `withTileDefaults` returns. The tile
+ * decoder builds most loaded tiles with this function, so it skips the copy
+ * and the type checks of `withTileDefaults`. The caller passes values that
+ * already have their checked types: `overlayRef` as `overlayRefOf` returns
+ * it, and `childNodeId` as a string or null.
+ * @param {string} id
+ * @param {string} imageRef
+ * @param {string | string[] | null} overlayRef
+ * @param {boolean} revealed
+ * @param {string | null} childNodeId
+ * @returns {Tile}
+ */
+export function plainTile(id, imageRef, overlayRef, revealed, childNodeId) {
+  return { id, imageRef, overlayRef, metadata: DEFAULT_TILE_METADATA, revealed, childNodeId };
+}
+
+/**
+ * Tile lists whose every tile is already in the form `withTileDefaults`
+ * returns. `withNodeDefaults` keeps such a list as it is. Without this set,
+ * a load builds each decoded tile twice: once in the decoder, and once more
+ * in `withNodeDefaults`.
+ * @type {WeakSet<object>}
+ */
+const defaultedLists = new WeakSet();
+
+/**
+ * Record that every tile of `tiles` is already in the form
+ * `withTileDefaults` returns, and return the same list. A list must not
+ * change after this call, because `withNodeDefaults` then trusts it without
+ * a check.
+ * @param {Tile[]} tiles
+ * @returns {Tile[]}
+ */
+export function markDefaulted(tiles) {
+  defaultedLists.add(tiles);
+  return tiles;
 }
 
 /**
@@ -169,9 +209,11 @@ export function withNodeDefaults(node) {
       kind: node.kind ?? 'region',
       environ: node.environ ?? null,
     },
-    tiles
-      .filter((t) => t !== null && typeof t === 'object' && typeof t.id === 'string')
-      .map(withTileDefaults),
+    defaultedLists.has(tiles)
+      ? tiles
+      : tiles
+          .filter((t) => t !== null && typeof t === 'object' && typeof t.id === 'string')
+          .map(withTileDefaults),
   );
 }
 

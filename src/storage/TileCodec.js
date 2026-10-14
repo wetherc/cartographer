@@ -2,6 +2,10 @@ import { tileIdAt } from '../map/MapGeometry.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
 import { artReader, mapOverlay, readArt, shortRef } from './TileRefs.js';
 import { EMPTY, expandFog, expandIndexRuns, fogRuns, indexRuns } from './RunLength.js';
+import { markDefaulted, overlayRefOf, plainTile, withTileDefaults } from '../map/NodeDefaults.js';
+
+/** @typedef {import('../types/map.js').Tile} Tile */
+/** @typedef {import('./TileRefs.js').LiveArt} LiveArt */
 
 /**
  * Positional encoding for the tiles of a node. This is the on-disk form. It
@@ -324,9 +328,13 @@ function linkStream(node, size) {
  * a node in the per-tile form passes through unchanged. This function is
  * pure.
  *
- * The tiles this function returns are still packed: their default-valued
- * fields stay omitted. The load path's existing tile-defaults step fills
- * them in, so the codec never states what a default value is.
+ * The tiles this function returns have every field filled in, in the form
+ * `withTileDefaults` returns. A tile with no leftover record comes from
+ * `plainTile`, and a tile with one goes through `withTileDefaults` itself.
+ * `markDefaulted` records the list, so `withNodeDefaults` keeps it instead
+ * of building each tile a second time. The defaults themselves stay in
+ * `map/NodeDefaults.js`. A node with unusable dimensions keeps its raw
+ * leftover records, and `withNodeDefaults` fills those in.
  *
  * Every malformed input degrades instead of throwing an error. A load that
  * throws is worse than a shortened map. Import saves what it reads before it
@@ -358,7 +366,11 @@ export function decodeNodeTiles(node) {
   const art = expandIndexRuns(node.cells, size);
   const revealed = expandFog(node.fog, size);
   const links = linkStream(node, size);
-  /** @type {Record<string, any>[]} */
+  // Most cells share a few art objects (`readArt`), so the checked overlay
+  // of each one is worked out once and reused.
+  /** @type {Map<LiveArt, { imageRef: string, overlayRef: string | string[] | null }>} */
+  const checked = new Map();
+  /** @type {Tile[]} */
   const tiles = [];
   for (let pos = 0; pos < size; pos += 1) {
     const reader = readers[art[pos]];
@@ -368,26 +380,48 @@ export function decodeNodeTiles(node) {
     const entry = readArt(reader, x, y);
     const id = tileIdAt(x, y);
     const extra = leftovers.size ? leftovers.get(id) : undefined;
-    // The codec's own fields come after the leftovers so they win. A
-    // hand-edited save cannot make a leftover record contradict the
-    // palettes or the fog stream.
-    /** @type {Record<string, any>} */
-    const tile = extra
-      ? { ...extra, id, imageRef: entry.imageRef }
-      : { id, imageRef: entry.imageRef };
-    if (entry.overlay != null) tile.overlayRef = entry.overlay;
-    else if (extra) delete tile.overlayRef;
-    if (revealed[pos]) tile.revealed = true;
-    else if (extra) delete tile.revealed;
-    if (links) {
-      const link = links.links[links.at[pos]];
-      if (typeof link === 'string') tile.childNodeId = link;
-      else if (extra) delete tile.childNodeId;
+    const link = links ? links.links[links.at[pos]] : undefined;
+    if (extra) {
+      tiles.push(leftoverTile(extra, id, entry, revealed[pos] === 1, links !== null, link));
+      continue;
     }
-    tiles.push(tile);
+    let final = checked.get(entry);
+    if (!final) {
+      final = { imageRef: entry.imageRef, overlayRef: overlayRefOf(entry.overlay) };
+      checked.set(entry, final);
+    }
+    const childNodeId = typeof link === 'string' ? link : null;
+    tiles.push(plainTile(id, final.imageRef, final.overlayRef, revealed[pos] === 1, childNodeId));
   }
-  decoded.tiles = tiles;
+  decoded.tiles = markDefaulted(tiles);
   return decoded;
+}
+
+/**
+ * A decoded tile that has a leftover record, in the form `withTileDefaults`
+ * returns. The codec's own fields come after the leftovers so they win. A
+ * hand-edited save cannot make a leftover record contradict the palettes or
+ * the fog stream.
+ * @param {Record<string, any>} extra
+ * @param {string} id
+ * @param {LiveArt} entry
+ * @param {boolean} revealed
+ * @param {boolean} hasLinks whether the node has a link stream
+ * @param {unknown} link
+ * @returns {Tile}
+ */
+function leftoverTile(extra, id, entry, revealed, hasLinks, link) {
+  /** @type {Record<string, any>} */
+  const tile = { ...extra, id, imageRef: entry.imageRef };
+  if (entry.overlay != null) tile.overlayRef = entry.overlay;
+  else delete tile.overlayRef;
+  if (revealed) tile.revealed = true;
+  else delete tile.revealed;
+  if (hasLinks) {
+    if (typeof link === 'string') tile.childNodeId = link;
+    else delete tile.childNodeId;
+  }
+  return withTileDefaults(/** @type {Tile} */ (tile));
 }
 
 /**

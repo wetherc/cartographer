@@ -207,10 +207,10 @@ export function deserialize(json, assets, previous = []) {
   // Decoding the positional tile form comes before the asset restore, to
   // mirror `packState`'s encode-last order. The restore walks
   // `node.tiles[].imageRef`, a field an encoded node does not have. Without
-  // this order, a palette reference never resolves. It also leaves a
-  // decoded tile still packed, so `withNodeDefaults` below stays the one
-  // place that states what a tile default is. A node stored in the
-  // unencoded form passes through the decoder unchanged.
+  // this order, a palette reference never resolves. The decoder builds
+  // each tile in its final form, and `withNodeDefaults` below keeps such a
+  // tile list as it is (`markDefaulted`). A node stored in the unencoded
+  // form passes through the decoder unchanged.
   const decoded = { ...migrated };
   let report = { dropped: 0, emptied: 0 };
   /** @type {WeakSet<object>} */

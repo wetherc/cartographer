@@ -328,6 +328,13 @@ exactly those fields from absence, and every load runs it, so no code states
 a default twice. `deserialize` runs `withNodeDefaults` itself on load, so the
 unpack does not depend on `toTileGrid`.
 
+The tile decoder builds most tiles in their final form with `plainTile`, a
+helper in `NodeDefaults.js` for a tile with default metadata and no leftover
+fields. It runs a tile that has a leftover record through `withTileDefaults`.
+The decoder then marks the list with `markDefaulted`, and `withNodeDefaults`
+keeps a marked list as it is. Without the mark, a load builds each decoded
+tile twice.
+
 `withTileDefaults` builds each tile with its fields in the order of
 `createTile`, then any field it does not know, then `span`. A decoded record
 lists its fields in whatever order the file gives, and V8 gives each field
@@ -800,9 +807,7 @@ represent and writes out of line whatever it does not represent:
   `deserialize`. A node with no payload skips the hoist. The hoist walks
   `node.tiles[].imageRef`, which an encoded node does not have. With the codec
   after the hoist, the palette already contains `asset:` refs, so `Assets.js`
-  needs no knowledge of the encoding. Decoding before `withNodeDefaults` also
-  leaves a decoded tile packed, so the codec does not define any default
-  value.
+  needs no knowledge of the encoding.
 
 ### The encoded-node cache
 
