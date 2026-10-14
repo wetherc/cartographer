@@ -47,8 +47,8 @@
     <!-- The campaign search: every tab finds what its role can read. -->
     <div id="campaign-search-container" class="app-header__search"></div>
     <div id="mode-switch-container"></div>
-    <!-- At phone width the actions and the view switches fold behind this
-         button, so the header takes two rows instead of four. A wider window
+    <!-- Up to tablet width the actions and the view switches fold behind this
+         button, so the header takes fewer rows. A wider window
          hides the button and shows the menu inline. -->
     <button id="header-menu-btn" class="btn header-menu-btn" type="button" aria-expanded="false" aria-controls="header-menu">Menu</button>
     <div id="header-menu" class="app-header__menu">
@@ -65,15 +65,21 @@
         <div class="btn-cluster" role="group" aria-label="History">
           <!-- Build mode shows the stroke-level undo and redo here, beside the
                save-level pair, because Ctrl/Cmd+Z in Build mode takes back a stroke.
-               The tooltips name the edit each button would change. -->
+               The tooltips name the edit each button would change. In Build
+               mode the save-level pair reads Previous save and Next save, so
+               the four buttons do not read as two pairs of Undo and Redo.
+               Other modes show the short words to keep the header on one row. -->
           <button id="header-stroke-undo-btn" class="btn header-stroke-undo" type="button" data-tip="Nothing to undo on the map" disabled>Undo stroke</button>
           <button id="header-stroke-redo-btn" class="btn header-stroke-undo" type="button" data-tip="Nothing to redo on the map" disabled>Redo stroke</button>
-          <button id="undo-btn" class="btn" type="button" data-tip="Go back to the previous save">Undo</button>
-          <button id="redo-btn" class="btn" type="button" data-tip="Go forward to the next save (Ctrl/Cmd+Shift+Z)">Redo</button>
+          <button id="undo-btn" class="btn" type="button" data-tip="Go back to the previous save"><span class="header-label--short">Undo</span><span class="header-label--build">Previous save</span></button>
+          <button id="redo-btn" class="btn" type="button" data-tip="Go forward to the next save (Ctrl/Cmd+Shift+Z)"><span class="header-label--short">Redo</span><span class="header-label--build">Next save</span></button>
         </div>
+        <!-- Library mode shows the word "campaign" on these buttons, because the
+             library file card under them has its own Export library and
+             Import library buttons. -->
         <div class="btn-cluster" role="group" aria-label="Transfer">
-          <button id="export-btn" class="btn" type="button" aria-label="Export campaign" data-tip="Download the whole campaign as a JSON file">Export</button>
-          <button id="import-btn" class="btn" type="button" aria-label="Import campaign" data-tip="Load a campaign from a JSON file">Import</button>
+          <button id="export-btn" class="btn" type="button" aria-label="Export campaign" data-tip="Download the whole campaign as a JSON file"><span class="header-label--short">Export</span><span class="header-label--library">Export campaign</span></button>
+          <button id="import-btn" class="btn" type="button" aria-label="Import campaign" data-tip="Load a campaign from a JSON file"><span class="header-label--short">Import</span><span class="header-label--library">Import campaign</span></button>
         </div>
         <input id="import-input" type="file" accept="application/json" hidden />
       </div>

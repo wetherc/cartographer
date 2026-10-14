@@ -150,8 +150,9 @@ stay GM-only, so a Player tab never matches them.
 ## Campaign controls
 
 The header buttons create, save, and move the whole campaign. They show in
-a GM tab only. On a phone-width window, the header buttons and the theme and role
-switches fold into the **Menu** button beside the title. A press on a
+a GM tab only. On a window up to 900 pixels wide, such as a tablet or a phone,
+the header buttons and the theme and role switches fold into the **Menu**
+button. While the menu is open, the button reads **Close**. A press on a
 button in the menu closes it, and so do Escape and a click outside the
 header.
 
@@ -161,9 +162,9 @@ header.
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The line under the title reads "No unsaved changes" after the page loads, "Unsaved changes" while changes wait for a write, and "Saved just now", "Saved 5 min ago", or "Saved 2 h ago" after a manual save or an autosave from this tab. The button keeps an outline while changes are unsaved |
-| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. Their tooltips say "previous save" and "next save", because they step between saves, not between single edits. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, the open tabs, and an open full sheet |
-| Export | Its accessible name is "Export campaign". Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
-| Import | Its accessible name is "Import campaign". Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
+| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. Their tooltips say "previous save" and "next save", because they step between saves, not between single edits. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, the open tabs, and an open full sheet. In Build mode they read Previous save and Next save, beside Undo stroke and Redo stroke |
+| Export | Its accessible name is "Export campaign", and Library mode shows that name on the button. Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
+| Import | Its accessible name is "Import campaign", and Library mode shows that name on the button. Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
 
 A save from a stepped-back position discards the steps that were left to
 redo.

@@ -172,7 +172,8 @@ export.
 ## Stroke undo and redo
 
 In Build mode, the header shows **Undo stroke** and **Redo stroke** to the
-left of Undo and Redo.
+left of **Previous save** and **Next save**. That pair is the Undo and
+Redo of the other modes, and it steps between saves.
 
 | Control | What it does |
 | --- | --- |

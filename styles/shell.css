@@ -198,18 +198,42 @@ body.role-locked #role-switch-container {
   }
 }
 
+/* Up to tablet width the actions and the view switches fold into the menu,
+   which opens as a full-width row under the header. Inline, they wrap the
+   header onto three rows at 820 pixels. Folded, the title, the search lens,
+   the mode switch, and the Menu button share one row. */
+@media (max-width: 56.25rem) {
+  .header-menu-btn {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .app-header__menu {
+    display: none;
+  }
+
+  .app-header--menu-open .app-header__menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .app-header__view {
+    margin-left: 0;
+  }
+}
+
 /* At phone width the header has the title and the Menu button on the first
-   row and the mode switch on the second. The actions and the view switches
-   fold into the menu, which opens as a full-width row under them. */
+   row and the mode switch on the second. The open menu stacks its clusters
+   in one column. */
 @media (max-width: 40rem) {
   .app-header h1 {
     font-size: 1.25rem;
   }
 
   .header-menu-btn {
-    display: inline-flex;
     order: 1;
-    margin-left: auto;
   }
 
   #mode-switch-container {
@@ -217,19 +241,11 @@ body.role-locked #role-switch-container {
   }
 
   .app-header__menu {
-    display: none;
     order: 3;
   }
 
   .app-header--menu-open .app-header__menu {
-    display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    width: 100%;
-  }
-
-  .app-header__view {
-    margin-left: 0;
   }
 }
 
@@ -260,6 +276,22 @@ body.role-player .save-status {
 
 body.mode-build .header-stroke-undo {
   display: inline-flex;
+}
+
+/* Mode-specific button words in the header. A hidden span drops out of the
+   accessible name too, so a screen reader hears the words on screen. */
+.header-label--build,
+.header-label--library,
+body.mode-build #undo-btn .header-label--short,
+body.mode-build #redo-btn .header-label--short,
+body.mode-library #export-btn .header-label--short,
+body.mode-library #import-btn .header-label--short {
+  display: none;
+}
+
+body.mode-build .header-label--build,
+body.mode-library .header-label--library {
+  display: inline;
 }
 
 body:not(.mode-build) #undo-btn {

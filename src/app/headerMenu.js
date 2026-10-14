@@ -2,7 +2,8 @@ import { mustGetElement } from '../ui/dom.js';
 
 /**
  * Wires the Menu button of the header. The stylesheet shows the button only
- * at phone width, where it folds the header actions and view switches away.
+ * up to tablet width, where it folds the header actions and view switches
+ * away. The button reads Close while the menu is open.
  * A press on a button inside the menu runs that action and closes the menu,
  * and Escape or a click outside the header closes it too.
  *
@@ -21,6 +22,7 @@ export function wireHeaderMenu() {
   function setOpen(open) {
     header.classList.toggle('app-header--menu-open', open);
     button.setAttribute('aria-expanded', String(open));
+    button.textContent = open ? 'Close' : 'Menu';
   }
 
   button.addEventListener('click', () => setOpen(button.getAttribute('aria-expanded') !== 'true'));
