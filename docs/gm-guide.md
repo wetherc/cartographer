@@ -1001,6 +1001,24 @@ A campaign export also contains your library. To move both at once, import
 the campaign file in the other browser. Use the Library file card when you
 want the library without a campaign.
 
+## Print a sheet, the quest log, or the handouts
+
+1. In **Play** mode, open what you want on paper:
+   - For a character sheet, click **Open full sheet** and pick the tab,
+     such as **Character** or **Inventory**.
+   - For the quest log, the NPCs, and the handouts, open the **Story** tab
+     of the sidebar. Open the quests and the groups that you want to show,
+     and fold the cards that you want to leave out.
+2. Print the page with the print command of the browser.
+
+The printed page has the full sheet when it is open, and otherwise the open
+tab of the sidebar. It leaves out the header, the map, the party dock, the
+tab strips, every button, and the add and edit forms. A long note or
+handout text prints in full, and the page always prints in the light
+theme. In the GM role the page also lists hidden handouts and GM notes. To
+print only what the players can see, set **Viewer** to **Player** before
+you print.
+
 ## Export the map as an image
 
 1. Switch to **Build** mode and open the map.

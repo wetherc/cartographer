@@ -1,7 +1,8 @@
 /* ==========================================================================
    Entry stylesheet. The rules live in feature-scoped sheets under styles/,
    imported here in cascade order — later sheets may override earlier ones
-   (responsive.css must stay last), so add new imports with that in mind.
+   (print.css must stay last, after responsive.css), so add new imports with
+   that in mind.
    ========================================================================== */
 
 @import url('styles/base.css'); /* design tokens, element base, every shared primitive */
@@ -28,4 +29,5 @@
 @import url('styles/full-sheet.css'); /* the full character sheet over Play mode */
 @import url('styles/sheet-summary.css'); /* the summary card in the sidebar, and what the full sheet adds */
 @import url('styles/search.css'); /* the header search box and its list of matches */
-@import url('styles/responsive.css'); /* narrow-viewport stacking; keep last */
+@import url('styles/responsive.css'); /* narrow-viewport stacking */
+@import url('styles/print.css'); /* the printed page: the open sheet or sidebar tab, no app frame; keep last */

@@ -1224,7 +1224,11 @@ an earlier one, so the order is part of the contract:
    `play-shell.css`,
    `build-shell.css`, `full-sheet.css`, `sheet-summary.css`: one sheet for
    each feature area
-8. `responsive.css`: narrow-viewport stacking. **Keep this sheet last.**
+8. `responsive.css`: narrow-viewport stacking
+9. `print.css`: the printed page. It hides the app frame and the editing
+   controls, and it prints the full sheet or the open sidebar tab in the
+   light theme. **Keep this sheet last**, so its rules win over the fixed
+   screens of the shell sheets and over `responsive.css`.
 
 Add a new feature sheet in the feature block, with an `@import` and a
 comment that says what it covers. No `.js` file imports CSS.

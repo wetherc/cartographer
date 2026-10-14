@@ -142,8 +142,9 @@ does not check `tests/` or `bench/`.
 
 `style.css` is an import manifest. It `@import`s the feature sheets under
 `styles/` in cascade order. `base.css` comes first with the design tokens
-and the shared primitives, and `responsive.css` comes last with the
-overrides for narrow screens. The order lives in this one file, so it shows
+and the shared primitives. `responsive.css` follows the feature sheets with
+the overrides for narrow screens, and `print.css` comes last with the rules
+for a printed page. The order lives in this one file, so it shows
 which sheet overrides which.
 
 ## Pure logic and DOM glue

@@ -56,6 +56,7 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Let a finished quest reveal the quests it leads to, and pay out its gold and experience points to the party.
 - Get a prompt when the party stands on the tile of a hidden handout.
 - Search the whole campaign from the header box: maps, quests, NPCs, handouts, notes, and the travelogue. A match opens its map tile or its row in the sidebar, and a Player tab finds only what it can see.
+- Print the open character sheet, or the quest log and handouts of the Story tab, without the app frame.
 - Bring an NPC along, so it travels with the party.
 
 ### Combat
