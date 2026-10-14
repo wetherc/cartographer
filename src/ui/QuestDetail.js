@@ -81,7 +81,7 @@ export function playerObjectives(quest) {
  * @param {QuestDetailCallbacks} callbacks
  */
 function doneToggle(quest, { id, text, done }, ctx, callbacks) {
-  return ctx.action(
+  const button = ctx.action(
     {
       icon: done ? 'boxChecked' : 'box',
       label: done ? `Mark ${text} not done` : `Mark ${text} done`,
@@ -90,6 +90,8 @@ function doneToggle(quest, { id, text, done }, ctx, callbacks) {
     },
     quest,
   );
+  button.classList.add('quest-objective__done');
+  return button;
 }
 
 /**
@@ -121,7 +123,7 @@ function gmObjective(quest, objective, index, ctx, callbacks) {
     ctx.action(
       {
         icon: hidden ? 'eye-off' : 'eye',
-        label: hidden ? `Reveal ${text} to players` : `Hide ${text} from players`,
+        label: `Shown to players: ${text}`,
         pressed: !hidden,
         focusKey: `reveal:${quest.id}:${id}`,
         onClick: change((q) => toggleObjectiveHidden(q, id)),

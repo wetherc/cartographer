@@ -1,3 +1,4 @@
+import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { groupByStatus, visibleQuests } from '../quest/Quests.js';
 import { objectiveProgress } from '../quest/Objectives.js';
@@ -124,15 +125,19 @@ export function mountQuestPanel(container, callbacks) {
         quest,
       );
 
-      // A folded quest is one line: the title and the objective count. The
-      // open details list the objectives with every control. A click on the
-      // title opens or folds the quest, the same as the chevron button.
+      // A folded quest is one line: the title, a Shown or Hidden badge, and
+      // the objective count. The open details list the objectives with every
+      // control. A click on the title opens or folds the quest, the same as
+      // the chevron button.
       const open = expanded.has(quest.id);
       const { done: checked, total } = objectiveProgress(quest.objectives);
       const body = el(
         'div',
         'quest-panel__body quest-panel__line',
         title,
+        quest.revealed
+          ? badge('Shown', { variant: 'success' })
+          : badge('Hidden', { variant: 'neutral' }),
         total > 0 ? el('span', 'quest-panel__progress', `${checked} of ${total}`) : null,
       );
       if (total > 0) {
@@ -165,9 +170,7 @@ export function mountQuestPanel(container, callbacks) {
         ? [
             {
               icon: quest.revealed ? 'eye' : 'eye-off',
-              label: quest.revealed
-                ? `Hide ${quest.title} from players`
-                : `Reveal ${quest.title} to players`,
+              label: `Shown to players: ${quest.title}`,
               pressed: quest.revealed,
               focusKey: `reveal:${quest.id}`,
               onClick: () => callbacks.onToggleRevealed(quest),

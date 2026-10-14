@@ -174,7 +174,7 @@ export function questDetailCallbacks(app, { prompt = promptModal, confirm = conf
       const middle = tileIdAt(Math.floor(node.width / 2), Math.floor(node.height / 2));
       return {
         key: linkKey(link),
-        label: shown ? `${node.name} (${shown.column}, ${shown.row})` : node.name,
+        label: shown ? `${node.name} (column ${shown.column}, row ${shown.row})` : node.name,
         onOpen: () =>
           app.actions.centerOnLocation({ nodeId: node.id, tileId: link.tileId ?? middle }),
       };

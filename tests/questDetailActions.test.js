@@ -191,7 +191,7 @@ test('describeLinks labels the live links and opens them on the map', () => {
   const chips = wire(app, null).callbacks.describeLinks({ ...quest(app), links });
   assert.deepEqual(
     chips.map((c) => c.label),
-    ['Briarwick (2, 3)', 'World', 'Bram', 'Ghost', 'Lost'],
+    ['Briarwick (column 2, row 3)', 'World', 'Bram', 'Ghost', 'Lost'],
   );
   chips[0].onOpen?.();
   chips[1].onOpen?.();

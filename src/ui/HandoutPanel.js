@@ -101,9 +101,7 @@ export function mountHandoutPanel(container, callbacks) {
       const toggle = ctx.action(
         {
           icon: handout.revealed ? 'eye' : 'eye-off',
-          label: handout.revealed
-            ? `Hide ${handout.title} from players`
-            : `Reveal ${handout.title} to players`,
+          label: `Shown to players: ${handout.title}`,
           pressed: handout.revealed,
           focusKey: `reveal:${handout.id}`,
           onClick: () => callbacks.onToggle(handout),

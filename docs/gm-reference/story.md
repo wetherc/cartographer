@@ -50,17 +50,18 @@ The Quests panel in the Story tab lists active and completed quests.
 | --- | --- |
 | New quest | Opens the quest dialog, with Title, Notes, Unlocks, and the reward fields. **Create** stays disabled while the title is blank |
 | Status mark | Completes or reopens the quest |
-| Eye | Reveals the quest to players, or hides it again |
+| Eye | Reveals the quest to players, or hides it again. The eye reads as pressed while players can see the quest |
 | Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
-| Group heading | Folds or opens the Active or Completed group. The heading shows the number of quests in the group. The Completed group starts folded, and the browser remembers each choice |
+| Group heading | Folds or opens the Active or Completed group. The chevron sits before the group name, and the heading shows the number of quests in the group. The Completed group starts folded, and the browser remembers each choice |
 | Objective | Adds an objective |
 | Link place | Links the quest to a map place |
 | Link creature | Links the quest to a creature |
 | Edit, Delete | Edits or deletes the quest |
 
-A folded quest is one line: the status mark, the title, the count of objectives done (such as "1 of 4"), the chevron, and the eye. A click on the title or the chevron opens the quest. The open details list the objectives, each with a checkbox that marks it done, and several objectives can be done at once. Each objective also has controls to hide it
+A folded quest is one line: the status mark, the title, a **Shown** or **Hidden** badge, the count of objectives done (such as "1 of 4"), the chevron, and the eye. A click on the title or the chevron opens the quest. The open details list the objectives, each with a checkbox that marks it done, and several objectives can be done at once. Each objective also has controls to hide it
 from players or reveal it, to move it up or down, and to remove it. A click on a
-link chip shows the linked place on the map.
+link chip shows the linked place on the map. A place chip names the map and the
+tile, such as "Briarwick Vale (column 21, row 15)".
 
 When you mark a GM-only objective of a revealed quest done, a dialog asks
 whether to reveal the objective to players. When you mark the last open

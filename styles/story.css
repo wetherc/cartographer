@@ -275,9 +275,17 @@
   color: var(--text-muted);
 }
 
-/* A group heading that folds its group. The count sits after the name. */
+/* A group heading that folds its group. The count sits after the name. The
+   chevron leads the heading, so it does not stack under the fold button of
+   the card in the same right-hand column. */
 .quest-panel__group-title .disclosure {
   padding: 0;
+  gap: var(--space-1);
+}
+
+.quest-panel__group-title .disclosure__chevron {
+  order: -1;
+  margin-left: 0;
 }
 
 .quest-panel__count {

@@ -38,16 +38,16 @@
 
 /* The done toggle draws its own box, so the button frame around it would read
    as a second box. The frame stays off until hover, and focus keeps its ring. */
-.quest-objective > .btn--icon[aria-pressed] {
+.quest-objective > .btn--icon.quest-objective__done {
   border-color: transparent;
   background: none;
 }
 
-.quest-objective > .btn--icon[aria-pressed]:hover {
+.quest-objective > .btn--icon.quest-objective__done:hover {
   background: var(--surface-sunken);
 }
 
-.quest-objective > .btn--icon[aria-pressed='true'] {
+.quest-objective > .btn--icon.quest-objective__done[aria-pressed='true'] {
   color: var(--accent);
 }
 
