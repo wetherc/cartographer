@@ -31,6 +31,8 @@ import {
   offersRestUntilDawn,
   watchesBetween,
 } from '../time/GameClock.js';
+import { dateLine } from '../time/Calendar.js';
+import { editCalendar } from './calendarSettings.js';
 import { passTime, passTravelTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
@@ -379,6 +381,10 @@ export function wireParty(app, reloadView = null) {
   const fightRunning = () => state.combat !== null;
   const timePanel = mountTimePanel(mustGetElement('time-container'), {
     getClock: () => state.clock,
+    getDateLine: () => dateLine(state.clock.day, state.calendar),
+    onCalendar: async () => {
+      if (await editCalendar(app)) timePanel.update();
+    },
     blockedReason: () => (fightRunning() ? 'End the fight first' : null),
     onAdvance: () => {
       if (fightRunning()) return;

@@ -14,7 +14,7 @@ import type { Character, EncounterLocation } from './entities.js';
 import type { Creature, CreatureTemplate } from './creature.js';
 import type { LogEntry, LogEntryKind, LogOptions } from './log.js';
 import type { Quest } from './quest.js';
-import type { GameClock } from './time.js';
+import type { Calendar, GameClock } from './time.js';
 import type { Handout } from './handout.js';
 import type { ActionCost, CombatState, Participant, TurnFlag } from './combat.js';
 import type { ViewRole } from './view.js';
@@ -51,6 +51,8 @@ export interface AppState {
    * active. The state persists this, so a page refresh resumes combat
    * instead of dropping it. */
   combat: CombatState | null;
+  /** Month, season, and weather settings, or null for a day count only. */
+  calendar: Calendar | null;
   mode: AppMode;
   role: ViewRole;
 }

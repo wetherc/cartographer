@@ -3,6 +3,7 @@ import { ROUNDS_PER_WATCH, elapse } from '../entities/TimedEffects.js';
 import { commitCreatures } from './combatants.js';
 import { endSpellEffects } from './combatantWrites.js';
 import { mapKeep } from '../util/mapKeep.js';
+import { rollDawnWeather } from './calendarSettings.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -19,6 +20,8 @@ import { mapKeep } from '../util/mapKeep.js';
  */
 export function passTime(app, watches) {
   const { state } = app;
+  // The weather of a new day rolls even when no whole watch passed.
+  rollDawnWeather(app);
   const rounds = watches * ROUNDS_PER_WATCH;
   if (rounds <= 0) return;
   /** @type {{ casterId: string, spellId: string }[]} */

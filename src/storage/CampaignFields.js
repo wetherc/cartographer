@@ -11,6 +11,7 @@
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
+import { coerceCalendar } from '../time/Calendar.js';
 import {
   combatState,
   creatureTemplates,
@@ -69,6 +70,7 @@ const BY_KEY = {
   bestiary: { empty: () => [], coerce: keyedList(creatureTemplates), label: 'the bestiary' },
   splitParty: { empty: () => false, coerce: (value) => value === true, label: 'party splitting' },
   combat: { empty: () => null, coerce: combatState, label: 'the fight' },
+  calendar: { empty: () => null, coerce: coerceCalendar, label: 'the calendar' },
 };
 
 /** @type {readonly CampaignField[]} */

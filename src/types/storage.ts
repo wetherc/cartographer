@@ -3,7 +3,7 @@ import { Character } from './entities';
 import { Creature, CreatureTemplate } from './creature';
 import { LogEntry } from './log';
 import { Quest } from './quest';
-import { GameClock } from './time';
+import { Calendar, GameClock } from './time';
 import { Handout } from './handout';
 import { CombatState } from './combat';
 import type { TileGrid } from '../map/TileGrid.js';
@@ -79,6 +79,9 @@ export interface CampaignState {
    * is active. This lets refreshing the page mid-fight resume it. Null on
    * older saves. */
   combat: CombatState | null;
+  /** Optional month, season, and weather settings. Null when the campaign
+   * counts days only. */
+  calendar: Calendar | null;
 }
 
 /**

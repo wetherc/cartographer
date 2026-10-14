@@ -144,6 +144,13 @@
   font-size: 1.2rem;
 }
 
+/* The calendar date and the weather of the day, when the campaign has a
+   calendar. */
+.time-panel__date {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
 /* The time spent inside the current watch, in words and as a thin bar. Walks
    add minutes, so the GM sees how close the next watch is. */
 .time-panel__progress {

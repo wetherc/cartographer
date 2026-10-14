@@ -88,3 +88,20 @@ test('passing a watch ends a creature concentration, its chips, and its summons'
   assert.ok(app.log.includes("Hag's concentration on Hold Person ends."));
   assert.ok(app.log.includes('Cleric is no longer Paralyzed.'));
 });
+
+test('a clock move into a new day rolls and logs its weather once', () => {
+  const calendar = { months: [], daysPerMonth: 30, seasons: [], weather: true };
+  const app = stubApp({ state: { calendar, clock: { day: 2, watch: 0 } } });
+  passTime(app, 1);
+  assert.equal(app.state.calendar?.today?.day, 2);
+  assert.equal(app.log.length, 1);
+  assert.match(app.log[0], /^Day 2 weather: .+\.$/);
+  passTime(app, 1);
+  assert.equal(app.log.length, 1, 'the same day rolls no second time');
+});
+
+test('a campaign with no calendar rolls no weather', () => {
+  const app = stubApp({ state: { calendar: null, clock: { day: 5, watch: 0 } } });
+  passTime(app, 1);
+  assert.deepEqual(app.log, []);
+});

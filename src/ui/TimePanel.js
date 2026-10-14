@@ -29,6 +29,11 @@ const TIPS = {
  * The panel builds its DOM once. `update` rewrites only the text and state
  * that changed, so a party step does not rebuild the buttons, and a button
  * does not lose focus after its own click.
+ *
+ * `getDateLine` returns the calendar date and the weather of the day, shown
+ * under the readout. An empty line hides the row, so a campaign with no
+ * calendar shows the day count only. `onCalendar` adds a Calendar button that
+ * opens the settings. Time does not pass on it, so a fight leaves it enabled.
  * @param {HTMLElement} container
  * @param {{
  *   getClock: () => GameClock,
@@ -36,11 +41,15 @@ const TIPS = {
  *   onAdvance: () => void,
  *   onShortRest: () => void,
  *   onLongRest: () => void,
+ *   getDateLine?: () => string,
+ *   onCalendar?: () => void,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
 export function mountTimePanel(container, callbacks) {
   const label = el('span', 'time-panel__label');
+  const dateLine = el('div', 'time-panel__date');
+  dateLine.hidden = true;
   const progressText = el('span', 'time-panel__progress-text');
   const bar = /** @type {HTMLProgressElement} */ (el('progress', 'time-panel__bar'));
   bar.max = MINUTES_PER_WATCH;
@@ -69,6 +78,7 @@ export function mountTimePanel(container, callbacks) {
     'div',
     'time-panel',
     el('div', 'time-panel__readout u-row u-g2', icon('clock'), label),
+    dateLine,
     el('div', 'time-panel__progress', progressText, bar),
     el(
       'div',
@@ -76,6 +86,9 @@ export function mountTimePanel(container, callbacks) {
       button('Advance', callbacks.onAdvance, TIPS.advance),
       button('Short rest', callbacks.onShortRest, TIPS.short),
       button('Long rest', callbacks.onLongRest, TIPS.long),
+      ...(callbacks.onCalendar
+        ? [textButton('Calendar', callbacks.onCalendar, { className: 'time-panel__btn' })]
+        : []),
     ),
   );
   container.appendChild(root);
@@ -87,6 +100,11 @@ export function mountTimePanel(container, callbacks) {
 
   function update() {
     const clock = callbacks.getClock();
+    const date = callbacks.getDateLine?.() ?? '';
+    if (date !== dateLine.textContent) {
+      dateLine.textContent = date;
+      dateLine.hidden = !date;
+    }
     const text = `${formatClock(clock)}|${formatWatchProgress(clock)}`;
     if (text !== lastClock) {
       lastClock = text;

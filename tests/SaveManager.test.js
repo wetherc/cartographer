@@ -520,6 +520,7 @@ test('buildState fills every omitted field with its empty value', () => {
       bestiary: [],
       splitParty: false,
       combat: null,
+      calendar: null,
     },
   );
 });
@@ -571,6 +572,7 @@ test('deserialize defaults missing fields instead of throwing', () => {
     bestiary: [],
     splitParty: false,
     combat: null,
+    calendar: null,
   });
 });
 

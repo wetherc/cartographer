@@ -40,6 +40,27 @@ hours still has 4 hours left after one watch.
 A rest that lifts a dying character above 0 HP clears the death-save
 tracker. A character that is already dead keeps its exhaustion level.
 
+### Calendar and weather
+
+A campaign counts days only until you give it a calendar. In a GM tab, the
+**Calendar** button in the Time panel opens the settings. The button works
+during a fight too, because it passes no time.
+
+| Field | Effect |
+| --- | --- |
+| Month names, in order | Day 1 is the first day of the first month. After the last month, the year starts again |
+| Days in a month | 1 to 400 days. The default is 30 |
+| Season names, in order | The seasons split the year into equal runs of months. With no month names, the year has 12 months of the set length |
+| Roll the weather at each Dawn | Each new day rolls its weather once, when the clock reaches its Dawn, and writes a travelogue line such as "Day 4 weather: Light rain." |
+
+With a calendar, a line under the clock shows the date and the weather of
+the day, for example "3 Alturiak, Winter. Weather: Fog". Player tabs show
+the line too. In a season whose name contains "winter", rain rolls as snow,
+a thunderstorm as a blizzard, and a heat wave as bitter cold. A clock move
+that passes several Dawns, such as a long walk, rolls only for the last
+day. Turning the weather on rolls the current day at once. To remove the
+calendar, remove every month and season name, turn the weather off, and save.
+
 ## Quests
 
 A row of buttons at the top of the Story tab names the Quests, NPCs, and Handouts cards with the number of entries in each. The Quests count includes the quests in a folded group. A click on one opens that card and scrolls to it. Each card also has a chevron button in its top-right corner that folds the card to its title, and the browser remembers which cards you folded.
