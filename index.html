@@ -68,9 +68,11 @@
                The tooltips name the edit each button would change. In Build
                mode the save-level pair reads Previous save and Next save, so
                the four buttons do not read as two pairs of Undo and Redo.
-               Other modes show the short words to keep the header on one row. -->
-          <button id="header-stroke-undo-btn" class="btn header-stroke-undo" type="button" data-tip="Nothing to undo on the map" disabled>Undo stroke</button>
-          <button id="header-stroke-redo-btn" class="btn header-stroke-undo" type="button" data-tip="Nothing to redo on the map" disabled>Redo stroke</button>
+               Other modes show the short words to keep the header on one row.
+               Between 900 px and 85rem the stroke pair shows only its arrow icons, and the
+               aria-label keeps the full name for a screen reader. -->
+          <button id="header-stroke-undo-btn" class="btn header-stroke-undo" type="button" aria-label="Undo stroke" data-tip="Nothing to undo on the map" disabled><span class="header-stroke-undo__label">Undo stroke</span></button>
+          <button id="header-stroke-redo-btn" class="btn header-stroke-undo" type="button" aria-label="Redo stroke" data-tip="Nothing to redo on the map" disabled><span class="header-stroke-undo__label">Redo stroke</span></button>
           <button id="undo-btn" class="btn" type="button" data-tip="Go back to the previous save"><span class="header-label--short">Undo</span><span class="header-label--build">Previous save</span></button>
           <button id="redo-btn" class="btn" type="button" data-tip="Go forward to the next save (Ctrl/Cmd+Shift+Z)"><span class="header-label--short">Redo</span><span class="header-label--build">Next save</span></button>
         </div>

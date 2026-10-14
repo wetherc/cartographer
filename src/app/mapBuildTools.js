@@ -8,6 +8,7 @@ import {
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { mustGetElement } from '../ui/dom.js';
 import { setTip } from '../ui/Tooltip.js';
+import { icon } from '../ui/icons.js';
 import { mountBuildEmptyMap } from '../ui/BuildEmptyMap.js';
 import { isBlankMap, PAINT_TAB } from '../view/BuildTool.js';
 import { removeStored, tryWriteStored } from '../storage/Footprint.js';
@@ -39,6 +40,9 @@ export function wireMapBuildTools(app, env, strokes, buildTabs) {
   const { grid, navigator, toasts } = app;
   const undoBtn = /** @type {HTMLButtonElement} */ (mustGetElement('header-stroke-undo-btn'));
   const redoBtn = /** @type {HTMLButtonElement} */ (mustGetElement('header-stroke-redo-btn'));
+  // Between 900 px and 85rem the header shows only these icons (styles/shell.css).
+  undoBtn.prepend(icon('undo', { size: 16 }));
+  redoBtn.prepend(icon('redo', { size: 16 }));
   undoBtn.addEventListener('click', () => void strokes.undoStroke());
   redoBtn.addEventListener('click', () => void strokes.redoStroke());
   strokes.onStrokeHistoryChange(({ undo, redo }) => {

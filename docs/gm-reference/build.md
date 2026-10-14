@@ -189,7 +189,10 @@ hover on the tiles of a place whose name is left out names the place.
 
 In Build mode, the header shows **Undo stroke** and **Redo stroke** to the
 left of **Previous save** and **Next save**. That pair is the Undo and
-Redo of the other modes, and it steps between saves.
+Redo of the other modes, and it steps between saves. In a window from 901
+to 1360 pixels wide, the stroke pair shows only a back arrow and a forward
+arrow, so the header fits on one row. The tooltip and the screen-reader name
+of each arrow still say Undo stroke and Redo stroke.
 
 | Control | What it does |
 | --- | --- |

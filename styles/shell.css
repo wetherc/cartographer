@@ -164,11 +164,12 @@ body.role-locked #role-switch-container {
 }
 
 /* On a laptop screen the full header is about 1,380 pixels wide, so it wraps
-   onto a second row and takes that height from the map. Between phone width
-   and 100rem the header buttons and the gaps between clusters shrink, and
-   the title steps down, so the Play header fits one row at 1280 pixels. The
-   reserved switch widths above shrink with the buttons. */
-@media (min-width: 40.0625rem) and (max-width: 100rem) {
+   onto a second row and takes that height from the map. Between tablet width
+   and 115rem the header buttons and the gaps between clusters shrink, so the
+   header fits one row at 1280 pixels in every mode. The reserved switch
+   widths above shrink with the buttons, to the width each switch has in the
+   GM view. */
+@media (min-width: 40.0625rem) and (max-width: 115rem) {
   .app-header {
     column-gap: var(--space-2);
   }
@@ -178,7 +179,7 @@ body.role-locked #role-switch-container {
   }
 
   .app-header .btn {
-    padding-inline: var(--space-2);
+    padding-inline: 0.375rem;
   }
 
   .app-header__view {
@@ -186,15 +187,38 @@ body.role-locked #role-switch-container {
   }
 
   #mode-switch-container {
-    min-width: 14.25rem;
+    min-width: 12.75rem;
   }
 
   #theme-toggle-container {
-    min-width: 6.625rem;
+    min-width: 5.875rem;
   }
 
   #role-switch-container {
-    min-width: 9.125rem;
+    min-width: 8.125rem;
+  }
+}
+
+/* Build mode adds the stroke pair to the History cluster. A wide header
+   shows its words, and so does the open header menu. Between the menu fold
+   and 85rem the pair shows only its arrow icons, which leaves room for
+   Previous save and Next save on the same row. Each button
+   keeps its name in aria-label and its tooltip. */
+.header-stroke-undo .icon {
+  display: none;
+}
+
+@media (min-width: 56.3125rem) and (max-width: 85rem) {
+  .header-stroke-undo__label {
+    display: none;
+  }
+
+  .header-stroke-undo .icon {
+    display: block;
+  }
+
+  .app-header .header-stroke-undo {
+    padding-inline: var(--space-2);
   }
 }
 

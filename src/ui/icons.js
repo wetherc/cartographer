@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'back'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'|'search'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'back'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'undo'|'redo'|'pointer'|'search'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -108,6 +108,9 @@ const PATHS = {
   target: ['M12 6a6 6 0 100 12 6 6 0 000-12z', 'M12 2v4', 'M12 18v4', 'M2 12h4', 'M18 12h4'],
   // A counter-clockwise arrow marks a revert to the built-in default.
   revert: ['M4 4v6h6', 'M5.5 15a7 7 0 1 0 1.6-7.3L4 10'],
+  // A hooked arrow that turns back marks undo, and its mirror marks redo.
+  undo: ['M9 14L4 9l5-5', 'M4 9h10.5a5.5 5.5 0 010 11H11'],
+  redo: ['M15 14l5-5-5-5', 'M20 9H9.5a5.5 5.5 0 000 11H13'],
   fit: ['M9 4H4v5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
   // A small inset in the top-left corner of a frame marks the mini-map.
   minimap: ['M3 5h18v14H3z', 'M3 12h8V5'],
