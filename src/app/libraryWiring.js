@@ -460,7 +460,7 @@ export function wireLibrary(app) {
 
   mustGetElement('library-export-btn').addEventListener('click', () => {
     downloadLibrary(custom);
-    app.toasts.show(`Library exported. Keep it as ${LIBRARY_FILE} to auto-load it.`);
+    app.toasts.show('Library exported. Use Import library to load it in another browser.');
   });
 
   const importInput = /** @type {HTMLInputElement} */ (mustGetElement('library-import-input'));
