@@ -130,7 +130,13 @@ export function variantIndexAt(count, x, y) {
   h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
   h ^= h >>> 16;
-  return (h >>> 0) % count;
+  // The result is (h >>> 0) % count. That unsigned value can pass 2^31, and
+  // V8 then computes it in floating point, which costs about ten times as
+  // much per call. Splitting h into its high and low 16 bits keeps every
+  // step in the int32 range when count is at most 2^15. A larger count
+  // takes the plain formula, which gives the same result.
+  if (count > 0x8000) return (h >>> 0) % count;
+  return ((((h >>> 16) % count) << 16) + (h & 0xffff)) % count;
 }
 
 /**
