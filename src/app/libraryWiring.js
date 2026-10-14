@@ -38,6 +38,7 @@ import { itemSummary } from '../entities/Equipment.js';
 import { creatureForm } from './creatureForm.js';
 import { creatureSummary, featSummary, spellSummary } from './librarySummaries.js';
 import { creatureTags, spellTags } from '../library/LibraryFacets.js';
+import { mountTablePanel } from './libraryTables.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -79,7 +80,7 @@ const CREATURE_SUBTABS = [
 
 /**
  * Build the rail for the Library mode. It shows the merged built-in and
- * custom lists for equipment, creatures, spells, and feats, plus
+ * custom lists for equipment, creatures, spells, feats, and random tables, plus
  * export, import, and reset controls for the custom library.
  * The custom library is not campaign state, by design. It persists in its
  * own key in localStorage, survives New, Import, and Load Example, and it
@@ -98,7 +99,7 @@ export function wireLibrary(app) {
   const hadStored = stored !== null;
 
   /**
-   * Refresh all four lists after a library change, and refresh the character
+   * Refresh all five lists after a library change, and refresh the character
    * panels too. The spellbook shows the catalog spells, so an edited or
    * removed entry must reach it as well.
    * Every caller is a user action or the promise callback for the file seed.
@@ -234,7 +235,7 @@ export function wireLibrary(app) {
   wireTabs(mustGetElement('library-tabs'));
 
   /**
-   * Mount the four lists. They hold about a quarter of the page's elements,
+   * Mount the five lists. They hold about a quarter of the page's elements,
    * and only Library mode shows them, so they mount on the first switch to
    * Library mode rather than at startup. A Player tab cannot enter Library
    * mode, so it never builds them.
@@ -448,7 +449,8 @@ export function wireLibrary(app) {
         updateCustom((base) => ({ ...base, feats: removeEntry(base.feats, key, nameKey) })),
       ),
     });
-    return [equipmentPanel, creaturePanel, spellPanel, featPanel];
+    const tablePanel = mountTablePanel(app, { updateCustom, makeRemoveHandler });
+    return [equipmentPanel, creaturePanel, spellPanel, featPanel, tablePanel];
   };
   /** The mounted lists, or null before the first visit to Library mode. */
   let panels = /** @type {{ update: () => void }[] | null} */ (null);

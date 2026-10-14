@@ -19,6 +19,7 @@
 @import url('styles/story.css'); /* travelogue, quest log */
 @import url('styles/quest.css'); /* quest details: objectives and links */
 @import url('styles/library.css'); /* Library mode: template lists, custom-library file controls */
+@import url('styles/tables.css'); /* random tables: the Library form and the dice tray roll row */
 @import url('styles/spells.css'); /* spell authoring form, spellbook, cast modal */
 @import url('styles/combat.css'); /* Combat mode: the full-width fight screen */
 @import url('styles/combat-shell.css'); /* Combat mode: the fixed screen, gear disclosures, and the phone turn bar */
