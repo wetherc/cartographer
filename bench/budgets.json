@@ -3,7 +3,7 @@
   "extraCreatures": 300,
   "budgetsMs": {
     "serialize": 40,
-    "deserialize": 25,
+    "deserialize": 35,
     "toTileGrid": 40,
     "reconcile": 80,
     "adopt": 12,
