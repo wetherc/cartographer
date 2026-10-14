@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Tall arched window, origin at the bottom-left corner of the sill. -->
+    <g id="win">
+      <path d="M0 0 V-6 Q2 -8.6 4 -6 V0 Z" fill="#e8c05a" stroke="#6f6a60" stroke-width="0.6"/>
+      <path d="M2 -7.3 V0 M0 -3.4 H4" stroke="#6f6a60" stroke-width="0.45"/>
+      <rect x="-0.6" y="0" width="5.2" height="1" fill="#b9b2a2"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="9" cy="10" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="56" cy="12" rx="5" ry="3" fill="#529044"/>
+  <!-- Paved forecourt in front of the steps. -->
+  <ellipse cx="32" cy="50" rx="28" ry="11" fill="#9e968a"/>
+  <ellipse cx="32" cy="51" rx="21" ry="7.5" fill="#b3ab9d"/>
+  <path d="M18 54 H46 M22 57.5 H42 M25 51 V54 M32 51 V57.5 M39 51 V54 M28.5 54 V57.5 M35.5 54 V57.5" stroke="#8f887c" stroke-width="0.5" fill="none"/>
+  <ellipse cx="32" cy="49" rx="25" ry="2.4" fill="#5a4f40" opacity="0.35"/>
+  <!-- Main block of dressed stone, the east face in shade. -->
+  <rect x="9" y="28" width="46" height="21" fill="#dcd4c1"/>
+  <rect x="32" y="28" width="23" height="21" fill="#cbc2ad"/>
+  <path d="M9 33.5 H55 M9 39 H55 M9 44 H55" stroke="#b9b09c" stroke-width="0.45"/>
+  <rect x="9" y="28" width="46" height="21" fill="none" stroke="#8f887c" stroke-width="0.7"/>
+  <rect x="9" y="46.5" width="46" height="2.5" fill="#a39d91"/>
+  <!-- Hipped slate roof, the eaves shadow on the wall below. -->
+  <path d="M6 30 L13 17 H51 L58 30 Z" fill="#6a7888"/>
+  <path d="M32 17 H51 L58 30 H32 Z" fill="#5a6776"/>
+  <path d="M11.4 21 H52.6 M9.2 25.2 H54.8" stroke="#4d5866" stroke-width="0.6"/>
+  <path d="M13 17 H51" stroke="#3f4854" stroke-width="1.2"/>
+  <path d="M6 30 H58" stroke="#3f4854" stroke-width="1"/>
+  <rect x="9" y="30.5" width="46" height="1.2" fill="#4a4238" opacity="0.3"/>
+  <!-- Clock tower rising through the ridge, with a copper spire and a flag. -->
+  <rect x="27" y="9" width="10" height="21" fill="#dcd4c1"/>
+  <rect x="32" y="9" width="5" height="21" fill="#cbc2ad"/>
+  <rect x="27" y="9" width="10" height="21" fill="none" stroke="#8f887c" stroke-width="0.6"/>
+  <rect x="26.2" y="8.2" width="11.6" height="1.6" fill="#b9b09c" stroke="#8f887c" stroke-width="0.4"/>
+  <circle cx="32" cy="15.2" r="3.4" fill="#f3ecd8" stroke="#6f6a60" stroke-width="0.6"/>
+  <path d="M32 15.2 V12.6 M32 15.2 L34 16.2" stroke="#3a352e" stroke-width="0.6" stroke-linecap="round"/>
+  <path d="M29.8 26.5 V21.6 Q32 18.8 34.2 21.6 V26.5 Z" fill="#3f3a33"/>
+  <path d="M30.6 25.4 Q30.8 22 32 21.8 Q33.2 22 33.4 25.4 Z" fill="#c9a020"/>
+  <circle cx="32" cy="25.8" r="0.6" fill="#8a6d18"/>
+  <path d="M26.5 8.3 L32 2.8 L37.5 8.3 Z" fill="#4f9a86"/>
+  <path d="M32 2.8 L37.5 8.3 H32 Z" fill="#3f8272"/>
+  <path d="M32 2.8 V0.8" stroke="#5a4530" stroke-width="0.5"/>
+  <path d="M32 0.8 L35.6 1.7 L32 2.6 Z" fill="#c0392b"/>
+  <!-- Wing windows. -->
+  <use href="#win" transform="translate(11.5 38)"/>
+  <use href="#win" transform="translate(16 38)"/>
+  <use href="#win" transform="translate(44.5 38)"/>
+  <use href="#win" transform="translate(49 38)"/>
+  <!-- Portico: a pediment on four columns over the great door. -->
+  <path d="M20.5 34.5 L32 29.6 L43.5 34.5 Z" fill="#e6dfcd" stroke="#8f887c" stroke-width="0.6"/>
+  <circle cx="32" cy="32.6" r="1.1" fill="#c9a020"/>
+  <rect x="20.5" y="34.5" width="23" height="1.6" fill="#cbc2ad" stroke="#8f887c" stroke-width="0.4"/>
+  <rect x="28.6" y="38.5" width="6.8" height="10.5" fill="#5a4530"/>
+  <path d="M28.6 38.5 Q32 35.8 35.4 38.5" fill="#5a4530"/>
+  <path d="M32 37.15 V49" stroke="#46351f" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="43.8" r="0.45"/><circle cx="32.9" cy="43.8" r="0.45"/></g>
+  <g fill="#efe9da" stroke="#8f887c" stroke-width="0.4">
+    <rect x="21.5" y="36.1" width="2.2" height="12.9"/>
+    <rect x="25.3" y="36.1" width="2.2" height="12.9"/>
+    <rect x="36.5" y="36.1" width="2.2" height="12.9"/>
+    <rect x="40.3" y="36.1" width="2.2" height="12.9"/>
+  </g>
+  <!-- Three steps down to the forecourt. -->
+  <rect x="19" y="49" width="26" height="1.6" fill="#c8c1b2"/>
+  <rect x="17.5" y="50.6" width="29" height="1.6" fill="#b9b2a2"/>
+  <rect x="16" y="52.2" width="32" height="1.6" fill="#a8a193"/>
+  <path d="M19 50.6 H45 M17.5 52.2 H46.5" stroke="#8f887c" stroke-width="0.4"/>
+</svg>

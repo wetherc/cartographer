@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The head of a pier that runs out to the north, over a transparent
+       ground. The stem matches dock-pier-v at the south edge, and it widens
+       into a square landing with bollards, a coil of rope, and a moored
+       rowboat. Nothing on the landing touches the other three edges. A soft
+       contact shadow lies on the water around the footprint of the pier and
+       of the boat. -->
+  <g fill="#1f3b4d">
+    <rect x="20.5" y="24" width="23" height="40" opacity="0.2"/>
+    <rect x="21.8" y="24" width="20.4" height="40" opacity="0.25"/>
+    <rect x="13.5" y="7.5" width="37" height="21" rx="2.5" opacity="0.2"/>
+    <rect x="14.8" y="8.8" width="34.4" height="18.4" rx="1.5" opacity="0.25"/>
+    <ellipse cx="51" cy="42" rx="6.2" ry="11.4" opacity="0.2"/>
+    <ellipse cx="51" cy="42" rx="5" ry="10.2" opacity="0.25"/>
+  </g>
+  <!-- Ripples where the water meets each pile. -->
+  <g fill="none" stroke="#8ac2e6" stroke-width="0.8" opacity="0.7">
+    <path d="M20.6 42.5 Q18.8 44 20.6 45.5 M43.4 42.5 Q45.2 44 43.4 45.5"/>
+    <path d="M14 8 Q12.2 9.6 14 11.2 M50 8 Q51.8 9.6 50 11.2"/>
+    <path d="M14 24.8 Q12.2 26.4 14 28 M50 24.8 Q51.8 26.4 50 28"/>
+  </g>
+  <!-- Pile heads: two on the stem, as on dock-pier-v, and one at each
+       corner of the landing. -->
+  <g fill="#4a3a26">
+    <rect x="21" y="42.4" width="3.4" height="3.2" rx="0.8"/>
+    <rect x="39.6" y="42.4" width="3.4" height="3.2" rx="0.8"/>
+    <rect x="14.4" y="8" width="3.6" height="3.4" rx="0.8"/>
+    <rect x="46" y="8" width="3.6" height="3.4" rx="0.8"/>
+    <rect x="14.4" y="24.6" width="3.6" height="3.4" rx="0.8"/>
+    <rect x="46" y="24.6" width="3.6" height="3.4" rx="0.8"/>
+  </g>
+  <!-- The stem deck, on the same plank pitch as dock-pier-v. -->
+  <rect x="24" y="26" width="16" height="38" fill="#8a6f4a"/>
+  <rect x="24" y="38.4" width="16" height="3.2" fill="#93774f"/>
+  <rect x="24" y="50.4" width="16" height="3.2" fill="#7f6644"/>
+  <path d="M24 30 H40 M24 34 H40 M24 38 H40 M24 42 H40 M24 46 H40 M24 50 H40 M24 54 H40 M24 58 H40 M24 62 H40" stroke="#6f583a" stroke-width="0.7"/>
+  <path d="M26.2 28 V64 M37.8 28 V64" stroke="#4a3a26" stroke-width="0.8" stroke-dasharray="0.8 3.2" stroke-dashoffset="0.4"/>
+  <rect x="22.8" y="26" width="1.8" height="38" fill="#5f4529"/>
+  <rect x="39.4" y="26" width="1.8" height="38" fill="#5f4529"/>
+  <!-- The landing: a planked square in a stringer frame. -->
+  <rect x="17" y="10" width="30" height="16" fill="#8a6f4a"/>
+  <rect x="17" y="14.4" width="30" height="3.2" fill="#93774f"/>
+  <rect x="17" y="22.4" width="30" height="3.2" fill="#7f6644"/>
+  <path d="M17 14 H47 M17 18 H47 M17 22 H47" stroke="#6f583a" stroke-width="0.7"/>
+  <path d="M19.2 12 V26 M44.8 12 V26" stroke="#4a3a26" stroke-width="0.8" stroke-dasharray="0.8 3.2" stroke-dashoffset="0.4"/>
+  <rect x="16" y="9" width="32" height="18" fill="none" stroke="#5f4529" stroke-width="1.8"/>
+  <!-- Bollards at the seaward corners, seen from above. -->
+  <g>
+    <circle cx="20.5" cy="12.8" r="2" fill="#3a2e1f"/>
+    <circle cx="20.5" cy="12.8" r="1.1" fill="#6f583a"/>
+    <circle cx="43.5" cy="12.8" r="2" fill="#3a2e1f"/>
+    <circle cx="43.5" cy="12.8" r="1.1" fill="#6f583a"/>
+  </g>
+  <!-- A coil of rope and a mooring line down to the boat. -->
+  <g fill="none" stroke="#b09a72">
+    <circle cx="25" cy="21.2" r="2.4" stroke-width="1.1"/>
+    <circle cx="25" cy="21.2" r="1" stroke-width="0.8"/>
+    <path d="M43.5 12.8 Q49 20 50.6 31.6" stroke-width="0.7"/>
+  </g>
+  <!-- A rowboat tied alongside, seen from above: a pointed hull, two
+       thwarts, and a pair of shipped oars. -->
+  <g>
+    <path d="M51 31 Q56.2 36 56 44 Q55.6 51 51 53 Q46.4 51 46 44 Q45.8 36 51 31 Z" fill="#7a5a38" stroke="#4a3a26" stroke-width="0.7"/>
+    <path d="M51 33.6 Q54.6 37.6 54.4 44 Q54 49.4 51 51 Q48 49.4 47.6 44 Q47.4 37.6 51 33.6 Z" fill="#93714a"/>
+    <path d="M47.9 39.5 H54.1 M47.7 46.5 H54.3" stroke="#5f4529" stroke-width="1.2"/>
+    <path d="M49.2 36.5 L50.6 50.5 M52.8 36.5 L51.4 50.5" stroke="#b09a72" stroke-width="0.8" stroke-linecap="round"/>
+  </g>
+</svg>

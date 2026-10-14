@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="11" cy="10" rx="7" ry="4" fill="#63a651"/>
+  <ellipse cx="55" cy="58" rx="6" ry="3.5" fill="#529044"/>
+  <!-- Scorched yard: browned grass around a sooty dirt patch. -->
+  <ellipse cx="32" cy="47" rx="25" ry="12" fill="#7a8a45"/>
+  <ellipse cx="32" cy="47" rx="22" ry="10" fill="#8a7a5a"/>
+  <ellipse cx="32" cy="48" rx="17" ry="7.5" fill="#6a6050"/>
+  <ellipse cx="32" cy="50.5" rx="20" ry="2.4" fill="#3d342c" opacity="0.45"/>
+  <!-- Two-story shell: soot-streaked plaster and charred timbers. The
+       upper floor is burned down to a ragged line. -->
+  <path d="M15 50 V29 L18 27 L21 29.6 L24.5 26.4 L28 29 L32 27.4 L32 50 Z" fill="#a8977a"/>
+  <path d="M32 50 V27.4 L35.5 29.8 L39 26.8 L43 29 L46 27 L49 28.4 V50 Z" fill="#978769"/>
+  <path d="M21 29.6 L24.5 26.4 L28 29 V32 H21 Z M35.5 29.8 L39 26.8 L43 29 V32 H35.5 Z" fill="#8a7b62"/>
+  <path d="M15 38 H49 M21 29.4 V38 M32 27.4 V38 M43 28.8 V38 M17 38 V50 M47 38 V50" stroke="#2e2824" stroke-width="1.2" fill="none"/>
+  <path d="M21 33.5 L23.6 29.8 M32 33.5 L29.6 30 M32 33.5 L34.4 30.2 M43 33.5 L40.4 29.8" stroke="#2e2824" stroke-width="0.9" fill="none"/>
+  <path d="M15 50 V29 L18 27 L21 29.6 L24.5 26.4 L28 29 L32 27.4 L35.5 29.8 L39 26.8 L43 29 L46 27 L49 28.4 V50 Z" fill="none" stroke="#6a5d4a" stroke-width="0.8" stroke-linejoin="round"/>
+  <!-- What is left of the roof: bare rafters, and the lower rows of clay
+       tiles at the east end. The chimney stack stands clear of the roof. -->
+  <g stroke="#2e2824" stroke-linecap="round">
+    <path d="M13 28.4 L18.4 13.6" stroke-width="1.3"/>
+    <path d="M18.4 13.6 L27.6 13.6" stroke-width="1.2"/>
+    <path d="M24 27 L26.4 20" stroke-width="1"/>
+    <path d="M30.6 27.6 L32.8 19.4" stroke-width="1"/>
+  </g>
+  <rect x="41" y="12" width="4.2" height="14" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5"/>
+  <path d="M41 14.8 H45.2 M41 17.3 H45.2 M41 19.8 H45.2" stroke="#6f747a" stroke-width="0.4"/>
+  <rect x="40.5" y="11.5" width="5.2" height="1.4" fill="#3d342c"/>
+  <path d="M36.6 29 L37.8 25.2 L40.2 26.4 L42.8 23.4 L45.4 24.8 L47.6 22.2 L49.4 23.6 L50.6 23.8 L52.5 29 Z" fill="#9b4029"/>
+  <path d="M37 27.6 H51.9 M38.8 25.5 H51" stroke="#8a3524" stroke-width="0.7" fill="none"/>
+  <path d="M36.6 29 H52.5" stroke="#6d2a1c" stroke-width="1"/>
+  <path d="M36.6 29 L37.8 25.2 L40.2 26.4 L42.8 23.4 L45.4 24.8 L47.6 22.2 L49.4 23.6 L50.6 23.8 L52.5 29" fill="none" stroke="#3d342c" stroke-width="0.6" stroke-linejoin="round"/>
+  <!-- Thin smoke from the rubble inside. -->
+  <g fill="#b8b3a8">
+    <circle cx="26" cy="20" r="2" opacity="0.5"/>
+    <circle cx="23.6" cy="16" r="2.6" opacity="0.35"/>
+    <circle cx="21" cy="12.4" r="3" opacity="0.2"/>
+  </g>
+  <!-- Upper windows empty. One shutter hangs from a hinge. -->
+  <g fill="#2e2824" stroke="#4a3a2c" stroke-width="0.6">
+    <rect x="23.5" y="31" width="5" height="4.5"/>
+    <rect x="35.5" y="31" width="5" height="4.5"/>
+  </g>
+  <rect x="40.6" y="31" width="1.4" height="4.5" fill="#3d342c"/>
+  <path d="M22 31.4 L23.2 31 L24.4 35.4 L23.2 35.8 Z" fill="#3f4a33"/>
+  <path d="M26 40 Q27 44 26.4 48 M37.6 39 Q36.8 42 37.2 44" stroke="#6a5d4a" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <!-- Ground floor: the doors are gone, and the windows are dark holes
+       over burned flower boxes. -->
+  <rect x="29" y="41" width="6" height="9" fill="#2e2824"/>
+  <path d="M29 41 Q32 38.6 35 41" fill="#2e2824"/>
+  <path d="M30.2 50 L32.4 46 L34.2 50 Z" fill="#9a958c"/>
+  <rect x="28" y="50" width="8" height="1.4" fill="#7a7468"/>
+  <g fill="#2e2824" stroke="#4a3a2c" stroke-width="0.6">
+    <rect x="20" y="41.5" width="5.5" height="4.5"/>
+    <rect x="38.5" y="41.5" width="5.5" height="4.5"/>
+  </g>
+  <circle cx="42.4" cy="45" r="0.45" fill="#e8a040"/>
+  <rect x="19.5" y="46" width="6.5" height="1.6" fill="#3d342c"/>
+  <path d="M38 46 H44.5 L43.8 47.6 H40 L38 48.4 Z" fill="#3d342c"/>
+  <!-- Rain barrel charred at the west corner, its hoops still on. -->
+  <g>
+    <rect x="10" y="44" width="4.6" height="6" rx="0.8" fill="#4a3c2c" stroke="#2e2824" stroke-width="0.5"/>
+    <path d="M10 45.8 H14.6 M10 48.2 H14.6" stroke="#2e2824" stroke-width="0.6"/>
+    <ellipse cx="12.3" cy="44" rx="2.3" ry="0.8" fill="#2e2824"/>
+  </g>
+  <!-- Fallen roof tiles and ash on the yard. -->
+  <g>
+    <path d="M16 53 L19.4 52 L20 53.3 L16.6 54.2 Z M45.4 53.6 L48.6 52.8 L49 54 L45.8 54.8 Z" fill="#b04b32"/>
+    <path d="M50.4 48 L53 47.4 L53.4 48.6 L50.8 49.2 Z" fill="#9b4029"/>
+    <ellipse cx="38.4" cy="55" rx="3.6" ry="1.4" fill="#9a958c"/>
+    <ellipse cx="37.8" cy="54.6" rx="1.8" ry="0.7" fill="#b8b3a8"/>
+    <path d="M22 56.4 L29 55.2" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+</svg>

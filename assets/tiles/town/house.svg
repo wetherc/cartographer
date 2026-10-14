@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="11" cy="10" rx="7" ry="4" fill="#63a651"/>
+  <ellipse cx="55" cy="58" rx="6" ry="3.5" fill="#529044"/>
+  <ellipse cx="32" cy="47" rx="24" ry="11" fill="#c2a36c"/>
+  <ellipse cx="32" cy="48" rx="18" ry="7.5" fill="#cdb078"/>
+  <ellipse cx="32" cy="50.5" rx="20" ry="2.4" fill="#8a7447" opacity="0.45"/>
+  <!-- Two-story town house: timber frame over plaster, the roof slope
+       facing the viewer, a dormer, and a stone chimney on the east end. -->
+  <rect x="15" y="27" width="34" height="23" fill="#e6d3aa"/>
+  <rect x="32" y="27" width="17" height="23" fill="#d6c196"/>
+  <path d="M15 38 H49 M15 27.6 H49 M21 27 V38 M32 27 V38 M43 27 V38 M17 38 V50 M47 38 V50" stroke="#7a5a3a" stroke-width="1.2" fill="none"/>
+  <path d="M21 33.5 L25 27.6 M32 33.5 L28 27.6 M32 33.5 L36 27.6 M43 33.5 L39 27.6" stroke="#7a5a3a" stroke-width="0.9" fill="none"/>
+  <rect x="15" y="27" width="34" height="23" fill="none" stroke="#6b4f33" stroke-width="0.8"/>
+  <!-- Roof of red clay tiles with courses, a dark ridge, and eaves shadow. -->
+  <path d="M11.5 29 L18 11 H46 L52.5 29 Z" fill="#b04b32"/>
+  <path d="M32 11 H46 L52.5 29 H32 Z" fill="#9b4029"/>
+  <path d="M16.2 16 H47.8 M14.4 21 H49.6 M12.9 25.5 H51.1" stroke="#8a3524" stroke-width="0.7" fill="none"/>
+  <path d="M18 11 H46" stroke="#6d2a1c" stroke-width="1.3"/>
+  <path d="M11.5 29 H52.5" stroke="#6d2a1c" stroke-width="1"/>
+  <rect x="15" y="29.5" width="34" height="1.2" fill="#5a4530" opacity="0.35"/>
+  <!-- Dormer with a lit window. -->
+  <rect x="28" y="16" width="8" height="7" fill="#e6d3aa" stroke="#6b4f33" stroke-width="0.6"/>
+  <polygon points="26.8,16.3 32,12 37.2,16.3" fill="#9b4029" stroke="#6d2a1c" stroke-width="0.6"/>
+  <rect x="30" y="17.8" width="4" height="4" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+  <path d="M32 17.8 V21.8" stroke="#7a5a3a" stroke-width="0.5"/>
+  <!-- Chimney with a curl of smoke. -->
+  <rect x="41" y="7" width="4.2" height="7.5" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5"/>
+  <path d="M41 9.8 H45.2 M41 12.3 H45.2" stroke="#6f747a" stroke-width="0.4"/>
+  <rect x="40.5" y="6.5" width="5.2" height="1.4" fill="#6f747a"/>
+  <g fill="#d8d4ca">
+    <circle cx="44" cy="4.6" r="1.5" opacity="0.6"/>
+    <circle cx="46.6" cy="3" r="1.2" opacity="0.4"/>
+  </g>
+  <!-- Upper windows with shutters. -->
+  <g>
+    <rect x="23.5" y="30.5" width="5" height="5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+    <rect x="35.5" y="30.5" width="5" height="5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+    <path d="M26 30.5 V35.5 M38 30.5 V35.5 M23.5 33 H28.5 M35.5 33 H40.5" stroke="#7a5a3a" stroke-width="0.5"/>
+    <rect x="22" y="30.5" width="1.4" height="5" fill="#4f6b3f"/>
+    <rect x="28.6" y="30.5" width="1.4" height="5" fill="#4f6b3f"/>
+    <rect x="34" y="30.5" width="1.4" height="5" fill="#3f5732"/>
+    <rect x="40.6" y="30.5" width="1.4" height="5" fill="#3f5732"/>
+  </g>
+  <!-- Ground floor: arched double door on a step, two windows with a flower box. -->
+  <rect x="29" y="41" width="6" height="9" fill="#5a4530"/>
+  <path d="M29 41 Q32 38.6 35 41" fill="#5a4530"/>
+  <path d="M32 39.8 V50" stroke="#46351f" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="45.6" r="0.45"/><circle cx="32.9" cy="45.6" r="0.45"/></g>
+  <rect x="28" y="50" width="8" height="1.4" fill="#a39d91"/>
+  <rect x="20" y="41.5" width="5.5" height="4.5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+  <rect x="38.5" y="41.5" width="5.5" height="4.5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+  <path d="M22.75 41.5 V46 M41.25 41.5 V46" stroke="#7a5a3a" stroke-width="0.5"/>
+  <rect x="19.5" y="46" width="6.5" height="1.6" fill="#8a6f4a"/>
+  <rect x="38" y="46" width="6.5" height="1.6" fill="#7a6040"/>
+  <g fill="#d9534f">
+    <circle cx="20.8" cy="45.9" r="0.8"/>
+    <circle cx="23" cy="45.6" r="0.8"/>
+    <circle cx="25" cy="45.9" r="0.8"/>
+  </g>
+  <g fill="#e8d27a">
+    <circle cx="39.3" cy="45.9" r="0.8"/>
+    <circle cx="41.5" cy="45.6" r="0.8"/>
+    <circle cx="43.5" cy="45.9" r="0.8"/>
+  </g>
+  <!-- Rain barrel at the west corner. -->
+  <g>
+    <rect x="10" y="44" width="4.6" height="6" rx="0.8" fill="#8a6a42" stroke="#5f4529" stroke-width="0.5"/>
+    <path d="M10 45.8 H14.6 M10 48.2 H14.6" stroke="#4c3a26" stroke-width="0.6"/>
+    <ellipse cx="12.3" cy="44" rx="2.3" ry="0.8" fill="#3d5a70"/>
+  </g>
+  <path d="M29 55 Q32 54 35 55 M30.5 58 Q32 57.4 33.5 58" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

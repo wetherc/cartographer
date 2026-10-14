@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- The front slope of the roof, so shingle courses end on its edges. -->
+    <clipPath id="roof"><path d="M14 15 H40 L46.5 31 H7.5 Z"/></clipPath>
+    <!-- One float: a radial board between the rims, stamped round the wheel. -->
+    <rect id="float" x="-0.6" y="-9.8" width="1.2" height="3.6" fill="#8a6f4a" stroke="#4a3a26" stroke-width="0.35"/>
+    <!-- A sack with a tied neck, drawn from its base. -->
+    <g id="sack">
+      <ellipse cx="0.4" cy="0.1" rx="2.8" ry="0.7" fill="#8a7447" opacity="0.45"/>
+      <path d="M-2.4 0 Q-2.9 -3.2 -1.1 -4 L-0.6 -4.5 H0.6 L1.1 -4 Q2.9 -3.2 2.4 0 Z" fill="#ece4d0" stroke="#a3926a" stroke-width="0.45"/>
+      <path d="M-0.8 -4.5 H0.8" stroke="#7a6a4a" stroke-width="0.6"/>
+      <path d="M-0.5 -4.8 L-0.9 -5.8 M0 -4.8 V-6 M0.5 -4.8 L0.9 -5.8" stroke="#a3926a" stroke-width="0.45"/>
+      <path d="M-1.2 -1.6 Q0 -1 1.3 -1.8" stroke="#c8bb9a" stroke-width="0.4" fill="none"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="10" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="10" cy="59.5" rx="5" ry="2.2" fill="#529044"/>
+  <ellipse cx="22" cy="47" rx="14" ry="8" fill="#c2a36c"/>
+  <ellipse cx="20" cy="48" rx="9" ry="5" fill="#cdb078"/>
+  <!-- Mill race: a millpond behind the mill, a sluice gate, a stone-lined
+       leat down the east side and west along the front under the wheel, and
+       a tail pool. The leat keeps one width, and its bend is a true arc. -->
+  <ellipse cx="54.5" cy="11.5" rx="8" ry="5.6" fill="#6b5a3e"/>
+  <ellipse cx="54.5" cy="11.5" rx="6.8" ry="4.4" fill="#33719f"/>
+  <ellipse cx="25.5" cy="56" rx="7" ry="5.2" fill="#6b5a3e"/>
+  <ellipse cx="25.5" cy="56" rx="6" ry="4.2" fill="#33719f"/>
+  <path d="M52 14 V50 A3.5 3.5 0 0 1 48.5 53.5 H30 V58.5 H48.5 A8.5 8.5 0 0 0 57 50 V14 Z" fill="#33719f"/>
+  <g fill="none" stroke-width="1.6">
+    <path d="M52 16.8 V50 A3.5 3.5 0 0 1 48.5 53.5 H31.6 M57 16.8 V50 A8.5 8.5 0 0 1 48.5 58.5 H31.6" stroke="#a39d91"/>
+    <path d="M52 16.8 V50 A3.5 3.5 0 0 1 48.5 53.5 H31.6 M57 16.8 V50 A8.5 8.5 0 0 1 48.5 58.5 H31.6" stroke="#6f6a60" stroke-dasharray="0.35 2.65"/>
+  </g>
+  <g fill="#6b4a2a" stroke="#4a3a26" stroke-width="0.35">
+    <rect x="50.6" y="19.2" width="1.4" height="3.2"/>
+    <rect x="57" y="19.2" width="1.4" height="3.2"/>
+    <rect x="51.4" y="20" width="6.2" height="1.5"/>
+  </g>
+  <g stroke="#7fb2d9" stroke-width="0.9" fill="none" stroke-linecap="round">
+    <path d="M51 10.5 Q54.5 9.3 58 10.5"/>
+    <path d="M54.5 26 V34"/>
+    <path d="M22 55 Q25 54 28 55"/>
+  </g>
+  <g stroke="#3f7a36" stroke-width="0.6" stroke-linecap="round">
+    <path d="M19.8 53.5 L19.2 50.8 M20.6 53 L20.8 50.2 M21.4 53.3 L22.2 50.9"/>
+  </g>
+  <!-- Stone lower storey. -->
+  <rect x="10" y="40" width="34" height="12" fill="#b3ab98"/>
+  <path d="M10 44 H44 M10 48 H44 M15 40 V44 M23 40 V44 M31 40 V44 M39 40 V44 M11 44 V48 M19 44 V48 M27 44 V48 M35 44 V48 M43 44 V48 M15 48 V52 M23 48 V52 M31 48 V52 M39 48 V52" stroke="#857d6c" stroke-width="0.4"/>
+  <!-- Timber-framed upper storey: five posts, braced end panels, a window in
+       the second panel. -->
+  <rect x="10" y="30" width="34" height="10" fill="#efe4c8"/>
+  <g stroke="#6b4a2a" stroke-width="0.9" fill="none">
+    <path d="M10.45 30 V40 M18.8 30 V40 M27 30 V40 M35.2 30 V40 M43.55 30 V40"/>
+    <path d="M10.45 40 L18.8 31 M43.55 40 L35.2 31"/>
+  </g>
+  <path d="M10 40 H44" stroke="#5f4529" stroke-width="1.2"/>
+  <rect x="20.4" y="33" width="5" height="4.6" fill="#e8c05a" stroke="#6b4a2a" stroke-width="0.6"/>
+  <path d="M22.9 33 V37.6 M20.4 35.3 H25.4" stroke="#6b4a2a" stroke-width="0.4"/>
+  <rect x="19.9" y="37.6" width="6" height="0.9" fill="#8a6f4a"/>
+  <!-- Roof centered on the walls: four shingle courses, each a trapezoid on
+       the slope. -->
+  <g clip-path="url(#roof)">
+    <rect x="7" y="15" width="40" height="16" fill="#8a5a3a"/>
+    <path d="M0 19 H64 M0 23 H64 M0 27 H64" stroke="#5f3b25" stroke-width="0.7"/>
+    <g stroke="#6f4630" stroke-width="0.5">
+      <path d="M17 15 V19 M22 15 V19 M27 15 V19 M32 15 V19 M37 15 V19"/>
+      <path d="M14.5 19 V23 M19.5 19 V23 M24.5 19 V23 M29.5 19 V23 M34.5 19 V23 M39.5 19 V23"/>
+      <path d="M12 23 V27 M17 23 V27 M22 23 V27 M27 23 V27 M32 23 V27 M37 23 V27 M42 23 V27"/>
+      <path d="M9.5 27 V31 M14.5 27 V31 M19.5 27 V31 M24.5 27 V31 M29.5 27 V31 M34.5 27 V31 M39.5 27 V31 M44.5 27 V31"/>
+    </g>
+  </g>
+  <path d="M14 15 H40" stroke="#4c2e1c" stroke-width="1.2"/>
+  <path d="M7.5 31 H46.5" stroke="#4c2e1c" stroke-width="1"/>
+  <rect x="10" y="31.5" width="34" height="1" fill="#5a4530" opacity="0.3"/>
+  <!-- Arched double door on the west end: the meeting bead stops at the arch
+       and the sill, and each leaf has its own knob. -->
+  <path d="M11.5 52 V46 Q14.5 43 17.5 46 V52 Z" fill="#6b4a2a" stroke="#4f3a24" stroke-width="0.5"/>
+  <path d="M14.5 44.5 V52" stroke="#4f3a24" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="13.6" cy="48.6" r="0.42"/><circle cx="15.4" cy="48.6" r="0.42"/></g>
+  <rect x="10.8" y="52" width="7.4" height="1.2" fill="#a39d91"/>
+  <!-- Undershot wheel face-on, parallel to the leat beneath it. -->
+  <g transform="translate(37 46)">
+    <circle r="8.2" fill="none" stroke="#6f583a" stroke-width="1.4"/>
+    <circle r="5.6" fill="none" stroke="#8a6f4a" stroke-width="0.7"/>
+    <path d="M-8.2 0 H8.2 M0 -8.2 V8.2 M-5.8 -5.8 L5.8 5.8 M-5.8 5.8 L5.8 -5.8" stroke="#6f583a" stroke-width="0.9"/>
+    <use href="#float"/>
+    <use href="#float" transform="rotate(30)"/>
+    <use href="#float" transform="rotate(60)"/>
+    <use href="#float" transform="rotate(90)"/>
+    <use href="#float" transform="rotate(120)"/>
+    <use href="#float" transform="rotate(150)"/>
+    <use href="#float" transform="rotate(180)"/>
+    <use href="#float" transform="rotate(210)"/>
+    <use href="#float" transform="rotate(240)"/>
+    <use href="#float" transform="rotate(270)"/>
+    <use href="#float" transform="rotate(300)"/>
+    <use href="#float" transform="rotate(330)"/>
+    <circle r="1.7" fill="#4a3a26"/>
+  </g>
+  <!-- Water over the lowest floats, churned white on the downstream side. -->
+  <rect x="30.5" y="55.1" width="17" height="2.6" fill="#33719f" opacity="0.85"/>
+  <g stroke="#e6f1f8" stroke-width="0.8" fill="none" stroke-linecap="round">
+    <path d="M30.5 55.4 Q32 54.7 33.5 55.4 Q35 56.1 36.5 55.4"/>
+    <path d="M31 57.3 Q32.3 56.7 33.6 57.3" opacity="0.7"/>
+  </g>
+  <!-- Grain sacks on the yard. -->
+  <use href="#sack" transform="translate(6.2 49.5)"/>
+  <use href="#sack" transform="translate(8.4 53.8)"/>
+</svg>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Tall arched window burned out, origin at the bottom-left corner of
+         the sill, with soot above the arch. -->
+    <g id="win">
+      <path d="M0.4 -7 Q2 -10.6 3.6 -7 Q2 -8.6 0.4 -7 Z" fill="#4a4540" opacity="0.6"/>
+      <path d="M0 0 V-6 Q2 -8.6 4 -6 V0 Z" fill="#2e2824" stroke="#6f6a60" stroke-width="0.6"/>
+      <rect x="-0.6" y="0" width="5.2" height="1" fill="#9a948a"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="9" cy="10" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="56" cy="12" rx="5" ry="3" fill="#529044"/>
+  <!-- Paved forecourt, sooty and strewn with ash. -->
+  <ellipse cx="32" cy="50" rx="28" ry="11" fill="#7f786c"/>
+  <ellipse cx="32" cy="51" rx="21" ry="7.5" fill="#948c7e"/>
+  <path d="M18 54 H46 M22 57.5 H42 M25 51 V54 M32 51 V57.5 M39 51 V54 M28.5 54 V57.5 M35.5 54 V57.5" stroke="#6f685c" stroke-width="0.5" fill="none"/>
+  <ellipse cx="32" cy="49" rx="25" ry="2.4" fill="#3d342c" opacity="0.4"/>
+  <!-- Smoke from the gutted hall. -->
+  <g fill="#b8b3a8">
+    <circle cx="18" cy="22" r="2" opacity="0.5"/>
+    <circle cx="16" cy="18" r="2.6" opacity="0.35"/>
+    <circle cx="13.5" cy="14.5" r="3" opacity="0.2"/>
+  </g>
+  <!-- Main block of dressed stone, still standing. The top course is broken,
+       and soot streaks the wall. -->
+  <path d="M9 49 V29 L12 28 L15.5 29.4 L20 27.8 L32 28 L44 27.6 L48 29.2 L52 28 L55 29 V49 Z" fill="#c2baa6"/>
+  <path d="M32 49 V28 L44 27.6 L48 29.2 L52 28 L55 29 V49 Z" fill="#b1a893"/>
+  <path d="M9 33.5 H55 M9 39 H55 M9 44 H55" stroke="#9e9582" stroke-width="0.45"/>
+  <path d="M9 49 V29 L12 28 L15.5 29.4 L20 27.8 L32 28 L44 27.6 L48 29.2 L52 28 L55 29 V49 Z" fill="none" stroke="#6f685c" stroke-width="0.7" stroke-linejoin="round"/>
+  <rect x="9" y="46.5" width="46" height="2.5" fill="#8a8478"/>
+  <!-- The slate roof has burned and fallen in. Charred rafters and one
+       corner of slates at the west end are left. -->
+  <path d="M6 30 L9.4 23.6 L12 25 L14.6 22.4 L17 26 L18.6 30 Z" fill="#5a6776"/>
+  <path d="M6 30 H18.6" stroke="#3f4854" stroke-width="1"/>
+  <path d="M6 30 L9.4 23.6 L12 25 L14.6 22.4 L17 26 L18.6 30" fill="none" stroke="#2e2824" stroke-width="0.6" stroke-linejoin="round"/>
+  <g stroke="#2e2824" stroke-linecap="round">
+    <path d="M14 21.8 L22 17.4 H26" stroke-width="1.2" fill="none"/>
+    <path d="M38 17.4 H47" stroke-width="1.2"/>
+    <path d="M47 17.4 L55.6 28.4" stroke-width="1.3"/>
+    <path d="M40.8 28 L43 20.6" stroke-width="1"/>
+    <path d="M21.6 28 L23.4 21.4" stroke-width="1"/>
+  </g>
+  <!-- Clock tower broken off above the clock. The clock face is gone, and
+       the bell hangs dark in its opening. -->
+  <path d="M27 30 V11.8 L28.6 10.4 L30.4 12.2 L32.6 9.6 L34.4 11.6 L37 10.6 V30 Z" fill="#c2baa6"/>
+  <path d="M32 30 V10.2 L32.6 9.6 L34.4 11.6 L37 10.6 V30 Z" fill="#b1a893"/>
+  <path d="M27 30 V11.8 L28.6 10.4 L30.4 12.2 L32.6 9.6 L34.4 11.6 L37 10.6 V30" fill="none" stroke="#6f685c" stroke-width="0.6" stroke-linejoin="round"/>
+  <circle cx="32" cy="15.6" r="3.4" fill="#2e2824" stroke="#6f6a60" stroke-width="0.6"/>
+  <path d="M29.2 14 L31 15.8 L30 17.6" stroke="#9a948a" stroke-width="0.5" fill="none"/>
+  <path d="M29.8 26.5 V21.6 Q32 18.8 34.2 21.6 V26.5 Z" fill="#2e2824"/>
+  <path d="M30.6 25.4 Q30.8 22 32 21.8 Q33.2 22 33.4 25.4 Z" fill="#6a5a2a"/>
+  <!-- Wing windows. -->
+  <use href="#win" transform="translate(11.5 38)"/>
+  <use href="#win" transform="translate(16 38)"/>
+  <use href="#win" transform="translate(44.5 38)"/>
+  <use href="#win" transform="translate(49 38)"/>
+  <!-- Portico: the pediment is cracked, and one column has fallen. -->
+  <path d="M20.5 34.5 L32 29.6 L43.5 34.5 Z" fill="#cbc2ad" stroke="#6f685c" stroke-width="0.6"/>
+  <path d="M33.6 30.3 L34.4 32.2 L33.6 34.5" stroke="#6f685c" stroke-width="0.5" fill="none"/>
+  <rect x="20.5" y="34.5" width="23" height="1.6" fill="#b1a893" stroke="#6f685c" stroke-width="0.4"/>
+  <rect x="28.6" y="38.5" width="6.8" height="10.5" fill="#2e2824"/>
+  <path d="M28.6 38.5 Q32 35.8 35.4 38.5" fill="#2e2824"/>
+  <path d="M30 49 L32.4 44.6 L34.2 49 Z" fill="#9a958c"/>
+  <g fill="#d8d1c0" stroke="#6f685c" stroke-width="0.4">
+    <rect x="21.5" y="36.1" width="2.2" height="12.9"/>
+    <rect x="25.3" y="36.1" width="2.2" height="12.9"/>
+    <rect x="40.3" y="36.1" width="2.2" height="12.9"/>
+    <rect x="36.5" y="46.6" width="2.2" height="2.4"/>
+    <rect x="38.6" y="54.2" width="9.6" height="2.2" rx="0.6" transform="rotate(-8 43.4 55.3)"/>
+  </g>
+  <!-- Three steps down to the forecourt. -->
+  <rect x="19" y="49" width="26" height="1.6" fill="#aaa393"/>
+  <rect x="17.5" y="50.6" width="29" height="1.6" fill="#9d9686"/>
+  <rect x="16" y="52.2" width="32" height="1.6" fill="#8e8779"/>
+  <path d="M19 50.6 H45 M17.5 52.2 H46.5" stroke="#6f685c" stroke-width="0.4"/>
+  <!-- The spire lies on the forecourt, and ash and slates are scattered. -->
+  <g>
+    <path d="M9.6 55.4 L16.4 53 L16.8 57.4 Z" fill="#4f9a86"/>
+    <path d="M16.4 53 L16.8 57.4 L13.2 56 Z" fill="#3f8272"/>
+    <ellipse cx="24" cy="57.2" rx="3.4" ry="1.2" fill="#9a958c"/>
+    <ellipse cx="23.4" cy="56.8" rx="1.7" ry="0.6" fill="#b8b3a8"/>
+    <path d="M50.4 52 L53.4 51.2 L53.8 52.4 L50.8 53.2 Z M7.6 50.8 L10.4 50.2 L10.6 51.4 L7.8 52 Z" fill="#5a6776"/>
+  </g>
+</svg>

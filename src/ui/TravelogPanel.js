@@ -1,0 +1,160 @@
+import { textButton, emptyState } from './buttons.js';
+import { el } from './dom.js';
+import { entriesAfter, isoTimestamp, LOG_KIND_LABELS, stampLabel } from '../log/Travelogue.js';
+import { buildKindFilter, buildNoteForm } from './TravelogTools.js';
+
+/** @typedef {import('../types/log.js').LogEntry} LogEntry */
+
+/** Every entry kind, for the filter classes of the list. */
+const KINDS = /** @type {import('../types/log.js').LogEntryKind[]} */ (
+  Object.keys(LOG_KIND_LABELS)
+);
+
+/** One formatter for every row. A new `toLocaleTimeString` call builds a
+ * formatter each time, which costs about 6 ms across a 200-row log. */
+const TIME_FORMAT = new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' });
+
+/** Format an entry's epoch-ms timestamp as a local HH:MM readout. The shared
+ * formatter throws on an invalid date, so that case reads "Invalid Date".
+ * This text matches what `toLocaleTimeString` gives.
+ * @param {number} at @param {string | null} iso the timestamp from `isoTimestamp` */
+function formatTime(at, iso) {
+  return iso === null ? 'Invalid Date' : TIME_FORMAT.format(at);
+}
+
+/** Build the list row for one entry. Shared with the combat screen's log
+ * column. The row shows the in-game time (see `stampLabel`), and the
+ * wall-clock time goes in the tooltip. An entry with no in-game stamp shows
+ * the wall-clock time.
+ * @param {LogEntry} entry
+ * @param {boolean} [withRound] show "Round N" alone for a fight line
+ */
+export function entryItem(entry, withRound = false) {
+  // A timestamp that is not a date gets no machine-readable attribute.
+  const iso = isoTimestamp(entry.at);
+  const wall = formatTime(entry.at, iso);
+  const time = el('time', 'travelog__time', stampLabel(entry, withRound) ?? wall);
+  if (iso !== null) time.dateTime = iso;
+  if (time.textContent !== wall) time.title = wall;
+
+  const item = el(
+    'li',
+    `travelog__item travelog__item--${entry.kind}`,
+    time,
+    el('span', 'travelog__message', entry.message),
+  );
+  item.dataset.logId = entry.id;
+  return item;
+}
+
+/**
+ * Mount the travelogue panel: a newest-first list of auto-recorded
+ * events, for example party movement or combat outcomes, with a Clear
+ * control. The panel owns no state. `getEntries` supplies the rows, and
+ * `onClear` empties the master list kept by the caller, matching the
+ * other thin DOM-wrapper panels. Rendering is append-only. `update`
+ * prepends only the entries logged since the last call, through
+ * `entriesAfter`, and rebuilds from scratch only when the log was cleared
+ * or replaced. A `logEvent` costs one row, not a full rerender. The log
+ * trims each budget on its own (see `Travelogue.appendEntry`), so the
+ * trimmed entries can sit anywhere in the list. When the panel has more rows
+ * than the log has entries, it removes the rows whose entries are gone. A change of
+ * `getRole` also rebuilds the list, because the two roles read different
+ * lines (see `LogVisibility.entriesFor`).
+ *
+ * The note box above the list calls `onAddNote`, and `canAddNotes`
+ * decides on each update whether it shows. The kind chips hide rows through
+ * a class on the list, so a filter change moves no rows. **Copy as text**
+ * passes the entries that the filters show to `onCopy`.
+ * @param {HTMLElement} container
+ * @param {{
+ *   getEntries: () => LogEntry[],
+ *   onClear: () => Promise<boolean> | boolean,
+ *   getRole?: () => string,
+ *   onAddNote?: (text: string, gmOnly: boolean) => void,
+ *   canAddNotes?: () => boolean,
+ *   onCopy?: (entries: LogEntry[]) => void,
+ * }} callbacks
+ * @returns {{ update: () => void }}
+ */
+export function mountTravelogPanel(container, callbacks) {
+  const empty = emptyState('No events logged yet.');
+  const filteredEmpty = emptyState('No entries of the kinds shown.');
+
+  /** @type {ReadonlySet<import('../types/log.js').LogEntryKind>} */
+  let hiddenKinds = new Set();
+  const noteForm = buildNoteForm((text, gmOnly) => callbacks.onAddNote?.(text, gmOnly));
+  const filters = buildKindFilter((hidden) => {
+    hiddenKinds = hidden;
+    for (const kind of KINDS)
+      list.classList.toggle(`travelog__list--hide-${kind}`, hidden.has(kind));
+    update();
+  });
+  const shownEntries = () => callbacks.getEntries().filter((e) => !hiddenKinds.has(e.kind));
+
+  const list = el('ul', 'travelog__list u-col u-g1');
+
+  const clearButton = textButton(
+    'Clear log',
+    async () => {
+      if (await callbacks.onClear()) update();
+    },
+    { icon: 'remove', variant: 'danger', className: 'travelog__clear' },
+  );
+
+  const copyButton = textButton('Copy as text', () => callbacks.onCopy?.(shownEntries()), {
+    icon: 'export',
+    className: 'travelog__copy',
+    title: 'Copy the shown entries, oldest first, to paste into session notes',
+  });
+
+  container.appendChild(
+    el(
+      'div',
+      'travelog',
+      noteForm,
+      filters,
+      empty,
+      filteredEmpty,
+      list,
+      el('div', 'travelog__actions', copyButton, clearButton),
+    ),
+  );
+
+  /** Id of the newest rendered entry. Null when the list renders empty. */
+  let newestId = /** @type {string | null} */ (null);
+  /** The role the rendered rows were written for. */
+  let shownRole = callbacks.getRole?.() ?? '';
+
+  function update() {
+    const entries = callbacks.getEntries();
+    const role = callbacks.getRole?.() ?? '';
+    const rebuild = role !== shownRole;
+    shownRole = role;
+    const fresh = rebuild ? null : entriesAfter(entries, newestId);
+    if (fresh === null) list.textContent = ''; // the log was cleared or replaced, so rebuild
+    // The list is newest first. Prepending in oldest-to-newest order
+    // leaves the newest row on top.
+    for (const entry of fresh ?? entries) list.prepend(entryItem(entry));
+    if (list.children.length > entries.length) {
+      const kept = new Set(entries.map((e) => e.id));
+      for (const row of [...list.children]) {
+        if (!kept.has(/** @type {HTMLElement} */ (row).dataset.logId ?? '')) row.remove();
+      }
+    }
+
+    noteForm.hidden = !(callbacks.canAddNotes?.() ?? true);
+    const hasEntries = list.children.length > 0;
+    const hasShown = hasEntries && entries.some((e) => !hiddenKinds.has(e.kind));
+    empty.hidden = hasEntries;
+    filteredEmpty.hidden = !hasEntries || hasShown;
+    filters.hidden = !hasEntries;
+    list.hidden = !hasShown;
+    clearButton.hidden = !hasEntries;
+    copyButton.hidden = !hasShown;
+    newestId = entries.length ? entries[entries.length - 1].id : null;
+  }
+
+  update();
+  return { update };
+}

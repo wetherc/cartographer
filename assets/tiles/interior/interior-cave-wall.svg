@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- One boulder seen from above: a lit north-west face and a shaded
+         south-east face. -->
+    <g id="cr">
+      <path d="M-6 -4 L-1 -6.5 L5 -5 L7.5 0 L5 5.5 L-2 6.5 L-7 2 Z" fill="#463c33"/>
+      <path d="M-6 -4 L-1 -6.5 L5 -5 L7.5 0 L2 -1.5 L-6.5 0 Z" fill="#51463b"/>
+      <path d="M7.5 0 L5 5.5 L-2 6.5 L-0.5 3.5 L4.5 2.5 Z" fill="#342c25"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#3f362e"/>
+  <!-- Wrapped edge boulders: each one that crosses x=0 repeats at +64, and
+       the ones that cross y=0 are the same stamps mirrored across the
+       diagonal, so the cave mouths can copy them. No stamp nears a corner. -->
+  <use href="#cr" transform="translate(1 33)"/>
+  <use href="#cr" transform="translate(65 33)"/>
+  <use href="#cr" transform="translate(-1 54) scale(0.8)"/>
+  <use href="#cr" transform="translate(63 54) scale(0.8)"/>
+  <use href="#cr" transform="matrix(0 1 1 0 33 1)"/>
+  <use href="#cr" transform="matrix(0 1 1 0 33 65)"/>
+  <use href="#cr" transform="matrix(0 0.8 0.8 0 54 -1)"/>
+  <use href="#cr" transform="matrix(0 0.8 0.8 0 54 63)"/>
+  <!-- Inset boulders of mixed size, off any regular grid. -->
+  <use href="#cr" transform="translate(20 14) scale(1.5 1.3)"/>
+  <use href="#cr" transform="translate(44 24) scale(1.8 1.5)"/>
+  <use href="#cr" transform="translate(22 44) scale(1.4 1.6)"/>
+  <use href="#cr" transform="translate(46 49) scale(1.1 1)"/>
+  <use href="#cr" transform="translate(33 34) scale(0.7)"/>
+  <g stroke="#2a231d" stroke-width="0.9" fill="none" stroke-linecap="round">
+    <path d="M11 26 l3 2.5 l3 -0.5"/>
+    <path d="M31 22 l2 3.5"/>
+    <path d="M52 38 l3 2"/>
+    <path d="M34 50 l2.5 2.5 l-0.5 3"/>
+    <path d="M8 45 l2 3"/>
+  </g>
+</svg>

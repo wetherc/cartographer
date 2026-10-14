@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- A burned stook: a charred stump of sheaves, drawn from its base. -->
+    <g id="stook">
+      <ellipse cx="0.6" cy="0.2" rx="2.8" ry="0.8" fill="#2e2824" opacity="0.4"/>
+      <path d="M-2.1 0 L-1.4 -2.2 L-0.6 -2.8 L0.2 -2.2 L0.9 -2.9 L2.1 0 Z" fill="#3d342c" stroke="#2e2824" stroke-width="0.45"/>
+      <path d="M-0.6 -2.4 V0 M0.8 -2.4 L1.1 -0.2" stroke="#5a4a36" stroke-width="0.35"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="12" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="54" cy="59" rx="5" ry="2.4" fill="#529044"/>
+  <!-- Two burned fields: black stubble rows with charred stooks, and a
+       band of unburned straw along one edge. -->
+  <g>
+    <rect x="3.5" y="43" width="15" height="14" rx="1.5" fill="#6a5d4a" stroke="#4a4034" stroke-width="0.6"/>
+    <path d="M3.5 53.5 H18.5 V55.5 Q18.5 57 17 57 H5 Q3.5 57 3.5 55.5 Z" fill="#a8905a"/>
+    <path d="M5 46 H17 M5 49 H17 M5 52 H17 M5 55 H17" stroke="#2e2824" stroke-width="0.7" stroke-dasharray="0.7 1"/>
+    <use href="#stook" transform="translate(8 48.5)"/>
+    <use href="#stook" transform="translate(14 51.5)"/>
+    <rect x="46" y="38" width="14.5" height="14" rx="1.5" fill="#6a5d4a" stroke="#4a4034" stroke-width="0.6"/>
+    <path d="M58.5 38 Q60.5 38 60.5 39.5 V52 H57 V38 Z" fill="#a8905a"/>
+    <path d="M47.5 41 H59 M47.5 44 H59 M47.5 47 H59 M47.5 50 H59" stroke="#2e2824" stroke-width="0.7" stroke-dasharray="0.7 1"/>
+    <use href="#stook" transform="translate(50.5 43.5)"/>
+    <use href="#stook" transform="translate(51 50)"/>
+  </g>
+  <!-- Scorched yard round the tower. -->
+  <ellipse cx="32" cy="50" rx="13" ry="7" fill="#8a7a5a"/>
+  <ellipse cx="32" cy="51" rx="9.5" ry="4.5" fill="#6a6050"/>
+  <ellipse cx="32" cy="53" rx="10" ry="1.8" fill="#3d342c" opacity="0.45"/>
+  <!-- Smoke from the open top of the tower. -->
+  <g fill="#b8b3a8">
+    <circle cx="33" cy="17" r="2" opacity="0.5"/>
+    <circle cx="35.5" cy="13" r="2.6" opacity="0.35"/>
+    <circle cx="38.5" cy="9.5" r="3" opacity="0.2"/>
+  </g>
+  <!-- Tapered stone tower, still standing, with soot above the door and
+       the window and along the top. -->
+  <path d="M24 53 L26.5 26 H37.5 L40 53 Z" fill="#b9b09a"/>
+  <path d="M32 26 H37.5 L40 53 H32 Z" fill="#a39a84"/>
+  <g stroke="#8a826e" stroke-width="0.5">
+    <path d="M25.67 35 H38.33 M24.83 44 H39.17"/>
+    <path d="M29.8 26 L29.47 35 M34.2 26 L34.53 35"/>
+    <path d="M27.57 35 L26.98 44 M32 35 V44 M36.43 35 L37.02 44"/>
+    <path d="M26.55 44 L25.92 53 M37.45 44 L38.08 53"/>
+  </g>
+  <path d="M26.5 26 H37.5 L37.8 29.4 Q35 28.2 32 29.6 Q29 28.4 26.2 29.4 Z" fill="#4a4540" opacity="0.6"/>
+  <path d="M32 44 Q33 42 32.4 39 M32 32.6 Q32.8 31 32.2 29.6" stroke="#4a4540" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+  <path d="M24 53 L26.5 26 H37.5 L40 53 Z" fill="none" stroke="#6a5d4a" stroke-width="0.7"/>
+  <!-- The thatch cap has burned away. The timber curb and two charred
+       ribs of the dome frame are left. -->
+  <path d="M27 25.5 C27 21 28.6 18 30.6 16.6" stroke="#2e2824" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+  <path d="M37 25.5 C37 22.4 36.4 20.4 35.4 19" stroke="#2e2824" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+  <path d="M25.3 25.3 H38.7 L38.2 27.3 H25.8 Z" fill="#3d342c"/>
+  <!-- Doorway: the door is gone. A small dark window above. -->
+  <path d="M29 53 V47.5 Q32 44.5 35 47.5 V53 Z" fill="#2e2824"/>
+  <path d="M30.2 53 L32.4 49.6 L34 53 Z" fill="#9a958c"/>
+  <rect x="28.3" y="53" width="7.4" height="1.2" fill="#7a7468"/>
+  <rect x="30.7" y="29.6" width="2.6" height="3.6" fill="#2e2824"/>
+  <rect x="30.2" y="28.8" width="3.6" height="0.9" fill="#6a5d4a"/>
+  <!-- Sails burned: two broken stocks on the hub, a scrap of lattice on
+       one, and a third stock fallen on the yard. -->
+  <g transform="translate(32 20) rotate(20)">
+    <path d="M0 -12.6 V0" stroke="#2e2824" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M0.8 -12 H4.4 V-8.4 L2.6 -7.2 L0.8 -6 Z" fill="#8a7f68" stroke="#2e2824" stroke-width="0.5"/>
+    <path d="M0 0 H9.4" stroke="#2e2824" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M0 0 V6.8" stroke="#2e2824" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+  <circle cx="32" cy="20" r="1.8" fill="#2e2824"/>
+  <path d="M21 56.6 L28.6 54.4" stroke="#2e2824" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M22.4 55.2 L24.4 54.6 L24.8 55.8 L22.8 56.4 Z" fill="#8a7f68" stroke="#2e2824" stroke-width="0.4"/>
+  <!-- Flour sack burst and burned by the tower, flour on the ground. -->
+  <g>
+    <ellipse cx="43.6" cy="55" rx="3.4" ry="1" fill="#e6dfd0"/>
+    <path d="M40 54.4 Q39.6 51.8 41.2 51.2 L42.6 52.6 L43.8 51.6 Q45 52.6 44.6 54.4 Z" fill="#5a4a36" stroke="#3d342c" stroke-width="0.45"/>
+  </g>
+</svg>

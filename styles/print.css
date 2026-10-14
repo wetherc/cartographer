@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Print: a printed page shows the content that the GM has open, without the
+   app frame. In Play mode that is the full character sheet when it is open,
+   and otherwise the open tab of the sidebar, such as the Story tab with the
+   quest log and the handouts. The header, the map, the party dock, the world
+   tree, the Build rails, the tab strips, the buttons, and the editing forms
+   stay off the page.
+   ========================================================================== */
+
+@page {
+  margin: 1.5cm;
+}
+
+@media print {
+  /* Paper is white, so the dark theme would print light text on it. */
+  :root,
+  :root[data-theme] {
+    color-scheme: light;
+  }
+
+  /* The Play shell is a fixed screen with columns that scroll on their own.
+     On paper every box grows to its content and flows across pages. */
+  html,
+  body,
+  body.mode-play,
+  .app-main,
+  .app-sidebar,
+  .sidebar-panels,
+  .tabs__panel,
+  #full-sheet,
+  .card {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  html {
+    scrollbar-gutter: auto;
+  }
+
+  body {
+    display: block !important;
+    padding: 0 !important;
+    background: none;
+  }
+
+  .app-main {
+    display: block !important;
+  }
+
+  .app-sidebar {
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* The app frame and the controls that only work on screen. */
+  .app-header,
+  #world-tree-container,
+  #build-tools,
+  body.mode-play .app-center,
+  .sidebar-toggle,
+  #sidebar-tabs,
+  #sheet-tabs,
+  .sheet-card__open,
+  .full-sheet__bar,
+  .toast-stack,
+  .btn,
+  .seg-switch,
+  .card-fold,
+  .disclosure__chevron,
+  .character-sheet__hp-amount,
+  .fold-text__more,
+  .form,
+  .buy-row,
+  .inventory-panel__controls,
+  dialog {
+    display: none !important;
+  }
+
+  /* A folded note or handout text prints in full. */
+  [class*='--folded'] {
+    display: block !important;
+    -webkit-line-clamp: none !important;
+    line-clamp: none !important;
+    overflow: visible !important;
+    border-bottom: 0 !important;
+  }
+
+  .card {
+    box-shadow: none;
+  }
+}

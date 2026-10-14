@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A tall wooden bookshelf seen from the front and above, with four
+       shelves of books, over a transparent ground. A soft contact shadow sits
+       on the line where the case meets the floor. -->
+  <!-- Contact shadow on the base line y=55. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="55" rx="22" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="55" rx="20" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Case: the top board seen from above, the front frame, and the dark
+       back panel. -->
+  <rect x="13" y="6" width="38" height="4" fill="#8f643a" stroke="#3f2a15" stroke-width="0.8"/>
+  <rect x="13" y="10" width="38" height="45" fill="#6a4524" stroke="#3f2a15" stroke-width="0.9"/>
+  <rect x="16" y="12" width="32" height="39" fill="#2e1d0f"/>
+  <path d="M13.8 6.8 H50.2" stroke="#b58552" stroke-width="0.7"/>
+  <!-- Top shelf: upright books and one that leans. -->
+  <g stroke="#1f1408" stroke-width="0.4">
+    <rect x="16.5" y="13.5" width="2.5" height="7" fill="#7a2e2a"/>
+    <rect x="19" y="14.5" width="2" height="6" fill="#2f4f6f"/>
+    <rect x="21" y="13" width="3" height="7.5" fill="#3d5e36"/>
+    <rect x="24" y="14" width="2" height="6.5" fill="#8a6a2a"/>
+    <rect x="26" y="13.5" width="2.5" height="7" fill="#5a3a5e"/>
+    <path d="M29.2 20.5 H31.6 L34 14.2 L31.8 13.4 Z" fill="#a8896a"/>
+    <rect x="34" y="13" width="3" height="7.5" fill="#2f4f6f"/>
+    <rect x="37" y="14" width="2" height="6.5" fill="#7a2e2a"/>
+    <rect x="39" y="13.5" width="2.5" height="7" fill="#a8896a"/>
+    <rect x="41.5" y="14.5" width="2" height="6" fill="#3d5e36"/>
+    <rect x="43.5" y="13" width="3" height="7.5" fill="#8a6a2a"/>
+  </g>
+  <!-- Second shelf: a stack lying flat, then upright books. -->
+  <g stroke="#1f1408" stroke-width="0.4">
+    <rect x="17" y="29" width="9" height="1.8" fill="#2f4f6f"/>
+    <rect x="17.6" y="27.2" width="8" height="1.8" fill="#7a2e2a"/>
+    <rect x="17.2" y="25.4" width="8.6" height="1.8" fill="#8a6a2a"/>
+    <rect x="27" y="23.3" width="2.5" height="7.5" fill="#5a3a5e"/>
+    <rect x="29.5" y="24.3" width="2" height="6.5" fill="#a8896a"/>
+    <rect x="31.5" y="22.8" width="3" height="8" fill="#3d5e36"/>
+    <rect x="34.5" y="23.8" width="2" height="7" fill="#7a2e2a"/>
+    <rect x="36.5" y="23.3" width="2.5" height="7.5" fill="#2f4f6f"/>
+    <rect x="39" y="24.8" width="2" height="6" fill="#8a6a2a"/>
+    <rect x="41" y="22.8" width="3" height="8" fill="#5a3a5e"/>
+    <rect x="44" y="23.8" width="2.5" height="7" fill="#3d5e36"/>
+  </g>
+  <!-- Third shelf: upright books and a green glass bottle. -->
+  <g stroke="#1f1408" stroke-width="0.4">
+    <rect x="16.5" y="33.1" width="3" height="8" fill="#3d5e36"/>
+    <rect x="19.5" y="34.1" width="2" height="7" fill="#8a6a2a"/>
+    <rect x="21.5" y="33.6" width="2.5" height="7.5" fill="#2f4f6f"/>
+    <rect x="24" y="34.6" width="2" height="6.5" fill="#7a2e2a"/>
+    <rect x="26" y="33.1" width="3" height="8" fill="#a8896a"/>
+    <rect x="29" y="34.1" width="2" height="7" fill="#5a3a5e"/>
+    <rect x="31" y="34.6" width="2.5" height="6.5" fill="#3d5e36"/>
+    <rect x="33.5" y="33.6" width="2" height="7.5" fill="#7a2e2a"/>
+    <rect x="35.5" y="33.1" width="3" height="8" fill="#2f4f6f"/>
+  </g>
+  <circle cx="43" cy="38.4" r="2.6" fill="#3a7a6a" stroke="#1f3f36" stroke-width="0.5"/>
+  <rect x="42.2" y="33.6" width="1.6" height="2.6" fill="#3a7a6a" stroke="#1f3f36" stroke-width="0.4"/>
+  <rect x="42" y="32.8" width="2" height="1" fill="#8f643a"/>
+  <circle cx="42.1" cy="37.6" r="0.8" fill="#8fc8b4" opacity="0.8"/>
+  <!-- Bottom shelf: large tomes and a stack of folios. -->
+  <g stroke="#1f1408" stroke-width="0.4">
+    <rect x="16.5" y="43.5" width="4" height="7.5" fill="#7a2e2a"/>
+    <rect x="20.5" y="43" width="3.5" height="8" fill="#6a4a2a"/>
+    <rect x="24" y="44" width="4" height="7" fill="#2f4f6f"/>
+    <rect x="29" y="48.8" width="11" height="2.2" fill="#3d5e36"/>
+    <rect x="29.6" y="46.6" width="10" height="2.2" fill="#a8896a"/>
+    <rect x="29.2" y="44.4" width="10.4" height="2.2" fill="#5a3a5e"/>
+    <rect x="41" y="43.5" width="3" height="7.5" fill="#8a6a2a"/>
+    <rect x="44" y="44.5" width="2.5" height="6.5" fill="#3d5e36"/>
+  </g>
+  <!-- Gilt bands on some spines. -->
+  <g stroke="#d8b060" stroke-width="0.5">
+    <path d="M16.5 15 H19 M21 14.5 H24 M34 14.5 H37 M43.5 14.5 H46.5"/>
+    <path d="M31.5 24.3 H34.5 M41 24.3 H44 M27 24.8 H29.5"/>
+    <path d="M16.5 34.6 H19.5 M26 34.6 H29 M35.5 34.6 H38.5"/>
+    <path d="M16.5 45 H20.5 M16.5 49.5 H20.5 M20.5 44.5 H24 M24 45.5 H28"/>
+  </g>
+  <!-- Shelf boards, each with a lit front edge, and the plinth. -->
+  <g fill="#7a5230" stroke="#3f2a15" stroke-width="0.5">
+    <rect x="16" y="20.5" width="32" height="1.8"/>
+    <rect x="16" y="30.8" width="32" height="1.8"/>
+    <rect x="16" y="41.1" width="32" height="1.8"/>
+  </g>
+  <path d="M16 20.9 H48 M16 31.2 H48 M16 41.5 H48" stroke="#9a6d42" stroke-width="0.5"/>
+  <rect x="13" y="51" width="38" height="4" fill="#5a3a1c" stroke="#3f2a15" stroke-width="0.8"/>
+</svg>

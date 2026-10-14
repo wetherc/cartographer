@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Market stall: a counter under a striped awning on two posts. The
+         origin is the top-left corner of the awning. The stripes take the
+         fill of the <use>, over a cream cloth. -->
+    <g id="stall">
+      <ellipse cx="9" cy="15.5" rx="10" ry="1.6" fill="#8a7447" opacity="0.5"/>
+      <rect x="1" y="3" width="1.2" height="12.5" fill="#6f583a"/>
+      <rect x="15.8" y="3" width="1.2" height="12.5" fill="#6f583a"/>
+      <rect x="0.5" y="10" width="17" height="5" fill="#a07c50"/>
+      <rect x="0.5" y="10" width="17" height="1.4" fill="#b58d5c"/>
+      <rect x="0.5" y="10" width="17" height="5" fill="none" stroke="#6f583a" stroke-width="0.5"/>
+      <path d="M0 0 H18 L19 5 H-1 Z" fill="#efe6d0"/>
+      <path d="M0 0 H3 L2.6 5 H-1 Z M6 0 H9 L8.9 5 H5.2 Z M12 0 H15 L15.4 5 H11.6 Z"/>
+      <path d="M-1 5 Q0.6 6.6 2.2 5 Q3.8 6.6 5.4 5 Q7 6.6 8.6 5 Q10.2 6.6 11.8 5 Q13.4 6.6 15 5 Q16.6 6.6 18.2 5" fill="#efe6d0"/>
+      <path d="M0 0 H18 L19 5 H-1 Z" fill="none" stroke="#6b5a45" stroke-width="0.5"/>
+    </g>
+    <!-- Crate, origin at its top-left corner. -->
+    <g id="crate">
+      <rect width="5" height="4" fill="#b58d5c" stroke="#7a5a3a" stroke-width="0.5"/>
+      <path d="M0 1.3 H5 M0 2.7 H5" stroke="#8a6a42" stroke-width="0.4"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="9" cy="9" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="56" cy="58" rx="6" ry="3" fill="#529044"/>
+  <ellipse cx="32" cy="36" rx="27" ry="21" fill="#c2a36c"/>
+  <ellipse cx="32" cy="37" rx="21" ry="15" fill="#cdb078"/>
+  <!-- Back row: a produce stall and a cloth stall. -->
+  <use href="#stall" transform="translate(9 14)" fill="#c0392b"/>
+  <g>
+    <g fill="#c8453a">
+      <circle cx="12" cy="23.4" r="1.1"/>
+      <circle cx="14.2" cy="23.1" r="1.1"/>
+      <circle cx="13.1" cy="22.2" r="1.1"/>
+    </g>
+    <g fill="#6fae52">
+      <circle cx="18" cy="23.2" r="1.3"/>
+      <circle cx="20.4" cy="23.2" r="1.3"/>
+    </g>
+    <g fill="#e39b35">
+      <circle cx="24" cy="23.4" r="1"/>
+      <circle cx="25.6" cy="23" r="1"/>
+    </g>
+  </g>
+  <use href="#stall" transform="translate(37 14)" fill="#2f6fa8"/>
+  <g>
+    <rect x="39.5" y="21.6" width="4" height="2.4" rx="0.8" fill="#8e4a9a"/>
+    <rect x="44.5" y="21.6" width="4" height="2.4" rx="0.8" fill="#d8b94a"/>
+    <rect x="49.5" y="21.6" width="4" height="2.4" rx="0.8" fill="#3f8a7a"/>
+    <path d="M40.5 21.6 V24 M45.5 21.6 V24 M50.5 21.6 V24" stroke="#000" stroke-opacity="0.2" stroke-width="0.4"/>
+  </g>
+  <!-- Front stall: bread and cheese. -->
+  <use href="#stall" transform="translate(23 34)" fill="#3f8a3a"/>
+  <g>
+    <ellipse cx="27" cy="43.4" rx="2" ry="1.1" fill="#c98a45"/>
+    <ellipse cx="31" cy="43.4" rx="2" ry="1.1" fill="#b87a3a"/>
+    <path d="M26 43.2 L27 42.8 M27.2 43.4 L28.2 43" stroke="#e0b070" stroke-width="0.4"/>
+    <path d="M34 44 L37.5 44 L37.5 42.3 Z" fill="#e8c85a" stroke="#b8963f" stroke-width="0.4"/>
+    <circle cx="36.5" cy="43.3" r="0.3" fill="#b8963f"/>
+    <circle cx="39.5" cy="43.2" r="1.3" fill="#e8c85a" stroke="#b8963f" stroke-width="0.4"/>
+  </g>
+  <!-- Crates, sacks, and barrels between the stalls. -->
+  <use href="#crate" transform="translate(12 36)"/>
+  <use href="#crate" transform="translate(14.5 32.5)"/>
+  <g fill="#c8453a">
+    <circle cx="15.8" cy="32.4" r="0.8"/>
+    <circle cx="17.6" cy="32.4" r="0.8"/>
+  </g>
+  <use href="#crate" transform="translate(47 38)"/>
+  <g>
+    <path d="M9.5 46 Q9 41.5 11.8 41.2 Q14.6 41.5 14 46 Z" fill="#d6c69a" stroke="#a3926a" stroke-width="0.5"/>
+    <path d="M10.8 41.4 L11.8 40.3 L12.8 41.4" stroke="#a3926a" stroke-width="0.5" fill="none"/>
+    <path d="M14.5 46.5 Q14 42.5 16.6 42.2 Q19.2 42.5 18.7 46.5 Z" fill="#cbb98a" stroke="#a3926a" stroke-width="0.5"/>
+  </g>
+  <g>
+    <rect x="47.5" y="27.5" width="4.6" height="6" rx="0.8" fill="#8a6a42" stroke="#5f4529" stroke-width="0.5"/>
+    <path d="M47.5 29.3 H52.1 M47.5 31.7 H52.1" stroke="#4c3a26" stroke-width="0.6"/>
+    <ellipse cx="49.8" cy="27.5" rx="2.3" ry="0.8" fill="#6f5433"/>
+    <rect x="52.8" y="29" width="4.6" height="6" rx="0.8" fill="#7a5c38" stroke="#5f4529" stroke-width="0.5"/>
+    <path d="M52.8 30.8 H57.4 M52.8 33.2 H57.4" stroke="#4c3a26" stroke-width="0.6"/>
+    <ellipse cx="55.1" cy="29" rx="2.3" ry="0.8" fill="#6f5433"/>
+  </g>
+  <!-- Handcart at the south edge of the square. -->
+  <g>
+    <ellipse cx="49" cy="53.3" rx="7" ry="1.3" fill="#8a7447" opacity="0.5"/>
+    <rect x="43" y="47" width="11" height="4.5" fill="#a07c50" stroke="#6f583a" stroke-width="0.5"/>
+    <path d="M54 48.5 L58.5 46.5" stroke="#6f583a" stroke-width="0.9" stroke-linecap="round"/>
+    <g fill="#6fae52">
+      <circle cx="45.5" cy="46.8" r="1.3"/>
+      <circle cx="48.2" cy="46.5" r="1.3"/>
+      <circle cx="51" cy="46.8" r="1.3"/>
+    </g>
+    <circle cx="46.5" cy="52" r="2.2" fill="none" stroke="#5a4028" stroke-width="0.9"/>
+    <circle cx="46.5" cy="52" r="0.5" fill="#5a4028"/>
+  </g>
+  <path d="M28 55 Q32 54 36 55" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

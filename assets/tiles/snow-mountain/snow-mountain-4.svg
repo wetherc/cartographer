@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Tall peak under deep snow: a lit west face, a blue shaded east
+         face, bare rock only where the east face is too steep to hold
+         snow, a white arete between the faces, and spindrift blowing off
+         the summit. -->
+    <g id="pk">
+      <path d="M-15 0 Q0 3.6 19 0.6 Q22 2 18 3 Q0 5.6 -14 2.4 Z" fill="#a9b8c5" opacity="0.45"/>
+      <polygon points="-16,0 -9,-14 -6,-15 0,-30 3,-24 5,-25 9,-15 16,0" fill="#a3b2c1"/>
+      <g fill="#59616c">
+        <polygon points="2,-22.6 4.6,-19 3.2,-15.6"/>
+        <polygon points="6.4,-15 10.4,-9 7.2,-8"/>
+        <polygon points="3,-10 5.6,-5 2.8,-4.2"/>
+        <polygon points="10.4,-5.4 13.4,-1.6 10.6,-1"/>
+      </g>
+      <polygon points="-16,0 -9,-14 -6,-15 0,-30 -1,-22 1.2,-17 -0.6,-10 1,-4 -1,0" fill="#f5f8fb"/>
+      <polygon points="-11,-5.6 -8.4,-8 -6.8,-5 -9.6,-4.2" fill="#76808b"/>
+      <path d="M-11 -5.6 L-8.4 -8 L-7.6 -6.4" stroke="#f5f8fb" stroke-width="0.8" fill="none" stroke-linejoin="round"/>
+      <path d="M0 -30 L-1 -22 L1.2 -17 L-0.6 -10 L1 -4 L-1 0" stroke="#ffffff" stroke-width="0.7" fill="none" stroke-linejoin="round"/>
+      <g fill="#ffffff"><ellipse cx="3" cy="-29.6" rx="2.6" ry="1" opacity="0.6"/><ellipse cx="7" cy="-30.2" rx="2.2" ry="0.8" opacity="0.4"/><ellipse cx="10.6" cy="-30.4" rx="1.6" ry="0.6" opacity="0.25"/></g>
+    </g>
+    <!-- Broad massif with two summits, lit and shaded the same way. -->
+    <g id="pm">
+      <path d="M-17 0 Q0 3.6 21 0.6 Q24 2 20 3 Q0 5.6 -16 2.4 Z" fill="#a9b8c5" opacity="0.45"/>
+      <polygon points="-18,0 -11,-11 -7,-18 -4,-15 1,-22 5,-17 9,-14 13,-8 18,0" fill="#a3b2c1"/>
+      <g fill="#59616c">
+        <polygon points="3,-16.4 5.6,-13.4 3.6,-11"/>
+        <polygon points="8,-11 11.6,-6.4 8.4,-5.6"/>
+        <polygon points="4,-6 6.4,-2 3.8,-1.4"/>
+        <polygon points="13,-5 15.4,-1.6 13,-1"/>
+      </g>
+      <polygon points="-18,0 -11,-11 -7,-18 -5.4,-13 -4,-15 1,-22 0,-15 2,-9 0,-4 1.4,0" fill="#f5f8fb"/>
+      <polygon points="-7,-18 -5.4,-13 -6.4,-11.6 -8.4,-14.4" fill="#c9d4de"/>
+      <polygon points="-13,-4.4 -10.4,-6.8 -8.8,-3.8 -11.6,-3.2" fill="#76808b"/>
+      <path d="M-13 -4.4 L-10.4 -6.8 L-9.6 -5.2" stroke="#f5f8fb" stroke-width="0.8" fill="none" stroke-linejoin="round"/>
+      <path d="M1 -22 L0 -15 L2 -9 L0 -4 L1.4 0" stroke="#ffffff" stroke-width="0.7" fill="none" stroke-linejoin="round"/>
+      <g fill="#ffffff"><ellipse cx="4" cy="-21.6" rx="2.4" ry="0.9" opacity="0.6"/><ellipse cx="7.6" cy="-22.2" rx="2" ry="0.7" opacity="0.4"/><ellipse cx="10.8" cy="-22.4" rx="1.4" ry="0.55" opacity="0.25"/></g>
+    </g>
+    <!-- Snow-laden spruce. -->
+    <g id="sp">
+      <ellipse cx="1.6" cy="0.6" rx="3.8" ry="1" fill="#a9b8c5" opacity="0.8"/>
+      <polygon points="-3.4,0 0,-9 3.4,0" fill="#2c4a3c"/>
+      <polygon points="-3.4,0 0,-9 0,0" fill="#3b5e4c"/>
+      <path d="M-3 -0.4 Q0 -2.6 3 -0.4 M-2.2 -3.4 Q0 -5.2 2.2 -3.4 M-1.3 -6.2 Q0 -7.6 1.3 -6.2" stroke="#f5f8fb" stroke-width="1" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- Rock outcrop breaking the snowfield, with a snow cap. -->
+    <g id="er">
+      <ellipse cx="1" cy="2" rx="4.8" ry="1.1" fill="#a9b8c5" opacity="0.8"/>
+      <polygon points="-4,2 -1.4,-2.4 1,-1 3.4,2" fill="#6a737e"/>
+      <polygon points="-1.4,-2.4 1,-1 3.4,2 0.4,2" fill="#525a64"/>
+      <polygon points="-3,0.4 -1.4,-2.4 1,-1 -0.8,-0.6" fill="#f5f8fb"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#d5dee6"/>
+  <!-- Far range and edge stamps: identical across snow-mountain variants.
+       The range passes through y=32 at x=0 and x=64, and the stamps are
+       placed in wrapped pairs (a stamp crossing x=0 repeats at +64,
+       likewise y, corners at all four). -->
+  <path d="M0 32 L7 25 L11 28 L18 19 L24 26 L30 22 L37 29 L43 23 L47 26 L54 20 L60 27 L64 32 L64 40 Q32 42.4 0 40 Z" fill="#c8d2dc"/>
+  <path d="M18 19 L20.4 26 L24 26 Z M43 23 L44.4 26.6 L47 26 Z M54 20 L56 26 L60 27 Z M7 25 L8.4 28.4 L11 28 Z" fill="#b8c5d2"/>
+  <g>
+    <use href="#er" transform="translate(1 10)"/>
+    <use href="#er" transform="translate(65 10)"/>
+    <use href="#er" transform="translate(-2 52) scale(0.8)"/>
+    <use href="#er" transform="translate(62 52) scale(0.8)"/>
+    <use href="#er" transform="translate(24 1) scale(0.8)"/>
+    <use href="#er" transform="translate(24 65) scale(0.8)"/>
+    <use href="#sp" transform="translate(50 2) scale(0.8)"/>
+    <use href="#sp" transform="translate(50 66) scale(0.8)"/>
+    <use href="#sp" transform="translate(0 64) scale(0.75)"/>
+    <use href="#sp" transform="translate(64 64) scale(0.75)"/>
+    <use href="#sp" transform="translate(0 0) scale(0.75)"/>
+    <use href="#sp" transform="translate(64 0) scale(0.75)"/>
+  </g>
+  <!-- Inset details, placed per variant, farthest (highest base) first. -->
+  <path d="M36 12 Q41 10.4 46 12 M6 60 Q10 58.6 14 60" fill="none" stroke="#c3ced9" stroke-width="0.9" stroke-linecap="round"/>
+  <use href="#pk" transform="translate(18 46) scale(0.8)"/>
+  <use href="#pk" transform="translate(40 56)"/>
+  <use href="#er" transform="translate(12 54) scale(0.9)"/>
+  <use href="#sp" transform="translate(58 58) scale(0.85)"/>
+</svg>

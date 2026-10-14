@@ -1,0 +1,128 @@
+import { revealLinksTo } from '../map/FogOfWar.js';
+import { revealSight } from './Sight.js';
+
+/** @typedef {import('../types/map.js').MapNode} MapNode */
+/** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
+/** @typedef {import('../map/TileGrid.js').TileGrid} TileGrid */
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('./Sight.js').SightRule} SightRule */
+
+/**
+ * Tracks the party's current position: which node, and which tile within
+ * it. This class reveals fog around that tile whenever the party moves, and
+ * writes the revealed node straight back into the given TileGrid. Each move
+ * also reveals the block that links to the party's node on every map above
+ * it, so the world map shows the region the party is in.
+ */
+export class PartyTracker {
+  /**
+   * @param {TileGrid} grid
+   * @param {PartyPosition} position
+   * The first fog reveal runs here, so a caller that knows the sight rule
+   * passes it as `sight`. A tracker built without it clears the fog to
+   * `revealRadius` around the party at night as well as by day. A caller
+   * that builds the tracker over a loaded save passes `reveal: false`, so fog
+   * that the GM hid inside the sight radius stays hidden.
+   * @param {{ revealRadius?: number, sight?: SightRule, reveal?: boolean }} [options]
+   */
+  constructor(grid, position, options = {}) {
+    this.grid = grid;
+    /** The fixed range of markers and of the Nearby list, in tiles. */
+    this.revealRadius = options.revealRadius ?? 2;
+    /** @type {SightRule | null} */
+    this.sight = options.sight ?? null;
+    this.position = position;
+    if (options.reveal === false) this.place(position);
+    else this._revealAroundCurrent();
+  }
+
+  /**
+   * Set how far the party sees on a node, for fog reveal only. Without it,
+   * the fog clears to `revealRadius`. The rule gets the characters that
+   * move, or nothing for a move of the whole party.
+   * @param {SightRule} sight
+   */
+  setSight(sight) {
+    this.sight = sight;
+  }
+
+  /**
+   * The radius of fog that the party, or `group` when given, clears on `node`.
+   * @param {MapNode} node
+   * @param {readonly Character[]} [group] a split-off character that moves alone
+   * @returns {number}
+   */
+  sightFor(node, group) {
+    return this.sight ? this.sight(node, group) : this.revealRadius;
+  }
+
+  /**
+   * Reveal what the party sees on `node` from each of `tileIds`: the sight
+   * disc, and the whole room on a map with lit rooms. The caller writes the
+   * result back to the grid.
+   * @param {MapNode} node
+   * @param {readonly string[]} tileIds
+   * @param {readonly Character[]} [group] a split-off character that moves alone
+   * @returns {MapNode}
+   */
+  reveal(node, tileIds, group) {
+    return revealSight(node, tileIds, this.sightFor(node, group));
+  }
+
+  /** @returns {PartyPosition} */
+  getPosition() {
+    return this.position;
+  }
+
+  /**
+   * Move the party to a tile, and reveal fog around it. The tile can be in a
+   * different node than the party's current one, for example after zooming
+   * in or out. A walk across the node passes the tiles it went through as
+   * `path`, and the fog clears around each of them too.
+   * @param {string} nodeId
+   * @param {string} tileId
+   * @param {readonly string[]} [path] tiles of `nodeId` that the walk passed
+   */
+  moveTo(nodeId, tileId, path = []) {
+    this.position = { nodeId, tileId };
+    this._revealAroundCurrent(path);
+  }
+
+  /**
+   * Put the party on a tile without revealing any fog. A loaded or adopted
+   * save already contains its fog, and a reveal here would clear tiles that
+   * the GM hid with the fog brush inside the sight radius of the party.
+   * @param {PartyPosition} position
+   */
+  place(position) {
+    if (!this.grid.getNode(position.nodeId)) {
+      throw new Error(`PartyTracker: unknown node "${position.nodeId}"`);
+    }
+    this.position = position;
+  }
+
+  /** @param {readonly string[]} [path] */
+  _revealAroundCurrent(path = []) {
+    const node = this.grid.getNode(this.position.nodeId);
+    if (!node) throw new Error(`PartyTracker: unknown node "${this.position.nodeId}"`);
+    this.grid.updateNode(this.reveal(node, [...path, this.position.tileId]));
+    this.revealAncestors(node);
+  }
+
+  /**
+   * Reveal the link tiles of `node` on its parent, and of the parent on its
+   * parent, up to the root. A map above that is already revealed there stays
+   * the same object, so the caches keyed on it stay warm.
+   * @param {MapNode} node
+   */
+  revealAncestors(node) {
+    let child = node;
+    let parent = this.grid.getParent(child);
+    while (parent) {
+      const revealed = revealLinksTo(parent, child.id);
+      if (revealed !== parent) this.grid.updateNode(revealed);
+      child = revealed;
+      parent = this.grid.getParent(revealed);
+    }
+  }
+}

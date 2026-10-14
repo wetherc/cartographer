@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- A stook: sheaves stood together and tied, drawn from its base. -->
+    <g id="stook">
+      <ellipse cx="0.6" cy="0.2" rx="2.8" ry="0.8" fill="#8a7040" opacity="0.5"/>
+      <path d="M-2.3 0 L-1.2 -3.2 L-0.6 -4.6 L0 -3.8 L0.6 -4.6 L1.2 -3.2 L2.3 0 Z" fill="#e3c468" stroke="#9c7c34" stroke-width="0.45"/>
+      <path d="M0 -3.8 V0 M-1.1 -0.2 L-0.7 -3 M1.1 -0.2 L0.7 -3" stroke="#b8973f" stroke-width="0.35"/>
+      <path d="M-1.35 -2.6 H1.35" stroke="#7a5f2a" stroke-width="0.6"/>
+    </g>
+    <!-- A sack with a tied neck, drawn from its base. -->
+    <g id="sack">
+      <ellipse cx="0.4" cy="0.1" rx="2.8" ry="0.7" fill="#8a7447" opacity="0.45"/>
+      <path d="M-2.4 0 Q-2.9 -3.2 -1.1 -4 L-0.6 -4.5 H0.6 L1.1 -4 Q2.9 -3.2 2.4 0 Z" fill="#ece4d0" stroke="#a3926a" stroke-width="0.45"/>
+      <path d="M-0.8 -4.5 H0.8" stroke="#7a6a4a" stroke-width="0.6"/>
+      <path d="M-0.5 -4.8 L-0.9 -5.8 M0 -4.8 V-6 M0.5 -4.8 L0.9 -5.8" stroke="#a3926a" stroke-width="0.45"/>
+      <path d="M-1.2 -1.6 Q0 -1 1.3 -1.8" stroke="#c8bb9a" stroke-width="0.4" fill="none"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="12" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="54" cy="59" rx="5" ry="2.4" fill="#529044"/>
+  <!-- Two harvested wheat fields: stubble rows with stooks standing on them. -->
+  <g>
+    <rect x="3.5" y="43" width="15" height="14" rx="1.5" fill="#c9a55a" stroke="#a8863e" stroke-width="0.6"/>
+    <path d="M5 46 H17 M5 49 H17 M5 52 H17 M5 55 H17" stroke="#a8863e" stroke-width="0.7" stroke-dasharray="0.7 1"/>
+    <use href="#stook" transform="translate(8 48.5)"/>
+    <use href="#stook" transform="translate(14 51.5)"/>
+    <use href="#stook" transform="translate(8.5 55)"/>
+    <rect x="46" y="38" width="14.5" height="14" rx="1.5" fill="#c9a55a" stroke="#a8863e" stroke-width="0.6"/>
+    <path d="M47.5 41 H59 M47.5 44 H59 M47.5 47 H59 M47.5 50 H59" stroke="#a8863e" stroke-width="0.7" stroke-dasharray="0.7 1"/>
+    <use href="#stook" transform="translate(50.5 43.5)"/>
+    <use href="#stook" transform="translate(56 46.5)"/>
+    <use href="#stook" transform="translate(51 50)"/>
+  </g>
+  <!-- Dirt yard round the tower. -->
+  <ellipse cx="32" cy="50" rx="13" ry="7" fill="#c2a36c"/>
+  <ellipse cx="32" cy="51" rx="9.5" ry="4.5" fill="#cdb078"/>
+  <ellipse cx="32" cy="53" rx="10" ry="1.8" fill="#8a7447" opacity="0.45"/>
+  <!-- Tapered stone tower. Course lines end on the tapered sides, and the
+       joints between stones lean with the taper. -->
+  <path d="M24 53 L26.5 26 H37.5 L40 53 Z" fill="#d8d0bc"/>
+  <path d="M32 26 H37.5 L40 53 H32 Z" fill="#c2b9a2"/>
+  <g stroke="#a39a84" stroke-width="0.5">
+    <path d="M25.67 35 H38.33 M24.83 44 H39.17"/>
+    <path d="M29.8 26 L29.47 35 M34.2 26 L34.53 35"/>
+    <path d="M27.57 35 L26.98 44 M32 35 V44 M36.43 35 L37.02 44"/>
+    <path d="M26.55 44 L25.92 53 M37.45 44 L38.08 53"/>
+  </g>
+  <path d="M24 53 L26.5 26 H37.5 L40 53 Z" fill="none" stroke="#8a826e" stroke-width="0.7"/>
+  <!-- Domed thatch cap on a timber curb. The thatch courses end on the dome
+       outline, and the shade follows the curve of the far side. -->
+  <defs>
+    <clipPath id="cap"><path d="M25.5 25.5 C25.5 18 28.5 13.5 32 13.5 C35.5 13.5 38.5 18 38.5 25.5 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#cap)">
+    <rect x="25" y="13" width="14" height="13" fill="#9a7a42"/>
+    <path d="M32 13 C35.5 13.5 38.5 18 38.5 26 H34.2 C34.8 20 34 15.5 32 13 Z" fill="#7f6334"/>
+    <path d="M24 17.2 Q32 18.6 40 17.2 M24 20.8 Q32 22.4 40 20.8 M24 24.2 Q32 25.8 40 24.2" stroke="#6b5228" stroke-width="0.6" fill="none"/>
+  </g>
+  <path d="M25.5 25.5 C25.5 18 28.5 13.5 32 13.5 C35.5 13.5 38.5 18 38.5 25.5" fill="none" stroke="#5f4722" stroke-width="0.6"/>
+  <circle cx="32" cy="12.8" r="1" fill="#5f4529"/>
+  <path d="M25.3 25.3 H38.7 L38.2 27.3 H25.8 Z" fill="#5f4529"/>
+  <!-- Arched door on a threshold stone, bead stopping at the arch and the
+       sill, and a small window with a lintel. -->
+  <path d="M29 53 V47.5 Q32 44.5 35 47.5 V53 Z" fill="#6b4a2a" stroke="#4f3a24" stroke-width="0.5"/>
+  <path d="M32 46 V53" stroke="#4f3a24" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="49.8" r="0.42"/><circle cx="32.9" cy="49.8" r="0.42"/></g>
+  <rect x="28.3" y="53" width="7.4" height="1.2" fill="#a39d91"/>
+  <rect x="30.7" y="29" width="2.6" height="3.6" fill="#3f3a33"/>
+  <rect x="30.2" y="28.2" width="3.6" height="0.9" fill="#8a826e"/>
+  <!-- Four lattice sails on a hub, turned off the axes. -->
+  <defs>
+    <g id="sail">
+      <rect x="0.8" y="-18" width="4.6" height="14.5" fill="#efe4c8" stroke="#6b4a2a" stroke-width="0.6"/>
+      <path d="M0.8 -14.5 H5.4 M0.8 -11 H5.4 M0.8 -7.5 H5.4 M3.1 -18 V-3.5" stroke="#8a6f4a" stroke-width="0.4"/>
+      <path d="M0 -18.5 V0" stroke="#5f4529" stroke-width="1.2"/>
+    </g>
+  </defs>
+  <g transform="translate(32 20) rotate(20)">
+    <use href="#sail"/>
+    <use href="#sail" transform="rotate(90)"/>
+    <use href="#sail" transform="rotate(180)"/>
+    <use href="#sail" transform="rotate(270)"/>
+  </g>
+  <circle cx="32" cy="20" r="1.8" fill="#4a3a26"/>
+  <!-- Flour sacks by the tower. -->
+  <use href="#sack" transform="translate(42.2 54)"/>
+  <use href="#sack" transform="translate(46 55.2)"/>
+</svg>

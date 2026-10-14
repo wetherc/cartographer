@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Moss tuft growing in a joint. -->
+    <g id="ms">
+      <ellipse cx="0" cy="0" rx="2.2" ry="0.9" fill="#6d8a48"/>
+      <ellipse cx="-1.4" cy="-0.5" rx="0.9" ry="0.7" fill="#86a35a"/>
+      <ellipse cx="1.2" cy="-0.4" rx="0.8" ry="0.6" fill="#86a35a"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#7a6f61"/>
+  <!-- Cobbles, identical on every variant: 8-unit courses of stones of
+       mixed widths, each course a different run that sums to 64. A stone
+       that crosses x=0 repeats at +64, and the joints on the tile edges are
+       half as wide as the inner joints, so two tiles together draw one full
+       joint and the paving continues across every shared edge. -->
+  <g fill="#9b9082">
+    <rect x="0.7" y="0.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="10.7" y="0.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="22.7" y="0.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="31.7" y="0.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="42.7" y="0.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="50.7" y="0.7" width="12.6" height="6.6" rx="1.6"/>
+    <rect x="-4.3" y="8.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="59.7" y="8.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="7.7" y="8.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="15.7" y="8.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="26.7" y="8.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="39.7" y="8.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="48.7" y="8.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="-1.3" y="16.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="62.7" y="16.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="7.7" y="16.7" width="12.6" height="6.6" rx="1.6"/>
+    <rect x="21.7" y="16.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="31.7" y="16.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="39.7" y="16.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="51.7" y="16.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="-6.3" y="24.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="57.7" y="24.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="4.7" y="24.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="13.7" y="24.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="26.7" y="24.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="36.7" y="24.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="48.7" y="24.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="-2.3" y="32.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="61.7" y="32.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="10.7" y="32.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="20.7" y="32.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="28.7" y="32.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="40.7" y="32.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="51.7" y="32.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="-8.3" y="40.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="55.7" y="40.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="-0.3" y="40.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="63.7" y="40.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="10.7" y="40.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="22.7" y="40.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="31.7" y="40.7" width="12.6" height="6.6" rx="1.6"/>
+    <rect x="45.7" y="40.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="-0.3" y="48.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="63.7" y="48.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="11.7" y="48.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="21.7" y="48.7" width="7.6" height="6.6" rx="1.6"/>
+    <rect x="30.7" y="48.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="43.7" y="48.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="51.7" y="48.7" width="10.6" height="6.6" rx="1.6"/>
+    <rect x="-5.3" y="56.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="58.7" y="56.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="4.7" y="56.7" width="11.6" height="6.6" rx="1.6"/>
+    <rect x="17.7" y="56.7" width="9.6" height="6.6" rx="1.6"/>
+    <rect x="28.7" y="56.7" width="6.6" height="6.6" rx="1.6"/>
+    <rect x="36.7" y="56.7" width="8.6" height="6.6" rx="1.6"/>
+    <rect x="46.7" y="56.7" width="10.6" height="6.6" rx="1.6"/>
+  </g>
+  <!-- Worn stones: lighter and darker cobbles on inner stones only, placed
+       per variant, so no tint touches a tile edge. -->
+  <rect x="4.7" y="24.7" width="7.6" height="6.6" rx="1.6" fill="#a69b8c"/>
+  <rect x="40.7" y="32.7" width="9.6" height="6.6" rx="1.6" fill="#a69b8c"/>
+  <rect x="21.7" y="48.7" width="7.6" height="6.6" rx="1.6" fill="#8f8475"/>
+  <rect x="26.7" y="8.7" width="11.6" height="6.6" rx="1.6" fill="#a69b8c"/>
+  <!-- A pale lip along the top of each stone gives the paving some relief. -->
+  <path d="M2 1.6h6M12 1.6h8M24 1.6h5M33 1.6h7M44 1.6h4M52 1.6h10M-3 9.6h8M61 9.6h8M9 9.6h4M17 9.6h7M28 9.6h9M41 9.6h5M50 9.6h7M0 17.6h5M64 17.6h5M9 17.6h10M23 17.6h6M33 17.6h4M41 17.6h8M53 17.6h7M-5 25.6h7M59 25.6h7M6 25.6h5M15 25.6h9M28 25.6h6M38 25.6h8M50 25.6h5M-1 33.6h9M63 33.6h9M12 33.6h6M22 33.6h4M30 33.6h8M42 33.6h7M53 33.6h6M-7 41.6h4M57 41.6h4M1 41.6h7M65 41.6h7M12 41.6h8M24 41.6h5M33 41.6h10M47 41.6h6M1 49.6h8M65 49.6h8M13 49.6h6M23 49.6h5M32 49.6h9M45 49.6h4M53 49.6h8M-4 57.6h6M60 57.6h6M6 57.6h9M19 57.6h7M30 57.6h4M38 57.6h6M48 57.6h8" stroke="#b1a799" stroke-width="0.7" stroke-opacity="0.6" stroke-linecap="round"/>
+  <!-- Inset details, placed differently on each variant. -->
+  <g stroke="#7f7466" stroke-width="0.7" fill="none" stroke-linecap="round">
+    <path d="M44 11 l2 2 l-0.5 2"/>
+    <path d="M30 42 l2.5 1"/>
+  </g>
+  <use href="#ms" transform="translate(16 32)"/>
+  <use href="#ms" transform="translate(50 56) scale(0.85)"/>
+  <circle cx="12" cy="12" r="0.8" fill="#b6ac9d"/>
+</svg>

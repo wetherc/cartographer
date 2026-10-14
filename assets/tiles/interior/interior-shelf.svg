@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- An open wooden shop shelf seen from the front and above, stocked with
+       goods for sale: clay jars, bolts of cloth, grain sacks, and a basket,
+       over a transparent ground. A soft contact shadow sits on the line
+       where the shelf meets the floor. -->
+  <!-- Contact shadow on the base line y=55. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="55" rx="22" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="55" rx="20" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Frame: the top board seen from above, two side posts, and a pale
+       plank back, so the goods stand out against it. -->
+  <rect x="13" y="6" width="38" height="4" fill="#8f643a" stroke="#3f2a15" stroke-width="0.8"/>
+  <rect x="16" y="10" width="32" height="41" fill="#a07a4c"/>
+  <path d="M16 18 H48 M16 28 H48 M16 38 H48 M16 46 H48" stroke="#8a653b" stroke-width="0.5"/>
+  <rect x="13" y="10" width="3" height="45" fill="#6a4524" stroke="#3f2a15" stroke-width="0.8"/>
+  <rect x="48" y="10" width="3" height="45" fill="#6a4524" stroke="#3f2a15" stroke-width="0.8"/>
+  <path d="M13.8 6.8 H50.2" stroke="#b58552" stroke-width="0.7"/>
+  <!-- Top shelf: a row of clay jars with cloth covers tied at the neck. -->
+  <g stroke="#5e3218" stroke-width="0.5">
+    <path d="M17.5 20.5 Q16.8 16 19.4 15.4 H21 Q23.6 16 22.9 20.5 Z" fill="#b8703f"/>
+    <path d="M24.5 20.5 Q24 17 26 16.6 H27.4 Q29.4 17 28.9 20.5 Z" fill="#a8603a"/>
+    <path d="M30.6 20.5 Q29.8 15.4 32.6 14.8 H34.4 Q37.2 15.4 36.4 20.5 Z" fill="#c08048"/>
+    <path d="M38.4 20.5 Q37.9 17 39.9 16.6 H41.3 Q43.3 17 42.8 20.5 Z" fill="#a8603a"/>
+  </g>
+  <g fill="#ece4d0" stroke="#a3926a" stroke-width="0.4">
+    <path d="M18.8 15.6 Q20.2 14 21.6 15.6 Z"/>
+    <path d="M25.4 16.8 Q26.7 15.4 28 16.8 Z"/>
+    <path d="M32 15 Q33.5 13.2 35 15 Z"/>
+    <path d="M39.3 16.8 Q40.6 15.4 41.9 16.8 Z"/>
+  </g>
+  <!-- A small green glass bottle at the end of the top shelf. -->
+  <rect x="44.4" y="17" width="2.4" height="3.5" rx="0.6" fill="#3a7a6a" stroke="#1f3f36" stroke-width="0.4"/>
+  <rect x="45.1" y="15.4" width="1" height="1.8" fill="#3a7a6a" stroke="#1f3f36" stroke-width="0.3"/>
+  <circle cx="45" cy="18.2" r="0.5" fill="#8fc8b4" opacity="0.8"/>
+  <!-- Second shelf: bolts of cloth lying end-on, rolled round. -->
+  <g stroke="#3a2a1c" stroke-width="0.5">
+    <rect x="17" y="25.2" width="7.4" height="5.6" rx="2.8" fill="#8a3a3a"/>
+    <rect x="25" y="25.2" width="7.4" height="5.6" rx="2.8" fill="#3f5f7f"/>
+    <rect x="33" y="25.2" width="7.4" height="5.6" rx="2.8" fill="#c8b070"/>
+    <rect x="41" y="25.2" width="6.4" height="5.6" rx="2.8" fill="#4d6e3e"/>
+  </g>
+  <g fill="none" stroke-width="0.5">
+    <path d="M18.6 28 Q20.7 26.6 22.8 28 M26.6 28 Q28.7 26.6 30.8 28" stroke="#e6d8c0" opacity="0.6"/>
+    <path d="M34.6 28 Q36.7 26.6 38.8 28 M42.4 28 Q44.2 26.6 46 28" stroke="#fff4dc" opacity="0.6"/>
+  </g>
+  <!-- Third shelf: two grain sacks with tied necks and a wicker basket of
+       apples. -->
+  <g stroke="#a3926a" stroke-width="0.5">
+    <path d="M17.2 41.1 Q16.6 35.8 19.4 35 L20 34.2 H21.4 L22 35 Q24.8 35.8 24.2 41.1 Z" fill="#e2d8bf"/>
+    <path d="M25 41.1 Q24.4 36.4 27 35.8 L27.6 35.2 H28.8 L29.4 35.8 Q32 36.4 31.4 41.1 Z" fill="#d6c69a"/>
+  </g>
+  <path d="M19.6 34.2 H21.8 M27.4 35.2 H29 M18.8 38.4 Q20.7 39.2 22.6 38.2" stroke="#7a6a4a" stroke-width="0.5" fill="none"/>
+  <path d="M33.2 37 H46.6 L45.4 41.1 H34.4 Z" fill="#b8904a" stroke="#6f5328" stroke-width="0.5"/>
+  <path d="M34 38.4 H46 M34.4 39.8 H45.6" stroke="#8f6f35" stroke-width="0.4"/>
+  <g fill="#b8302c">
+    <circle cx="36.4" cy="36.4" r="1.2"/>
+    <circle cx="38.8" cy="36" r="1.2"/>
+    <circle cx="41.2" cy="36.4" r="1.2"/>
+    <circle cx="43.6" cy="36.2" r="1.2"/>
+  </g>
+  <circle cx="38.4" cy="35.6" r="0.35" fill="#f0a090"/>
+  <!-- Bottom shelf: a small keg and a stack of folded blankets. -->
+  <g>
+    <rect x="17.4" y="44.6" width="8" height="6.4" rx="1.4" fill="#8a6a42" stroke="#5f4529" stroke-width="0.5"/>
+    <path d="M19.4 44.6 V51 M23.4 44.6 V51" stroke="#4c3a26" stroke-width="0.6"/>
+    <rect x="28" y="48.6" width="12" height="2.4" rx="0.6" fill="#6a7e9a" stroke="#3a4658" stroke-width="0.4"/>
+    <rect x="28.4" y="46.2" width="11.2" height="2.4" rx="0.6" fill="#b86a3a" stroke="#6e3a1c" stroke-width="0.4"/>
+    <rect x="28" y="43.8" width="12" height="2.4" rx="0.6" fill="#e6dcc4" stroke="#9a8a6a" stroke-width="0.4"/>
+    <path d="M42 51 Q41.6 46.4 44.2 45.8 Q46.8 46.4 46.4 51 Z" fill="#c8a060" stroke="#7a5a2a" stroke-width="0.4"/>
+    <ellipse cx="44.2" cy="45.9" rx="1.4" ry="0.5" fill="#6f5433"/>
+  </g>
+  <!-- Shelf boards, each with a lit front edge, and the plinth. -->
+  <g fill="#7a5230" stroke="#3f2a15" stroke-width="0.5">
+    <rect x="16" y="20.5" width="32" height="1.8"/>
+    <rect x="16" y="30.8" width="32" height="1.8"/>
+    <rect x="16" y="41.1" width="32" height="1.8"/>
+  </g>
+  <path d="M16 20.9 H48 M16 31.2 H48 M16 41.5 H48" stroke="#9a6d42" stroke-width="0.5"/>
+  <rect x="13" y="51" width="38" height="4" fill="#5a3a1c" stroke="#3f2a15" stroke-width="0.8"/>
+</svg>

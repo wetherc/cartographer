@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Park bench seen from the front: a plank seat and a backrest rail
+         on iron legs, with open space between the seat and the rail. The
+         origin is the front-left corner of the seat. -->
+    <g id="bench">
+      <ellipse cx="4" cy="2.6" rx="5" ry="0.9" fill="#3d3a34" opacity="0.35"/>
+      <g fill="#3a3630">
+        <rect x="1" y="-4.4" width="0.6" height="6.2"/>
+        <rect x="6.4" y="-4.4" width="0.6" height="6.2"/>
+      </g>
+      <rect x="-0.2" y="-4.8" width="8.4" height="1.4" rx="0.3" fill="#a8763f" stroke="#4c3320" stroke-width="0.3"/>
+      <path d="M0.2 -4.4 H7.8" stroke="#c89a60" stroke-width="0.35"/>
+      <rect x="-0.2" y="-1.6" width="8.4" height="1.7" fill="#b8864e"/>
+      <path d="M0 -0.75 H8" stroke="#8a5e32" stroke-width="0.3"/>
+      <rect x="-0.2" y="0.1" width="8.4" height="0.6" fill="#7a4f2a"/>
+      <rect x="-0.2" y="-1.6" width="8.4" height="2.3" fill="none" stroke="#4c3320" stroke-width="0.3"/>
+      <g fill="#3a3630">
+        <rect x="0.4" y="0.7" width="0.7" height="2.2"/>
+        <rect x="6.9" y="0.7" width="0.7" height="2.2"/>
+      </g>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="9" cy="9" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="56" cy="58" rx="5" ry="3" fill="#529044"/>
+  <!-- Round cobbled pad in the same perspective as the basin. The pad is
+       drawn as circles and squashed to the 7:18 ratio of the basin rim,
+       so the dashed rings of cobbles thin toward the front and back. -->
+  <g transform="translate(32 42) scale(1 0.389)">
+    <circle r="28" fill="#6b6155"/>
+    <circle r="26.4" fill="#7a6f61"/>
+    <g fill="none" stroke="#9b9082" stroke-width="3" stroke-linecap="round">
+      <circle r="24.2" stroke-dasharray="3.2 1.6"/>
+      <circle r="20.6" stroke-dasharray="3 1.6"/>
+    </g>
+  </g>
+  <!-- Lower basin: a low round wall around the pool. -->
+  <ellipse cx="32" cy="45" rx="19" ry="7.2" fill="#3d3a34" opacity="0.4"/>
+  <path d="M14 38 V42 A18 7 0 0 0 50 42 V38 Z" fill="#b8b2a6"/>
+  <path d="M32 49 A18 7 0 0 0 50 42 V38 H32 Z" fill="#a39d91"/>
+  <path d="M14 38 V42 A18 7 0 0 0 50 42 V38" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+  <path d="M19 43.2 V46.5 M25.5 44.9 V48.2 M32 45.4 V48.6 M38.5 44.9 V48.2 M45 43.2 V46.5" stroke="#8a8479" stroke-width="0.6"/>
+  <ellipse cx="32" cy="38" rx="18" ry="7" fill="#cdc7ba" stroke="#5c574e" stroke-width="0.7"/>
+  <ellipse cx="32" cy="38" rx="15.6" ry="5.6" fill="#33719f"/>
+  <ellipse cx="32" cy="38.6" rx="13" ry="4.2" fill="#3f82b2"/>
+  <g fill="none" stroke="#8ac2e6" stroke-width="0.6" stroke-linecap="round">
+    <ellipse cx="32" cy="38.6" rx="7" ry="2.3"/>
+    <ellipse cx="32" cy="38" rx="12.5" ry="4.5" stroke-dasharray="3 2.4"/>
+  </g>
+  <!-- Pedestal and upper bowl. -->
+  <path d="M30 39 V30 H34 V39 Z" fill="#b8b2a6"/>
+  <path d="M32 30 H34 V39 H32 Z" fill="#a39d91"/>
+  <ellipse cx="32" cy="39" rx="3.2" ry="1.1" fill="#8a8479"/>
+  <path d="M24.5 28 Q25.5 31.6 32 31.8 Q38.5 31.6 39.5 28 Z" fill="#b8b2a6"/>
+  <path d="M32 31.8 Q38.5 31.6 39.5 28 H32 Z" fill="#a39d91"/>
+  <path d="M24.5 28 Q25.5 31.6 32 31.8 Q38.5 31.6 39.5 28" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+  <ellipse cx="32" cy="28" rx="7.5" ry="2.4" fill="#cdc7ba" stroke="#5c574e" stroke-width="0.6"/>
+  <ellipse cx="32" cy="28" rx="6" ry="1.6" fill="#3f82b2"/>
+  <!-- Finial and the spout, with water falling into both bowls. -->
+  <rect x="31.1" y="21" width="1.8" height="7" fill="#b8b2a6" stroke="#5c574e" stroke-width="0.4"/>
+  <circle cx="32" cy="20.6" r="1.6" fill="#cdc7ba" stroke="#5c574e" stroke-width="0.4"/>
+  <g fill="none" stroke="#bfe3f5" stroke-width="0.9" stroke-linecap="round">
+    <path d="M31.3 19.5 Q28 15.5 27.8 28.1"/>
+    <path d="M32.7 19.5 Q36 15.5 36.2 28.1"/>
+    <path d="M32 19 V15.5"/>
+  </g>
+  <!-- The lower jets spill over the bowl lip at 170 and 120 degrees. Each
+       control point sits further out along the same angle, and each jet
+       lands on the ring of the dashed ripple near the pool rim. -->
+  <g fill="none" stroke="#bfe3f5" stroke-width="0.9" stroke-linecap="round">
+    <path d="M24.6 28.4 Q22.15 29.15 19.7 38.8"/>
+    <path d="M39.4 28.4 Q41.85 29.15 44.3 38.8"/>
+    <path d="M28.25 30.1 Q27 31.4 25.75 41.9"/>
+    <path d="M35.75 30.1 Q37 31.4 38.25 41.9"/>
+  </g>
+  <g fill="#e6f4fb">
+    <circle cx="19.7" cy="38.8" r="0.7"/>
+    <circle cx="44.3" cy="38.8" r="0.7"/>
+    <circle cx="25.75" cy="41.9" r="0.7"/>
+    <circle cx="38.25" cy="41.9" r="0.7"/>
+    <circle cx="27.8" cy="28.1" r="0.5"/>
+    <circle cx="36.2" cy="28.1" r="0.5"/>
+    <circle cx="32" cy="14.8" r="0.7"/>
+  </g>
+  <!-- Two benches on the cobbles, west and east of the basin. -->
+  <use href="#bench" transform="translate(5.5 45)"/>
+  <use href="#bench" transform="translate(50.5 45)"/>
+</svg>

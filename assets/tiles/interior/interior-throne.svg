@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A gilded throne on a two-step dais, seen from the front and above, over
+       a transparent ground. The throne faces south into the hall. A soft
+       contact shadow sits on the line where each part meets the surface below
+       it. -->
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#f2d67c"/>
+      <stop offset="0.5" stop-color="#d0a72e"/>
+      <stop offset="1" stop-color="#94700f"/>
+    </linearGradient>
+    <linearGradient id="velvet" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#6e1422"/>
+      <stop offset="1" stop-color="#a02a3a"/>
+    </linearGradient>
+  </defs>
+  <!-- Contact shadow under the dais. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="56" rx="26" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="56" rx="24" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Lower step: top and front. -->
+  <rect x="8" y="47" width="48" height="4" fill="#9a9383" stroke="#5c574e" stroke-width="0.7"/>
+  <rect x="8" y="51" width="48" height="5" fill="#6f6a60" stroke="#5c574e" stroke-width="0.7"/>
+  <!-- Upper step: top and front. -->
+  <rect x="11" y="18" width="42" height="25" fill="#a39d91" stroke="#5c574e" stroke-width="0.7"/>
+  <rect x="11" y="43" width="42" height="4" fill="#7d776c" stroke="#5c574e" stroke-width="0.7"/>
+  <path d="M11.6 19 H52.4" stroke="#bdb7ab" stroke-width="0.9"/>
+  <!-- Carpet over both steps and onto the floor, with gold trim and fringe. -->
+  <g>
+    <rect x="26" y="38" width="12" height="5" fill="#8a2230"/>
+    <rect x="26" y="43" width="12" height="4" fill="#651824"/>
+    <rect x="26" y="47" width="12" height="4" fill="#8a2230"/>
+    <rect x="26" y="51" width="12" height="5" fill="#651824"/>
+    <rect x="26" y="56" width="12" height="2" fill="#8a2230"/>
+    <path d="M27 38 V58 M37 38 V58" stroke="#d4af37" stroke-width="0.8"/>
+    <path d="M27 58 v1.3 M29 58 v1.3 M31 58 v1.3 M33 58 v1.3 M35 58 v1.3 M37 58 v1.3" stroke="#d4af37" stroke-width="0.6"/>
+  </g>
+  <!-- Contact shadow where the throne stands on the dais. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="41.6" rx="15.5" ry="2.2" opacity="0.4"/>
+    <ellipse cx="32" cy="41.6" rx="13.5" ry="0.9" opacity="0.4"/>
+  </g>
+  <!-- Tall back: a pointed crest, a carved gold frame, and a velvet panel. -->
+  <path d="M21 31 V14 Q21 11 24 10 L32 5.5 L40 10 Q43 11 43 14 V31 Z" fill="url(#gold)" stroke="#5e4508" stroke-width="0.8"/>
+  <path d="M24.5 30 V15 Q24.5 13 26.5 12.5 L32 9.5 L37.5 12.5 Q39.5 13 39.5 15 V30 Z" fill="url(#velvet)" stroke="#6b5010" stroke-width="0.6"/>
+  <circle cx="32" cy="7.6" r="1.2" fill="#c0303f" stroke="#5e4508" stroke-width="0.5"/>
+  <path d="M32 14.5 L34.2 18 L32 21.5 L29.8 18 Z" fill="url(#gold)" stroke="#6b5010" stroke-width="0.4"/>
+  <circle cx="21.5" cy="12" r="1.5" fill="url(#gold)" stroke="#5e4508" stroke-width="0.5"/>
+  <circle cx="42.5" cy="12" r="1.5" fill="url(#gold)" stroke="#5e4508" stroke-width="0.5"/>
+  <!-- Seat: tufted cushion on top, a gold apron and two legs in front. -->
+  <rect x="22.5" y="29" width="19" height="7" rx="1" fill="#a3303f" stroke="#5e4508" stroke-width="0.7"/>
+  <path d="M23.5 30.2 H40.5" stroke="#c9566a" stroke-width="0.8"/>
+  <g fill="#6e1422"><circle cx="27" cy="32.8" r="0.5"/><circle cx="32" cy="32.8" r="0.5"/><circle cx="37" cy="32.8" r="0.5"/></g>
+  <rect x="22.5" y="36" width="19" height="2.6" fill="url(#gold)" stroke="#5e4508" stroke-width="0.6"/>
+  <rect x="23" y="38.6" width="2.4" height="2.8" fill="#94700f" stroke="#5e4508" stroke-width="0.5"/>
+  <rect x="38.6" y="38.6" width="2.4" height="2.8" fill="#94700f" stroke="#5e4508" stroke-width="0.5"/>
+  <rect x="25.4" y="38.6" width="13.2" height="2.8" fill="#000000" opacity="0.3"/>
+  <!-- Armrests with rolled front ends, standing on their own legs. -->
+  <g stroke="#5e4508" stroke-width="0.7">
+    <rect x="18" y="24" width="5" height="12" rx="1" fill="url(#gold)"/>
+    <rect x="41" y="24" width="5" height="12" rx="1" fill="url(#gold)"/>
+    <circle cx="20.5" cy="35" r="2.2" fill="url(#gold)"/>
+    <circle cx="43.5" cy="35" r="2.2" fill="url(#gold)"/>
+    <rect x="18.8" y="37" width="3.4" height="4.4" fill="#94700f"/>
+    <rect x="41.8" y="37" width="3.4" height="4.4" fill="#94700f"/>
+  </g>
+  <circle cx="20.5" cy="35" r="0.8" fill="#6b5010"/>
+  <circle cx="43.5" cy="35" r="0.8" fill="#6b5010"/>
+</svg>

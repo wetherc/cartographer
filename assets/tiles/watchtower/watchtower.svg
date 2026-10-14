@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="11" cy="12" rx="8" ry="4.5" fill="#63a651"/>
+  <ellipse cx="54" cy="8" rx="6" ry="3.5" fill="#529044"/>
+  <!-- Grassy knoll with a trodden patch at the foot of the tower. -->
+  <ellipse cx="32" cy="52" rx="24" ry="8" fill="#4f8d40"/>
+  <ellipse cx="31" cy="50.5" rx="21" ry="6.5" fill="#63a651"/>
+  <ellipse cx="32" cy="52" rx="13" ry="3.6" fill="#c2a36c"/>
+  <ellipse cx="32" cy="52" rx="9" ry="2.4" fill="#cdb078"/>
+  <!-- Back legs, in shade. -->
+  <g stroke="#5a4028" stroke-width="1.8" stroke-linecap="round">
+    <path d="M26 50 L28 24"/>
+    <path d="M38 50 L36 24"/>
+  </g>
+  <!-- Cross bracing between the front legs. -->
+  <g stroke="#6f5433" stroke-width="1" fill="none">
+    <path d="M22.2 44 L41.8 33 M22.2 33 L41.8 44"/>
+    <path d="M21.4 52 L42.6 44.6 M21.4 44.6 L42.6 52" opacity="0.9"/>
+    <path d="M22.9 33 H41.1 M22.2 44 H41.8"/>
+  </g>
+  <!-- Front legs, lit on the west side. -->
+  <g stroke-linecap="round">
+    <path d="M21 53 L25 24" stroke="#8a6a42" stroke-width="2.4"/>
+    <path d="M43 53 L39 24" stroke="#6f5433" stroke-width="2.4"/>
+  </g>
+  <!-- Ladder up the middle to the trap in the platform. -->
+  <g stroke="#a3865c" stroke-width="0.8">
+    <path d="M30 52 L30.4 24 M34 52 L33.6 24"/>
+    <path d="M30 48 H34 M30.1 44 H33.9 M30.1 40 H33.9 M30.2 36 H33.8 M30.2 32 H33.8 M30.3 28 H33.7"/>
+  </g>
+  <!-- Plank platform with a railed lookout and a shingled roof. -->
+  <rect x="21" y="21" width="22" height="3.6" fill="#8a6a42" stroke="#5a4028" stroke-width="0.6"/>
+  <rect x="32" y="21.3" width="10.7" height="3" fill="#75592f"/>
+  <path d="M25 21 V24.6 M29 21 V24.6 M35 21 V24.6 M39 21 V24.6" stroke="#5a4028" stroke-width="0.4"/>
+  <g fill="#8a6a42">
+    <rect x="22" y="12" width="1.5" height="9"/>
+    <rect x="31.25" y="12" width="1.5" height="9"/>
+  </g>
+  <rect x="40.5" y="12" width="1.5" height="9" fill="#6f5433"/>
+  <rect x="23.5" y="14" width="17" height="4" fill="#2c2820" opacity="0.55"/>
+  <path d="M22 17.5 H42" stroke="#a3865c" stroke-width="1.1"/>
+  <path d="M22 14 H42" stroke="#8a6a42" stroke-width="0.7"/>
+  <!-- Sentry at the rail. -->
+  <circle cx="27" cy="14.6" r="1.3" fill="#d8b48a"/>
+  <path d="M25.8 17.4 V15.8 Q27 15 28.2 15.8 V17.4 Z" fill="#8f3a26"/>
+  <path d="M28.8 17.2 L29.6 11.8" stroke="#6f6a60" stroke-width="0.5"/>
+  <polygon points="19.5,12.5 32,5 44.5,12.5" fill="#7a5a38"/>
+  <polygon points="32,5 44.5,12.5 32,12.5" fill="#5f4529"/>
+  <path d="M23 10.4 L41 10.4 M26.5 8.3 L37.5 8.3" stroke="#5f4529" stroke-width="0.5"/>
+  <!-- Signal brazier on the east corner of the platform. -->
+  <g>
+    <circle cx="46" cy="18.5" r="4" fill="#f59a3a" opacity="0.18"/>
+    <path d="M44.6 21 L47.4 21 L46.9 19.6 L45.1 19.6 Z" fill="#3a362f"/>
+    <path d="M45 19.6 Q44.8 17.6 46 16 Q46.4 17.4 47.1 17.8 Q47.4 18.8 47 19.6 Z" fill="#f59a3a"/>
+    <path d="M45.6 19.6 Q45.6 18.4 46.1 17.6 Q46.6 18.8 46.5 19.6 Z" fill="#f5d06a"/>
+  </g>
+  <!-- Pennant on the ridge. -->
+  <path d="M32 5 V1.5" stroke="#5a4530" stroke-width="0.7"/>
+  <path d="M32 1.5 L36.5 2.6 L32 3.7 Z" fill="#b03a2e"/>
+</svg>

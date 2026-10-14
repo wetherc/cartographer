@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Swell line: one long, gentle S-curve, a thin lit crest over a dark
+         trough. Many of them in loose, staggered rows form the swell field
+         of the open sea. -->
+    <g id="sw" fill="none" stroke-linecap="round">
+      <path d="M-10 1 C-6 -1 -2 -1 0 1 S6 3 10 1" stroke="#173e62" stroke-width="1.5"/>
+      <path d="M-10 0 C-6 -2 -2 -2 0 0 S6 2 10 0" stroke="#4f86b2" stroke-width="0.9"/>
+    </g>
+    <!-- Whitecap: foam along the crest of a swell line, placed with the
+         same transform as the swell it breaks on. -->
+    <g id="wc">
+      <path d="M-8.4 -0.8 C-6.4 -1.8 -4.2 -1.8 -2.4 -1" stroke="#dcebf5" stroke-width="1" fill="none" stroke-linecap="round"/>
+      <circle cx="-3.4" cy="0.9" r="0.4" fill="#b8d4e8"/><circle cx="-1.6" cy="1.5" r="0.3" fill="#b8d4e8"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#1f4f78"/>
+  <!-- Edge band: identical across deep-water variants. Each swell that
+       crosses an edge is stamped in a wrapped pair (a stamp crossing x=0
+       repeats at +64, likewise y), so the swell field continues across
+       tile edges with no empty margin. -->
+  <use href="#sw" transform="translate(1 26) scale(0.8)"/>
+  <use href="#sw" transform="translate(65 26) scale(0.8)"/>
+  <use href="#sw" transform="translate(-3 52) scale(0.7)"/>
+  <use href="#sw" transform="translate(61 52) scale(0.7)"/>
+  <use href="#sw" transform="translate(18 1)"/>
+  <use href="#sw" transform="translate(18 65)"/>
+  <use href="#sw" transform="translate(46 -1) scale(0.9)"/>
+  <use href="#sw" transform="translate(46 63) scale(0.9)"/>
+  <!-- Inset details, placed per variant around the edge band. -->
+  <path d="M30 36 Q40 32 48 38 Q48 46 38 47 Q28 45 30 36 Z" fill="#1d4c74"/>
+  <use href="#sw" transform="translate(32 10) scale(1)"/>
+  <use href="#sw" transform="translate(14 18) scale(0.6)"/>
+  <use href="#sw" transform="translate(46 21) scale(0.8)"/>
+  <use href="#sw" transform="translate(24 30) scale(1)"/>
+  <use href="#sw" transform="translate(50 36) scale(0.6)"/>
+  <use href="#sw" transform="translate(16 42) scale(0.7)"/>
+  <use href="#sw" transform="translate(38 44) scale(1)"/>
+  <use href="#sw" transform="translate(24 55) scale(0.9)"/>
+  <use href="#sw" transform="translate(50 56) scale(0.6)"/>
+  <use href="#wc" transform="translate(32 10) scale(1)"/>
+  <use href="#wc" transform="translate(38 44) scale(1)"/>
+</svg>

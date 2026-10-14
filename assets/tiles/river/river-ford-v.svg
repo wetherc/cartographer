@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The ford-h art mirrored across the main diagonal: an east-west channel under a north-south road. -->
+  <defs>
+    <clipPath id="road-band"><rect x="0" y="22" width="64" height="20"/></clipPath>
+  </defs>
+  <g transform="matrix(0 1 1 0 0 0)">
+    <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#6b5a3e" stroke-width="22" fill="none"/>
+    <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#33719f" stroke-width="18" fill="none"/>
+    <g stroke="#7fb2d9" stroke-width="1.4" fill="none" stroke-linecap="round">
+      <path d="M27.5 8 C27 11 26.5 14 26.5 17"/>
+      <path d="M36.5 51 C36.5 53 36 55 35.5 58"/>
+    </g>
+    <!-- The road straight through, then shallow water over its bed. -->
+    <path d="M0 32 L64 32" stroke="#7c6448" stroke-width="20" fill="none"/>
+    <path d="M0 32 L64 32" stroke="#bb9c70" stroke-width="16" fill="none"/>
+    <g stroke="#9c8158" stroke-width="1.5" fill="none"><path d="M0 27 L64 27"/><path d="M0 37 L64 37"/></g>
+    <g clip-path="url(#road-band)">
+      <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#8a7a5a" stroke-width="22" fill="none" opacity="0.5"/>
+      <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#3f82b0" stroke-width="18" fill="none" opacity="0.6"/>
+    </g>
+    <g fill="#a39a7a">
+      <circle cx="25" cy="30" r="0.9"/><circle cx="29" cy="34.5" r="0.8"/><circle cx="33" cy="29.5" r="1"/>
+      <circle cx="36" cy="33.5" r="0.8"/><circle cx="26.5" cy="36" r="0.7"/>
+    </g>
+    <!-- Riffles where the current spills off the bar downstream. -->
+    <g stroke="#e6f1f8" stroke-width="1.1" fill="none" stroke-linecap="round">
+      <path d="M22.5 43.5 Q25.5 45 28.5 43.5 Q31.5 45 34.5 43.5 Q37 45 38.5 43.5"/>
+      <path d="M24.5 47 Q27.5 48.2 30 47 M32 47 Q35 48.2 37 47" opacity="0.7"/>
+    </g>
+    <path d="M23 20 Q30.5 19 38 20" stroke="#7fb2d9" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <g fill="#8ac2e6"><circle cx="34" cy="12" r="0.9"/><circle cx="28" cy="55" r="0.9"/></g>
+  </g>
+</svg>

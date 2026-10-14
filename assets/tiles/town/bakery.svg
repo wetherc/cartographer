@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="10" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="55" cy="58" rx="6" ry="3" fill="#529044"/>
+  <ellipse cx="32" cy="46" rx="25" ry="11" fill="#c2a36c"/>
+  <ellipse cx="32" cy="47" rx="19" ry="7.5" fill="#cdb078"/>
+  <ellipse cx="30" cy="49.5" rx="21" ry="2.4" fill="#8a7447" opacity="0.45"/>
+  <!-- Plaster shop front under a brown shingle roof. -->
+  <rect x="10" y="29" width="30" height="20" fill="#efe4c8"/>
+  <rect x="25" y="29" width="15" height="20" fill="#e0d3b2"/>
+  <rect x="10" y="29" width="30" height="20" fill="none" stroke="#9a8a6a" stroke-width="0.7"/>
+  <rect x="10" y="47.5" width="30" height="1.5" fill="#a39d91"/>
+  <path d="M6.5 31 L13 14 H37 L43.5 31 Z" fill="#8a5a3a"/>
+  <path d="M25 14 H37 L43.5 31 H25 Z" fill="#784c30"/>
+  <path d="M11.4 18.5 H38.6 M9.6 23 H40.4 M8 27.2 H42" stroke="#5f3b25" stroke-width="0.7"/>
+  <path d="M13 14 H37" stroke="#4c2e1c" stroke-width="1.2"/>
+  <path d="M6.5 31 H43.5" stroke="#4c2e1c" stroke-width="1"/>
+  <rect x="10" y="31.5" width="30" height="1.2" fill="#5a4530" opacity="0.35"/>
+  <!-- Striped awning over the display window. -->
+  <path d="M12 35 H27 L28.2 38.6 H10.8 Z" fill="#f3ecd8"/>
+  <path d="M12 35 H14.5 L14 38.6 H10.8 Z M17 35 H19.5 L19.5 38.6 H16.3 Z M22 35 H24.5 L25 38.6 H21.8 Z" fill="#c07a2b"/>
+  <path d="M12 35 H27 L28.2 38.6 H10.8 Z" fill="none" stroke="#7a5a3a" stroke-width="0.5"/>
+  <!-- Display window with loaves on the sill. -->
+  <rect x="12.5" y="39.2" width="14" height="6" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
+  <path d="M19.5 39.2 V45.2" stroke="#7a5a3a" stroke-width="0.5"/>
+  <rect x="12" y="45.2" width="15" height="1.5" fill="#8a6f4a"/>
+  <g>
+    <ellipse cx="14.8" cy="44.6" rx="1.8" ry="1" fill="#c98a45"/>
+    <ellipse cx="18" cy="44.6" rx="1.6" ry="1" fill="#b87a3a"/>
+    <ellipse cx="21.4" cy="44.6" rx="1.8" ry="1" fill="#c98a45"/>
+    <ellipse cx="24.6" cy="44.6" rx="1.5" ry="0.9" fill="#b87a3a"/>
+    <path d="M14 44.4 L15 44 M20.6 44.4 L21.6 44 M17.4 44.4 L18.4 44.1" stroke="#e0b070" stroke-width="0.4"/>
+  </g>
+  <!-- Door with a window pane. -->
+  <rect x="30.5" y="38" width="6" height="11" fill="#6b4a2a"/>
+  <rect x="31.8" y="39.4" width="3.4" height="3" fill="#e8c05a" stroke="#4f3a24" stroke-width="0.4"/>
+  <circle cx="35.4" cy="44.2" r="0.5" fill="#c9a020"/>
+  <rect x="29.5" y="49" width="8" height="1.3" fill="#a39d91"/>
+  <!-- Pretzel sign on a bracket at the west corner. -->
+  <path d="M10 33 H4.5" stroke="#3a352e" stroke-width="0.7"/>
+  <path d="M6.5 33 V34.3" stroke="#3a352e" stroke-width="0.4"/>
+  <g fill="none" stroke="#c07a2b" stroke-width="1" stroke-linecap="round">
+    <path d="M6.5 34.8 Q4 34.8 4.1 36.8 Q4.2 38.8 6.5 38.8 Q8.8 38.8 8.9 36.8 Q9 34.8 6.5 34.8"/>
+    <path d="M4.6 38 L8.4 35.6 M8.4 38 L4.6 35.6"/>
+  </g>
+  <!-- Domed brick oven against the east wall, fire in its mouth. -->
+  <path d="M40 49 V41 Q40 32.5 48 32.5 Q56 32.5 56 41 V49 Z" fill="#b5654a"/>
+  <path d="M48 32.5 Q56 32.5 56 41 V49 H48 Z" fill="#9c5538"/>
+  <path d="M40.3 38 H55.7 M40 43.5 H56 M44 32.9 V38 M52 32.9 V38 M48 38 V43.5 M44 43.5 V49 M52 43.5 V49" stroke="#7f432c" stroke-width="0.45" fill="none"/>
+  <path d="M40 49 V41 Q40 32.5 48 32.5 Q56 32.5 56 41 V49" fill="none" stroke="#6f3f28" stroke-width="0.6"/>
+  <path d="M44.5 49 V45.3 Q48 41.6 51.5 45.3 V49 Z" fill="#3a2a19"/>
+  <path d="M45.6 49 Q46 46.4 47.4 47.2 Q47.8 45 48.8 46.6 Q50 45.8 50.4 49 Z" fill="#e8883a"/>
+  <path d="M46.8 49 Q47.2 47.6 48 48 Q48.8 47.2 49.3 49 Z" fill="#f5d06a"/>
+  <rect x="49" y="26" width="3.4" height="7.5" fill="#9a948a" stroke="#6f6a60" stroke-width="0.5"/>
+  <rect x="48.6" y="25.4" width="4.2" height="1.3" fill="#6f6a60"/>
+  <g fill="#d8d4ca">
+    <circle cx="51.4" cy="22.8" r="1.7" opacity="0.6"/>
+    <circle cx="53.8" cy="20.3" r="1.4" opacity="0.45"/>
+    <circle cx="55.2" cy="17.6" r="1.1" opacity="0.3"/>
+  </g>
+  <!-- Firewood stack and flour sacks. -->
+  <g>
+    <circle cx="54.6" cy="51.4" r="1.2" fill="#a07c50" stroke="#6f583a" stroke-width="0.4"/>
+    <circle cx="57" cy="51.4" r="1.2" fill="#8a6a42" stroke="#6f583a" stroke-width="0.4"/>
+    <circle cx="55.8" cy="49.4" r="1.2" fill="#a07c50" stroke="#6f583a" stroke-width="0.4"/>
+  </g>
+  <g>
+    <path d="M6.5 50 Q6 45.5 8.8 45.2 Q11.6 45.5 11 50 Z" fill="#ece4d0" stroke="#a3926a" stroke-width="0.5"/>
+    <path d="M7.8 45.4 L8.8 44.3 L9.8 45.4" stroke="#a3926a" stroke-width="0.5" fill="none"/>
+    <path d="M11.5 51.2 Q11 47.2 13.6 46.9 Q16.2 47.2 15.7 51.2 Z" fill="#e2d8bf" stroke="#a3926a" stroke-width="0.5"/>
+    <path d="M12.6 49 H14.6" stroke="#b09a63" stroke-width="0.4"/>
+  </g>
+  <path d="M29 55 Q32 54 35 55" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

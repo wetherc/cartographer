@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- One wave crest: a dark trough line under a pale crest line. Crests
+         stay inset from the edges, so water tiles abut in any order and
+         open water shows no continuous stripes at the tile pitch. -->
+    <g id="wc" fill="none" stroke-linecap="round">
+      <path d="M-7 1.6 Q-3.5 -1.8 0 1.6 T7 1.6" stroke="#2a5d87" stroke-width="2.2"/>
+      <path d="M-7 0 Q-3.5 -3.4 0 0 T7 0" stroke="#8ac2e6" stroke-width="1.8"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#33719f"/>
+  <ellipse cx="20" cy="26" rx="15" ry="9" fill="#2d6591"/>
+  <ellipse cx="48" cy="48" rx="11" ry="7" fill="#2d6591"/>
+  <use href="#wc" transform="translate(14 12)"/>
+  <use href="#wc" transform="translate(46 20) scale(0.8)"/>
+  <use href="#wc" transform="translate(24 38) scale(0.9)"/>
+  <use href="#wc" transform="translate(52 36) scale(0.7)"/>
+  <use href="#wc" transform="translate(12 54) scale(0.75)"/>
+  <use href="#wc" transform="translate(40 56)"/>
+  <g fill="#8ac2e6">
+    <circle cx="36" cy="8" r="1"/>
+    <circle cx="8" cy="40" r="1"/>
+    <circle cx="56" cy="28" r="0.9"/>
+  </g>
+</svg>

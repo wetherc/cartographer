@@ -1,0 +1,10 @@
+---
+# Front matter makes Jekyll fill in the sitemap address from _config.yml.
+# The null layout keeps the docs layout, which every page gets by default,
+# off this plain text file.
+layout: null
+---
+User-agent: *
+Allow: /
+
+Sitemap: {{ site.url }}/sitemap.xml

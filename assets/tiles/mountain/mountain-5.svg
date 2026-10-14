@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <g id="er">
+      <polygon points="-7,4 -2,-4 3,4" fill="#7d848c"/>
+      <polygon points="-2,-4 -2,4 3,4" fill="#5b6167"/>
+      <polygon points="2,5 6,-2 10,5" fill="#757c84"/>
+      <polygon points="6,-2 6,5 10,5" fill="#545a60"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#9aa0a6"/>
+  <g fill="#878e94">
+    <circle cx="10" cy="12" r="1.3"/><circle cx="54" cy="10" r="1.1"/>
+    <circle cx="14" cy="58" r="1.2"/><circle cx="50" cy="58" r="1.4"/>
+  </g>
+  <!-- Mid-ground ridge + edge outcrops: byte-identical across mountain
+       variants; the ridge is phase-continuous at x=0/x=64 (same point, same
+       tangent) and the outcrops are stamped in wrapped pairs (a stamp
+       crossing x=0 repeats at +64, likewise y, corners at all four). Stamp
+       centers are staggered a few units off the border line at irregular
+       offsets that differ per edge, and some are mirrored, so seams read as
+       broken rock rather than a straight row of identical outcrops. -->
+  <path d="M0 36 L10 30 L18 35 L26 27 L34 34 L43 29 L54 42 L64 36 L64 50 L0 50 Z" fill="#8a9096"/>
+  <g>
+    <use href="#er" transform="translate(0 0) scale(0.8)"/>
+    <use href="#er" transform="translate(64 0) scale(0.8)"/>
+    <use href="#er" transform="translate(0 64) scale(0.8)"/>
+    <use href="#er" transform="translate(64 64) scale(0.8)"/>
+    <use href="#er" transform="translate(2 20) scale(0.85)"/>
+    <use href="#er" transform="translate(66 20) scale(0.85)"/>
+    <use href="#er" transform="translate(-3 47) scale(-0.75 0.75)"/>
+    <use href="#er" transform="translate(61 47) scale(-0.75 0.75)"/>
+    <use href="#er" transform="translate(14 1) scale(0.8)"/>
+    <use href="#er" transform="translate(14 65) scale(0.8)"/>
+    <use href="#er" transform="translate(38 -2) scale(0.9)"/>
+    <use href="#er" transform="translate(38 62) scale(0.9)"/>
+    <use href="#er" transform="translate(53 2) scale(-0.7 0.7)"/>
+    <use href="#er" transform="translate(53 66) scale(-0.7 0.7)"/>
+  </g>
+  <!-- Peaks: lit west face, shaded east face, snow caps split the same way,
+       and a soft ground shadow so each peak sits on the ridge band. -->
+  <ellipse cx="33" cy="53" rx="26" ry="2.6" fill="#6e757c" opacity="0.5"/>
+  <polygon points="6,53 17,34 24,38 32,20 40,31 46,27 59,53" fill="#7d848c"/>
+  <polygon points="32,20 40,31 46,27 59,53 32,53" fill="#5b6167"/>
+  <polygon points="17,34 24,38 20,53 11,53" fill="#757c84"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M28 30 L24 42 M29 40 L27 49 M14 44 L12 50" stroke="#8f969d" stroke-width="1"/>
+    <path d="M36 30 L39 40 M44 34 L48 44 M38 44 L40 51" stroke="#4a5055" stroke-width="1" opacity="0.6"/>
+  </g>
+  <polygon points="32,20 37.09,27 34.29,25 32,29 30.6,25 28.89,27" fill="#eef2f5"/>
+  <polygon points="32,20 37.09,27 34.29,25 32,29" fill="#c3ccd5"/>
+  <polygon points="46,27 48.5,32 47.13,30 46,33 44.5,29.5 41.5,30" fill="#bcc5ce"/>
+  <path d="M32 29 L32 53" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
+</svg>

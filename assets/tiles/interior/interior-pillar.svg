@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A fluted stone column seen from the front and slightly above, with its
+       plinth on the floor and its capital near the top of the tile. The
+       ground is transparent. -->
+  <defs>
+    <linearGradient id="shaft" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#b8b2a5"/>
+      <stop offset="0.3" stop-color="#e2dccf"/>
+      <stop offset="0.7" stop-color="#a6a093"/>
+      <stop offset="1" stop-color="#7d776c"/>
+    </linearGradient>
+  </defs>
+  <!-- Contact shadow on the base line y=56. -->
+  <g fill="#3d3a34">
+    <ellipse cx="32" cy="56" rx="15.5" ry="2.6" opacity="0.4"/>
+    <ellipse cx="32" cy="56" rx="13.5" ry="1.1" opacity="0.4"/>
+  </g>
+  <!-- Plinth: a square block, top and front. -->
+  <rect x="19" y="46" width="26" height="5" fill="#a39d91" stroke="#5c574e" stroke-width="0.8"/>
+  <rect x="19" y="51" width="26" height="5" fill="#77716a" stroke="#5c574e" stroke-width="0.8"/>
+  <!-- Shaft with flutes. -->
+  <rect x="24" y="15" width="16" height="32" fill="url(#shaft)" stroke="#5c574e" stroke-width="0.8"/>
+  <path d="M27.2 16 V46 M30.4 16 V46 M33.6 16 V46 M36.8 16 V46" stroke="#8a8479" stroke-width="0.6" opacity="0.8"/>
+  <!-- Torus ring at the foot of the shaft. -->
+  <rect x="22" y="44" width="20" height="3" rx="1.5" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.7"/>
+  <!-- Capital: a flared echinus under a square abacus. -->
+  <path d="M24 16 L21 12 H43 L40 16 Z" fill="#b0aa9e" stroke="#5c574e" stroke-width="0.7"/>
+  <rect x="19" y="8" width="26" height="4" fill="#c8c2b6" stroke="#5c574e" stroke-width="0.8"/>
+  <path d="M19.5 8.8 H44.5" stroke="#e2dccf" stroke-width="0.8"/>
+</svg>

@@ -1,0 +1,78 @@
+/* ==========================================================================
+   The summary card and the full sheet.
+
+   One sheet card moves between the Sheet tab of the sidebar and the full
+   sheet (src/ui/FullSheet.js). In the sidebar it is the summary: identity,
+   HP, the level line, slots, pools, conditions, the quick rolls, and the
+   skill list. The long sections and the Equipment, Inventory, and Spellbook
+   tabs show in the full sheet alone. The rules key on where the card sits,
+   so a bound Player tab gets the same split.
+   ========================================================================== */
+
+#panel-character .sheet-full-only,
+#full-sheet .sheet-summary-only {
+  display: none;
+}
+
+/* The sidebar card has no tab strip. Its Character panel always shows, even
+   when the full sheet was closed on another tab. */
+#panel-character #sheet-tabs,
+#panel-character #panel-equipment,
+#panel-character #panel-inventory,
+#panel-character #panel-spellbook {
+  display: none;
+}
+
+#panel-character #panel-sheet[hidden] {
+  display: block;
+}
+
+/* The quick rolls: the six abilities across the top, and a row of checks
+   and a row of saves under them. Each number is a 2rem button. */
+.quick-rolls__grid {
+  display: grid;
+  grid-template-columns: auto repeat(6, minmax(0, 1fr));
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.quick-rolls__label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* The row titles sit left of the numbers. */
+.quick-rolls__grid > .quick-rolls__label:nth-child(7n + 1) {
+  text-align: left;
+  padding-right: var(--space-1);
+}
+
+.quick-rolls__cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.quick-rolls__cell .check-row__dot {
+  margin: 0;
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+.quick-rolls__cell--roll:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+}
+
+/* The skill list of the summary card is one column of rows, a line per
+   skill with its bonus. */
+#panel-character .character-sheet__skills .check-block__rows {
+  grid-template-columns: minmax(0, 1fr);
+}

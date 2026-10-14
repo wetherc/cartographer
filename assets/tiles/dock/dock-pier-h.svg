@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A straight run of pier that goes west to east: dock-pier-v turned a
+       quarter turn. The plank joints and the piles repeat on the same
+       periods, so a run joins at the tile edges. -->
+  <g transform="rotate(90 32 32)">
+    <g fill="#1f3b4d">
+      <rect x="20.5" width="23" height="64" opacity="0.2"/>
+      <rect x="21.8" width="20.4" height="64" opacity="0.25"/>
+    </g>
+    <!-- Ripples where the water meets each pile. -->
+    <g fill="none" stroke="#8ac2e6" stroke-width="0.8" opacity="0.7">
+      <path d="M20.6 10.5 Q18.8 12 20.6 13.5 M43.4 10.5 Q45.2 12 43.4 13.5"/>
+      <path d="M20.6 42.5 Q18.8 44 20.6 45.5 M43.4 42.5 Q45.2 44 43.4 45.5"/>
+    </g>
+    <!-- Pile heads that stand out past the stringers. -->
+    <g fill="#4a3a26">
+      <rect x="21" y="10.4" width="3.4" height="3.2" rx="0.8"/>
+      <rect x="39.6" y="10.4" width="3.4" height="3.2" rx="0.8"/>
+      <rect x="21" y="42.4" width="3.4" height="3.2" rx="0.8"/>
+      <rect x="39.6" y="42.4" width="3.4" height="3.2" rx="0.8"/>
+    </g>
+    <!-- The deck, a few weathered planks, the plank joints, and the nail heads
+         at each plank end. -->
+    <rect x="24" width="16" height="64" fill="#8a6f4a"/>
+    <g fill="#93774f">
+      <rect x="24" y="14.4" width="16" height="3.2"/>
+      <rect x="24" y="38.4" width="16" height="3.2"/>
+    </g>
+    <g fill="#7f6644">
+      <rect x="24" y="26.4" width="16" height="3.2"/>
+      <rect x="24" y="50.4" width="16" height="3.2"/>
+    </g>
+    <path d="M24 2 H40 M24 6 H40 M24 10 H40 M24 14 H40 M24 18 H40 M24 22 H40 M24 26 H40 M24 30 H40 M24 34 H40 M24 38 H40 M24 42 H40 M24 46 H40 M24 50 H40 M24 54 H40 M24 58 H40 M24 62 H40" stroke="#6f583a" stroke-width="0.7"/>
+    <path d="M26.2 0 V64 M37.8 0 V64" stroke="#4a3a26" stroke-width="0.8" stroke-dasharray="0.8 3.2" stroke-dashoffset="0.4"/>
+    <!-- Stringers along both sides of the deck. -->
+    <rect x="22.8" width="1.8" height="64" fill="#5f4529"/>
+    <rect x="39.4" width="1.8" height="64" fill="#5f4529"/>
+  </g>
+</svg>

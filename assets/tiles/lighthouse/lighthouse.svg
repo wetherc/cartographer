@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Overlay: a lighthouse on a rock footing, with a transparent ground, so
+       it stands on any coast piece and the shoreline beneath shows through.
+       The footing sits at the middle of the tile, where every coast piece
+       draws its strand or the land beside it. -->
+  <!-- Contact shadow under the footing. -->
+  <ellipse cx="32.5" cy="41.5" rx="13" ry="4" fill="#1f1c18" opacity="0.28"/>
+  <!-- Rock footing under the tower. -->
+  <g>
+    <path d="M22 41 Q21 35 26 33.5 L38 33 Q44 34.5 43 40 Q40 44.5 33 44 Q25 44.5 22 41 Z" fill="#8a857a"/>
+    <path d="M32 33.2 L38 33 Q44 34.5 43 40 Q40 44.5 33 44 Z" fill="#6f6a60"/>
+    <path d="M24 40 Q27 38.6 30 40 M35 41.5 Q38 40 41 41" stroke="#5c574e" stroke-width="0.6" fill="none"/>
+    <path d="M22 41 Q21 35 26 33.5 L38 33 Q44 34.5 43 40 Q40 44.5 33 44 Q25 44.5 22 41 Z" fill="none" stroke="#4a463f" stroke-width="0.6"/>
+    <ellipse cx="45.5" cy="42.5" rx="2.2" ry="1.4" fill="#6f6a60" stroke="#4a463f" stroke-width="0.5"/>
+    <ellipse cx="19.5" cy="42" rx="1.8" ry="1.1" fill="#8a857a" stroke="#4a463f" stroke-width="0.5"/>
+  </g>
+  <!-- Tapered tower of rough-cut stone, lit on the west face, with
+       staggered block joints, arrow slits, and a plank double door. -->
+  <g>
+    <path d="M26.5 39 L28.5 15 L35.5 15 L37.5 39 Z" fill="#b0aa9e"/>
+    <path d="M32 15 L35.5 15 L37.5 39 L32 39 Z" fill="#938d82"/>
+    <g stroke="#7a7468" stroke-width="0.5" fill="none">
+      <path d="M28.2 19 H35.8 M27.9 23 H36.1 M27.5 27 H36.5 M27.2 31 H36.8 M26.8 35 H37.2"/>
+      <path d="M31 15 V19 M34 19 V23 M29.5 23 V27 M33 27 V31 M30 31 V35 M35 31 V35 M32.5 35 V39"/>
+    </g>
+    <path d="M26.5 39 L28.5 15 L35.5 15 L37.5 39 Z" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+    <rect x="31.2" y="20" width="1.6" height="3" rx="0.8" fill="#3a3630"/>
+    <rect x="31.2" y="28" width="1.6" height="3" rx="0.8" fill="#3a3630"/>
+    <path d="M30 39 V35.2 Q32 33.2 34 35.2 V39 Z" fill="#5a4530"/>
+    <path d="M32 34.2 V39" stroke="#3f2f20" stroke-width="0.4"/>
+    <g fill="#c9a020"><circle cx="31.3" cy="37" r="0.32"/><circle cx="32.7" cy="37" r="0.32"/></g>
+  </g>
+  <!-- Signal fire in an iron basket, with its glow and a wisp of smoke. -->
+  <circle cx="32" cy="8" r="7" fill="#f59a3a" opacity="0.16"/>
+  <circle cx="32" cy="7.5" r="5.5" fill="#f5d06a" opacity="0.2"/>
+  <g fill="#d8d4ca" opacity="0.55">
+    <circle cx="35.6" cy="3" r="1.1"/>
+    <circle cx="37.6" cy="2.2" r="0.8"/>
+  </g>
+  <path d="M29 10.5 Q28.8 6.5 31 3.5 Q31.4 5.6 32.4 6 Q33 3.8 34.4 3 Q34.2 5.4 35.2 7 Q35.6 9 35 10.5 Z" fill="#f59a3a"/>
+  <path d="M30.4 10.5 Q30.3 8 31.6 6.2 Q32.2 7.8 33 7.9 Q33.4 6.8 34 6.4 Q34.6 8.6 33.8 10.5 Z" fill="#f5d06a"/>
+  <path d="M28.6 10.8 L35.4 10.8 L34.6 12.2 L29.4 12.2 Z" fill="#3a362f"/>
+  <path d="M29.6 10.8 L30.2 9.4 M32 10.8 V9.2 M34.4 10.8 L33.8 9.4" stroke="#3a362f" stroke-width="0.5"/>
+  <!-- Corbelled parapet with merlons in front of the fire platform. -->
+  <path d="M27.5 16 L26.5 13.5 H37.5 L36.5 16 Z" fill="#938d82" stroke="#5c574e" stroke-width="0.6"/>
+  <path d="M26.5 13.5 V10.5 H28.5 V12 H30.5 V10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 Z" fill="#b0aa9e"/>
+  <path d="M32 10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 H32 Z" fill="#938d82"/>
+  <path d="M26.5 13.5 V10.5 H28.5 V12 H30.5 V10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 Z" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+</svg>

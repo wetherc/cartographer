@@ -1,0 +1,678 @@
+/* Styles for the docs site. The colors and faces are the app's own tokens
+   from styles/base.css, so the docs read as part of the same product. Each
+   color is a light-dark() pair. color-scheme follows the OS preference, and
+   the theme button pins it through data-theme on <html>. */
+
+@font-face {
+  font-family: 'IM Fell English';
+  src: url('/fonts/fell-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya SC';
+  src: url('/fonts/alegreya-sc-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('/fonts/alegreya-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#f3ecdd, #171209);
+  --surface: light-dark(#faf5e9, #201a10);
+  --surface-raised: light-dark(#fffdf5, #2a2215);
+  --surface-sunken: light-dark(#e9e0cc, #120d06);
+  --border: light-dark(#d6cab0, #3d3421);
+  --border-strong: light-dark(#8d7a55, #7f6c4b);
+  --text: light-dark(#2e2418, #ede2c8);
+  --text-muted: light-dark(#6a5e4b, #a3947a);
+  --accent: light-dark(#9d2f21, #dd8166);
+  --accent-hover: light-dark(#7f251a, #e79b83);
+  --warning: light-dark(#7f580e, #d8a94e);
+  --mana: light-dark(#33517e, #8aa7d6);
+  --success: light-dark(#33604a, #7fae8f);
+
+  --font-display: 'IM Fell English', 'Iowan Old Style', Palatino, serif;
+  --font-title: 'Alegreya SC', 'Iowan Old Style', Palatino, serif;
+  --font-sans: 'Alegreya Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --header-height: 3.5rem;
+  --sidebar-width: 16rem;
+  --toc-width: 15rem;
+  --measure: 46rem;
+  --radius: 6px;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 20;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* Header */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: var(--header-height);
+  padding: 0 1.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wordmark:hover {
+  color: var(--accent);
+}
+
+.wordmark__sub {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.header-links a {
+  text-decoration: none;
+}
+
+.header-links a:hover {
+  text-decoration: underline;
+}
+
+.nav-toggle,
+.theme-toggle {
+  font: inherit;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.nav-toggle:hover,
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nav-toggle {
+  display: none;
+}
+
+.sidebar__extra {
+  display: none;
+}
+
+/* The heading list inside the page, for screens too narrow for the right
+   column. */
+.toc-inline {
+  display: none;
+  margin: 0 0 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9375rem;
+}
+
+.toc-inline summary {
+  padding: 0.5rem 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.toc-inline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.9rem 0.75rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.toc-inline a {
+  display: block;
+  padding: 0.15rem 0;
+  text-decoration: none;
+}
+
+.toc-inline .toc__sub a {
+  padding-left: 1rem;
+}
+
+/* Three columns: the document list, the page, and the page's headings */
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--toc-width);
+  max-width: 90rem;
+  margin: 0 auto;
+}
+
+.sidebar,
+.toc {
+  position: sticky;
+  top: var(--header-height);
+  align-self: start;
+  max-height: calc(100vh - var(--header-height));
+  overflow-y: auto;
+  padding: 1.5rem 1rem 2rem 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border);
+}
+
+.sidebar__section,
+.toc__title {
+  margin: 1.25rem 0 0.35rem;
+  font-family: var(--font-title);
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.sidebar__section:first-child,
+.toc__title {
+  margin-top: 0;
+}
+
+.sidebar ul,
+.toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar a,
+.toc a {
+  display: block;
+  padding: 0.2rem 0.6rem;
+  border-left: 2px solid transparent;
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.sidebar a:hover,
+.toc a:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.sidebar a[aria-current='page'] {
+  border-left-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.toc a {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.toc .toc__sub a {
+  padding-left: 1.4rem;
+}
+
+.toc a.is-active {
+  border-left-color: var(--accent);
+  color: var(--text);
+}
+
+.content {
+  min-width: 0;
+  padding: 2rem 2.5rem 3rem;
+}
+
+/* Page text */
+
+.prose {
+  max-width: var(--measure);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  line-height: 1.25;
+  scroll-margin-top: calc(var(--header-height) + 1rem);
+}
+
+.prose h1 {
+  margin: 0 0 1rem;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 2.4rem;
+}
+
+.prose h2 {
+  margin: 2.75rem 0 0.75rem;
+  padding-bottom: 0.3rem;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.prose h4 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.prose .heading-anchor {
+  margin-left: 0.4rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.prose :is(h2, h3, h4):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* The first line of each page names the kind of document. */
+.prose h1 + p > em:only-child {
+  color: var(--text-muted);
+}
+
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px color-mix(in srgb, rgb(46 32 12) 12%, transparent);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+}
+
+.prose li + li {
+  margin-top: 0.25rem;
+}
+
+.prose li > p {
+  margin: 0.25rem 0;
+}
+
+.prose blockquote {
+  margin: 1.5rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius);
+}
+
+.prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 0.1em 0.3em;
+  background: var(--surface-sunken);
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+
+.prose pre {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  line-height: 1.45;
+}
+
+.prose pre code {
+  padding: 0;
+  font-size: 0.85rem;
+  background: none;
+  overflow-wrap: normal;
+}
+
+/* kramdown wraps a fenced block in div.highlighter-rouge > div.highlight. */
+.prose .highlight {
+  background: none;
+}
+
+.prose .table-wrap {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.prose th,
+.prose td {
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose th {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  font-weight: 700;
+}
+
+.prose tbody tr:hover {
+  background: var(--surface);
+}
+
+/* Rouge token classes, in the app's ink colors */
+
+.highlight .c,
+.highlight .c1,
+.highlight .cm,
+.highlight .cs {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.highlight .k,
+.highlight .kd,
+.highlight .kr,
+.highlight .kc,
+.highlight .kt {
+  color: var(--accent);
+}
+
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sb,
+.highlight .sr {
+  color: var(--success);
+}
+
+.highlight .m,
+.highlight .mi,
+.highlight .mf {
+  color: var(--warning);
+}
+
+.highlight .nf,
+.highlight .fm,
+.highlight .nx {
+  color: var(--mana);
+}
+
+/* Previous and next */
+
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: var(--measure);
+  margin-top: 3rem;
+}
+
+.pager__link {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.pager__link:hover {
+  border-color: var(--accent);
+}
+
+.pager__link--next {
+  grid-column: 2;
+  text-align: right;
+}
+
+.pager__label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.site-footer {
+  max-width: var(--measure);
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Narrow screens. The heading list goes first, then the sidebar becomes a
+   panel that the Menu button opens. */
+
+@media (max-width: 75rem) {
+  .layout {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  }
+
+  .toc {
+    display: none;
+  }
+
+  .toc-inline {
+    display: block;
+  }
+}
+
+@media (max-width: 52rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav-toggle {
+    display: inline-block;
+  }
+
+  /* The grid rule above sets align-self: start, which on a fixed box keeps
+     its content height and drops the bottom inset, so the list runs off
+     the screen. stretch fills the space between top and bottom, and the
+     list scrolls inside it. */
+  .sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    align-self: stretch;
+    overscroll-behavior: contain;
+    z-index: 9;
+    width: min(20rem, 85vw);
+    max-height: none;
+    background: var(--surface);
+    border-right: 1px solid var(--border-strong);
+    box-shadow: 0 8px 24px color-mix(in srgb, rgb(0 0 0) 25%, transparent);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 200ms ease,
+      visibility 200ms;
+  }
+
+  .sidebar.is-open {
+    transform: none;
+    visibility: visible;
+  }
+
+  .content {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .prose h1 {
+    font-size: 1.9rem;
+  }
+
+  .header-links a {
+    display: none;
+  }
+
+  .sidebar__extra {
+    display: block;
+  }
+}
+
+@media (max-width: 30rem) {
+  .site-header {
+    gap: 0.6rem;
+    padding: 0 0.75rem;
+  }
+
+  .wordmark {
+    font-size: 1.3rem;
+  }
+
+  .wordmark__sub {
+    display: none;
+  }
+
+  .header-links {
+    gap: 0.6rem;
+  }
+
+  .pager {
+    grid-template-columns: 1fr;
+  }
+
+  .pager__link--next {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}

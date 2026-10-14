@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- Leaf and frond outlines have no fill, so each <use> sets its own. -->
+    <path id="lf" d="M0 0 C2.5 -3.4 7.5 -3.4 10 0 C7.5 2.6 2.5 2.6 0 0 Z"/>
+    <path id="fd" d="M0 0 Q6 -3.2 13 1 Q6 -0.2 0 0 Z"/>
+    <g id="bl">
+      <ellipse cx="0" cy="4" rx="10" ry="3.2" fill="#1d4a27" opacity="0.55"/>
+      <g fill="#225d2c">
+        <use href="#lf" transform="rotate(0)"/><use href="#lf" transform="rotate(60)"/>
+        <use href="#lf" transform="rotate(120)"/><use href="#lf" transform="rotate(180)"/>
+        <use href="#lf" transform="rotate(240)"/><use href="#lf" transform="rotate(300)"/>
+      </g>
+      <g fill="#34803a">
+        <use href="#lf" transform="rotate(30) scale(0.85)"/><use href="#lf" transform="rotate(100) scale(0.85)"/>
+        <use href="#lf" transform="rotate(170) scale(0.85)"/><use href="#lf" transform="rotate(240) scale(0.85)"/>
+        <use href="#lf" transform="rotate(310) scale(0.85)"/>
+      </g>
+      <g fill="#56a645">
+        <use href="#lf" transform="rotate(-60) scale(0.6)"/><use href="#lf" transform="rotate(-150) scale(0.6)"/>
+        <use href="#lf" transform="rotate(20) scale(0.6)"/>
+      </g>
+      <path d="M0 0 L3.6 -4.2 M0 0 L-3.8 -2.2 M0 0 L3.8 1.4" stroke="#7cc255" stroke-width="0.5" opacity="0.8"/>
+    </g>
+    <g id="pm">
+      <ellipse cx="1" cy="1" rx="8" ry="2.4" fill="#1d4a27" opacity="0.6"/>
+      <path d="M-1 1 Q-2.5 -6 1 -13" stroke="#7a5b37" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M-2.6 -2 h2.2 M-2.4 -5.5 h2.2 M-1.4 -9 h2.2" stroke="#4f3a24" stroke-width="0.7"/>
+      <g transform="translate(1 -13)">
+        <g fill="#3a8436">
+          <use href="#fd" transform="rotate(15)"/><use href="#fd" transform="rotate(165)"/>
+          <use href="#fd" transform="rotate(60) scale(0.8)"/><use href="#fd" transform="rotate(120) scale(0.8)"/>
+        </g>
+        <g fill="#64b24c">
+          <use href="#fd" transform="rotate(-12)"/><use href="#fd" transform="rotate(192)"/>
+          <use href="#fd" transform="rotate(-55) scale(0.85)"/><use href="#fd" transform="rotate(-125) scale(0.85)"/>
+          <use href="#fd" transform="rotate(-90) scale(0.65)"/>
+        </g>
+        <circle cx="-1" cy="1" r="1.3" fill="#5a4028"/>
+        <circle cx="1.2" cy="1.2" r="1.3" fill="#5a4028"/>
+      </g>
+    </g>
+    <g id="fw">
+      <circle cx="0" cy="0" r="1.5" fill="#e2574c"/>
+      <circle cx="0" cy="0" r="0.6" fill="#f3c14d"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#2f6b3a"/>
+  <!-- Edge canopy: identical across jungle variants, stamped in wrapped
+       pairs (a stamp that crosses x=0 repeats at +64, likewise y, corners at
+       all four) so any variant abuts any variant with no visible join. -->
+  <g>
+    <use href="#bl" transform="translate(0 0) scale(0.9)"/>
+    <use href="#bl" transform="translate(64 0) scale(0.9)"/>
+    <use href="#bl" transform="translate(0 64) scale(0.9)"/>
+    <use href="#bl" transform="translate(64 64) scale(0.9)"/>
+    <use href="#bl" transform="translate(-2 22) scale(0.85)"/>
+    <use href="#bl" transform="translate(62 22) scale(0.85)"/>
+    <use href="#bl" transform="translate(1 43) scale(-0.9 0.9)"/>
+    <use href="#bl" transform="translate(65 43) scale(-0.9 0.9)"/>
+    <use href="#bl" transform="translate(21 -1) scale(0.85)"/>
+    <use href="#bl" transform="translate(21 63) scale(0.85)"/>
+    <use href="#bl" transform="translate(43 2) scale(-0.9 0.9)"/>
+    <use href="#bl" transform="translate(43 66) scale(-0.9 0.9)"/>
+  </g>
+  <!-- Inner canopy and palms, farthest (highest base) first. -->
+  <use href="#bl" transform="translate(18 20) rotate(15)"/>
+  <use href="#bl" transform="translate(40 18) scale(-0.9 0.9)"/>
+  <use href="#pm" transform="translate(30 28)"/>
+  <use href="#bl" transform="translate(48 36) scale(0.95)"/>
+  <use href="#bl" transform="translate(17 40) scale(-1 1)"/>
+  <use href="#fw" transform="translate(40 30)"/>
+  <use href="#bl" transform="translate(34 48) rotate(-25)"/>
+  <use href="#pm" transform="translate(50 56) scale(0.85)"/>
+  <use href="#fw" transform="translate(14 30) scale(0.8)"/>
+  <use href="#fw" transform="translate(26 54) scale(0.9)"/>
+</svg>

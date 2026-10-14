@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="10" cy="10" rx="6" ry="3.5" fill="#63a651"/>
+  <ellipse cx="55" cy="58" rx="6" ry="3" fill="#529044"/>
+  <!-- Scorched yard: browned grass around a sooty dirt patch. -->
+  <ellipse cx="32" cy="46" rx="25" ry="11" fill="#7a8a45"/>
+  <ellipse cx="32" cy="47" rx="19" ry="7.5" fill="#8a7a5a"/>
+  <ellipse cx="30" cy="49.5" rx="21" ry="2.4" fill="#3d342c" opacity="0.45"/>
+  <!-- Plaster shop front burned down to a ragged line, streaked with soot. -->
+  <path d="M10 49 V30 L13.5 32 L17 29.4 L21 31.6 L25 29.8 V49 Z" fill="#b8ad96"/>
+  <path d="M25 49 V29.8 L28.6 31.8 L32 29.2 L36 31.4 L40 30 V49 Z" fill="#a89d86"/>
+  <path d="M10 49 V30 L13.5 32 L17 29.4 L21 31.6 L25 29.8 L28.6 31.8 L32 29.2 L36 31.4 L40 30 V49 Z" fill="none" stroke="#6a5d4a" stroke-width="0.7" stroke-linejoin="round"/>
+  <rect x="10" y="47.5" width="30" height="1.5" fill="#7a7468"/>
+  <path d="M14 33 Q15 36 14.4 38 M33.4 32 Q34.4 34.6 33.8 36.4" stroke="#3d342c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <!-- What is left of the shingle roof: bare rafters and one patch of
+       charred shingles on the east slope. -->
+  <g stroke="#2e2824" stroke-linecap="round" fill="none">
+    <path d="M8 29.6 L13.4 15.4" stroke-width="1.3"/>
+    <path d="M13.4 15.4 L22 15.4" stroke-width="1.2"/>
+    <path d="M18.6 29.4 L21.2 21.4" stroke-width="1"/>
+    <path d="M42 29.6 L37.6 18" stroke-width="1.3"/>
+  </g>
+  <path d="M28 29.4 L30 24 L33 25.4 L35.4 22.4 L38.6 23.6 L41.4 29.6 Z" fill="#5a3a26"/>
+  <path d="M29.6 27 H40.2" stroke="#3a2418" stroke-width="0.6"/>
+  <path d="M28 29.4 L30 24 L33 25.4 L35.4 22.4 L38.6 23.6 L41.4 29.6" fill="none" stroke="#2e2824" stroke-width="0.6" stroke-linejoin="round"/>
+  <!-- The awning is burned to its frame, with a few black rags. -->
+  <path d="M12 35 H27 M11 38.6 L12 35 M28 38.6 L27 35" stroke="#2e2824" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+  <path d="M14 35 L13.6 37.2 L14.8 36.4 L15.4 35 Z M22.4 35 L22.2 36.8 L23.4 36 L23.8 35 Z" fill="#3d342c"/>
+  <!-- Display window smashed: a dark hole, glass on the sill, and charred
+       loaves. -->
+  <rect x="12.5" y="39.2" width="14" height="6" fill="#2e2824" stroke="#4a3a2c" stroke-width="0.6"/>
+  <path d="M12.5 39.2 L15 41.4 L14 39.2 M26.5 39.2 L24.2 40.8 L25.6 42.4 L26.5 41.8" fill="#8fa6b0" opacity="0.6"/>
+  <rect x="12" y="45.2" width="15" height="1.5" fill="#3d342c"/>
+  <g fill="#2e2824">
+    <ellipse cx="16" cy="44.6" rx="1.6" ry="0.9"/>
+    <ellipse cx="22.4" cy="44.6" rx="1.5" ry="0.9"/>
+  </g>
+  <!-- The door hangs from one hinge. -->
+  <rect x="30.5" y="38" width="6" height="11" fill="#2e2824"/>
+  <path d="M30.5 38 L33.4 38.8 L33 49.4 L30.5 49 Z" fill="#3d342c" stroke="#2e2824" stroke-width="0.4"/>
+  <rect x="29.5" y="49" width="8" height="1.3" fill="#7a7468"/>
+  <!-- The pretzel sign has fallen from its bracket. -->
+  <path d="M10 33 H4.5" stroke="#3a352e" stroke-width="0.7"/>
+  <path d="M6.5 33 V34.3" stroke="#3a352e" stroke-width="0.4"/>
+  <g fill="none" stroke="#5a4028" stroke-width="1" stroke-linecap="round" transform="rotate(70 6 52)">
+    <path d="M6 50 Q3.5 50 3.6 52 Q3.7 54 6 54 Q8.3 54 8.4 52 Q8.5 50 6 50"/>
+    <path d="M4.1 53.2 L7.9 50.8 M7.9 53.2 L4.1 50.8"/>
+  </g>
+  <!-- The domed brick oven stands whole but blackened, and cold. -->
+  <path d="M40 49 V41 Q40 32.5 48 32.5 Q56 32.5 56 41 V49 Z" fill="#8a5a48"/>
+  <path d="M48 32.5 Q56 32.5 56 41 V49 H48 Z" fill="#744a3a"/>
+  <path d="M40.3 38 H55.7 M40 43.5 H56 M44 32.9 V38 M52 32.9 V38 M48 38 V43.5 M44 43.5 V49 M52 43.5 V49" stroke="#5a3a2c" stroke-width="0.45" fill="none"/>
+  <path d="M42 34.4 Q46 33.2 48 36 Q51 33.4 54.4 35.6 L55 38 H41 Z" fill="#2e2824" opacity="0.55"/>
+  <path d="M40 49 V41 Q40 32.5 48 32.5 Q56 32.5 56 41 V49" fill="none" stroke="#4a3228" stroke-width="0.6"/>
+  <path d="M44.5 49 V45.3 Q48 41.6 51.5 45.3 V49 Z" fill="#1f1a16"/>
+  <rect x="49" y="26" width="3.4" height="7.5" fill="#7a746a" stroke="#5a554c" stroke-width="0.5"/>
+  <rect x="48.6" y="25.4" width="4.2" height="1.3" fill="#3d342c"/>
+  <!-- Smoke from the rubble inside the shop. -->
+  <g fill="#b8b3a8">
+    <circle cx="24" cy="24" r="2" opacity="0.5"/>
+    <circle cx="22" cy="20" r="2.6" opacity="0.35"/>
+    <circle cx="19.6" cy="16.2" r="3" opacity="0.2"/>
+  </g>
+  <!-- The firewood burned to ash, and a flour sack split open. -->
+  <g>
+    <ellipse cx="56" cy="51" rx="3.2" ry="1.2" fill="#9a958c"/>
+    <ellipse cx="55.6" cy="50.7" rx="1.6" ry="0.5" fill="#b8b3a8"/>
+    <circle cx="57" cy="50.8" r="0.4" fill="#e8a040"/>
+  </g>
+  <g>
+    <path d="M6.5 50 Q6 45.5 8.8 45.2 Q11.6 45.5 11 50 Z" fill="#8a8272" stroke="#6a5d4a" stroke-width="0.5"/>
+    <path d="M7.8 45.4 L8.8 44.3 L9.8 45.4" stroke="#6a5d4a" stroke-width="0.5" fill="none"/>
+    <path d="M11.8 51.2 L12.6 48.6 L15.4 48 L16.6 50.2 L15.6 51.2 Z" fill="#8a8272" stroke="#6a5d4a" stroke-width="0.5"/>
+    <ellipse cx="18.6" cy="51.4" rx="2.6" ry="0.8" fill="#ece4d0"/>
+  </g>
+  <path d="M29 55 L34.6 54.2" stroke="#3d342c" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,462 @@
+import { coerceCR } from '../data/challenge.js';
+import { abilityModifier, normalizeStatBlock } from './Modifiers.js';
+import { heldMods, withChipAC } from './ChipMods.js';
+import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
+import { defaultEnemyGear } from './CreatureLoadout.js';
+import { endOnDamage } from './Conditions.js';
+import { creatureTypeFields } from './CreatureType.js';
+import { attackTraitFields } from './CreatureAttacks.js';
+import { withCasterFields, ensureCasterFields, casterLevelOf } from './Caster.js';
+import { castsAs, casterDefFor } from './ClassCasting.js';
+import { isCasterPool } from './SpellSlots.js';
+import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js';
+import { creatureProficiencyFields } from './Proficiencies.js';
+import { defenseFields } from './DamageDefenses.js';
+import { capitalize } from '../util/text.js';
+import { MAX_LEVEL } from './Experience.js';
+import { actionFields } from './CreatureActions.js';
+import { factionIdField } from './Factions.js';
+import {
+  coerceHPBuffs,
+  conditionList,
+  levelOf,
+  resourceList,
+  spellbookOf,
+} from './LoadCoercion.js';
+
+/** @typedef {import('../types/creature.js').Creature} Creature */
+/** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
+/** @typedef {import('../types/creature.js').Disposition} Disposition */
+/** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
+/** @typedef {import('../types/entities.js').CreatureTier} CreatureTier */
+/** @typedef {import('../types/entities.js').StatModifier} StatModifier */
+/** @typedef {import('../types/entities.js').CreatureWeapon} CreatureWeapon */
+/** @typedef {import('../types/entities.js').CreatureArmor} CreatureArmor */
+/** @typedef {import('../types/entities.js').Spellbook} Spellbook */
+
+/** The hit points a creature gets when nobody types a number: the 5e
+ * commoner's 4. */
+export const DEFAULT_CREATURE_HP = 4;
+
+/** The dispositions a creature can hold toward the party. */
+export const DISPOSITIONS = /** @type {Disposition[]} */ (['friendly', 'neutral', 'hostile']);
+
+/** The dispositions as select options, shared by every creature form.
+ * @returns {{ value: Disposition, label: string }[]} */
+export function dispositionOptions() {
+  return DISPOSITIONS.map((d) => ({ value: d, label: capitalize(d) }));
+}
+
+/**
+ * True for a creature, false for a character. A creature always carries a
+ * `disposition`, and a character never does. Every consumer that must tell
+ * the two apart reads this one test.
+ * @param {object} entity
+ * @returns {boolean}
+ */
+export function isCreature(entity) {
+  return 'disposition' in entity;
+}
+
+/**
+ * The challenge-rating field to spread into a creature or a template, or
+ * nothing at all. Every write path runs through here, so a rating that is not
+ * one of the defined steps never reaches a stored creature, whatever a
+ * hand-edited save or an older shape carried. Absence is the "unrated" value.
+ * @param {unknown} value
+ * @returns {{ cr?: number }}
+ */
+function crFields(value) {
+  const cr = coerceCR(value);
+  return cr === undefined ? {} : { cr };
+}
+
+/**
+ * The optional stat block traits of a creature or a template. A creature with
+ * no value for a trait stores no key for it. `withDefaults` and
+ * `editCreature` drop these keys before they write the coerced values back,
+ * and `fromTemplate` copies them from a template. A key missing from this list
+ * would pass a load uncoerced, stay on a creature after an edit cleared it, or
+ * be lost on a spawn.
+ */
+export const TRAIT_KEYS = Object.freeze(
+  /** @type {const} */ ([
+    'cr',
+    'proficiencies',
+    'defenses',
+    'creatureType',
+    'conditionImmunities',
+    'multiattack',
+    'packTactics',
+    'surpriseAttack',
+    'multiattackDisadvantage',
+    'redirectAttack',
+    'turnResistance',
+    'legendaryActions',
+    'legendaryResistance',
+    'actions',
+  ]),
+);
+
+/** @typedef {Pick<Creature, typeof TRAIT_KEYS[number]>} CreatureTraits */
+
+/**
+ * The coerced trait fields to spread into a creature or a template. A trait
+ * with no usable value adds no key.
+ * @param {{ [K in keyof CreatureTraits]?: unknown }} value
+ * @returns {CreatureTraits}
+ */
+export function creatureTraitFields(value) {
+  return {
+    ...crFields(value.cr),
+    ...creatureProficiencyFields(value.proficiencies),
+    ...defenseFields(value.defenses),
+    ...creatureTypeFields(value),
+    ...attackTraitFields(value),
+    ...actionFields(value.actions),
+  };
+}
+
+/**
+ * The trait keys that `value` has, with their values as given and not
+ * coerced.
+ * @template {object} T
+ * @param {T} value
+ * @returns {Partial<T>}
+ */
+export function pickTraits(value) {
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  const own = /** @type {Record<string, unknown>} */ (value);
+  for (const key of TRAIT_KEYS) if (key in own) out[key] = own[key];
+  return /** @type {Partial<T>} */ (out);
+}
+
+/**
+ * A copy of `value` with no trait key.
+ * @template {object} T
+ * @param {T} value
+ * @returns {T}
+ */
+export function omitTraits(value) {
+  const out = /** @type {Record<string, unknown>} */ ({ ...value });
+  for (const key of TRAIT_KEYS) delete out[key];
+  return /** @type {T} */ (out);
+}
+
+/**
+ * Clamp a typed maximum to a live creature: at least 1, whole, with the
+ * commoner default for a blank or nonsense value.
+ * @param {number | undefined} maxHP
+ * @returns {number}
+ */
+function clampMaxHP(maxHP) {
+  return Math.max(1, Math.floor(maxHP ?? DEFAULT_CREATURE_HP) || DEFAULT_CREATURE_HP);
+}
+
+/**
+ * Create a creature at full health. The stat block is closed over the fixed
+ * stat set (six abilities plus AC), and AC defaults to 10 plus the DEX
+ * modifier.
+ *
+ * The gear rule is resolved here, once: an explicit weapon list or armor is
+ * kept, an empty list or null included. An absent one takes the level or tier default when
+ * the creature has a level, and null when it has none. The stored value is
+ * always explicit, so no read path derives gear again.
+ * @param {string} id
+ * @param {string} name
+ * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapons?: CreatureWeapon[], armor?: CreatureArmor | null, level?: number, tier?: CreatureTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
+ * @returns {Creature}
+ */
+export function createCreature(id, name, options = {}) {
+  const maxHP = clampMaxHP(options.maxHP);
+  const hasLevel = options.level != null;
+  const tier = options.tier ?? 'mob';
+  const stamp = hasLevel ? defaultEnemyGear(/** @type {number} */ (options.level), tier) : null;
+  const creature = {
+    id,
+    name,
+    disposition: options.disposition ?? 'neutral',
+    maxHP,
+    currentHP: maxHP,
+    stats: normalizeStatBlock(options.stats ?? {}),
+    location: options.location ?? null,
+    conditions: [],
+    exhaustion: 0,
+    met: options.met ?? false,
+    weapons: options.weapons !== undefined ? options.weapons : stamp ? [stamp.weapon] : [],
+    armor: options.armor !== undefined ? coerceEnemyArmor(options.armor) : (stamp?.armor ?? null),
+    ...(hasLevel ? { level: options.level, tier } : {}),
+    ...creatureTraitFields(options),
+    ...(options.role !== undefined ? { role: options.role } : {}),
+    ...(options.notes !== undefined ? { notes: options.notes } : {}),
+    ...(options.subclass !== undefined ? { subclass: options.subclass } : {}),
+  };
+  // A caster class stamps spell slots (rebuilt for its level) and an empty
+  // spellbook. A non-caster leaves the creature untouched.
+  return withCasterFields(creature, options, casterLevelOf(options));
+}
+
+/**
+ * Fill in fields that a loaded creature can lack. A creature saved without
+ * hit points reads as a commoner at full health. The stat block is
+ * re-closed over the fixed stat set, so it gains an AC and drops any stat
+ * that is no longer part of the set. Gear backfills to null only. The
+ * function never rebuilds a default loadout, because the create and edit
+ * paths store gear explicitly. A creature that carries exhaustion as a
+ * condition chip, from before it had a level behind it, reads as level 1 and
+ * loses the chip. A challenge rating that is not one of the defined steps is
+ * dropped, and the creature reads as unrated. A proficiency list is cleaned the
+ * same way, and a creature trained in nothing keeps no list at all.
+ * @param {Creature} creature
+ * @returns {Creature}
+ */
+export function withDefaults(creature) {
+  const maxHP = clampMaxHP(creature.maxHP);
+  const {
+    resources,
+    spellbook,
+    level: rawLevel,
+    casterLevel: rawCasterLevel,
+    weapon: legacyWeapon,
+    weapons: rawWeapons,
+    factionId,
+    ...stripped
+  } = /** @type {Creature & { weapon?: unknown }} */ (omitTraits(creature));
+  const book = spellbookOf(spellbook);
+  const level = levelOf(rawLevel, 1, Infinity);
+  const casterLevel = levelOf(rawCasterLevel, 1, MAX_LEVEL);
+  return ensureCasterFields(
+    {
+      ...coerceHPBuffs(stripped),
+      ...(level !== undefined ? { level } : {}),
+      ...(casterLevel !== undefined ? { casterLevel } : {}),
+      ...(resources !== undefined ? { resources: resourceList(resources) } : {}),
+      ...(book ? { spellbook: book } : {}),
+      ...factionIdField(factionId),
+      ...creatureTraitFields(creature),
+      disposition: creature.disposition ?? 'neutral',
+      maxHP,
+      currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
+      stats: normalizeStatBlock(creature.stats ?? {}),
+      location: creature.location ?? null,
+      ...exhaustionFields(creature.exhaustion, conditionList(creature.conditions)),
+      met: creature.met ?? false,
+      weapons: weaponList(rawWeapons, legacyWeapon),
+      armor: coerceEnemyArmor(creature.armor),
+    },
+    casterLevelOf({ casterLevel, level }),
+  );
+}
+
+/**
+ * The stat block a creature fights with: base values, with the worn armor in
+ * place of the unarmored 10 + DEX (`enemyArmorDelta`), plus every active
+ * timed modifier. The chips on the creature change its AC last (see
+ * `ChipMods.js`). A Mage Armor base counts only for a creature that wears no
+ * armor, and it replaces a lower AC rather than adding to it, because the
+ * stat block AC of an unarmored creature already includes its natural armor.
+ * Combat math and the Play view use this value.
+ * @param {Creature} creature
+ * @returns {Record<string, number>}
+ */
+export function effectiveStatBlock(creature) {
+  const block = normalizeStatBlock(creature.stats ?? {});
+  block.AC += enemyArmorDelta(creature.armor, block.DEX);
+  const mods = heldMods(creature.conditions);
+  if (mods.acBase > 0 && !creature.armor) {
+    block.AC = Math.max(block.AC, mods.acBase + abilityModifier(block.DEX));
+  }
+  for (const mod of creature.statMods ?? []) {
+    if (mod.stat in block) block[mod.stat] += mod.delta;
+  }
+  block.AC = withChipAC(block.AC, mods);
+  return block;
+}
+
+/**
+ * Add a timed adjustment to one stat: +delta (or -delta) for a number of
+ * combat rounds. Modifiers on the same stat stack, and each ticks down on
+ * its own.
+ * @param {Creature} creature
+ * @param {string} stat
+ * @param {number} delta
+ * @param {number} rounds
+ * @returns {Creature}
+ */
+export function addStatModifier(creature, stat, delta, rounds) {
+  if (!delta || rounds < 1) return creature;
+  const mod = { stat, delta, rounds: Math.floor(rounds) };
+  return { ...creature, statMods: [...(creature.statMods ?? []), mod] };
+}
+
+/**
+ * Apply a GM edit to a creature's blueprint fields and placement, keeping
+ * its live state. currentHP survives (clamped to the new maximum), and the
+ * conditions stay untouched, so re-tuning a fight in progress does not
+ * reset it. The stat block stays untouched too, unless the edit carries a
+ * `stats` record, which is what a dialog with stat fields submits. A move
+ * clears the `met` flag, so the party landing on the new spot logs a fresh
+ * meeting. A blank level removes the level and the tier together.
+ *
+ * A caster edit that changes the class or caster level rebuilds the slot
+ * pools (at full). Dropping the caster class (or setting a non-caster)
+ * strips the spell fields. An unchanged class and level keep the current
+ * slots, spent and all.
+ *
+ * A blank challenge rating removes the rating, the same way a blank level
+ * removes the level. Clearing both proficiency pickers removes the whole
+ * proficiency record.
+ * @param {Creature} creature
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: CreatureTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, packTactics?: boolean, surpriseAttack?: import("../types/creature.js").SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: boolean, turnResistance?: boolean, legendaryActions?: number, legendaryResistance?: number, actions?: import("../types/creature.js").CreatureAction[], role?: string, notes?: string, weapons?: CreatureWeapon[], armor?: CreatureArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @returns {Creature}
+ */
+export function editCreature(creature, edits) {
+  const maxHP = Math.max(1, edits.maxHP);
+  const moved =
+    (creature.location?.nodeId ?? null) !== (edits.location?.nodeId ?? null) ||
+    (creature.location?.tileId ?? null) !== (edits.location?.tileId ?? null);
+  const { level: _level, tier: _tier, ...unleveled } = omitTraits(creature);
+  const base = {
+    ...unleveled,
+    name: edits.name,
+    disposition: edits.disposition,
+    maxHP,
+    currentHP: Math.min(creature.currentHP, maxHP),
+    location: edits.location,
+    weapons: edits.weapons === undefined ? creature.weapons : edits.weapons,
+    armor: edits.armor === undefined ? creature.armor : edits.armor,
+    met: moved ? false : creature.met,
+    ...(edits.stats !== undefined ? { stats: normalizeStatBlock(edits.stats) } : {}),
+    ...(edits.level != null ? { level: edits.level, tier: edits.tier ?? 'mob' } : {}),
+    ...creatureTraitFields({
+      ...edits,
+      actions: edits.actions === undefined ? creature.actions : edits.actions,
+    }),
+    ...(edits.role !== undefined ? { role: edits.role } : {}),
+    ...(edits.notes !== undefined ? { notes: edits.notes } : {}),
+  };
+  return applyCasterEdit(base, creature, edits);
+}
+
+/**
+ * Reconcile a creature's caster fields against an edit. The function keeps
+ * the spellbook across a class or level change (the GM re-picks spells
+ * separately), but rebuilds slot pools when either changes. It strips all
+ * spell fields when the edit clears the caster class. `editCreature` shares
+ * this function.
+ * @param {Creature} base the edited creature (non-caster fields applied)
+ * @param {Creature} prior the creature before the edit
+ * @param {{ level?: number, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @returns {Creature}
+ */
+function applyCasterEdit(base, prior, edits) {
+  const priorLevel = casterLevelOf(prior);
+  const wasCaster = castsAs(prior.class, prior.subclass, priorLevel);
+  const level = casterLevelOf(edits);
+  // The caster form sends a subclass only for a casting one (the Eldritch
+  // Knight). A kept class keeps its stored subclass, so a Life Domain cleric
+  // stays one across an edit.
+  const subclass = edits.subclass ?? (edits.class === prior.class ? prior.subclass : undefined);
+  // A subclass counts as a change only when it changes the casting, so
+  // naming a cleric's domain keeps its spent slots.
+  const changed =
+    edits.class !== prior.class ||
+    level !== prior.casterLevel ||
+    casterDefFor({ classId: edits.class ?? '', subclass, level }) !==
+      casterDefFor({ classId: prior.class ?? '', subclass: prior.subclass, level });
+  if (!castsAs(edits.class, subclass, level)) {
+    // Dropped to a non-caster: shed the spell fields and slot pools.
+    if (!wasCaster) return { ...base, class: edits.class, subclass };
+    const { casterLevel: _lvl, spellbook: _book, ...rest } = base;
+    return {
+      ...rest,
+      class: edits.class,
+      subclass,
+      resources: (base.resources ?? []).filter((r) => !isCasterPool(r)),
+    };
+  }
+  if (!changed && wasCaster) {
+    // Same caster class, subclass, and level: keep current (possibly spent)
+    // slots.
+    return { ...base, spellbook: edits.spellbook ?? base.spellbook, subclass };
+  }
+  return withCasterFields(
+    { ...base, spellbook: edits.spellbook ?? prior.spellbook },
+    { ...edits, subclass },
+    level,
+  );
+}
+
+/**
+ * Apply damage, clamped so currentHP never drops below 0. Temporary HP
+ * absorb the damage first. Any damage ends a chip that damage ends (Sleep).
+ * @param {Creature} creature
+ * @param {number} amount
+ * @returns {Creature}
+ */
+export function applyDamage(creature, amount) {
+  const conditions =
+    amount > 0 && creature.conditions ? endOnDamage(creature.conditions) : creature.conditions;
+  const temp = creature.bonusHP ?? 0;
+  const absorbed = Math.min(temp, Math.max(0, amount));
+  return {
+    ...creature,
+    conditions,
+    ...(absorbed > 0 ? { bonusHP: temp - absorbed } : {}),
+    currentHP: Math.max(0, creature.currentHP - (amount - absorbed)),
+  };
+}
+
+/**
+ * Kill a creature outright, with no damage behind it (Power Word Kill). A
+ * creature leaves a fight only at 0 HP, so this sets it there, and its
+ * temporary HP go too. It ends no chip, because no damage lands.
+ * @param {Creature} creature
+ * @returns {Creature}
+ */
+export function slay(creature) {
+  return { ...creature, currentHP: 0, ...(creature.bonusHP ? { bonusHP: 0 } : {}) };
+}
+
+/**
+ * Heal, clamped so currentHP never exceeds maxHP.
+ *
+ * A heal that brings a creature off 0 HP also takes one level of exhaustion off
+ * a creature at the sixth level. That level is what put the creature down, and
+ * leaving it in place would take the creature out again on the next write. This
+ * is the creature half of the rule that `DeathSaves.clearDying` holds for a
+ * character.
+ * @param {Creature} creature
+ * @param {number} amount
+ * @returns {Creature}
+ */
+export function heal(creature, amount) {
+  const next = { ...creature, currentHP: Math.min(creature.maxHP, creature.currentHP + amount) };
+  return next.currentHP > 0 && atDeathLevel(next) ? easeExhaustion(next) : next;
+}
+
+/**
+ * Whether a creature is out of the fight. 0 HP ends its part in the fight,
+ * and it rolls no death saves.
+ * @param {Creature} creature
+ * @returns {boolean}
+ */
+export function isDefeated(creature) {
+  return creature.currentHP <= 0;
+}
+
+/**
+ * The stored weapon list of a loaded creature or template. A list keeps its
+ * record entries. A record without a list reads its single `weapon` field,
+ * which an older save writes, as a list of one. Anything else is no weapon.
+ * @param {unknown} weapons
+ * @param {unknown} [legacy]
+ * @returns {CreatureWeapon[]}
+ */
+export function weaponList(weapons, legacy) {
+  /** @param {unknown} w @returns {w is CreatureWeapon} */
+  const usable = (w) => typeof w === 'object' && w !== null && !Array.isArray(w);
+  if (Array.isArray(weapons)) return weapons.filter(usable);
+  return usable(legacy) ? [legacy] : [];
+}
