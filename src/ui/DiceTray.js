@@ -3,7 +3,7 @@ import { buildDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 import { iconButton, segSwitch, textButton } from './buttons.js';
 import { el } from './dom.js';
-import { checkbox, numberField } from './formFields.js';
+import { checkbox, numberField, select, setOptions } from './formFields.js';
 import { capitalize } from '../util/text.js';
 import { parseTarget, rollTarget } from '../dice/TrayTarget.js';
 import { resultSummary } from '../dice/ResultLine.js';
@@ -34,8 +34,21 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * The **Hidden roll** box marks the tray's own rolls as secret, and `onRoll`
  * passes its state on. The box stays ticked until the GM clears it. The
  * stylesheet hides it in a Player tab, which has nothing to roll in secret.
+ *
+ * With `tables`, a row under the footer picks a random table and rolls on
+ * it. `tables.list` gives the picker its choices each time it takes focus,
+ * so a table added in Library mode shows without a remount. `tables.onRoll`
+ * rolls the chosen table, logs the line, and returns the text that the
+ * result line shows. The Hidden roll box applies to a table roll too. The
+ * stylesheet hides the row in a Player tab.
  * @param {HTMLElement} container
- * @param {{ onRoll?: (text: string, flags: { hidden: boolean }) => void }} [opts]
+ * @param {{
+ *   onRoll?: (text: string, flags: { hidden: boolean }) => void,
+ *   tables?: {
+ *     list: () => { value: string, label: string }[],
+ *     onRoll: (key: string, flags: { hidden: boolean }) => string | null,
+ *   },
+ * }} [opts]
  * @returns {{
  *   getSelection: () => import('../types/dice.js').DiceSelection,
  *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null, options?: import('../types/dice.js').TrayRollOptions) => import('../types/dice.js').TrayRoll,
@@ -221,7 +234,40 @@ export function mountDiceTray(container, opts = {}) {
     targetInput,
   );
   root.appendChild(el('div', 'dice-tray__footer', targetField, hiddenBox.label, rollButton));
+  if (opts.tables) root.appendChild(tableRow(opts.tables));
   container.appendChild(root);
+
+  /**
+   * The table roll row: a picker over the library tables and a Roll table
+   * button. The result line shows the table name and the row text.
+   * @param {NonNullable<typeof opts.tables>} tables
+   */
+  function tableRow(tables) {
+    const picker = select([], '', { ariaLabel: 'Random table' });
+    const refill = () => setOptions(picker, tables.list(), picker.value);
+    picker.addEventListener('focus', refill);
+    picker.addEventListener('pointerdown', refill);
+    refill();
+    const button = textButton(
+      'Roll table',
+      () => {
+        refill();
+        const text = picker.value
+          ? tables.onRoll(picker.value, { hidden: hiddenBox.input.checked })
+          : null;
+        if (text === null) return;
+        const name = picker.selectedOptions[0]?.textContent ?? '';
+        resultEl.replaceChildren(
+          el('span', 'dice-tray__table-name u-muted', name),
+          el('span', 'dice-tray__table-text', text),
+        );
+        resultEl.hidden = false;
+        root.scrollTop = 0;
+      },
+      { icon: 'scroll' },
+    );
+    return el('div', 'dice-tray__tables', picker, button);
+  }
 
   return {
     getSelection: () => selection,

@@ -1,12 +1,14 @@
 /**
- * The dice tray and the roll log. Rolls live in the log (the tray itself
+ * The dice tray, its random table row, and the roll log. Rolls live in the log (the tray itself
  * shows only the latest roll), tagged by which side of the screen rolled them.
  */
 
 import { mustGetElement } from '../ui/dom.js';
 import { mountDiceTray } from '../ui/DiceTray.js';
 import { isGM } from '../view/ViewRole.js';
-import { trayRollLine } from '../log/TrayRollLine.js';
+import { trayRollLine, tableRollLine } from '../log/TrayRollLine.js';
+import { activeTableEntries, nameKey } from '../library/Library.js';
+import { rollTable } from '../dice/RandomTable.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -27,6 +29,21 @@ export function wireDiceTray(app) {
     onRoll: (text, { hidden }) => {
       const line = trayRollLine(rollerName(), text, { hidden, gm: isGM(app.state.role) });
       app.actions.logEvent('roll', line.message, line.options);
+    },
+    // The table row rolls the merged library tables, built-in and custom.
+    // Only a GM tab rolls on a table, and the stylesheet hides the row in a
+    // Player tab.
+    tables: {
+      list: () =>
+        activeTableEntries().map(({ entry }) => ({ value: nameKey(entry), label: entry.name })),
+      onRoll: (key, { hidden }) => {
+        const table = activeTableEntries().find(({ entry }) => nameKey(entry) === key)?.entry;
+        const result = table && isGM(app.state.role) ? rollTable(table, Math.random) : null;
+        if (!table || !result) return null;
+        const line = tableRollLine(rollerName(), table.name, result.text, { hidden, gm: true });
+        app.actions.logEvent('roll', line.message, line.options);
+        return result.text;
+      },
     },
   });
 

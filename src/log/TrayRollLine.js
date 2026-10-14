@@ -1,5 +1,6 @@
 /**
- * The travelogue line of a roll from the dice tray. A hidden roll is GM-only.
+ * The travelogue lines of a roll from the dice tray: a dice roll or a roll on
+ * a random table. A hidden roll is GM-only.
  * The GM reads the dice and the result, and a Player tab reads only that the
  * GM rolled, so a secret Perception check or a foe's save gives nothing away.
  */
@@ -24,4 +25,26 @@ export function trayRollLine(roller, text, { hidden = false, gm = false } = {}) 
     };
   }
   return { message: `${roller} rolls ${text}.` };
+}
+
+/**
+ * The message and visibility options of a roll on a random table. The row
+ * text ends the line, and a period closes it unless the text already ends a
+ * sentence. A hidden roll keeps the table and the result from a Player tab,
+ * the same way a hidden tray roll does.
+ * @param {string} roller the name of who rolled, such as "The GM"
+ * @param {string} table the table name
+ * @param {string} text the row text that came up
+ * @param {{ hidden?: boolean, gm?: boolean }} [flags]
+ * @returns {{ message: string, options?: import('../types/log.js').LogOptions }}
+ */
+export function tableRollLine(roller, table, text, { hidden = false, gm = false } = {}) {
+  const result = /[.!?]$/.test(text) ? text : `${text}.`;
+  if (hidden && gm) {
+    return {
+      message: `${roller} rolls on ${table} in secret: ${result}`,
+      options: { player: SECRET_ROLL_LINE },
+    };
+  }
+  return { message: `${roller} rolls on ${table}: ${result}` };
 }
