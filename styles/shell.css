@@ -273,3 +273,28 @@ body:not(.mode-build) #undo-btn {
 body.role-player:not(.fight-running) #encounter-container {
   display: none;
 }
+
+/* The notice that src/boot.js shows when the module graph fails to load.
+   It sits over the empty page, above every other layer. */
+.load-error {
+  position: fixed;
+  top: var(--space-4);
+  left: 50%;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-3);
+  transform: translateX(-50%);
+}
+
+.load-error p {
+  margin: 0;
+}

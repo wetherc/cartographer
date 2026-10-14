@@ -13,8 +13,8 @@ build, but the code does not depend on it. The same `index.html` runs the
 unbundled sources when a static server serves the repository root. The
 unbundled app requests each of its several hundred modules at once, so use
 a server that queues them, such as `pnpm run dev` or `pnpx serve`.
-`python3 -m http.server` resets many of those connections and leaves a
-blank page.
+`python3 -m http.server` resets many of those connections. The app then
+does not start, and `src/boot.js` shows a notice that asks for a reload.
 [CONTRIBUTING.md](../CONTRIBUTING.md) describes both builds.
 
 Each deeper subsystem has its own guide:
