@@ -75,6 +75,7 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Pick the choices of a class feature at level-up, such as the Expertise of the Rogue.
 - Track items, spell slots, and other resources that a character uses up.
 - Drink a healing potion, or any item that has heal dice, from the inventory.
+- Buy library equipment with the coins of a character. The built-in items have their SRD prices.
 - Keep every creature in one list, from major enemies with hit points to friendly and neutral NPCs. A creature has a challenge rating and its trained saving throws and skills, and the app works out each bonus.
 - Roll any combination of dice in the dice tray.
 

@@ -4,6 +4,8 @@ import { riderText } from '../entities/Riders.js';
 import { crLabel } from '../data/challenge.js';
 import { SPELL_KINDS } from '../entities/SpellKinds.js';
 import { countNoun, capitalize } from '../util/text.js';
+import { itemSummary } from '../entities/Equipment.js';
+import { formatCost } from '../entities/Purse.js';
 
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -87,4 +89,17 @@ export function creatureSummary(entry) {
       .join(' | ');
   }
   return [entry.role, entry.disposition].filter(Boolean).join(' | ');
+}
+
+/** Build the one-line summary for an equipment entry in the library row.
+ * It shows the item's effects, or its description when it has none, and
+ * then its price when the entry has one.
+ * @param {import('../types/library.js').EquipmentTemplate} entry
+ * @returns {string} */
+export function equipmentSummary(entry) {
+  const effects =
+    itemSummary(/** @type {import('../types/entities.js').InventoryItem} */ (entry)) ||
+    entry.description ||
+    '';
+  return [effects, entry.cost ? formatCost(entry.cost) : ''].filter(Boolean).join(' | ');
 }

@@ -9,6 +9,9 @@ import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
 import { buildPurseFields } from './PurseFields.js';
+import { buildBuyRow } from './BuyRow.js';
+import { activeEquipment } from '../library/Library.js';
+import { buyItem, buyableTemplates } from '../entities/Shop.js';
 import { purseOf, setPurse } from '../entities/Purse.js';
 import { shownItem, tileText } from '../view/ItemTiles.js';
 import { capitalize, slugify } from '../util/text.js';
@@ -78,6 +81,9 @@ export function mountInventoryPanel(
   // time opens by default.
   /** @type {Set<ItemType>} */
   const collapsedTypes = new Set();
+  // The name of the last library entry bought, so the rebuilt Buy row
+  // offers it again.
+  let buyPick = '';
   /** This tracks which item's edit, give, or count form is open. It is shared with the row builders. */
   const view = {
     /** @type {string | null} */ editingId: null,
@@ -266,6 +272,33 @@ export function mountInventoryPanel(
       },
     });
     const panel = el('div', '', coins, controls, list);
+    // A purchase adds an item, which is a GM ruling like the add form below,
+    // so the Buy row follows `canEdit`.
+    if (canEdit()) {
+      const buy = buildBuyRow(
+        buyableTemplates(activeEquipment()),
+        (template, quantity) => {
+          const result = buyItem(liveCharacter(), template, quantity);
+          if ('error' in result) return result.error;
+          commit(result.character, {
+            verb: 'buy',
+            itemName: template.name,
+            count: result.count,
+            price: result.price,
+          });
+          // The coin fields show the purse they were built with, so the tab
+          // rebuilds. The new Buy row keeps the pick and takes the focus.
+          buyPick = template.name;
+          render();
+          /** @type {HTMLElement | null} */ (
+            inventoryHost.querySelector('.buy-row button')
+          )?.focus();
+          return null;
+        },
+        buyPick,
+      );
+      panel.insertBefore(buy, controls);
+    }
 
     searchInput.addEventListener('input', () => {
       searchQuery = searchInput.value;

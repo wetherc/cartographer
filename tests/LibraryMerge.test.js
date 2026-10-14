@@ -155,3 +155,14 @@ test('isLibraryEmpty counts random tables', () => {
   const table = { name: 'Weather', rows: [{ weight: 1, text: 'Rain' }] };
   assert.equal(isLibraryEmpty({ ...emptyLibrary(), tables: [table] }), false);
 });
+
+test('the built-in equipment carries the SRD prices it knows', () => {
+  const byName = new Map(defaultEquipmentTemplates().map((e) => [e.name, e]));
+  assert.equal(byName.get('Longsword')?.cost, 15);
+  assert.equal(byName.get('Plate')?.cost, 1500);
+  assert.equal(byName.get('Shield')?.cost, 10);
+  assert.equal(byName.get('Torch')?.cost, 0.01);
+  assert.equal(byName.get('Potion of Healing')?.cost, 50);
+  assert.equal(Object.hasOwn(byName.get('Arcane Focus') ?? {}, 'cost'), false);
+  assert.equal(Object.hasOwn(byName.get('Potion of Greater Healing') ?? {}, 'cost'), false);
+});

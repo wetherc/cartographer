@@ -9,6 +9,11 @@ import { DEFAULT_RANGES, WEAPON_PROPERTIES, clampWeaponRange } from './Weapons.j
  * presets that seed the item form's pickers and the library's stock equipment
  * list. Split out of Equipment.js so that module keeps the equipment rules
  * (slots, AC, migrations) while this one holds only reference data.
+ *
+ * `cost` is the SRD price in gold pieces, so 0.1 is 1 sp and 0.01 is 1 cp.
+ * An entry leaves it out when its price depends on the exact object, as for
+ * an arcane or druidic focus, or when the SRD equipment table lists no
+ * price, as for the stronger healing potions.
  */
 
 /**
@@ -23,6 +28,7 @@ import { DEFAULT_RANGES, WEAPON_PROPERTIES, clampWeaponRange } from './Weapons.j
  *   range?: import('../types/entities.js').WeaponRange,
  *   versatileDamage?: import('../types/entities.js').DamagePart[],
  *   damage: import('../types/entities.js').DamagePart[],
+ *   cost?: number,
  * }} WeaponPreset
  */
 
@@ -36,6 +42,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Dagger',
     type: 'weapon',
+    cost: 2,
     kind: 'melee',
     category: 'simple',
     properties: ['finesse', 'light', 'thrown'],
@@ -45,6 +52,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Shortsword',
     type: 'weapon',
+    cost: 10,
     kind: 'melee',
     category: 'martial',
     properties: ['finesse', 'light'],
@@ -53,6 +61,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Rapier',
     type: 'weapon',
+    cost: 25,
     kind: 'melee',
     category: 'martial',
     properties: ['finesse'],
@@ -61,6 +70,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Quarterstaff',
     type: 'weapon',
+    cost: 0.2,
     kind: 'melee',
     category: 'simple',
     properties: ['versatile'],
@@ -70,6 +80,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Mace',
     type: 'weapon',
+    cost: 5,
     kind: 'melee',
     category: 'simple',
     damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
@@ -77,6 +88,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Spear',
     type: 'weapon',
+    cost: 1,
     kind: 'melee',
     category: 'simple',
     properties: ['thrown', 'versatile'],
@@ -87,6 +99,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Longsword',
     type: 'weapon',
+    cost: 15,
     kind: 'melee',
     category: 'martial',
     properties: ['versatile'],
@@ -96,6 +109,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Battleaxe',
     type: 'weapon',
+    cost: 10,
     kind: 'melee',
     category: 'martial',
     properties: ['versatile'],
@@ -105,6 +119,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Warhammer',
     type: 'weapon',
+    cost: 15,
     kind: 'melee',
     category: 'martial',
     properties: ['versatile'],
@@ -114,6 +129,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Glaive',
     type: 'weapon',
+    cost: 20,
     kind: 'melee',
     category: 'martial',
     properties: ['heavy', 'reach', 'two-handed'],
@@ -122,6 +138,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Greataxe',
     type: 'weapon',
+    cost: 30,
     kind: 'melee',
     category: 'martial',
     properties: ['heavy', 'two-handed'],
@@ -130,6 +147,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Greatsword',
     type: 'weapon',
+    cost: 50,
     kind: 'melee',
     category: 'martial',
     properties: ['heavy', 'two-handed'],
@@ -138,6 +156,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Maul',
     type: 'weapon',
+    cost: 10,
     kind: 'melee',
     category: 'martial',
     properties: ['heavy', 'two-handed'],
@@ -146,6 +165,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Shortbow',
     type: 'bow',
+    cost: 25,
     kind: 'ranged',
     category: 'simple',
     properties: ['ammunition', 'two-handed'],
@@ -155,6 +175,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Longbow',
     type: 'bow',
+    cost: 50,
     kind: 'ranged',
     category: 'martial',
     properties: ['ammunition', 'heavy', 'two-handed'],
@@ -164,6 +185,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Light Crossbow',
     type: 'bow',
+    cost: 25,
     kind: 'ranged',
     category: 'simple',
     properties: ['ammunition', 'loading', 'two-handed'],
@@ -173,6 +195,7 @@ export const WEAPON_PRESETS = [
   {
     name: 'Heavy Crossbow',
     type: 'bow',
+    cost: 50,
     kind: 'ranged',
     category: 'martial',
     properties: ['ammunition', 'heavy', 'loading', 'two-handed'],
@@ -195,30 +218,52 @@ export const WEAPON_PRESETS = [
  *   baseAC: number,
  *   stealthDisadvantage?: boolean,
  *   strength?: number,
+ *   cost?: number,
  * }[]}
  */
 export const ARMOR_PRESETS = [
-  { name: 'Padded', armorWeight: 'light', baseAC: 11, stealthDisadvantage: true },
-  { name: 'Leather Armor', armorWeight: 'light', baseAC: 11 },
-  { name: 'Studded Leather', armorWeight: 'light', baseAC: 12 },
-  { name: 'Hide', armorWeight: 'medium', baseAC: 12 },
-  { name: 'Chain Shirt', armorWeight: 'medium', baseAC: 13 },
-  { name: 'Scale Mail', armorWeight: 'medium', baseAC: 14, stealthDisadvantage: true },
-  { name: 'Breastplate', armorWeight: 'medium', baseAC: 14 },
-  { name: 'Half Plate', armorWeight: 'medium', baseAC: 15, stealthDisadvantage: true },
-  { name: 'Ring Mail', armorWeight: 'heavy', baseAC: 14, stealthDisadvantage: true },
-  { name: 'Chain Mail', armorWeight: 'heavy', baseAC: 16, stealthDisadvantage: true, strength: 13 },
-  { name: 'Splint', armorWeight: 'heavy', baseAC: 17, stealthDisadvantage: true, strength: 15 },
-  { name: 'Plate', armorWeight: 'heavy', baseAC: 18, stealthDisadvantage: true, strength: 15 },
+  { name: 'Padded', armorWeight: 'light', baseAC: 11, stealthDisadvantage: true, cost: 5 },
+  { name: 'Leather Armor', armorWeight: 'light', baseAC: 11, cost: 10 },
+  { name: 'Studded Leather', armorWeight: 'light', baseAC: 12, cost: 45 },
+  { name: 'Hide', armorWeight: 'medium', baseAC: 12, cost: 10 },
+  { name: 'Chain Shirt', armorWeight: 'medium', baseAC: 13, cost: 50 },
+  { name: 'Scale Mail', armorWeight: 'medium', baseAC: 14, stealthDisadvantage: true, cost: 50 },
+  { name: 'Breastplate', armorWeight: 'medium', baseAC: 14, cost: 400 },
+  { name: 'Half Plate', armorWeight: 'medium', baseAC: 15, stealthDisadvantage: true, cost: 750 },
+  { name: 'Ring Mail', armorWeight: 'heavy', baseAC: 14, stealthDisadvantage: true, cost: 30 },
+  {
+    name: 'Chain Mail',
+    armorWeight: 'heavy',
+    baseAC: 16,
+    stealthDisadvantage: true,
+    strength: 13,
+    cost: 75,
+  },
+  {
+    name: 'Splint',
+    armorWeight: 'heavy',
+    baseAC: 17,
+    stealthDisadvantage: true,
+    strength: 15,
+    cost: 200,
+  },
+  {
+    name: 'Plate',
+    armorWeight: 'heavy',
+    baseAC: 18,
+    stealthDisadvantage: true,
+    strength: 15,
+    cost: 1500,
+  },
 ];
 
 /**
  * Shields: picking one fills a new shield item's AC bonus. The 5e list holds
  * one entry, and a GM who wants a heavier shield edits the bonus after
  * picking it or adds an entry in the Library.
- * @type {{ name: string, acBonus: number }[]}
+ * @type {{ name: string, acBonus: number, cost?: number }[]}
  */
-export const SHIELD_PRESETS = [{ name: 'Shield', acBonus: 2 }];
+export const SHIELD_PRESETS = [{ name: 'Shield', acBonus: 2, cost: 10 }];
 
 /**
  * Standard adventuring gear: picking one fills a new gear item's name and
@@ -228,7 +273,7 @@ export const SHIELD_PRESETS = [{ name: 'Shield', acBonus: 2 }];
  * rule `Casting.materialCheck` applies.
  * The torch and the lantern set `light`, so a group that carries one sees in
  * the dark.
- * @type {{ name: string, description: string, spellFocus?: boolean, light?: boolean }[]}
+ * @type {{ name: string, description: string, spellFocus?: boolean, light?: boolean, cost?: number }[]}
  */
 export const GEAR_PRESETS = [
   {
@@ -236,33 +281,35 @@ export const GEAR_PRESETS = [
     description: 'Orb, rod, staff, or wand; covers cost-free material components',
     spellFocus: true,
   },
-  { name: 'Bedroll', description: 'Sleeping roll for camping' },
+  { name: 'Bedroll', description: 'Sleeping roll for camping', cost: 1 },
   {
     name: 'Component Pouch',
     description: 'Holds the cost-free material components of any spell',
     spellFocus: true,
+    cost: 25,
   },
-  { name: 'Crowbar', description: 'Grants advantage on checks where leverage applies' },
+  { name: 'Crowbar', description: 'Grants advantage on checks where leverage applies', cost: 2 },
   {
     name: 'Druidic Focus',
     description: 'Sprig of mistletoe, totem, or yew wand; covers cost-free material components',
     spellFocus: true,
   },
-  { name: 'Grappling Hook', description: 'Anchors a rope to a ledge or battlement' },
-  { name: "Healer's Kit", description: 'Ten uses; stabilizes a dying creature' },
+  { name: 'Grappling Hook', description: 'Anchors a rope to a ledge or battlement', cost: 2 },
+  { name: "Healer's Kit", description: 'Ten uses; stabilizes a dying creature', cost: 5 },
   {
     name: 'Holy Symbol',
     description: 'Amulet, emblem, or reliquary; covers cost-free material components',
     spellFocus: true,
+    cost: 5,
   },
-  { name: 'Lantern (hooded)', description: 'Bright light 30 ft; burns oil', light: true },
-  { name: 'Oil Flask', description: 'One pint; fuels a lantern or splashes a target' },
-  { name: 'Rations (1 day)', description: 'Dry food for one day of travel' },
-  { name: 'Rope (50 ft)', description: 'Hempen rope; holds up to 300 lb' },
-  { name: "Thieves' Tools", description: 'Picks and probes for locks and traps' },
-  { name: 'Tinderbox', description: 'Flint, steel, and tinder for lighting fires' },
-  { name: 'Torch', description: 'Bright light 20 ft; burns for one hour', light: true },
-  { name: 'Waterskin', description: 'Holds four pints of liquid' },
+  { name: 'Lantern (hooded)', description: 'Bright light 30 ft; burns oil', light: true, cost: 5 },
+  { name: 'Oil Flask', description: 'One pint; fuels a lantern or splashes a target', cost: 0.1 },
+  { name: 'Rations (1 day)', description: 'Dry food for one day of travel', cost: 0.5 },
+  { name: 'Rope (50 ft)', description: 'Hempen rope; holds up to 300 lb', cost: 1 },
+  { name: "Thieves' Tools", description: 'Picks and probes for locks and traps', cost: 25 },
+  { name: 'Tinderbox', description: 'Flint, steel, and tinder for lighting fires', cost: 0.5 },
+  { name: 'Torch', description: 'Bright light 20 ft; burns for one hour', light: true, cost: 0.01 },
+  { name: 'Waterskin', description: 'Holds four pints of liquid', cost: 0.2 },
 ];
 
 /**
@@ -270,17 +317,22 @@ export const GEAR_PRESETS = [
  * description. A healing potion also lists its heal dice in `heals`, and
  * adding the preset copies them onto the item. Every other effect is the
  * GM's call.
- * @type {{ name: string, description: string, heals?: { count: number, sides: number, bonus: number } }[]}
+ * @type {{ name: string, description: string, heals?: { count: number, sides: number, bonus: number }, cost?: number }[]}
  */
 export const CONSUMABLE_PRESETS = [
-  { name: 'Acid Vial', description: 'Thrown: 2d6 acid damage' },
-  { name: "Alchemist's Fire", description: 'Thrown: 1d4 fire damage per round until doused' },
-  { name: 'Antitoxin', description: 'Advantage on saves against poison for 1 hour' },
-  { name: 'Holy Water', description: 'Thrown: 2d6 radiant damage to fiends and undead' },
+  { name: 'Acid Vial', description: 'Thrown: 2d6 acid damage', cost: 25 },
+  {
+    name: "Alchemist's Fire",
+    description: 'Thrown: 1d4 fire damage per round until doused',
+    cost: 50,
+  },
+  { name: 'Antitoxin', description: 'Advantage on saves against poison for 1 hour', cost: 50 },
+  { name: 'Holy Water', description: 'Thrown: 2d6 radiant damage to fiends and undead', cost: 25 },
   {
     name: 'Potion of Healing',
     description: 'Drink to regain 2d4 + 2 HP',
     heals: { count: 2, sides: 4, bonus: 2 },
+    cost: 50,
   },
   {
     name: 'Potion of Greater Healing',

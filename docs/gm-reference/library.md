@@ -77,3 +77,16 @@ A table with no row text cannot be saved, and the form shows "Add at least
 one row with text." The app does not roll dice that a row names, such as
 "1d4 + 2 wolves". Roll them in the dice tray. To roll a table, see
 [Dice tray](story.md#dice-tray).
+## Equipment prices
+
+The equipment form has a **Cost (gp)** field. Type the price in gold
+pieces, so 0.1 is 1 sp and 0.01 is 1 cp. A price of 0 means the entry has
+no price. The Library row shows the price after the stat line, such as
+"1d8 slashing | 15 gp". The **Buy** row of the Inventory tab lists every
+entry with a price (see [Inventory and equipment](characters.md#inventory-and-equipment)).
+
+The built-in entries have the SRD prices. The Arcane Focus and the Druidic
+Focus have no price, because the SRD price depends on the object, such as
+an orb or a wand. The Potions of Greater, Superior, and Supreme Healing have
+no price, because the SRD equipment table does not list them. To sell one
+of them, edit the entry and type a price.

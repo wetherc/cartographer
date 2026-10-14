@@ -26,7 +26,7 @@ test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () =>
 });
 
 test('SHIELD_PRESETS ship the 5e shield at the default bonus', () => {
-  assert.deepEqual(SHIELD_PRESETS, [{ name: 'Shield', acBonus: SHIELD_AC }]);
+  assert.deepEqual(SHIELD_PRESETS, [{ name: 'Shield', acBonus: SHIELD_AC, cost: 10 }]);
 });
 
 test('enemyArmor returns correct armor object for valid name', () => {

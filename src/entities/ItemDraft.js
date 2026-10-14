@@ -2,6 +2,7 @@ import { ITEM_TYPES, WEAPON_TYPES } from './Equipment.js';
 import { coerceHeals } from './HealDice.js';
 import { DEFAULT_RANGES, clampWeaponRange } from './Weapons.js';
 import { clampInt } from '../util/num.js';
+import { costCp } from './Purse.js';
 
 /**
  * This module turns the item form's raw control values into an inventory
@@ -73,6 +74,8 @@ export const EQUIPPABLE_TYPES = [
  * @property {boolean} [magical] weapons only: the weapon counts as magical
  * @property {{ count: unknown, sides: unknown, bonus: unknown }} [heals]
  *   consumables only: the heal dice, with a count of 0 for no heal
+ * @property {unknown} [cost] library entries only: the price in gold pieces,
+ *   with 0 or blank for no price
  */
 
 /**
@@ -99,6 +102,7 @@ export function assembleItem(draft) {
   const buffStat = EQUIPPABLE_TYPES.includes(type) ? draft.buffStat : '';
   const buffAmount = Number(draft.buffAmount) || 0;
   const heals = type === 'consumable' && draft.heals ? coerceHeals(draft.heals) : null;
+  const cost = costCp(draft.cost);
   return {
     name: draft.name.trim(),
     quantity,
@@ -121,6 +125,7 @@ export function assembleItem(draft) {
     ...(draft.light && LIGHT_TYPES.includes(type) ? { light: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
     ...(heals ? { heals } : {}),
+    ...(cost > 0 ? { cost: cost / 100 } : {}),
     ...(WEAPON_TYPES.includes(type) ? weaponFields(draft) : {}),
   };
 }

@@ -700,6 +700,21 @@ drunk** with a dice count, a die size, and a bonus. For example, 3, d6, and 0
 make a Troll Draught that heals 3d6. A potion preset fills these values for
 you. On the sheet, **Use one** asks who drinks the item and rolls the heal.
 
+### Buy an item
+
+1. Click **Open full sheet** on the character sheet, then the **Inventory**
+   tab.
+2. In the **Buy** row under the coins, pick the item in **Item** and set
+   **Qty**.
+3. Click **Buy**. The price leaves the coins of the character, and the item
+   shows in the list.
+
+The **Item** list has only the library entries with a price. To sell an
+item that is not in the list, give its library entry a price in **Cost
+(gp)** (see [Change a built-in default](#change-a-built-in-default)). When
+the character cannot pay, the row names the price and the coins, and
+nothing changes.
+
 ### Rest
 
 A rest applies to each character in the party at once, and it moves the

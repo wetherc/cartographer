@@ -77,6 +77,12 @@ export function buildItemForm({
     className: 'form__number',
   });
 
+  // A library entry has a price in gold pieces, which the Buy row of the
+  // inventory charges. A stack in a pack has no price field.
+  const costInput = numberField(item?.cost ?? 0, { min: 0, className: 'form__number' });
+  costInput.step = '0.01';
+  setTip(costInput, 'Price in gold pieces: 0.1 is 1 sp, 0.01 is 1 cp, 0 is no price');
+
   // gear is the catch-all for miscellaneous, non-equippable items, for
   // example rope, rations, and trinkets. The picker states this where the GM picks it.
   // The helmet, gloves, and greaves slots are not part of 5e, so their type
@@ -302,6 +308,7 @@ export function buildItemForm({
     focusBox.input.checked = preset.spellFocus === true;
     lightBox.input.checked = preset.light === true;
     if (type === 'consumable') heal.set(preset.heals ?? null);
+    costInput.value = String(preset.cost ?? 0);
     if (preset.statusEffects) effects.set(preset.statusEffects);
     const [buff] = Object.entries(preset.statBonuses ?? {});
     if (buff) {
@@ -419,6 +426,7 @@ export function buildItemForm({
       light: lightBox.input.checked,
       magical: magicBox.input.checked,
       heals: heal.get(),
+      cost: template ? costInput.value : 0,
     });
 
   return buildInlineForm({
@@ -428,7 +436,7 @@ export function buildItemForm({
       labeled('Description', descriptionInput),
       // A library template is a blueprint, not a stack. It has no quantity to set.
       template
-        ? fieldRow(labeled('Type', typeSelect), presetField)
+        ? fieldRow(labeled('Type', typeSelect), labeled('Cost (gp)', costInput), presetField)
         : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput), presetField),
       armorRow,
       weaponRow,

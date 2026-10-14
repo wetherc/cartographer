@@ -5,6 +5,7 @@
  */
 
 import { withHeals } from '../entities/HealDice.js';
+import { withCost } from '../entities/Purse.js';
 import { normalizeSpell } from '../entities/SpellEntry.js';
 import { spellbookOf } from '../entities/LoadCoercion.js';
 import { emptySpellbook } from '../entities/CharacterSpellbook.js';
@@ -276,7 +277,9 @@ export function normalizeLibrary(parsed) {
     arrayOf(source.equipment)
       .filter((e) => typeof e.name === 'string' && e.name.trim() && ITEM_TYPES.includes(e.type))
       .map((e) => {
-        const named = /** @type {Record<string, any>} */ (withHeals({ ...e, name: e.name.trim() }));
+        const named = /** @type {Record<string, any>} */ (
+          withCost(withHeals({ ...e, name: e.name.trim() }))
+        );
         if (!WEAPON_TYPES.includes(e.type)) return /** @type {EquipmentTemplate} */ (named);
         return /** @type {EquipmentTemplate} */ (withCoercedWeapon(named));
       }),

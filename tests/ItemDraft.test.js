@@ -281,3 +281,11 @@ test('only gear keeps the light flag', () => {
     undefined,
   );
 });
+
+test('a library entry keeps a price above zero, rounded to copper', () => {
+  assert.equal(assembleItem(draft({ cost: '15' }))?.cost, 15);
+  assert.equal(assembleItem(draft({ cost: 0.014 }))?.cost, 0.01);
+  for (const cost of [0, '', -2, undefined]) {
+    assert.equal(Object.hasOwn(assembleItem(draft({ cost })) ?? {}, 'cost'), false);
+  }
+});

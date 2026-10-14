@@ -34,9 +34,13 @@ import {
   LIBRARY_FILE,
 } from '../storage/LibraryStore.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
-import { itemSummary } from '../entities/Equipment.js';
 import { creatureForm } from './creatureForm.js';
-import { creatureSummary, featSummary, spellSummary } from './librarySummaries.js';
+import {
+  creatureSummary,
+  equipmentSummary,
+  featSummary,
+  spellSummary,
+} from './librarySummaries.js';
 import { creatureTags, spellTags } from '../library/LibraryFacets.js';
 import { mountTablePanel } from './libraryTables.js';
 
@@ -262,10 +266,7 @@ export function wireLibrary(app) {
             .map(({ entry, source }) => ({
               key: equipmentKey(entry),
               name: entry.name,
-              summary:
-                itemSummary(/** @type {import('../types/entities.js').InventoryItem} */ (entry)) ||
-                entry.description ||
-                '',
+              summary: equipmentSummary(entry),
               source,
               group: category.types.length > 1 && group !== category.label ? group : undefined,
             }));

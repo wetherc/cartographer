@@ -576,6 +576,18 @@ the player of a bound tab can change the counts, and a spectator sees one
 line such as "25 gp, 7 sp". A save that keeps gold as a "Gold (gp)" item
 moves that item into the gold field when it loads.
 
+The GM also sees a **Buy** row under the coins. Its **Item** list has every
+library entry with a price, grouped by item type, such as "Longsword
+(15 gp)". Pick an item and a **Qty**, then click **Buy**. The price of the
+whole stack leaves the coins, the stack joins the inventory, and the
+travelogue logs a line such as "Wren buys Torch x10 for 1 sp." The small
+coins go first. When they do not cover the price, one larger coin pays the
+rest, and the change comes back in gold, silver, and copper. When the coins
+are worth less than the price, the row shows a message such as "Longsword
+x2 costs 30 gp. Wren has 3 gp, 2 sp." and nothing changes. A Player tab has
+no Buy row, because a purchase adds an item. The price of each entry comes
+from the Library (see [Equipment prices](library.md#equipment-prices)).
+
 The Inventory tab also has a search box over names and descriptions, a type
 filter, and one collapsible heading per item type. Under each heading, every
 item is a tile with its name, one short stat line, a badge such as "x41" for

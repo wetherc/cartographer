@@ -411,6 +411,9 @@ export interface InventoryItem {
    * example 2d4 + 2 on a Potion of Healing. Absent means "Use one" only
    * takes the item off the stack. */
   heals?: HealDice;
+  /** The price in gold pieces. The item form writes it only on a library
+   * entry (see EquipmentTemplate), and a bought stack leaves it off. */
+  cost?: number;
 }
 
 /** The heal roll of a consumable: `count` dice of `sides` plus `bonus`. */

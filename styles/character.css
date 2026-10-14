@@ -752,3 +752,37 @@
 .purse-fields__row .form__number {
   width: 100%;
 }
+
+/* The Buy row under the coins: a picker of the priced library entries, a
+   count, and the Buy button. The status line names the price when the
+   purse is short. */
+.buy-row {
+  margin-bottom: var(--space-3);
+}
+
+.buy-row__heading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label);
+}
+
+.buy-row__item {
+  max-width: 100%;
+}
+
+/* The line height of a field, so the Buy button stands as tall as the
+   picker and the count beside it. */
+.buy-row .btn {
+  line-height: 1.5;
+}
+
+.buy-row__status {
+  margin: var(--space-1) 0 0;
+}
+
+.buy-row__status:empty {
+  display: none;
+}
+
+.buy-row__status--error {
+  color: var(--danger);
+}

@@ -123,3 +123,95 @@ export function formatPurse(purse) {
   const parts = COINS.filter(({ key }) => purse[key] > 0).map(({ key }) => `${purse[key]} ${key}`);
   return parts.length ? parts.join(', ') : 'No coins';
 }
+
+/**
+ * A price in gold pieces as a whole count of copper pieces. A price of
+ * zero, a negative price, or text reads as 0. Every 5e price is a whole
+ * number of copper pieces, so the result rounds to the nearest one.
+ * @param {unknown} gp
+ * @returns {number}
+ */
+export const costCp = (gp) => coinCount(Math.round(Number(gp) * 100));
+
+/** The coins that a price reads in and that change comes back in. A shop
+ * quotes in gold, silver, and copper, and gives no platinum or electrum. */
+const CHANGE_COINS = COINS.filter(({ key }) => key === 'gp' || key === 'sp' || key === 'cp');
+
+/**
+ * A count of copper pieces as the fewest gold, silver, and copper coins.
+ * @param {number} cp
+ * @returns {Purse}
+ */
+function asChange(cp) {
+  const coins = emptyPurse();
+  let left = cp;
+  for (const { key, cp: value } of CHANGE_COINS) {
+    coins[key] = Math.floor(left / value);
+    left -= coins[key] * value;
+  }
+  return coins;
+}
+
+/**
+ * A price in gold pieces as short text in gold, silver, and copper, such as
+ * "15 gp", "5 sp", or "1 gp, 5 sp". A price of zero reads as "Free".
+ * @param {unknown} gp
+ * @returns {string}
+ */
+export function formatCost(gp) {
+  const cp = costCp(gp);
+  return cp === 0 ? 'Free' : formatPurse(asChange(cp));
+}
+
+/**
+ * The total value of a purse in copper pieces.
+ * @param {Purse} purse
+ * @returns {number}
+ */
+export const purseValueCp = (purse) => COINS.reduce((sum, { key, cp }) => sum + purse[key] * cp, 0);
+
+/**
+ * Take a price out of a purse. The smallest coins go first, so a purse
+ * does not fill up with copper over many small buys. When the small coins
+ * do not cover the price, one larger coin pays the rest and the change
+ * comes back in gold, silver, and copper. A purse worth less than the
+ * price returns null.
+ * @param {Purse} purse
+ * @param {number} cp the price in copper pieces
+ * @returns {Purse | null}
+ */
+export function spendCoins(purse, cp) {
+  if (purseValueCp(purse) < cp) return null;
+  const next = { ...purse };
+  let owed = cp;
+  // COINS runs from the most valuable down, so walk it backwards.
+  const smallFirst = [...COINS].reverse();
+  for (const { key, cp: value } of smallFirst) {
+    const n = Math.min(next[key], Math.floor(owed / value));
+    next[key] -= n;
+    owed -= n * value;
+  }
+  if (owed === 0) return next;
+  // Each coin left is worth more than what is still owed, because the walk
+  // above took each size until one more coin would overpay. The purse is
+  // worth at least the price, so at least one coin is left.
+  const coin = /** @type {(typeof COINS)[number]} */ (smallFirst.find(({ key }) => next[key] > 0));
+  next[coin.key] -= 1;
+  const change = asChange(coin.cp - owed);
+  for (const { key } of CHANGE_COINS) next[key] += change[key];
+  return next;
+}
+
+/**
+ * A library entry with its price read from any value a file can hold. A
+ * price above zero rounds to whole copper pieces, and any other value
+ * drops the field, so a hand-edited "free" or -5 leaves the entry unpriced.
+ * @template {Record<string, any>} T
+ * @param {T} entry
+ * @returns {Omit<T, 'cost'> & { cost?: number }}
+ */
+export function withCost(entry) {
+  const { cost, ...rest } = entry;
+  const cp = costCp(cost);
+  return cp > 0 ? { ...rest, cost: cp / 100 } : rest;
+}

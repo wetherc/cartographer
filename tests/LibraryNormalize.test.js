@@ -418,3 +418,19 @@ test('normalizeLibrary repairs random tables and keeps one per name', () => {
   });
   assert.deepEqual(library.tables, [{ name: 'weather', rows: [{ weight: 1, text: 'Sun' }] }]);
 });
+
+test('an equipment price above zero loads rounded to copper, and any other drops', () => {
+  const lib = normalizeLibrary({
+    equipment: [
+      { name: 'Lute', type: 'gear', cost: 35 },
+      { name: 'Chalk', type: 'gear', cost: '0.011' },
+      { name: 'Junk', type: 'gear', cost: 'lots' },
+      { name: 'Debt', type: 'gear', cost: -4 },
+    ],
+  });
+  assert.deepEqual(
+    lib.equipment.map((e) => e.cost),
+    [35, 0.01, undefined, undefined],
+  );
+  assert.equal(Object.hasOwn(lib.equipment[2], 'cost'), false);
+});

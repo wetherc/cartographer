@@ -39,6 +39,7 @@ export function defaultEquipmentTemplates() {
       ...(p.range ? { range: { ...p.range } } : {}),
       ...(p.versatileDamage ? { versatileDamage: p.versatileDamage.map((d) => ({ ...d })) } : {}),
       damage: p.damage.map((d) => ({ ...d })),
+      ...(p.cost ? { cost: p.cost } : {}),
     })),
     ...ARMOR_PRESETS.map((p) => ({
       name: p.name,
@@ -47,11 +48,13 @@ export function defaultEquipmentTemplates() {
       baseAC: p.baseAC,
       ...(p.stealthDisadvantage ? { stealthDisadvantage: true } : {}),
       ...(p.strength ? { strength: p.strength } : {}),
+      ...(p.cost ? { cost: p.cost } : {}),
     })),
     ...SHIELD_PRESETS.map((p) => ({
       name: p.name,
       type: /** @type {import('../types/entities.js').ItemType} */ ('shield'),
       acBonus: p.acBonus,
+      ...(p.cost ? { cost: p.cost } : {}),
     })),
     ...GEAR_PRESETS.map((p) => ({
       name: p.name,
@@ -59,12 +62,14 @@ export function defaultEquipmentTemplates() {
       description: p.description,
       ...(p.spellFocus ? { spellFocus: true } : {}),
       ...(p.light ? { light: true } : {}),
+      ...(p.cost ? { cost: p.cost } : {}),
     })),
     ...CONSUMABLE_PRESETS.map((p) => ({
       name: p.name,
       type: /** @type {import('../types/entities.js').ItemType} */ ('consumable'),
       description: p.description,
       ...(p.heals ? { heals: { ...p.heals } } : {}),
+      ...(p.cost ? { cost: p.cost } : {}),
     })),
   ]));
 }

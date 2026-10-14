@@ -66,3 +66,10 @@ test('discard reads as discards with the whole stack count', () => {
     'Hero discards Rope x5.',
   );
 });
+
+test('buy reads as buys with the count and the price paid', () => {
+  assert.equal(
+    formatInventoryEvent('Hero', { verb: 'buy', itemName: 'Torch', count: 10, price: '1 sp' }),
+    'Hero buys Torch x10 for 1 sp.',
+  );
+});

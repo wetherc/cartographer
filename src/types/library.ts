@@ -39,6 +39,9 @@ export interface EquipmentTemplate {
   spellFocus?: boolean;
   light?: boolean;
   heals?: HealDice;
+  /** The price in gold pieces, such as 0.01 for 1 cp. Absent or 0 means the
+   * library sets no price, and the Buy row leaves the entry out. */
+  cost?: number;
 }
 
 /**

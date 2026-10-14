@@ -518,6 +518,7 @@ test('armor presets carry a valid weight class and a plausible base AC', () => {
     baseAC: 18,
     stealthDisadvantage: true,
     strength: 15,
+    cost: 1500,
   });
 });
 

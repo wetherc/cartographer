@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { creatureSummary, featSummary, spellSummary } from '../src/app/librarySummaries.js';
+import {
+  creatureSummary,
+  equipmentSummary,
+  featSummary,
+  spellSummary,
+} from '../src/app/librarySummaries.js';
 
 const bite = { name: 'Bite', damage: [{ count: 2, sides: 4, damageType: 'piercing' }] };
 
@@ -94,4 +99,13 @@ test('featSummary reads "No automatic effect" for a feat with no effects, and na
     featSummary(/** @type {any} */ ({ effects: [], prerequisite: 'STR 13' })),
     'No automatic effect | Requires STR 13',
   );
+});
+
+test('equipmentSummary shows the effects or description, then the price', () => {
+  assert.equal(
+    equipmentSummary({ name: 'Torch', type: 'gear', description: 'Bright light', cost: 0.01 }),
+    'Bright light | 1 cp',
+  );
+  assert.equal(equipmentSummary({ name: 'Shield', type: 'shield', acBonus: 2 }), '+2 AC');
+  assert.equal(equipmentSummary({ name: 'Rock', type: 'gear' }), '');
 });
