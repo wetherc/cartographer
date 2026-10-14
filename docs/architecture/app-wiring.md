@@ -1085,6 +1085,10 @@ Inside the wiring:
 - Every edit and removal writes through `updateCustom(edit)`. It reads the
   stored library first and applies the edit to that copy, so two tabs that
   edit the library do not erase each other's work.
+- The equipment, creature, spell, and feat lists mount from
+  `mountEntryPanels` in `app/libraryPanels.js`. The wiring passes it
+  `updateCustom`, `makeRemoveHandler`, and `makeKeyedStore`, so the lists
+  write to the custom library only through those three functions.
 - The row summaries live in `app/librarySummaries.js`.
 - The Tables list mounts from `app/libraryTables.js`. A table has no id,
   because no campaign record points at one, so an edit stores under the name
