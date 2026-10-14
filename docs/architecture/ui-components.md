@@ -888,7 +888,7 @@ numberField(value, opts?)           -> HTMLInputElement
 textareaField(value, opts?)         -> HTMLTextAreaElement
 select(options, value, opts?)       -> HTMLSelectElement
 setOptions(select, options, value)                        // refill an existing picker
-buildInlineForm({ nameInput, rows, assemble, submitLabel, onSubmit,
+buildInlineForm({ nameInput, nameLabel?, rows, assemble, submitLabel, onSubmit,
                   onCancel?, afterSubmit?, className? }) -> HTMLDivElement
 ```
 
@@ -931,7 +931,8 @@ share. It wraps the form, puts the name field first with the shared
 - A submit reads the whole form through `assemble`, which returns the
   finished value, or `null` to refuse the submit.
 - The frame refuses a blank name before `assemble` runs, so no form checks
-  it again.
+  it again. It marks the name input `aria-invalid`, moves focus to it, and
+  shows "Name is required." in an alert line at the top of the button row.
 - `afterSubmit` runs after an accepted submit. The inventory's add row uses
   it to clear itself, and the editor for one item keeps its values on
   screen.

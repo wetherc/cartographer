@@ -11,7 +11,7 @@ import { getClass, isCasterClass, CLASS_LIST } from '../entities/Classes.js';
 import { assembleProficiencies } from '../entities/Proficiencies.js';
 import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
-import { ABILITY_SCORES } from '../entities/Modifiers.js';
+import { ABILITY_LIMIT, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { countNoun, capitalize, splitList, splitTrimmedList } from '../util/text.js';
@@ -258,15 +258,15 @@ function applyStatMethod(form, rng) {
   form.setHidden('reroll', method !== 'roll');
   // The standard array method swaps the number inputs for the assignment
   // pill grid. Every other method shows the inputs. Point buy limits the
-  // inputs to the buyable range of 8-15. The rest use the shared positive
-  // floor. Rolled scores come from the dice: the inputs display them but
+  // inputs to the buyable range of 8-15. The rest use the shared range of 1
+  // to 30. Rolled scores come from the dice: the inputs display them but
   // are not editable.
   form.setHidden('statPills', method !== 'standard-array');
   for (const key of ABILITY_SCORES) {
     form.setHidden(`stat-${key}`, method === 'standard-array');
     form.setDisabled(`stat-${key}`, method === 'roll');
     if (method === 'point-buy') form.setRange(`stat-${key}`, 8, 15);
-    else form.setRange(`stat-${key}`, 1, undefined);
+    else form.setRange(`stat-${key}`, 1, ABILITY_LIMIT);
   }
   if (method === 'standard-array') form.set('statPills', '');
   // Point buy starts at all 8s. Standard array starts unassigned, and the

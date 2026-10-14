@@ -48,6 +48,13 @@ A new entry or an edit opens in a dialog over the list. Press Escape or
 **Cancel** to close it with no change. The list keeps its place, so you
 return to the row that you edited.
 
+A form with a blank **Name** does not save. It shows "Name is required."
+above its buttons and moves the focus to Name. In the creature form, an
+ability score runs from 1 to 30, and Max HP and AC start at 1. When you
+leave a number field, a value outside its range changes to the nearest
+allowed value, so a typed STR of 99 becomes 30. The creature dialog of
+Build and Play uses the same ranges.
+
 At startup, if the browser has no customizations, the app loads
 `library/campaign-library.json` from the project directory. The merged
 lists apply at once everywhere that the app reads the presets.

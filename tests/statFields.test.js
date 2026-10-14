@@ -47,3 +47,13 @@ test('statFields captions the AC field as the AC without armor', () => {
   const ac = statFields(STAT_KEYS).find((f) => f.name === 'stat-AC');
   assert.equal(ac.label, 'Base AC (no armor)');
 });
+
+test('ability fields cap at 30 and the AC field has no cap', async () => {
+  const { ABILITY_LIMIT } = await import('../src/entities/Modifiers.js');
+  const fields = statFields(STAT_KEYS);
+  assert.equal(fields.find((f) => f.name === 'stat-STR').max, ABILITY_LIMIT);
+  assert.equal(fields.find((f) => f.name === 'stat-AC').max, undefined);
+  const stats = readStats(STAT_KEYS, { 'stat-STR': '99', 'stat-AC': '45' });
+  assert.equal(stats.STR, ABILITY_LIMIT);
+  assert.equal(stats.AC, 45);
+});

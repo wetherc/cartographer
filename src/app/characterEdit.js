@@ -14,7 +14,7 @@ import {
   ARMOR_PROFICIENCIES,
   WEAPON_CATEGORIES,
 } from '../entities/Proficiencies.js';
-import { ABILITY_SCORES } from '../entities/Modifiers.js';
+import { ABILITY_LIMIT, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList, splitTrimmedList } from '../util/text.js';
@@ -125,9 +125,6 @@ export function applyVitals(character, values, shownMax = baseMaxHP(character)) 
   return setBaseAC(next, clampInt(values.baseAC, 10));
 }
 
-/** The highest ability score a typed edit accepts, the 5e ceiling. */
-const SCORE_MAX = 30;
-
 /**
  * The name, ability score, and proficiency fields of the edit dialog. The
  * scores are the stored ones, with the race increases and ability score
@@ -144,7 +141,7 @@ export function basicsFields(character) {
     { name: 'name', label: 'Name (required)', value: character.name, section: 'Character' },
     ...statFields(ABILITY_SCORES, character.stats).map((field) => ({
       ...field,
-      max: SCORE_MAX,
+      max: ABILITY_LIMIT,
     })),
     {
       name: 'saves',
@@ -228,7 +225,7 @@ export function applyBasics(character, values) {
     const raw = values[`stat-${key}`];
     if (raw === undefined) continue;
     const current = character.stats[key] ?? 10;
-    const score = clampInt(raw, 1, SCORE_MAX, current);
+    const score = clampInt(raw, 1, ABILITY_LIMIT, current);
     if (score !== current) {
       stats[key] = score;
       statsChanged = true;

@@ -72,7 +72,7 @@ function renderField(field) {
 
 /**
  * Build an inline rail form from a modal field spec. The first field is the
- * entity's name: it becomes the form's wide name input, and a blank name
+ * entity's name: it becomes the form's wide, captioned name input, and a blank name
  * refuses the submit, as in every other rail form. The rest lay out two per
  * row, with a `full` field taking a row of its own and a `newRow` field
  * beginning one. A field with `section`, the name field too, gets a heading
@@ -177,6 +177,7 @@ export function buildSpecForm({
 
   const form = buildInlineForm({
     nameInput: name.input,
+    nameLabel: nameField.label,
     rows,
     assemble: () => assemble(values()),
     submitLabel,

@@ -7,6 +7,7 @@
 
 import { clampInt } from '../../util/num.js';
 import { effectiveStatBlock } from '../../entities/Creature.js';
+import { ABILITY_LIMIT } from '../../entities/Modifiers.js';
 import { readGear } from './gearFields.js';
 
 /** @typedef {import('../../types/modal.js').ModalField} ModalField */
@@ -25,19 +26,24 @@ export function statFields(keys, stats = {}) {
     type: /** @type {'number'} */ ('number'),
     value: stats[key] ?? 10,
     min: 1,
+    ...(key === 'AC' ? {} : { max: ABILITY_LIMIT }),
   }));
 }
 
 /**
  * Read the stat fields back out of the submitted modal values. The function
- * clamps each value to a positive integer. A blank or invalid value reads as 10.
+ * clamps each value to a positive integer, and an ability score to at most
+ * `ABILITY_LIMIT`. A blank or invalid value reads as 10.
  * @param {string[]} keys
  * @param {Record<string, string>} values
  * @returns {Record<string, number>}
  */
 export function readStats(keys, values) {
   return Object.fromEntries(
-    keys.map((key) => [key, clampInt(values[`stat-${key}`], 1, Infinity, 10)]),
+    keys.map((key) => [
+      key,
+      clampInt(values[`stat-${key}`], 1, key === 'AC' ? Infinity : ABILITY_LIMIT, 10),
+    ]),
   );
 }
 

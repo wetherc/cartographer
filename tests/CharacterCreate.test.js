@@ -289,7 +289,7 @@ test('picking the standard array shows the unassigned pill grid at the 8 floor',
   assert.equal(form.hidden.reroll, true);
   assert.equal(form.labels.statMethod, 'Ability scores');
   // Leaving point buy lifts the 8-15 range back to the shared positive floor.
-  assert.deepEqual(form.ranges['stat-STR'], { min: 1, max: undefined });
+  assert.deepEqual(form.ranges['stat-STR'], { min: 1, max: 30 });
   // The pill grid replaces the number inputs.
   assert.equal(form.hidden.statPills, false);
   assert.equal(form.hidden['stat-STR'], true);

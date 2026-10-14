@@ -275,7 +275,9 @@ export function setOptions(picker, options, value) {
  * submit. `afterSubmit` runs on an accepted submit, for a form that
  * clears itself to accept another entry. With `nameLabel`, the name input
  * gets a visible caption, for a long form where a filled placeholder no
- * longer says what the field is.
+ * longer says what the field is. A blank name refuses the submit: the name
+ * input is marked invalid and takes focus, and a line above the buttons says
+ * "Name is required."
  * @template T
  * @param {{
  *   nameInput: HTMLInputElement,
@@ -303,6 +305,16 @@ export function buildInlineForm({
 }) {
   const form = el('div', classNames(['form u-col u-g2', className]));
   nameInput.classList.add('form__wide');
+  nameInput.setAttribute('aria-required', 'true');
+  const error = el('p', 'form__error');
+  error.setAttribute('role', 'alert');
+  error.hidden = true;
+  nameInput.addEventListener('input', () => {
+    if (!nameInput.value.trim()) return;
+    nameInput.removeAttribute('aria-invalid');
+    error.hidden = true;
+    error.textContent = '';
+  });
 
   const actions = formActions({
     submitLabel,
@@ -310,7 +322,14 @@ export function buildInlineForm({
       // A nameless entry is unusable in every rail list, so no form
       // submits one. A form refuses anything else it needs to by
       // assembling to null.
-      if (!nameInput.value.trim()) return;
+      if (!nameInput.value.trim()) {
+        nameInput.setAttribute('aria-invalid', 'true');
+        nameInput.focus();
+        error.hidden = false;
+        // New text in the alert makes a screen reader announce it.
+        error.textContent = 'Name is required.';
+        return;
+      }
       const fields = assemble();
       if (fields === null) return;
       onSubmit(fields);
@@ -319,6 +338,9 @@ export function buildInlineForm({
     onCancel,
   });
 
+  // The message opens the button row, so it stays in view where the
+  // Library dialog pins that row to its bottom edge.
+  actions.prepend(error);
   form.append(nameLabel ? labeled(nameLabel, nameInput) : nameInput, ...rows, actions);
   return form;
 }

@@ -29,6 +29,15 @@
   display: none;
 }
 
+/* The refusal message of an inline form takes a line of its own at the top
+   of the button row. */
+.form__error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
 /* Captioned form controls: a small label stacked over its input. The u-col
    display would otherwise defeat the hidden attribute the AC field toggles
    with. */

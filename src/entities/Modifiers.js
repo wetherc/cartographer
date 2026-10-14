@@ -18,6 +18,10 @@ export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
  * cannot raise a score above this value. */
 export const ABILITY_MAX = 20;
 
+/** The highest ability score any creature can have in 5e. A form refuses a
+ * typed score above it. */
+export const ABILITY_LIMIT = 30;
+
 /** The only stats an enemy carries: the six ability scores plus armor class.
  * Stat blocks are closed over this set. No custom stats exist. */
 export const STAT_KEYS = /** @type {StatKey[]} */ ([...ABILITY_SCORES, 'AC']);
