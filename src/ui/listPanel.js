@@ -43,7 +43,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
 /**
  * One wired button on a row. `pressed` sets `aria-pressed`, for the
  * toggles that flip a quest's status or a handout's visibility.
- * `focusKey` names a toggle whose label changes when pressed, so focus
+ * `focusKey` gives a toggle a name that does not change, so focus
  * finds it again after the rebuild (see `focusMemory.js`).
  * @template T
  * @typedef {{

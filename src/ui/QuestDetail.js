@@ -84,12 +84,15 @@ function doneToggle(quest, { id, text, done }, ctx, callbacks) {
   const button = ctx.action(
     {
       icon: done ? 'boxChecked' : 'box',
-      label: done ? `Mark ${text} not done` : `Mark ${text} done`,
-      pressed: done,
+      label: `Done: ${text}`,
       onClick: () => callbacks.onToggleObjective(quest, id),
     },
     quest,
   );
+  // A checkbox role, so a screen reader reads the box as checked or not
+  // checked under one fixed name.
+  button.setAttribute('role', 'checkbox');
+  button.setAttribute('aria-checked', String(done));
   button.classList.add('quest-objective__done');
   return button;
 }

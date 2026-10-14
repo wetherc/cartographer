@@ -47,7 +47,7 @@
   background: var(--surface-sunken);
 }
 
-.quest-objective > .btn--icon.quest-objective__done[aria-pressed='true'] {
+.quest-objective > .btn--icon.quest-objective__done[aria-checked='true'] {
   color: var(--accent);
 }
 

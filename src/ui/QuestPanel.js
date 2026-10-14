@@ -113,11 +113,12 @@ export function mountQuestPanel(container, callbacks) {
 
       // A completed quest's toggle shows a check, and an active quest's toggle
       // shows an empty ring. The plus stays with New quest, so the two
-      // controls do not share a glyph.
+      // controls do not share a glyph. The name stays the same on each
+      // press, and aria-pressed gives the state.
       const toggle = ctx.action(
         {
           icon: done ? 'check' : 'circle',
-          label: done ? `Reopen ${quest.title}` : `Complete ${quest.title}`,
+          label: `Completed: ${quest.title}`,
           pressed: done,
           focusKey: `status:${quest.id}`,
           onClick: () => callbacks.onToggle(quest),
@@ -146,12 +147,12 @@ export function mountQuestPanel(container, callbacks) {
       title.addEventListener('click', () => detailsToggle.click());
 
       // The details hold the add, edit, and delete controls, so every GM row
-      // gets the toggle, even a quest with no notes or objectives yet.
+      // gets the toggle, even a quest with no notes or objectives yet. The
+      // name stays the same, and aria-expanded gives the state.
       const detailsToggle = ctx.action(
         {
           icon: 'chevron',
-          label: open ? `Hide details of ${quest.title}` : `Show details of ${quest.title}`,
-          pressed: open,
+          label: `Details of ${quest.title}`,
           focusKey: `details:${quest.id}`,
           onClick: () => {
             if (open) expanded.delete(quest.id);

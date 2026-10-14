@@ -16,8 +16,8 @@
  * signature is unique per row. An unlabeled control falls back to its
  * index among the controls that share its signature.
  *
- * A toggle whose label names its next action, such as "Show details of X"
- * and "Hide details of X", changes its name on each press. It sets
+ * A toggle whose visible label names its next action, such as "More: X"
+ * and "Less: X", changes its name on each press. It sets
  * `data-focus-key` to a name that does not change, and the signature is
  * that key alone.
  *

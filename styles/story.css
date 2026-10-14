@@ -145,7 +145,7 @@
   transition: transform var(--transition-fast) ease;
 }
 
-.quest-panel__notes-toggle[aria-pressed='true'] svg {
+.quest-panel__notes-toggle[aria-expanded='true'] svg {
   transform: rotate(90deg);
 }
 
