@@ -20,6 +20,7 @@ import { commitCreatures, rosterIds } from './combatants.js';
 import { endCasterEffects } from './combatantWrites.js';
 import { spreadTiles } from '../map/SpawnSpread.js';
 import { clampInt } from '../util/num.js';
+import { factionField, withFaction } from '../entities/Factions.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -82,8 +83,12 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   const values = await promptModal(
     existing ? 'Edit creature' : 'New creature',
     [
-      ...creatureFields(source, gear, { stats }).map((field) =>
-        field.name === 'name' ? { ...field, label: 'Name (required)' } : field,
+      ...creatureFields(source, gear, { stats }).flatMap((field) =>
+        field.name === 'name'
+          ? [{ ...field, label: 'Name (required)' }]
+          : field.name === 'role'
+            ? [field, ...factionField(state.factions, existing?.factionId)]
+            : [field],
       ),
       ...actionFormFields(source?.actions),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
@@ -112,6 +117,9 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   );
   if (!values) return null;
   const fields = { ...readCreatureFields(values, gear, { stats }), actions: readActions(values) };
+  // A campaign with no factions shows no faction field, and an edit there
+  // keeps the faction id the creature already has.
+  const factionId = values.faction ?? existing?.factionId ?? '';
   if (!fields.name) return null;
   const location = readLocation(app, values);
   /** @type {Creature} */
@@ -128,7 +136,10 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     const party = app.partyTracker.getPosition();
     const toParty = location?.nodeId === party.nodeId && location.tileId === party.tileId;
     const fresh = applyFresh(state.creatures, existing.id, (current) =>
-      editCreature(current, { ...fields, location: toParty ? current.location : location }),
+      withFaction(
+        editCreature(current, { ...fields, location: toParty ? current.location : location }),
+        factionId,
+      ),
     );
     if (!fresh.entity) {
       app.toasts.show(`${existing.name} was removed while the dialog was open.`);
@@ -138,7 +149,10 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     stored = state.creatures.find((c) => c.id === existing.id) ?? fresh.entity;
   } else {
     const { name, ...options } = fields;
-    stored = createCreature(slugId(name, rosterIds(state)), name, { ...options, location });
+    stored = withFaction(
+      createCreature(slugId(name, rosterIds(state)), name, { ...options, location }),
+      factionId,
+    );
     state.creatures = [...state.creatures, stored];
   }
   // A creature placed or moved onto the party's own tile is met on the spot.

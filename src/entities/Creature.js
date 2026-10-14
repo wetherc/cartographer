@@ -15,6 +15,7 @@ import { defenseFields } from './DamageDefenses.js';
 import { capitalize } from '../util/text.js';
 import { MAX_LEVEL } from './Experience.js';
 import { actionFields } from './CreatureActions.js';
+import { factionIdField } from './Factions.js';
 import {
   coerceHPBuffs,
   conditionList,
@@ -219,6 +220,7 @@ export function withDefaults(creature) {
     casterLevel: rawCasterLevel,
     weapon: legacyWeapon,
     weapons: rawWeapons,
+    factionId,
     ...stripped
   } = /** @type {Creature & { weapon?: unknown }} */ (omitTraits(creature));
   const book = spellbookOf(spellbook);
@@ -231,6 +233,7 @@ export function withDefaults(creature) {
       ...(casterLevel !== undefined ? { casterLevel } : {}),
       ...(resources !== undefined ? { resources: resourceList(resources) } : {}),
       ...(book ? { spellbook: book } : {}),
+      ...factionIdField(factionId),
       ...creatureTraitFields(creature),
       disposition: creature.disposition ?? 'neutral',
       maxHP,

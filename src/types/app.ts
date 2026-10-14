@@ -11,7 +11,7 @@
  * the module that owns it.
  */
 import type { Character, EncounterLocation } from './entities.js';
-import type { Creature, CreatureTemplate } from './creature.js';
+import type { Creature, CreatureTemplate, Faction } from './creature.js';
 import type { LogEntry, LogEntryKind, LogOptions } from './log.js';
 import type { Quest } from './quest.js';
 import type { Calendar, GameClock } from './time.js';
@@ -53,6 +53,8 @@ export interface AppState {
   combat: CombatState | null;
   /** Month, season, and weather settings, or null for a day count only. */
   calendar: Calendar | null;
+  /** The NPC factions of the campaign. */
+  factions: Faction[];
   mode: AppMode;
   role: ViewRole;
 }

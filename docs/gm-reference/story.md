@@ -134,6 +134,20 @@ In a GM tab, the **Here** and **All** switch above the list picks its scope.
 **Here** lists the NPCs near the party, as in the table. **All** lists every
 friendly and neutral creature in the campaign, on any map, so you can look up
 an NPC without moving the party. A Player tab has no switch.
+
+### Factions
+
+In a GM tab, the **Factions** button under the switch opens the faction
+list of the campaign. Type a name in **New faction** to add one. Edit a name
+to rename that faction, and its members stay in it. Clear a name to remove
+the faction, and its members then have no faction. Once the campaign has a
+faction, the creature dialog shows a **Faction (GM only)** select under the
+role, and the NPCs panel shows a filter beside the button. The filter lists
+every faction, plus **No faction**, and it applies to both **Here** and
+**All**. A GM row shows the faction under the role, for example "Faction:
+The Silver Hand". A Player tab shows no faction, no filter, and no button.
+The free-text role still appears to players, so a public allegiance can go
+there.
 The party meets a placed NPC when it lands on the tile of that NPC. The
 meeting writes one travelogue line. If you move the NPC, it counts as not
 met until the party lands on its new tile. A move onto the party tile keeps

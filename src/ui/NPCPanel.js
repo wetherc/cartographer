@@ -51,6 +51,7 @@ export function keepPairs(label) {
  * `onToggleCompanion` adds a "Travels with party" toggle button with a
  * visible label below the text. Long notes fold to two lines behind a More
  * button, and the panel keeps which cards the GM opened.
+ * `getFactionLabel` names the faction of a GM row, beside its role.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
@@ -65,6 +66,7 @@ export function keepPairs(label) {
  *   inFight?: (npc: NPC) => boolean,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
+ *   getFactionLabel?: (npc: NPC) => string,
  *   getRole?: () => ViewRole,
  *   pinAdd?: boolean,
  * }} callbacks
@@ -95,6 +97,15 @@ export function mountNPCPanel(container, callbacks) {
         render();
       },
     });
+  }
+
+  /**
+   * The faction line of a row, or nothing when the NPC has no faction.
+   * @param {NPC} npc
+   */
+  function factionOf(npc) {
+    const name = callbacks.getFactionLabel?.(npc);
+    return name ? el('span', 'npc-panel__faction', `Faction: ${name}`) : null;
   }
 
   return mountListPanel(container, {
@@ -141,6 +152,7 @@ export function mountNPCPanel(container, callbacks) {
         [
           head,
           npc.role && el('span', 'npc-panel__role', npc.role),
+          ctx.gm && factionOf(npc),
           getLocationLabel &&
             el('span', 'npc-panel__location u-muted', keepPairs(getLocationLabel(npc))),
           ...(ctx.gm ? notesOf(npc, ctx.render) : []),

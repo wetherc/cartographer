@@ -6,6 +6,9 @@ import { appendEntry, createEntry, logAsText, TRAVELOG_LIMITS } from '../log/Tra
 import { entriesFor } from '../log/LogVisibility.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import { segSwitch } from '../ui/buttons.js';
+import { factionBar } from '../ui/FactionBar.js';
+import { byFaction, factionName, liveFilter } from '../entities/Factions.js';
+import { editFactionList } from './factionSettings.js';
 import {
   creaturesAt,
   creaturesNear,
@@ -178,7 +181,25 @@ export function wireStory(app) {
   });
   npcContainer.append(scopeSwitch.element);
 
-  app.views.npcPanel = mountNPCPanel(npcContainer, {
+  // The GM's faction filter narrows the list above, and the Factions button
+  // edits the campaign's faction list.
+  let factionFilter = '';
+  const factions = factionBar({
+    getFactions: () => state.factions,
+    getFilter: () => liveFilter(state.factions, factionFilter),
+    onFilter: (next) => {
+      factionFilter = next;
+      app.views.npcPanel.update();
+    },
+    onEdit: async () => {
+      if (!(await editFactionList(app))) return;
+      factions.update();
+      app.views.npcPanel.update();
+    },
+  });
+  npcContainer.append(factions.element);
+
+  const npcPanel = mountNPCPanel(npcContainer, {
     // A player learns of a placed NPC only after the party lands on its tile.
     // The GM sees who stands close enough to matter, with unmet NPCs flagged.
     // The radius is the one the Encounters panel uses for nearby foes, so both
@@ -187,14 +208,15 @@ export function wireStory(app) {
     getNPCs: () => {
       if (!isGM(state.role))
         return knownCreaturesAt(state.creatures, app.partyTracker.getPosition());
-      return npcScope === 'all'
-        ? castOf(state.creatures)
-        : folkNear(app.partyTracker.getPosition());
+      const listed =
+        npcScope === 'all' ? castOf(state.creatures) : folkNear(app.partyTracker.getPosition());
+      return byFaction(listed, state.factions, liveFilter(state.factions, factionFilter));
     },
     getLocationLabel: (npc) => {
       const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
       return npc.location && !npc.met ? `${label} — not yet met` : label;
     },
+    getFactionLabel: (npc) => factionName(state.factions, npc.factionId),
     onDelete: deleteNPC,
     // The chips on an NPC's row are combat state, so only the panel beside
     // the party writes them. The combat screen shows the same chips.
@@ -228,6 +250,14 @@ export function wireStory(app) {
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
   });
+  // A loaded or adopted campaign brings its own faction list, so the filter
+  // row refreshes with the list.
+  app.views.npcPanel = {
+    update: () => {
+      factions.update();
+      npcPanel.update();
+    },
+  };
 
   // This is the Build rail's NPC authoring list, the NPCs subtab beside the
   // mob roster. It lists the non-hostile creatures placed in whatever node

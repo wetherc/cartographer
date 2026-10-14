@@ -167,6 +167,9 @@ export interface Creature extends HPBuffFields {
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
+  /** The id of a campaign faction (see entities/Factions.js). Absent means
+   * none. An id that names no faction reads as none. */
+  factionId?: string;
   /** Timed stat adjustments. Each combat round reduces them by one. */
   statMods?: StatModifier[];
   /** Spellcaster class id (see Classes.js). A present value that names a
@@ -257,4 +260,10 @@ export interface CreatureAction {
   recharge?: number;
   /** True after a use of a recharge action, until a recharge roll succeeds. */
   spent?: boolean;
+}
+
+/** A named group of NPCs in one campaign, such as a guild or a court. */
+export interface Faction {
+  id: string;
+  name: string;
 }

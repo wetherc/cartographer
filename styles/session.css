@@ -266,6 +266,30 @@ body.role-player .npc-scope {
   display: none;
 }
 
+/* The faction filter and the Factions button sit under the Here / All
+   switch. Factions are GM notes, so a Player tab hides the row. */
+.npc-factions {
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.npc-factions__filter {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.npc-factions__edit {
+  font-size: var(--text-label);
+}
+
+.npc-panel__faction {
+  font-size: var(--text-label);
+}
+
+body.role-player .npc-factions {
+  display: none;
+}
+
 .npc-panel__controls {
   display: flex;
   gap: var(--space-1);

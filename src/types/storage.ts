@@ -1,6 +1,6 @@
 import { MapNode, PartyPosition } from './map';
 import { Character } from './entities';
-import { Creature, CreatureTemplate } from './creature';
+import { Creature, CreatureTemplate, Faction } from './creature';
 import { LogEntry } from './log';
 import { Quest } from './quest';
 import { Calendar, GameClock } from './time';
@@ -82,6 +82,8 @@ export interface CampaignState {
   /** Optional month, season, and weather settings. Null when the campaign
    * counts days only. */
   calendar: Calendar | null;
+  /** The NPC factions of the campaign. Empty when the GM made none. */
+  factions: Faction[];
 }
 
 /**

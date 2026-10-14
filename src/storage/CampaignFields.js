@@ -12,6 +12,7 @@ import { withDefaults as withCharacterDefaults } from '../entities/Character.js'
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 import { coerceCalendar } from '../time/Calendar.js';
+import { coerceFactions } from '../entities/Factions.js';
 import {
   combatState,
   creatureTemplates,
@@ -71,6 +72,7 @@ const BY_KEY = {
   splitParty: { empty: () => false, coerce: (value) => value === true, label: 'party splitting' },
   combat: { empty: () => null, coerce: combatState, label: 'the fight' },
   calendar: { empty: () => null, coerce: coerceCalendar, label: 'the calendar' },
+  factions: { empty: () => [], coerce: coerceFactions, label: 'factions' },
 };
 
 /** @type {readonly CampaignField[]} */

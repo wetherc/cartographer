@@ -521,6 +521,7 @@ test('buildState fills every omitted field with its empty value', () => {
       splitParty: false,
       combat: null,
       calendar: null,
+      factions: [],
     },
   );
 });
@@ -573,6 +574,7 @@ test('deserialize defaults missing fields instead of throwing', () => {
     splitParty: false,
     combat: null,
     calendar: null,
+    factions: [],
   });
 });
 
