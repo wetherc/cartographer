@@ -1814,6 +1814,10 @@ with one name, such as five Temples, and the label "Temple, Ashogate" tells
 them apart. The Location (map) select of the creature form shows the full
 path of each map for the same reason.
 
+`ui/WorldTree.js` mounts the tree. It owns the search box, the current-row
+mark, the tab stop, and the key handler. `ui/WorldTreeRows.js` builds the
+markup of each row and its branch.
+
 The markup follows the WAI-ARIA tree view pattern. Each `li` is the
 `treeitem`, and the `ul` of its children is a `group` inside it, so the tree
 and its groups contain only tree items and groups. A screen reader then
