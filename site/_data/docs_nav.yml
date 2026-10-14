@@ -59,6 +59,18 @@
       url: /docs/architecture/map.html
     - title: Entities
       url: /docs/architecture/entities.html
+    - title: Creatures
+      url: /docs/architecture/creatures.html
+    - title: Characters
+      url: /docs/architecture/characters.html
+    - title: Weapons and armor
+      url: /docs/architecture/weapons-and-armor.html
+    - title: Spells and casting
+      url: /docs/architecture/spells.html
+    - title: Rolls and lasting states
+      url: /docs/architecture/rolls-and-states.html
+    - title: Effects that spells leave
+      url: /docs/architecture/spell-aftermath.html
     - title: Combat
       url: /docs/architecture/combat.html
     - title: Persistence

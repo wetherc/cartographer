@@ -23,7 +23,13 @@ Each deeper subsystem has its own guide:
 | --- | --- | --- |
 | [The app wiring layer](architecture/app-wiring.md) | Reference | How `main.js` composes the app, the `AppContext` object, and what each `src/app/` module owns |
 | [The map](architecture/map.md) | Explanation | Tiles, the node hierarchy, region grouping, rendering, fog of war, and party movement |
-| [Entities](architecture/entities.md) | Explanation | Creatures, resources, and the character model (classes, races, proficiencies, leveling) |
+| [Entities](architecture/entities.md) | Explanation | The immutable-update pattern of creatures, resources, and characters, the UI layer over them, and the index of the guides below |
+| [Creatures](architecture/creatures.md) | Explanation | The creature model: AC, templates, the challenge rating, saves and skills, damage defenses, and creature casters |
+| [Characters](architecture/characters.md) | Explanation | Classes and multiclassing, proficiencies, hit points, leveling up, feats, and class features |
+| [Weapons and armor](architecture/weapons-and-armor.md) | Explanation | Damage terms, weapon properties, armor class and its chips, and armor and weapon proficiency |
+| [Spells and casting](architecture/spells.md) | Explanation | Spell effects, timing, components, ritual casting, and known and prepared casters |
+| [Rolls and lasting states](architecture/rolls-and-states.md) | Explanation | Saving throws, ability checks, exhaustion, concentration, and death saves |
+| [Effects that spells leave](architecture/spell-aftermath.md) | Explanation | Conditions a spell imposed, effects on later turns, summoned creatures, condition effects, and riders |
 | [Combat](architecture/combat.md) | Explanation | Combat mode: the full-width fight screen, who owns the running fight, and how the screen stays current |
 | [Persistence](architecture/persistence.md) | Explanation | How a campaign becomes a string, the packing layers, undo history, and the custom library |
 | [UI components](architecture/ui-components.md) | Reference | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |

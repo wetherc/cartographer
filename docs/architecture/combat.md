@@ -674,8 +674,8 @@ while the dialog is open.
 
 A chip with `mods.once` (Guiding Bolt, Vicious Mockery) ends on the first
 attack roll it slants (see
-[attack slant chips](entities.md#attack-slant-chips)). `app/weaponAttack.js`
-calls `riderSpend.spendOnceChips` after it logs the attack line, on a hit or
+[attack slant chips](weapons-and-armor.md#attack-slant-chips)).
+`app/weaponAttack.js` calls `riderSpend.spendOnceChips` after it logs the attack line, on a hit or
 a miss, and after a Shield pause settles. `app/spellCastResolve.js` calls it
 for each target of a spell attack after the cast line and before the
 outcomes land. Both pass the chip lists that decided the mode, and the

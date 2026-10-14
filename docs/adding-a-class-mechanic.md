@@ -1,7 +1,7 @@
 # Adding a class mechanic
 
 *How-to guide. For the character model behind these steps, read
-[Entities](architecture/entities.md).*
+[Characters](architecture/characters.md).*
 
 The app has no registry of class mechanics. A class feature that does
 something reads the class id or the feature name at the place where it

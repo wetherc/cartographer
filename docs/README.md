@@ -67,7 +67,13 @@ describes how the site is built.
 | --- | --- |
 | [Architecture](architecture.md) | How the codebase is organized, and the split between pure logic and DOM glue |
 | [The map](architecture/map.md) | Tiles, the node hierarchy, rendering, fog of war, and party movement |
-| [Entities](architecture/entities.md) | Creatures, resources, and the character model |
+| [Entities](architecture/entities.md) | The immutable-update pattern, the UI layer over entities, and the index of the entity guides |
+| [Creatures](architecture/creatures.md) | The creature model: AC, templates, the challenge rating, saves and skills, damage defenses, and creature casters |
+| [Characters](architecture/characters.md) | Classes and multiclassing, proficiencies, hit points, leveling up, feats, and class features |
+| [Weapons and armor](architecture/weapons-and-armor.md) | Damage terms, weapon properties, armor class and its chips, and armor and weapon proficiency |
+| [Spells and casting](architecture/spells.md) | Spell effects, timing, components, ritual casting, and known and prepared casters |
+| [Rolls and lasting states](architecture/rolls-and-states.md) | Saving throws, ability checks, exhaustion, concentration, and death saves |
+| [Effects that spells leave](architecture/spell-aftermath.md) | Conditions a spell imposed, effects on later turns, summoned creatures, condition effects, and riders |
 | [Combat](architecture/combat.md) | The fight screen, the one module that writes the fight, and the view derived from it |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, and undo history |
 | [Testing strategy](testing-strategy.md) | Why the coverage total is low, and what the suite cannot reach |

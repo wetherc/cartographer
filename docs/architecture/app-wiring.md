@@ -786,7 +786,7 @@ A multi-projectile spell, such as Scorching Ray, gets the allocation grid
 instead of checkboxes, because its projectiles split between creatures.
 The total has to add up exactly, so a change of slot level restates it
 through the form's `setTotal`. See
-[Entities](entities.md#multi-projectile-spells) for the model.
+[Spells and casting](spells.md#multi-projectile-spells) for the model.
 
 Which creatures a cast can reach depends on where it is cast from. In
 combat, the list comes from the initiative order. Out of combat, the list is
