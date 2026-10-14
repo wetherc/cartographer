@@ -37,6 +37,35 @@
   border-color: var(--accent);
 }
 
+/* A Build chip sets a base value. It has no fill and no border at rest, so
+   the stat row reads as a table of values beside the card's action buttons.
+   Hover and keyboard focus show the border, because a click opens the
+   editor. */
+.statblock-bar__chip--value {
+  border-color: transparent;
+  background: transparent;
+}
+
+.statblock-bar__chip--value:hover {
+  background: var(--surface-sunken);
+}
+
+.statblock-bar__chip--value > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.statblock-bar__key {
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.statblock-bar__value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 /* A stat under an active timed modifier stands out from its neighbors. */
 .statblock-bar__chip--modified {
   border-color: var(--accent);

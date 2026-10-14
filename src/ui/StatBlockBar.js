@@ -76,6 +76,7 @@ export function mountStatBlockBar(container, callbacks) {
 
       const className = classNames([
         'statblock-bar__chip',
+        callbacks.mode === 'base' && 'statblock-bar__chip--value',
         modified && 'statblock-bar__chip--modified',
       ]);
       // The temp-mode chip shows the value combat uses. A modified stat also
@@ -96,6 +97,13 @@ export function mountStatBlockBar(container, callbacks) {
                 : `Modify ${name} (currently ${effective})`,
               title: `Modify ${name} for a number of rounds`,
             });
+      // A Build chip reads as a value with a muted name, not as a command
+      // beside the card's action buttons. It still opens the editor.
+      if (callbacks.mode === 'base')
+        statChip.firstElementChild?.replaceChildren(
+          el('span', 'statblock-bar__key', baseLabel(name)),
+          el('span', 'statblock-bar__value', String(base)),
+        );
       root.appendChild(statChip);
       // Worn armor replaces part of the base AC, so a Build row names the AC
       // that combat uses beside the editable base.

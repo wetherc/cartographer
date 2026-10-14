@@ -551,7 +551,7 @@ See [Legendary actions](gm-reference/combat.md#legendary-actions) and
 5. Click **Apply**.
 
 The chip reads "STR 14→16 (3r)" and counts down as rounds pass. In Build
-mode, a click on a chip sets the base value instead.
+mode, the stats show as plain values, and a click on one sets the base value instead.
 
 ### Distance, range, and cover
 
