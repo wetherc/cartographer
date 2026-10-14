@@ -67,11 +67,12 @@
      roster, not the card, because a scroll box clips the card title that
      straddles the frame. The tray leaves the party card at least
      --roster-min, which is the card margins (about 2.5rem), its frame and
-     title (about 3.8rem), and four 3.75rem roster rows. A taller tray scrolls
+     title (about 3.8rem), the action footer (about 5.5rem on two lines), and
+     three 3.75rem roster rows. A taller tray scrolls
      inside its own box, so on a short screen an open tray does not push the
      roster down to one or two rows. */
   body.mode-play .app-dock {
-    --roster-min: 21.5rem;
+    --roster-min: 23rem;
 
     grid-area: dock;
     display: flex;
@@ -95,6 +96,11 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  /* The action buttons stay under the scroll box, so they never scroll away. */
+  body.mode-play #party-container > .character-roster__footer {
+    flex: none;
   }
 
   body.mode-play #dice-tray-container {

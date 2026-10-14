@@ -143,6 +143,12 @@
   font-size: var(--text-label);
 }
 
+/* The footer of the roster card. A browse-only viewer gets no actions, and
+   the footer hides. */
+.character-roster__footer[hidden] {
+  display: none;
+}
+
 /* Shared row of panel-footer action buttons ("New X", "Award XP", ...). */
 .panel-actions {
   display: flex;

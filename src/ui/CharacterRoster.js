@@ -97,7 +97,11 @@ function hpMeter(character) {
 export function mountCharacterRoster(container, options) {
   const canManage = options.canManage ?? (() => true);
   const root = el('div', 'character-roster');
-  container.appendChild(root);
+  // The action buttons sit in a footer under the rows rather than inside
+  // them. In Play the rows scroll inside the card, and a footer inside that
+  // scroll box would scroll out of view on a short screen.
+  const footer = el('div', 'panel-actions character-roster__footer');
+  container.append(root, footer);
 
   /**
    * The rows the DOM currently holds, or null before the first paint.
@@ -155,8 +159,10 @@ export function mountCharacterRoster(container, options) {
   function paint(manage, characters, selectedId) {
     // Clearing the root drops focus to the document body, the same hazard
     // the list panels have, so the keyboard position is noted and put back.
-    const memo = captureFocus(root, document.activeElement);
+    const memo = captureFocus(container, document.activeElement);
     root.innerHTML = '';
+    footer.innerHTML = '';
+    footer.hidden = !manage;
 
     if (characters.length === 0) {
       root.appendChild(emptyState('No characters yet.'));
@@ -225,35 +231,32 @@ export function mountCharacterRoster(container, options) {
     }
 
     if (manage) {
-      root.appendChild(
-        el(
-          'div',
-          'panel-actions',
-          textButton('New character', () => options.onAdd(), {
-            icon: 'add',
-            className: 'character-roster__add',
+      const actions = [
+        textButton('New character', () => options.onAdd(), {
+          icon: 'add',
+          className: 'character-roster__add',
+        }),
+        options.onAwardXP &&
+          characters.length > 0 &&
+          textButton('Award Party XP', () => options.onAwardXP?.(), {
+            icon: 'sparkles',
+            className: 'character-roster__award',
           }),
-          options.onAwardXP &&
-            characters.length > 0 &&
-            textButton('Award Party XP', () => options.onAwardXP?.(), {
-              icon: 'sparkles',
-              className: 'character-roster__award',
-            }),
-          options.playerTabHref &&
-            textButton(
-              'Spectator tab',
-              () => window.open(options.playerTabHref?.(null), '_blank', 'noopener'),
-              {
-                icon: 'eye',
-                title: 'Open a player tab that plays no character',
-                className: 'character-roster__spectator',
-              },
-            ),
-        ),
-      );
+        options.playerTabHref &&
+          textButton(
+            'Spectator tab',
+            () => window.open(options.playerTabHref?.(null), '_blank', 'noopener'),
+            {
+              icon: 'eye',
+              title: 'Open a player tab that plays no character',
+              className: 'character-roster__spectator',
+            },
+          ),
+      ];
+      for (const action of actions) if (action) footer.appendChild(action);
     }
 
-    restoreFocus(root, memo);
+    restoreFocus(container, memo);
   }
 
   /**
