@@ -15,8 +15,8 @@ test('the chip names what a click on the map does', () => {
   assert.equal(toolChipLabel(null, null), 'Inspect');
   assert.equal(toolChipLabel('erase', null), 'Erasing tiles');
   assert.equal(toolChipLabel('erase-path', null), 'Erasing paths');
-  assert.equal(toolChipLabel('region', 'Ashogate'), 'Painting: Ashogate region');
-  assert.equal(toolChipLabel('region', null), 'Clearing region links');
+  assert.equal(toolChipLabel('region', 'Ashogate'), 'Linking to Ashogate');
+  assert.equal(toolChipLabel('region', null), 'Clearing links');
   assert.equal(toolChipLabel(grass, null), 'Painting: Grass');
 });
 

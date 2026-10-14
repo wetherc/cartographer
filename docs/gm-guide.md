@@ -277,8 +277,8 @@ player with the developer tools of the browser can read them.
 A region link makes a tile lead into a child node. When the party walks
 onto the tile, the map changes to the child.
 
-1. In the **Paint** tab, pick the **Region** tool.
-2. In **Paint region**, pick the child node to link. To make a new child
+1. In the **Paint** tab, pick the **Link** tool.
+2. In **Links to**, pick the child node to link. To make a new child
    node, click **New**.
 3. Drag over the tiles of the region. Each tile that you cross now leads
    into that child.
@@ -287,14 +287,14 @@ If the node has no child nodes, the first stroke asks you to make one.
 
 A tile belongs to one region only. If you paint over a tile of another
 region, the tile moves to the region that you paint. To remove the link of
-a tile, pick **No region (clear link)** and paint over it.
+a tile, pick **None (clear link)** and paint over it.
 
-The Region tool does not change a site entrance, such as a
+The Link tool does not change a site entrance, such as a
 point-of-interest marker, a door, a staircase, or a link to an interior. A
 message tells you when a stroke skips one.
 
 To link one tile instead, select it with **Inspect**. In the tile
-inspector, pick the child in **Zooms into**, or click **New region here**.
+inspector, pick the child in **Zooms into**, or click **New sub-map here**.
 On an outdoor map, this makes a 2x2 block from the tile and its right and
 lower neighbors. At the map edge, the block moves inward. An interior keeps
 links of one tile, because a stair or a door is one cell. When you remove
@@ -314,7 +314,7 @@ Build mode warns you when the party cannot get into a node or out of it.
    tabs of the right rail. On a closed branch, the triangle has a number
    that counts the warnings inside it. Open the branch to find the node.
 2. If the warning reads "Nothing leads here", click **Link from (parent)**.
-   The parent map opens with the Region brush set to this node. Paint the
+   The parent map opens with the Link tool set to this node. Paint the
    tiles that lead here.
 3. If the warning reads "No way out" on an interior, paint an outer door or
    a staircase.

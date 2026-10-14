@@ -29,7 +29,7 @@ export function toolChipLabel(brush, regionName) {
   if (brush === 'erase') return 'Erasing tiles';
   if (brush === 'erase-path') return 'Erasing paths';
   if (brush === 'region') {
-    return regionName ? `Painting: ${regionName} region` : 'Clearing region links';
+    return regionName ? `Linking to ${regionName}` : 'Clearing links';
   }
   return `Painting: ${brush.label}`;
 }

@@ -252,7 +252,7 @@ export function createMapAuthoring(app, env, options) {
     if (keptEntrances.size) {
       const n = keptEntrances.size;
       const what = n === 1 ? 'a site entrance' : `${n} site entrances`;
-      toasts.show(`The Region brush left ${what} unchanged. Use the Tile tab to relink one.`);
+      toasts.show(`The Link tool left ${what} unchanged. Use the Tile tab to relink one.`);
       keptEntrances.clear();
     }
     if (

@@ -331,7 +331,7 @@ test('a region stroke leaves a site entrance linked and says so once', async () 
   assert.equal(getTile(keep, '0,1')?.childNodeId, 'cellar');
   assert.equal(getTile(keep, '0,2')?.childNodeId ?? null, null);
   assert.deepEqual(toastMessages, [
-    'The Region brush left a site entrance unchanged. Use the Tile tab to relink one.',
+    'The Link tool left a site entrance unchanged. Use the Tile tab to relink one.',
   ]);
 });
 

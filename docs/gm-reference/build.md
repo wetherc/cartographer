@@ -115,18 +115,18 @@ The Palette card has four tool buttons and five sections of swatches. A
 click on a swatch picks it as the brush, and a drag paints it on every cell
 that the pointer crosses. The name of the picked swatch shows above the swatch
 sections, for example **Brush: Grass (random variant)**.
-While Inspect, Region, Erase path, or Erase tile is the tool, the swatches
+While Inspect, Link, Erase path, or Erase tile is the tool, the swatches
 fade. A click on a swatch still picks it as the brush.
 
 A brush paints only while the Paint tab is open. On the Tile and Encounters
 tabs, a click on the map selects the cell, the same as Inspect. A chip at the
 right end of the map toolbar names the tool that a click uses, such as
-**Painting: Grass**, **Painting: Briarwick region**, or **Inspect**.
+**Painting: Grass**, **Linking to Briarwick**, or **Inspect**.
 
 | Tool | What a click or drag does |
 | --- | --- |
 | Inspect | Selects one cell and opens it in the Tile tab. This is the starting tool |
-| Region | Links every cell that the pointer crosses to the node in **Paint region**, and moves the cell out of any other region. It skips site entrances and says how many it skipped. While the Region tool is active, the cells that already link to the node in **Paint region** show a stronger tint and a wider border |
+| Link | Links every cell that the pointer crosses to the node in **Links to**, and moves the cell out of any other region. It skips site entrances and says how many it skipped. While the Link tool is active, the cells that already link to the node in **Links to** show a stronger tint and a wider border |
 | Erase path | Removes the road or path overlay of a cell. The terrain, the metadata, and the region link stay |
 | Erase tile | Clears the whole cell back to empty |
 
@@ -535,7 +535,7 @@ inside it that have a warning.
 
 | Warning | Meaning |
 | --- | --- |
-| Nothing leads here | No tile on the parent map links to this node. The "Link from (parent)" button opens the parent on the Paint tab with the Region brush set to this node |
+| Nothing leads here | No tile on the parent map links to this node. The "Link from (parent)" button opens the parent on the Paint tab with the Link tool set to this node |
 | No way out | The node is linked, but it has no outer door, no usable staircase, and no painted parent tile beside its block |
 
 Neither problem strands a party. A node without an authored way out offers

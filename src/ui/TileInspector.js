@@ -102,7 +102,7 @@ export function mountTileInspector(container, opts) {
   const lockText = el('span', '');
   lockNote.append(icon('lock'), lockText);
   lockNote.hidden = true;
-  const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
+  const newRegionBtn = textButton('New sub-map here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });
   if (opts.linking) {

@@ -180,7 +180,7 @@ export function mountPalettePanel(
   inspectBtn.setAttribute('aria-pressed', 'true');
   root.classList.add('palette--tool');
 
-  const regionBtn = toolButton('Region', 'map', 'region');
+  const regionBtn = toolButton('Link', 'map', 'region');
   const erasePathBtn = toolButton('Erase path', 'remove', 'erase-path');
   // Only the icon of Erase tile is red. A red border would match the ring of
   // the active tool, and the palette would show two tools as picked.

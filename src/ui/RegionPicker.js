@@ -28,17 +28,17 @@ export function mountRegionPicker(source) {
   const picker = select([], NO_REGION);
   const newBtn = textButton('New', () => void createAndPick(), {
     icon: 'plus',
-    ariaLabel: 'New region',
+    ariaLabel: 'New sub-map',
   });
   const hint = el(
     'p',
     'palette__hint u-muted',
-    'Paint cells to link them to this region. Paint over another region to move its cells here.',
+    'Paint tiles to link them to this map. Paint over another link to move its tiles here.',
   );
   const root = el(
     'div',
     'palette__region',
-    el('div', 'palette__region-row', labeled('Paint region', picker), newBtn),
+    el('div', 'palette__region-row', labeled('Links to', picker), newBtn),
     hint,
   );
   root.hidden = true;
@@ -52,7 +52,7 @@ export function mountRegionPicker(source) {
       picker,
       [
         ...regions.map((r) => ({ value: r.id, label: r.name })),
-        { value: NO_REGION, label: 'No region (clear link)' },
+        { value: NO_REGION, label: 'None (clear link)' },
       ],
       keep ?? regions[0]?.id ?? NO_REGION,
     );
