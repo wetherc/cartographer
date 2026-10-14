@@ -79,9 +79,12 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     spell?.school ?? SPELL_SCHOOLS[0],
   );
 
-  // Class list: a checkbox per playable class. The ticked set is the spell's
-  // available spell lists.
-  const classChecks = CLASS_LIST.map((cls) => {
+  // Class list: a checkbox per spellcasting class. The ticked set is the
+  // spell's available spell lists. A class with no spellcasting shows only
+  // when the spell already lists it, so an edit does not drop it.
+  const classChecks = CLASS_LIST.filter(
+    (cls) => cls.casterType !== 'none' || spell?.classes.includes(cls.id),
+  ).map((cls) => {
     const { label, input } = checkbox(cls.name, spell?.classes.includes(cls.id) ?? false);
     input.value = cls.id;
     return { label, input };
@@ -318,6 +321,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     else if (showDamage) damageField.appendChild(effectDamage.element);
   }
   kindSelect.addEventListener('change', syncEffectFields);
+  levelSelect.addEventListener('change', () => scaling.setCantrip(levelSelect.value === '0'));
 
   // The material fields mean something only under a ticked M. Unticking M
   // drops them from the assembled spell, the same way a switch of effect kind

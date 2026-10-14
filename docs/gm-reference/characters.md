@@ -597,7 +597,7 @@ pane sits beside the tiles, and on a narrow one it sits under them.
 | Base AC | For body armor |
 | Min STR | For body armor: the Strength score that it needs. 0 means none |
 | Stealth | For body armor: tick it to give the wearer disadvantage on Stealth |
-| AC bonus | A flat bonus on any other item that can be equipped. A shield uses this field too, and it starts at +2 |
+| AC bonus | A flat bonus on any other item that can be equipped. A shield uses this field too, and it starts at +2. A weapon shows the field only when **Magical weapon** is ticked or the weapon already has a bonus |
 | Ability buff | For example +2 STR, applied while the item is equipped |
 | Heals when drunk | For a consumable: the heal dice, as a count, a die size, and a flat bonus. A count of 0 means the item heals nothing. A potion preset fills it |
 

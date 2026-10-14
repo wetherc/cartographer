@@ -354,7 +354,11 @@ export function buildItemForm({
     weightField.hidden = baseACField.hidden = type !== 'armor';
     strengthField.hidden = stealthField.hidden = weightField.hidden;
     syncShieldAC();
-    acField.hidden = !FLAT_AC_TYPES.includes(type);
+    // Only a magic weapon (such as a Defender) adds to AC, so a plain weapon
+    // hides the field unless it already stores a bonus.
+    acField.hidden =
+      !FLAT_AC_TYPES.includes(type) ||
+      (weaponish && !magicBox.input.checked && !(Number(acInput.value) > 0));
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
     categoryField.hidden = kindField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
@@ -384,6 +388,7 @@ export function buildItemForm({
   };
   typeSelect.addEventListener('change', syncTypeFields);
   buffStatSelect.addEventListener('change', syncTypeFields);
+  magicBox.input.addEventListener('change', syncTypeFields);
   syncTypeFields();
 
   // Reading the controls happens here. Deciding which of their values
