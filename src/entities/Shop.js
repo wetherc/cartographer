@@ -32,7 +32,7 @@ export const buyableTemplates = (templates) =>
  */
 export function itemFromTemplate(template, quantity) {
   const { cost: _cost, ...fields } = structuredClone(template);
-  return { ...fields, id: slugify(template.name) || 'item', quantity, notes: '' };
+  return { ...fields, id: slugify(template.name) || 'item', quantity };
 }
 
 /**

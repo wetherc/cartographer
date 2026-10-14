@@ -54,7 +54,6 @@ test('itemFromTemplate copies the fields but not the price', () => {
     damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     id: 'longsword',
     quantity: 2,
-    notes: '',
   });
   assert.notEqual(item.damage, sword.damage);
   assert.equal(itemFromTemplate({ name: '!!', type: 'gear' }, 1).id, 'item');
@@ -108,14 +107,13 @@ test('buyItem adds to a carried stack of the same name and type', () => {
         id: 'torch',
         name: 'torch',
         quantity: 5,
-        notes: 'old',
+        description: 'old',
         type: /** @type {const} */ ('gear'),
       },
       {
         id: 'torch-2',
         name: 'Torch',
         quantity: 1,
-        notes: '',
         type: /** @type {const} */ ('weapon'),
       },
     ],
@@ -129,7 +127,7 @@ test('buyItem adds to a carried stack of the same name and type', () => {
       ['torch-2', 1],
     ],
   );
-  const untyped = { ...hero(), inventory: [{ id: 'rope', name: 'Rope', quantity: 1, notes: '' }] };
+  const untyped = { ...hero(), inventory: [{ id: 'rope', name: 'Rope', quantity: 1 }] };
   const rope = buyItem(untyped, { name: 'Rope', type: 'gear', cost: 1 }, 2);
   assert.ok(!('error' in rope));
   assert.equal(rope.character.inventory[0].quantity, 3);
