@@ -19,7 +19,7 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 /**
  * Mount the tile palette: a picker of paint brushes for Build mode. The active
  * brush controls what a click on a tile does. An Inspect brush (null) selects
- * a tile for the inspector. An Erase brush removes a tile. A Region brush
+ * a tile for the inspector. An Erase brush removes a tile. The Link tool
  * paints each cell it crosses with a link to the child node that the region
  * picker names, and the picker shows only while that brush is active. Any
  * tile swatch paints that image. A brush pick invokes onBrushChange, and the panel
@@ -48,7 +48,7 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
  * @param {ReturnType<typeof import('./TileTooltip.js').mountTileTooltip>} [tooltip]
- * @param {import('./RegionPicker.js').RegionSource} [regions] the children the Region brush can paint
+ * @param {import('./RegionPicker.js').RegionSource} [regions] the children the Link tool can paint
  * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, show: () => void, regionPicker: ReturnType<typeof mountRegionPicker>, useRegion: (childId: string) => void }}
  */
 export function mountPalettePanel(
@@ -389,7 +389,7 @@ export function mountPalettePanel(
   }
 
   /**
-   * Pick the Region brush with the given child as its target.
+   * Pick the Link tool with the given child as its target.
    * @param {string} childId
    */
   function useRegion(childId) {

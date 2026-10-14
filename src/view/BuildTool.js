@@ -20,7 +20,7 @@ export function effectiveBrush(brush, tabId) {
  * The text of the tool chip on the map toolbar. It names what a click on the
  * map does in Build mode.
  * @param {Brush} brush the effective brush (see `effectiveBrush`)
- * @param {string | null} regionName the region that the Region brush paints,
+ * @param {string | null} regionName the region that the Link tool paints,
  *   or null for "None (clear link)"
  * @param {boolean} [picking] whether a "Pick on map" waits for a click,
  *   which takes over the click from the brush

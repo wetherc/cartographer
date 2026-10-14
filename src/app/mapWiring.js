@@ -467,7 +467,7 @@ export function wireMapView(app) {
   });
   app.actions.syncToolChip = () => syncToolChip();
   app.actions.goToNode = goToNode;
-  // While the Region brush paints, the map draws the blocks of its target
+  // While the Link tool paints, the map draws the blocks of its target
   // region with emphasis, so the GM sees which cells already link there.
   syncToolChip = () => {
     toolChip.sync();

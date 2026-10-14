@@ -342,7 +342,7 @@ export function authoringWarning(node, parent) {
 /**
  * True when no tile of the parent links to the node, so the fix is a Region
  * stroke on the parent. The Build warning then offers a button that opens
- * the parent with the Region brush set to this node.
+ * the parent with the Link tool set to this node.
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
  * @returns {boolean}

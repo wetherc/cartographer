@@ -202,7 +202,7 @@ export function erasePath(node, tileId) {
 const WAY_KINDS = new Set(['door', 'stairs-up', 'stairs-down']);
 
 /**
- * Whether a tile is the entrance of a site, which the Region brush leaves
+ * Whether a tile is the entrance of a site, which the Link tool leaves
  * alone: a point-of-interest marker, a door or a staircase, or a link to an
  * interior. A region stroke drawn across a town marker or a cave mouth
  * otherwise takes the link off it, and the town or the cave has no way in.
@@ -217,7 +217,7 @@ export function isSiteEntrance(tile, isInterior) {
 }
 
 /**
- * Link one cell to a child node, the Region brush's paint, or unlink it with
+ * Link one cell to a child node, the Link tool's paint, or unlink it with
  * null. A cell belongs to at most one region, so a cell that already links
  * to another child now links to this one instead, and the old region loses
  * the cell. The region link lives on the tile, so an empty cell stays empty

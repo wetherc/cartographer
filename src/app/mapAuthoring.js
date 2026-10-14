@@ -120,7 +120,7 @@ export function createMapAuthoring(app, env, options) {
   const keptEntrances = new Set();
 
   /**
-   * Paint one cell with the Region brush: link it to the region the palette
+   * Paint one cell with the Link tool: link it to the region the palette
    * picker names, or clear its link for "No region". A cell in another region
    * moves to this one (`TilePaint.paintRegion`). The canvas recomputes its
    * region groups on each cell, where a terrain stroke waits for the end of
@@ -171,7 +171,7 @@ export function createMapAuthoring(app, env, options) {
   // Build-mode authoring uses strokes. A left-drag applies the active brush
   // to every cell it crosses. A click is a one-cell stroke. This lets the
   // user paint a row in one gesture instead of one click per tile. The
-  // Region brush paints a region link the same way.
+  // Link tool paints a region link the same way.
   /** Whether the current stroke changed any cell. This tells the stroke's
    * end function to settle the deferred derived state. An inspect click
    * never changes a cell. */

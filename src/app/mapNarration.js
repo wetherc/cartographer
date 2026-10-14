@@ -18,7 +18,7 @@ import { isGM } from '../view/ViewRole.js';
  * out. Play mode always offers a fallback exit, so both warnings point to an
  * unfinished map. The Build rail that shows them stays hidden everywhere else.
  * When nothing leads to the node, a button beside the text opens the parent
- * with the Region brush set to the node.
+ * with the Link tool set to the node.
  *
  * The text element stays in the document with no text, instead of being
  * added only when there is a message. A screen reader can miss a live region
@@ -26,7 +26,7 @@ import { isGM } from '../view/ViewRole.js';
  * empty.
  * @param {AppContext} app
  * @param {(parentId: string, childId: string) => void} onLink opens the parent
- *   with the Region brush set to the child
+ *   with the Link tool set to the child
  */
 export function createBuildWarning(app, onLink) {
   const { grid, navigator } = app;

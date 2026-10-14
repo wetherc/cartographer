@@ -47,7 +47,7 @@ export function regionCellBoxes(group, view, size, revealedIds) {
 
 /**
  * The drawn width of a region border in buffer px: 2 to 4 CSS px by tile
- * size, and twice that for the target of the Region brush. The canvas
+ * size, and twice that for the target of the Link tool. The canvas
  * strokes twice this width, because the clip cuts away the outer half.
  * @param {number} size the on-screen tile size in buffer px
  * @param {number} px the device pixel ratio

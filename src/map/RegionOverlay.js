@@ -47,7 +47,7 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
     const clip = new Path2D();
     for (const c of cells) clip.rect(c.x, c.y, c.w, c.h);
     const hue = INK.regionHues[(slots.get(group.childNodeId) ?? 0) % INK.regionHues.length];
-    // The target of the Region brush draws its tint three times over and a
+    // The target of the Link tool draws its tint three times over and a
     // wider border, so its cells stand out from the other regions.
     const emphasis = group.childNodeId === view.highlightRegionId ? 3 : 1;
 

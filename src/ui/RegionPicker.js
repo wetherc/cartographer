@@ -15,8 +15,8 @@ export const NO_REGION = '';
  */
 
 /**
- * Mount the Region brush's choice of region, shown under the palette tools
- * while the Region brush is active. A select names each child of the node in
+ * Mount the Link tool's choice of region, shown under the palette tools
+ * while the Link tool is active. A select names each child of the node in
  * view plus "No region", and a New button creates a child and picks it. The
  * select keeps the GM's pick across a refresh when that child still exists,
  * and otherwise picks the first child, so a stroke never paints a region
