@@ -149,8 +149,8 @@ stronger Aid ends first.
 
 An attack or a save effect with `ongoing` leaves dice on the target. The
 resolver scales them with the cast (`ongoing.perStep`) and returns them on
-the outcome of each hit or failed save. `app/spellOutcomes.js` writes them
-to a chip as `ongoing.damage`. A save that imposes a condition puts them on
+the outcome of each hit or failed save. `leaveOngoing` in
+`app/spellOutcomeChips.js` writes them to a chip as `ongoing.damage`. A save that imposes a condition puts them on
 that chip. Any other cast writes a chip named after the spell, which ends at
 `ongoing.until`, or at the end of the target's next turn by default.
 
@@ -203,13 +203,13 @@ the target rolls that save against the DC of the cast after the damage roll,
 and the outcome keeps the roll under `onHit`. A target that several
 projectiles hit rolls once. `castPlan` reads the save bonus of each target
 for `onHit.saveAbility` the same way as for a save spell, and the cast
-dialog adds a DC field. `app/spellOutcomes.js` writes the chip with the
+dialog adds a DC field. `app/spellAttackOutcomes.js` writes the chip with the
 cast as its source. The chip ends at `onHit.until` when the spell names a
 turn boundary, and after the duration of the spell otherwise. Ray of
 Sickness uses this.
 
 `drain` gives the caster hit points equal to `half` or all (`full`) of the
-damage that the hits deal. `spellOutcomes.js` sums the damage after the
+damage that the hits deal. `spellAttackOutcomes.js` sums the damage after the
 defenses of each target, including a splash on a miss, and heals the caster
 once after the last target. Vampiric Touch uses this.
 

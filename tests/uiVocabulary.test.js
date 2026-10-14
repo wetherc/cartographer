@@ -238,6 +238,7 @@ const COMBAT_LOGGERS = [
   'app/riderSpend.js',
   'app/shieldWard.js',
   'app/slay.js',
+  'app/spellAttackOutcomes.js',
   'app/spellOutcomes.js',
   'app/tempHP.js',
   'app/turnActionsWiring.js',

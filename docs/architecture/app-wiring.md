@@ -348,8 +348,8 @@ argument.
   and it returns `syncEmptyMap`, which `wireMapView` calls after each draw so
   the card shows only while the map in view has no tiles.
 - `mapModes.js` registers `onModeChanged` and `onRoleChanged`, the fog dim
-  of a GM in Play mode, and the resize handler that keeps the canvas buffer
-  at the element size times the pixel ratio. It also registers `showBuild`,
+  of a GM in Play mode, and the resize handler that sizes the canvas buffer
+  to the element size times the pixel ratio. It also registers `showBuild`,
   which mounts the Build rail.
 
 The palette, the Build-rail world tree, and the foe and NPC authoring lists
@@ -774,7 +774,9 @@ bar starts. Casting a spell is the same job, split across these modules:
 | `spellCastResolve.js` | Rolling the cast: the checks that refuse it, the cost to the turn, the roll, and the write-back of the spent slot, material, and concentration |
 | `spellRollTargets.js` | The live fields that each target needs for the roll: the save mode and bonus, the HP, the creature type, and the attack mode |
 | `spellFollowUps.js` | The chip that lets the caster repeat a spell on a later turn, and the push note of Repelling Blast |
-| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the chip or save that a hit brings, the pool roll and the kill of a spell that reads HP, the hit points that a draining hit gives back, the damage a chip leaves for later turns, summons, and the log lines |
+| `spellOutcomes.js` | Writing the outcome (`applyOutcomes`): hit points, condition chips, the pool roll and the kill of a spell that reads HP, heals and cures, buff chips, summons, and the log lines |
+| `spellAttackOutcomes.js` | Writing the outcome of an attack spell: the hits and misses, the chip or save that a hit brings, and the hit points that a draining hit gives back |
+| `spellOutcomeChips.js` | The chip helpers that both outcome writers use: the cast source of a chip, its turn-boundary timing, and the chip that deals damage on later turns |
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 

@@ -9,7 +9,7 @@ import { watchPixelRatio } from '../ui/pixelRatio.js';
 
 /**
  * Register the map-facing effects of a mode switch and a role switch, and
- * keep the canvas buffer matched to its element. Call this after
+ * size the canvas buffer to its element. Call this after
  * env.mapCanvas, env.tileTooltip, and both trees are set.
  * @param {AppContext} app
  * @param {MapEnv} env
