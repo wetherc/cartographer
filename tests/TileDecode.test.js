@@ -10,14 +10,14 @@ const restoreRef = (/** @type {string} */ ref) =>
 /**
  * Decode one record through `decodeNodeList` and return what `onDecode` saw.
  * @param {Record<string, any>} record
- * @returns {{ node: Record<string, any>, refsKept: boolean }}
+ * @returns {{ node: Record<string, any>, refsKept: boolean, links: string[] | undefined }}
  */
 function decodeOne(record) {
-  /** @type {{ node: Record<string, any>, refsKept: boolean }[]} */
+  /** @type {{ node: Record<string, any>, refsKept: boolean, links: string[] | undefined }[]} */
   const seen = [];
   decodeNodeList([record], {
     restoreRef,
-    onDecode: (node, _record, refsKept) => seen.push({ node, refsKept }),
+    onDecode: (node, _record, facts) => seen.push({ node, ...facts }),
   });
   assert.equal(seen.length, 1);
   return seen[0];
@@ -79,8 +79,20 @@ test('a decode with no restore keeps every ref as stored', () => {
   /** @type {boolean[]} */
   const flags = [];
   const { nodes } = decodeNodeList([{ ...base, refs: ['bad'], cells: [0, 0] }], {
-    onDecode: (_node, _record, refsKept) => flags.push(refsKept),
+    onDecode: (_node, _record, { refsKept }) => flags.push(refsKept),
   });
   assert.deepEqual(flags, [true]);
   assert.equal(/** @type {any} */ (nodes[0]).tiles[0].imageRef, 'bad');
+});
+
+test('the decode lists the links of a node when its link palette names them all', () => {
+  const grid = { ...base, refs: ['a'], cells: [0, 0] };
+  assert.deepEqual(decodeOne(grid).links, [], 'no stream and no leftovers');
+  const streamed = { ...grid, links: ['c', 5], linkCells: [0, 1] };
+  assert.deepEqual(decodeOne(streamed).links, ['c'], 'the string entries of the palette');
+  const leftover = { ...streamed, tiles: [{ id: '1,0', childNodeId: 'stale' }] };
+  assert.deepEqual(decodeOne(leftover).links, ['c'], 'the stream overrides a leftover link');
+  const unstreamed = { ...grid, tiles: [{ id: '1,0', childNodeId: 'old' }] };
+  assert.equal(decodeOne(unstreamed).links, undefined, 'a leftover record can hold a link');
+  assert.equal(decodeOne({ ...grid, width: 0 }).links, undefined, 'unusable dimensions');
 });

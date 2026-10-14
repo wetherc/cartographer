@@ -218,6 +218,8 @@ export function deserialize(json, assets, previous = []) {
   const untouched = new WeakSet();
   /** @type {Map<object, Record<string, any>>} */
   const sources = new Map();
+  /** @type {Map<object, readonly string[]>} */
+  const linkLists = new Map();
   if (assets && Object.keys(assets).length) {
     // The sidecar table is a fallback under whatever the string itself
     // carries, so a save holding its own table resolves from that table alone.
@@ -237,9 +239,10 @@ export function deserialize(json, assets, previous = []) {
       // The decoder restores the refs of each palette entry, so the asset
       // walk below skips a decoded node.
       restoreRef: refRestorer(decoded),
-      onDecode(node, stored, refsKept) {
+      onDecode(node, stored, { refsKept, links }) {
         untouched.add(node);
         if (refsKept && !namesImageData(stored)) sources.set(node, stored);
+        if (links) linkLists.set(node, links);
       },
     });
     decoded.nodes = nodes;
@@ -255,12 +258,16 @@ export function deserialize(json, assets, previous = []) {
       const full = withNodeDefaults(node);
       const source = sources.get(node);
       if (source) seeds.set(full, source);
+      const links = linkLists.get(node);
+      if (links) linkLists.set(full, links);
       return full;
     });
   // The link palette of an encoded node lists every `childNodeId` of its
-  // tiles, so a reused node skips the tile walk of the dead-link repair.
+  // tiles, so a reused or decoded node skips the tile walk of the dead-link
+  // repair. A node whose leftover records can hold a link has no list, and
+  // the repair walks its tiles.
   const repaired = withRepairedLinks(withRepairedParents(nodes), (node) =>
-    reused.has(node) ? (encodedOf(node)?.links ?? []) : undefined,
+    reused.has(node) ? (encodedOf(node)?.links ?? []) : linkLists.get(node),
   );
   for (const node of repaired) {
     const source = seeds.get(node);

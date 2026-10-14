@@ -244,6 +244,11 @@ also breaks each parent loop by turning one node of the loop into a root.
 Every walk up the hierarchy, such as the breadcrumb, loops forever on a
 cycle, and a cycle in a save would freeze the tab at startup.
 `withRepairedLinks` clears each tile link to a node that is not in the save.
+For a node that the tile decoder built, `deserialize` gives the repair the
+string entries of the link palette, which list every link the node can hold.
+The repair checks that list and walks the tiles only when a listed node is
+missing. A node whose leftover records can hold a link, because it has no
+link palette, has no list, and the repair walks its tiles.
 
 The character and creature `withDefaults` functions use
 `entities/LoadCoercion.js` for their list fields (resources, inventory,

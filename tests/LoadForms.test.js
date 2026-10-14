@@ -70,3 +70,29 @@ test('a second read of the same string keeps the clean nodes of the first', () =
   // per-tile node is never cached, so neither form is reused.
   assert.equal(kept, first.nodes.length - 3);
 });
+
+test('a decoded node with links only in its leftover records still loses its dead links', () => {
+  const node = (/** @type {string} */ id) => ({ id, name: id, width: 2, height: 1 });
+  const loaded = deserialize(
+    JSON.stringify({
+      version: JSON.parse(json).version,
+      nodes: [
+        {
+          ...node('a'),
+          refs: ['grass'],
+          cells: [[0, 2]],
+          tiles: [
+            { id: '0,0', childNodeId: 'gone' },
+            { id: '1,0', childNodeId: 'b' },
+          ],
+        },
+        { ...node('b'), refs: ['grass'], cells: [[0, 2]], links: ['gone'], linkCells: [0, -1] },
+      ],
+    }),
+  );
+  const links = loaded.nodes.map((n) => n.tiles.map((t) => t.childNodeId));
+  assert.deepEqual(links, [
+    [null, 'b'],
+    [null, null],
+  ]);
+});

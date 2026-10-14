@@ -47,10 +47,14 @@ function linkStream(node, size) {
 const keepRef = (ref) => ref;
 
 /**
- * A decoded node, and whether every image ref came through `restoreRef`
- * unchanged.
- * @typedef {{ node: Record<string, any>, refsKept: boolean }} Decoded
+ * What a decode found besides the node itself. `refsKept` is true when every
+ * image ref came through `restoreRef` unchanged. `links` lists every
+ * `childNodeId` that a tile of the node can hold, or is undefined when a
+ * leftover record can add one that the link palette does not list.
+ * @typedef {{ refsKept: boolean, links: string[] | undefined }} DecodeFacts
  */
+
+/** @typedef {DecodeFacts & { node: Record<string, any> }} Decoded */
 
 /**
  * A node read back out of its positional form, or the node unchanged when it
@@ -117,7 +121,7 @@ function decode(node, restoreRef) {
       ),
     );
     decoded.tiles = markDefaulted(kept);
-    return { node: decoded, refsKept };
+    return { node: decoded, refsKept, links: undefined };
   }
   const width = node.width;
   const readers = Array.isArray(node.refs) ? node.refs.map(artReader) : [];
@@ -155,7 +159,21 @@ function decode(node, restoreRef) {
     tiles.push(plainTile(id, final.imageRef, final.overlayRef, revealed[pos] === 1, childNodeId));
   }
   decoded.tiles = markDefaulted(tiles);
-  return { node: decoded, refsKept };
+  return { node: decoded, refsKept, links: linksOf(links, leftovers.size > 0) };
+}
+
+/**
+ * The `childNodeId` values a decoded node can hold. With a link stream,
+ * the stream sets the link of every cell, a leftover record included, so
+ * the string entries of its palette list them all. With no stream, only a
+ * leftover record can hold a link.
+ * @param {{ links: unknown[] } | null} stream
+ * @param {boolean} hasLeftovers
+ * @returns {string[] | undefined}
+ */
+function linksOf(stream, hasLeftovers) {
+  if (stream) return stream.links.filter((link) => typeof link === 'string');
+  return hasLeftovers ? undefined : [];
 }
 
 /**
@@ -219,8 +237,8 @@ export const MAX_NODES = 10_000;
  * the list then keeps that node in place of a decode. The node counts
  * against the cell limit like a decode, so a list loads the same nodes
  * either way. `onDecode` sees each record that decodes in full, beside its
- * decoded node and whether every image ref of the node came through
- * `restoreRef` unchanged. Without `restoreRef`, every ref stays as stored.
+ * decoded node and its `DecodeFacts`. Without `restoreRef`, every ref stays
+ * as stored.
  * @param {unknown[]} list
  * @param {{
  *   reuse?: (record: Record<string, any>) => Record<string, any> | undefined,
@@ -228,7 +246,7 @@ export const MAX_NODES = 10_000;
  *   onDecode?: (
  *     decoded: Record<string, any>,
  *     record: Record<string, any>,
- *     refsKept: boolean,
+ *     facts: DecodeFacts,
  *   ) => void,
  * }} [options]
  * @returns {{ nodes: unknown[], dropped: number, emptied: number }}
@@ -247,8 +265,8 @@ export function decodeNodeList(list, { reuse, restoreRef = keepRef, onDecode } =
     left -= size;
     const live = reuse?.(record);
     if (live) return live;
-    const { node: decoded, refsKept } = decode(record, restoreRef);
-    onDecode?.(decoded, record, refsKept);
+    const { node: decoded, ...facts } = decode(record, restoreRef);
+    onDecode?.(decoded, record, facts);
     return decoded;
   });
   return { nodes, dropped: list.length - nodes.length, emptied };
