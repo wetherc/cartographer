@@ -84,8 +84,8 @@
     overscroll-behavior: contain;
   }
 
-  /* On the Paint tab the palette card takes the height that Generate and
-     Tools leave, and the swatch sections scroll inside it. The sections keep
+  /* On the Paint tab the palette card takes the height that the map tools
+     row leaves, and the swatch sections scroll inside it. The sections keep
      a minimum height, so on a short window the panel scrolls instead and the
      swatches never shrink to a sliver. */
   #build-panel-paint > #palette-container {
@@ -106,12 +106,13 @@
   }
 }
 
-/* The buttons of the Tools card sit side by side when the rail is wide enough,
-   which leaves more height to the palette. */
+/* Generate and Export PNG share one row above the palette, with no card of
+   their own, so the palette card gets the rest of the rail height. */
 .map-tools {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   gap: var(--space-2);
+  margin: var(--space-3) 0;
 }
 
 /* Thin, quiet scrollbars on the Build boxes that scroll. The colours come

@@ -1431,7 +1431,7 @@ The few layout switches are in known places:
   of fixed screen. The Build rail width is `clamp(19rem, 22vw, 30rem)`, and
   the swatch grid uses `repeat(auto-fill, minmax(2.875rem, 1fr))`, so a
   wider window adds swatch columns. On the Paint tab the Palette card takes
-  the height that Generate and Tools leave, and `.palette__sections`
+  the height that the `.map-tools` row leaves, and `.palette__sections`
   scrolls inside it down to a 7rem minimum. Below that, the tab panel
   scrolls. In the stacked layout the page scrolls and the sections have no
   scroll box.

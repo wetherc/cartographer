@@ -159,10 +159,14 @@ keeps the choice.
 Roads overlay the terrain under them. If you repaint the terrain under a
 road, the road stays on top.
 
-## Tools card
+## Map tools row
+
+The **Generate map...** and **Export PNG** buttons share one row above the
+Palette card on the Paint tab.
 
 | Control | What it does |
 | --- | --- |
+| Generate map... | Opens the Generate dialog. See [Map generation](#map-generation) |
 | Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A margin on the top and left shows the column and row numbers. A map with no tiles downloads nothing, and a message says so |
 
 If a map is too large for 64 pixels per tile, Export PNG uses a smaller
@@ -231,7 +235,7 @@ keyboard cursor.
 
 ## Map generation
 
-The Generate card fills the current node with a generated layout. The
+The **Generate map...** button fills the current map with a generated layout. The
 dialog shows a preview of the exact layout before it changes anything.
 The preview numbers the columns and rows when the tiles are large enough,
 and it outlines each block that Generate links to a sub-map, such as each

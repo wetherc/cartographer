@@ -132,8 +132,8 @@ opens the developer tools of the browser.
 Switch to **Build** mode. The world tree is on the left, and the editable
 map is in the center. The rail on the right has three tabs:
 
-- **Paint** has the **Generate** card, the **Tools** card, and the
-  **Palette**.
+- **Paint** has the **Generate map...** and **Export PNG** buttons in one
+  row, and the **Palette** below them.
 - **Tile** has the tile inspector.
 - **Encounters** has the **Foes** and **NPCs** lists.
 
@@ -208,7 +208,7 @@ the wheel zooms.
 ### Generate a map instead of painting it
 
 1. Open the node in the World tree.
-2. In the **Paint** tab, click **Generate map...** in the **Generate** card.
+2. In the **Paint** tab, click **Generate map...** above the palette.
 3. Pick an **Archetype** and a **Size**. The dialog shows a preview of the
    exact layout. When tiles of the parent map link to the node, **Size**
    starts on the size that fits those tiles, and an outdoor map follows
@@ -964,7 +964,7 @@ want the library without a campaign.
 ## Export the map as an image
 
 1. Switch to **Build** mode and open the map.
-2. In the **Paint** tab, click **Export PNG** in the **Tools** card.
+2. In the **Paint** tab, click **Export PNG** above the palette.
 
 The browser downloads the map as a PNG image, for printing or for a virtual
 tabletop. The image ignores fog. A browser limits how large an image can
