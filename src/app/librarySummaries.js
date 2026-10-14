@@ -2,6 +2,7 @@ import { spellLevelName } from '../entities/SpellView.js';
 import { formatDamage } from '../entities/DamageParts.js';
 import { riderText } from '../entities/Riders.js';
 import { crLabel } from '../data/challenge.js';
+import { SPELL_KINDS } from '../entities/SpellKinds.js';
 import { countNoun, capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -13,6 +14,10 @@ import { countNoun, capitalize } from '../util/text.js';
  * pure and reads one merged entry.
  */
 
+/** The words a spell row uses for an effect kind. An attack and a save name
+ * the roll, and the other kinds use the label of the spell form. */
+const KIND_WORDS = { attack: 'Attack roll', save: 'Saving throw' };
+
 /** Build the one-line summary for a spell in the library row.
  * It shows the level, the school, the effect kind, and a concentration marker
  * if the spell needs concentration.
@@ -22,16 +27,18 @@ export function spellSummary(spell) {
   const level = spellLevelName(spell.level);
   return [
     `${level} ${capitalize(spell.school)}`,
-    spell.effect.kind,
-    spell.concentration ? 'concentration' : '',
+    KIND_WORDS[/** @type {keyof typeof KIND_WORDS} */ (spell.effect.kind)] ??
+      SPELL_KINDS[spell.effect.kind]?.label ??
+      spell.effect.kind,
+    spell.concentration ? 'Concentration' : '',
   ]
     .filter(Boolean)
     .join(' | ');
 }
 
 /** Build the one-line summary for a feat in the library row: one phrase per
- * effect, or "text only" for a feat the engine cannot apply, plus a
- * prerequisite marker.
+ * effect, or "No automatic effect" for a feat the engine cannot apply, plus
+ * the prerequisite text.
  * @param {Feat} feat
  * @returns {string} */
 export function featSummary(feat) {
@@ -55,8 +62,8 @@ export function featSummary(feat) {
       .filter(Boolean)
       .join(', ');
   });
-  if (parts.length === 0) parts.push('text only');
-  if (feat.prerequisite) parts.push('prerequisite');
+  if (parts.length === 0) parts.push('No automatic effect');
+  if (feat.prerequisite) parts.push(`Requires ${feat.prerequisite}`);
   return parts.join(' | ');
 }
 

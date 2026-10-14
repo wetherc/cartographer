@@ -33,14 +33,14 @@ test('creatureSummary names who a friendly creature is', () => {
 
 test('spellSummary capitalizes the school', () => {
   const spell = { level: 0, school: 'evocation', effect: { kind: 'attack' }, concentration: false };
-  assert.equal(spellSummary(/** @type {any} */ (spell)), 'Cantrip Evocation | attack');
+  assert.equal(spellSummary(/** @type {any} */ (spell)), 'Cantrip Evocation | Attack roll');
 });
 
 test('spellSummary marks a leveled concentration spell', () => {
   const spell = { level: 2, school: 'enchantment', effect: { kind: 'save' }, concentration: true };
   assert.equal(
     spellSummary(/** @type {any} */ (spell)),
-    'Level 2 Enchantment | save | concentration',
+    'Level 2 Enchantment | Saving throw | Concentration',
   );
 });
 
@@ -81,10 +81,17 @@ test('featSummary lists proficiency picks with singular and plural counts', () =
   assert.equal(featSummary(/** @type {any} */ ({ effects: [plural] })), '3 skills, 1 save');
 });
 
-test('featSummary reads text only for a feat with no effects, and flags a prerequisite', () => {
-  assert.equal(featSummary(/** @type {any} */ ({ effects: [] })), 'text only');
+test('spellSummary uses the form label for the other effect kinds', () => {
+  const spell = { level: 1, school: 'abjuration', effect: { kind: 'heal' }, concentration: false };
+  assert.equal(spellSummary(/** @type {any} */ (spell)), 'Level 1 Abjuration | Heal');
+  const odd = { level: 1, school: 'abjuration', effect: { kind: 'odd' }, concentration: false };
+  assert.equal(spellSummary(/** @type {any} */ (odd)), 'Level 1 Abjuration | odd');
+});
+
+test('featSummary reads "No automatic effect" for a feat with no effects, and names a prerequisite', () => {
+  assert.equal(featSummary(/** @type {any} */ ({ effects: [] })), 'No automatic effect');
   assert.equal(
     featSummary(/** @type {any} */ ({ effects: [], prerequisite: 'STR 13' })),
-    'text only | prerequisite',
+    'No automatic effect | Requires STR 13',
   );
 });

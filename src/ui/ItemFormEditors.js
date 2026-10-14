@@ -4,6 +4,7 @@ import { iconButton, removableChip, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { numberField, select, textField } from './formFields.js';
 import { clampInt } from '../util/num.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
@@ -94,11 +95,15 @@ export function buildDamageEditor(initial, fixType = null) {
       // With one type, there is nothing to pick, so the row names it in text.
       if (fixed) {
         part.damageType = fixed;
-        row.appendChild(el('span', 'item-form__damage-type', fixed));
+        row.appendChild(el('span', 'item-form__damage-type', capitalize(fixed)));
       } else {
-        const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
-          ariaLabel: 'Damage type',
-        });
+        const typeSelectEl = select(
+          DAMAGE_TYPES.map((value) => ({ value, label: capitalize(value) })),
+          part.damageType,
+          {
+            ariaLabel: 'Damage type',
+          },
+        );
         typeSelectEl.addEventListener('change', () => {
           part.damageType = typeSelectEl.value;
         });
