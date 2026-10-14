@@ -1,18 +1,17 @@
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
-/** @typedef {import('../types/entities.js').ResourceType} ResourceType */
 
 import { clamp } from '../util/num.js';
 
 /**
- * Create a resource pool (item count, mana, or custom expendable) at full capacity.
+ * Create a resource pool at full capacity, such as spell slots, hit dice, or
+ * the charges of a wand.
  * @param {string} id
  * @param {string} name
- * @param {ResourceType} type
  * @param {number} max
  * @returns {ResourcePool}
  */
-export function createResource(id, name, type, max) {
-  return { id, name, type, current: max, max };
+export function createResource(id, name, max) {
+  return { id, name, current: max, max };
 }
 
 /**

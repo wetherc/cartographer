@@ -28,10 +28,7 @@ function warlock(extra = {}) {
     level: 11,
     xp: 0,
     stats: { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 16 },
-    resources: [
-      createResource('hp', 'Hit points', 'health', 60),
-      createResource('pact-5', 'Pact slots', 'mana', 3),
-    ],
+    resources: [createResource('hp', 'Hit points', 60), createResource('pact-5', 'Pact slots', 3)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: ['eldritch-blast'], known: [], prepared: [] },
@@ -119,10 +116,7 @@ test('a use spent in another tab while the dialog is open refuses', () => {
 
 /** The spell prepared as a wizard spell gives the arcanum spell a second way. */
 const withSlot = {
-  resources: [
-    createResource('hp', 'Hit points', 'health', 60),
-    createResource('slot-6', 'Level 6 slots', 'mana', 1),
-  ],
+  resources: [createResource('hp', 'Hit points', 60), createResource('slot-6', 'Level 6 slots', 1)],
   classes: [
     { classId: 'warlock', level: 11 },
     { classId: 'wizard', level: 9 },

@@ -203,7 +203,7 @@ export function classPoolsFor(character) {
   const mod = (ability) => abilityModifier(stats[ability] ?? 10);
   return POOL_RULES.flatMap(({ id, name, uses }) => {
     const { max, ...rest } = uses(level, mod);
-    return max > 0 ? [{ ...createResource(id, name, 'custom', max), ...rest }] : [];
+    return max > 0 ? [{ ...createResource(id, name, max), ...rest }] : [];
   });
 }
 

@@ -37,10 +37,7 @@ function warlock(invocations) {
     level: 9,
     xp: 0,
     stats: { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 10, CHA: 16 },
-    resources: [
-      createResource('hp', 'Hit points', 'health', 40),
-      createResource('pact-5', 'Pact slots', 'mana', 2),
-    ],
+    resources: [createResource('hp', 'Hit points', 40), createResource('pact-5', 'Pact slots', 2)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: ['eldritch-blast'], known: [], prepared: [] },

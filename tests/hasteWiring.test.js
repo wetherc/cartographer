@@ -35,8 +35,8 @@ function character(id, classId, prepared) {
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
     resources: [
-      createResource('hp', 'Hit points', 'health', 30),
-      createResource('slots-3', 'Level 3 slots', 'mana', 2),
+      createResource('hp', 'Hit points', 30),
+      createResource('slots-3', 'Level 3 slots', 2),
     ],
     inventory: [],
     conditions: [],

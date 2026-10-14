@@ -82,3 +82,20 @@ export function normalizeFeatRequirement(raw) {
   };
   return Object.keys(req).length > 0 ? req : undefined;
 }
+
+/**
+ * The structured requirement that the feat form's Requires row describes.
+ * The row has one ability with its minimum score, one armor proficiency, and
+ * the spellcasting box. A blank ability, a blank armor, or a minimum below 1
+ * leaves that part out, and `normalizeFeatRequirement` drops the rest.
+ * @param {{ ability: string, min: unknown, armor: string, spellcasting: boolean }} draft
+ * @returns {FeatRequirement | undefined}
+ */
+export function requirementFromDraft({ ability, min, armor, spellcasting }) {
+  const score = Math.floor(Number(min));
+  return normalizeFeatRequirement({
+    ...(ability && score >= 1 ? { abilities: { [ability]: score } } : {}),
+    ...(armor ? { armor } : {}),
+    spellcasting,
+  });
+}

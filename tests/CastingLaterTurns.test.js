@@ -31,8 +31,8 @@ function caster() {
     level: 9,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 16, CHA: 10 },
     resources: [
-      createResource('slots-2', 'Level 2 slots', 'mana', 3),
-      createResource('slots-4', 'Level 4 slots', 'mana', 3),
+      createResource('slots-2', 'Level 2 slots', 3),
+      createResource('slots-4', 'Level 4 slots', 3),
     ],
     inventory: [],
     conditions: [],

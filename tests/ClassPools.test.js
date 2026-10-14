@@ -115,13 +115,13 @@ test('the pools come out in the order of CLASS_POOL_IDS', () => {
 });
 
 test('isClassPool picks out the reserved class ids only', () => {
-  assert.equal(isClassPool(createResource('ki', 'Ki', 'custom', 2)), true);
-  assert.equal(isClassPool(createResource('torch', 'Torch', 'custom', 2)), false);
+  assert.equal(isClassPool(createResource('ki', 'Ki', 2)), true);
+  assert.equal(isClassPool(createResource('torch', 'Torch', 2)), false);
 });
 
 test('syncClassPools places the pools after HP and hit dice, ahead of custom pools', () => {
   let hero = withHP(classed([{ classId: 'fighter', level: 2 }]), 20);
-  hero = addResource(hero, createResource('torch', 'Torch', 'custom', 3));
+  hero = addResource(hero, createResource('torch', 'Torch', 3));
   const ids = syncClassPools(hero).resources.map((r) => r.id);
   assert.deepEqual(ids, ['hp', 'second-wind', 'action-surge', 'torch']);
 });

@@ -554,8 +554,10 @@ no `recharge` waits for a long rest. The sorcery points get a
 
 `CustomPools.js` owns the pools that the GM adds on the character sheet. Such
 a pool has an id of the form `pool-N` and a `recharge` of `'short'`,
-`'long'`, or `'none'`. The sheet offers Add pool, and an Edit and a Remove
-button on each such pool. A derived pool gets no Edit button, because the
+`'long'`, or `'none'`. A `'long'` pool can also set `shortRestRegain`, and
+the other two drop it, because a short-rest pool refills in full and a
+`'none'` pool refills on no rest. The sheet offers Add pool, and an Edit and a
+Remove button on each such pool. A derived pool gets no Edit button, because the
 next `derive` would write its size and recharge again.
 
 
@@ -789,7 +791,10 @@ applies.
 `entities/FeatRequirement.js` checks the structured `requires` field of a feat:
 minimum scores, an armor proficiency, or the ability to cast. `featOptions`
 lists an unmet feat last and disabled, with its prerequisite text. A feat with
-only prerequisite text, such as one that the GM wrote, is open to everyone.
+only prerequisite text is open to everyone. The Library feat form sets
+`requires` through `ui/FeatRequirementFields.js`, with one minimum score, one
+armor proficiency, and the spellcasting box, and `requirementFromDraft`
+turns those controls into the stored field.
 
 The dialogs are in `ui/EffectPicks.js`. The class-feature grant flow uses the
 same picks, so a feat and a feature with the same effects prompt the same way.

@@ -220,3 +220,10 @@ test('levelOf reads a whole number in range, or undefined', () => {
     assert.equal(levelOf(bad, 1, 20), undefined, JSON.stringify(bad));
   }
 });
+
+test('resourceList drops the unread type of a stored pool', () => {
+  const kept = { id: 'hp', current: 1, max: 2 };
+  const [plain, typed] = resourceList([kept, { id: 'mana', type: 'mana', current: 1, max: 2 }]);
+  assert.equal(plain, kept, 'a pool with no type stays the same object');
+  assert.deepEqual(typed, { id: 'mana', current: 1, max: 2 });
+});

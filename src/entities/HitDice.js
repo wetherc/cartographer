@@ -223,7 +223,7 @@ export function getHitDicePools(character) {
  * @returns {ResourcePool}
  */
 function hitDicePool(die, count) {
-  return createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count);
+  return createResource(hitDicePoolId(die), `Hit Dice (d${die})`, count);
 }
 
 /**

@@ -76,7 +76,7 @@ function mage(over = {}) {
     level: 5,
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     inventory: [],
     conditions: [],
     spellbook: {
@@ -332,7 +332,7 @@ test('castPlan refuses a harmful cast with nothing on the tile', () => {
 });
 
 test('castPlan refuses a leveled spell with no slot left', () => {
-  const caster = mage({ resources: [createResource('slots-1', 'Level 1 slots', 'mana', 0)] });
+  const caster = mage({ resources: [createResource('slots-1', 'Level 1 slots', 0)] });
   const app = stubApp({ characters: [caster] });
   const plan = castPlan(app, caster, cureWounds, rosterTargets(app, cureWounds));
   assert.deepEqual(plan, { ok: false, message: 'No level 1+ slot left for Cure Wounds.' });
@@ -480,7 +480,7 @@ function formStub(values = {}) {
 
 test('upcasting a projectile spell restates the grid total and its caption', () => {
   const caster = mage({
-    resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+    resources: [createResource('slots-2', 'Level 2 slots', 3)],
     spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
   });
   const goblin = createCreature('goblin', 'Goblin', {
@@ -502,8 +502,8 @@ test('upcasting a projectile spell restates the grid total and its caption', () 
 test('upcasting a spell that scales its targets raises the target cap', () => {
   const caster = mage({
     resources: [
-      createResource('slots-1', 'Level 1 slots', 'mana', 2),
-      createResource('slots-2', 'Level 2 slots', 'mana', 1),
+      createResource('slots-1', 'Level 1 slots', 2),
+      createResource('slots-2', 'Level 2 slots', 1),
     ],
   });
   const goblins = ['g1', 'g2'].map((id) =>
@@ -823,7 +823,7 @@ test('a ritual cast spends no slot and states the extra ten minutes', () => {
 });
 
 test('unticking the ritual box with no slot left refuses the cast', () => {
-  const caster = mage({ resources: [createResource('slots-1', 'Level 1 slots', 'mana', 0)] });
+  const caster = mage({ resources: [createResource('slots-1', 'Level 1 slots', 0)] });
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, detectMagic);
   resolveCast(app, plan, submit({ slot: undefined }), {
@@ -1029,7 +1029,7 @@ test('a cast above its target cap reports the targets it dropped', () => {
 
 test('a multi-projectile cast logs one tally per creature', () => {
   const caster = mage({
-    resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+    resources: [createResource('slots-2', 'Level 2 slots', 3)],
     spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
   });
   const goblin = createCreature('goblin', 'Goblin', {
@@ -1334,7 +1334,7 @@ test('a hit names the rider that got it there', () => {
 test('each ray of a projectile cast reports its own rider dice', () => {
   const caster = {
     ...mage({
-      resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+      resources: [createResource('slots-2', 'Level 2 slots', 3)],
       spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
     }),
     conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }],
@@ -1607,8 +1607,8 @@ test('a summons puts stamped creatures on the party tile and spends the slot', (
 test('a summons upcast at a higher slot brings more creatures', () => {
   const caster = druid({
     resources: [
-      createResource('slots-1', 'Level 1 slots', 'mana', 4),
-      createResource('slots-3', 'Level 3 slots', 'mana', 2),
+      createResource('slots-1', 'Level 1 slots', 4),
+      createResource('slots-3', 'Level 3 slots', 2),
     ],
   });
   const app = stubApp({ characters: [caster] });
@@ -1670,7 +1670,7 @@ test('changing the slot of a spell with no ritual reads no ritual box', () => {
     },
   };
   const caster = mage({
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     spellbook: { cantrips: [], known: ['conjure-animals'], prepared: ['conjure-animals'] },
   });
   const app = stubApp({ characters: [{ ...caster, id: 'druid', name: 'Druid' }] });

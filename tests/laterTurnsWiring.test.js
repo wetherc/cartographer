@@ -49,7 +49,7 @@ function mage() {
     level: 11,
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 16, CHA: 10 },
-    resources: [1, 2, 4, 6].map((n) => createResource(`slots-${n}`, `Level ${n} slots`, 'mana', 2)),
+    resources: [1, 2, 4, 6].map((n) => createResource(`slots-${n}`, `Level ${n} slots`, 2)),
     // A pouch covers the material of every spell here.
     inventory: [item('pouch', 'Component Pouch', { spellFocus: true })],
     conditions: [],
@@ -370,7 +370,7 @@ test('a dying character takes later-turn damage as a failed death save', () => {
   });
   const dying = {
     ...liveMage(app),
-    resources: [{ ...createResource('hp', 'HP', 'custom', 30), current: 0 }],
+    resources: [{ ...createResource('hp', 'HP', 30), current: 0 }],
     deathSaves: { successes: 0, failures: 0, stable: false },
     conditions: [acid],
   };
@@ -389,7 +389,7 @@ test('a dead character takes no later-turn damage', () => {
   app.state.characters = [
     {
       ...liveMage(app),
-      resources: [{ ...createResource('hp', 'HP', 'custom', 30), current: 0 }],
+      resources: [{ ...createResource('hp', 'HP', 30), current: 0 }],
       deathSaves: { successes: 0, failures: 3, stable: false },
       conditions: [acid],
     },

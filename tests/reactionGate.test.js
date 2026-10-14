@@ -19,8 +19,8 @@ function mage(slots = 2, conditions = /** @type {any[]} */ ([])) {
     classes: [{ classId: 'wizard', level: 5 }],
     level: 5,
     resources: [
-      createResource('hp', 'Hit points', 'health', 30),
-      createResource('slots-1', 'Level 1 slots', 'mana', slots),
+      createResource('hp', 'Hit points', 30),
+      createResource('slots-1', 'Level 1 slots', slots),
     ],
     conditions,
     spellbook: { cantrips: [], known: ['shield'], prepared: ['shield'] },

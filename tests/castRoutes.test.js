@@ -37,9 +37,9 @@ function caster({ invocations = [], prepared = [], pact = 2 } = {}) {
     xp: 0,
     stats: { STR: 10, DEX: 14, CON: 10, INT: 16, WIS: 10, CHA: 16 },
     resources: [
-      createResource('hp', 'Hit points', 'health', 90),
-      ...[1, 2, 3].map((n) => createResource(`slots-${n}`, `Level ${n} slots`, 'mana', 2)),
-      { ...createResource('pact-5', 'Pact slots', 'mana', 3), current: pact },
+      createResource('hp', 'Hit points', 90),
+      ...[1, 2, 3].map((n) => createResource(`slots-${n}`, `Level ${n} slots`, 2)),
+      { ...createResource('pact-5', 'Pact slots', 3), current: pact },
     ],
     inventory: [item('pouch', 'Component Pouch', { spellFocus: true })],
     conditions: [],

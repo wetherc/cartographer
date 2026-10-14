@@ -30,7 +30,7 @@ function caster() {
     classes: [{ classId: 'wizard', level: 3 }],
     level: 3,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 2)],
+    resources: [createResource('slots-1', 'Level 1 slots', 2)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: [], known: [], prepared: ['ray-of-sickness', 'magic-missile'] },

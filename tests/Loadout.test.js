@@ -47,9 +47,9 @@ function caster() {
     ...hero,
     resources: [
       ...hero.resources,
-      spend(createResource('slots-1', 'Level 1 slots', 'mana', 2), 1),
-      createResource('slots-2', 'Level 2 slots', 'mana', 1),
-      createResource('pact-3', 'Pact slots (level 3)', 'mana', 2),
+      spend(createResource('slots-1', 'Level 1 slots', 2), 1),
+      createResource('slots-2', 'Level 2 slots', 1),
+      createResource('pact-3', 'Pact slots (level 3)', 2),
     ],
   };
 }

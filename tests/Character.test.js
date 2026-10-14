@@ -126,7 +126,7 @@ test('addXP leaves a pool-less character unchanged but for level/xp', () => {
 
 test('addResource, spendResource, and restoreResource operate on the matching pool by id', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+  hero = addResource(hero, createResource('mana', 'Mana', 10));
   hero = spendResource(hero, 'mana', 4);
   assert.equal(hero.resources[0].current, 6);
   hero = restoreResource(hero, 'mana', 100);
@@ -227,7 +227,7 @@ test('setBaseAC sets the unarmored baseline, never below 1', () => {
 
 test('setMaxHP leaves non-HP resource pools untouched', () => {
   let hero = withHP(createCharacter('c1', 'Hero'), 20);
-  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+  hero = addResource(hero, createResource('mana', 'Mana', 10));
   const raised = setMaxHP(hero, 30);
   assert.equal(getHP(raised)?.max, 30);
   assert.deepEqual(
@@ -287,8 +287,8 @@ test('withDefaults folds a chip-era exhaustion condition into level 1', () => {
 
 test('restoreResource leaves non-matching pools untouched', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
-  hero = addResource(hero, createResource('ki', 'Ki', 'custom', 5));
+  hero = addResource(hero, createResource('mana', 'Mana', 10));
+  hero = addResource(hero, createResource('ki', 'Ki', 5));
   hero = spendResource(hero, 'mana', 4);
   const restored = restoreResource(hero, 'mana', 100);
   assert.equal(restored.resources.find((r) => r.id === 'mana').current, 10);
@@ -329,10 +329,7 @@ test('healing a dead character changes nothing', () => {
 
 test('a dead character still restores a pool that is not HP', () => {
   const dead = /** @type {any} */ ({
-    ...addResource(
-      withHP(createCharacter('c1', 'Hero'), 10),
-      createResource('ki', 'Ki', 'custom', 4),
-    ),
+    ...addResource(withHP(createCharacter('c1', 'Hero'), 10), createResource('ki', 'Ki', 4)),
     deathSaves: { successes: 0, failures: 3, stable: false },
   });
   const spent = spendResource(dead, 'ki', 2);
@@ -364,11 +361,7 @@ test('a restore that leaves a character at 0 HP keeps the tracker', () => {
     'no points, no wake',
   );
   // Restoring a pool that is not HP cannot revive anyone, whatever it holds.
-  const other = restoreResource(
-    addResource(zero, createResource('ki', 'Ki', 'custom', 5)),
-    'ki',
-    5,
-  );
+  const other = restoreResource(addResource(zero, createResource('ki', 'Ki', 5)), 'ki', 5);
   assert.deepEqual(other.deathSaves, state);
 });
 

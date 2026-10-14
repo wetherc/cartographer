@@ -79,7 +79,7 @@ export function getHP(character) {
  * @returns {Character}
  */
 export function withHP(character, maxHP) {
-  const hp = createResource(HP_RESOURCE_ID, 'HP', 'custom', maxHP);
+  const hp = createResource(HP_RESOURCE_ID, 'HP', maxHP);
   const others = character.resources.filter((r) => r.id !== HP_RESOURCE_ID);
   return { ...character, resources: [hp, ...others] };
 }

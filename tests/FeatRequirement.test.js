@@ -4,6 +4,7 @@ import {
   meetsFeatRequirement,
   featOptions,
   normalizeFeatRequirement,
+  requirementFromDraft,
 } from '../src/entities/FeatRequirement.js';
 import { emptyProficiencies } from '../src/entities/Proficiencies.js';
 import { createCharacter } from '../src/entities/Character.js';
@@ -74,4 +75,23 @@ test('a library feat keeps its checked requirement through normalizeFeat', () =>
   assert.deepEqual(kept.requires, { abilities: { STR: 13 } });
   const none = normalizeFeat({ name: 'Plain', effects: [], requires: { armor: 'mithral' } }, 'p');
   assert.equal('requires' in none, false);
+});
+
+test('requirementFromDraft reads the Requires row of the feat form', () => {
+  assert.deepEqual(
+    requirementFromDraft({ ability: 'STR', min: '13', armor: 'medium', spellcasting: true }),
+    { abilities: { STR: 13 }, armor: 'medium', spellcasting: true },
+  );
+  assert.equal(
+    requirementFromDraft({ ability: '', min: '13', armor: '', spellcasting: false }),
+    undefined,
+  );
+  assert.equal(
+    requirementFromDraft({ ability: 'DEX', min: '0', armor: '', spellcasting: false }),
+    undefined,
+  );
+  assert.deepEqual(
+    requirementFromDraft({ ability: 'DEX', min: '40', armor: '', spellcasting: false }),
+    undefined,
+  );
 });

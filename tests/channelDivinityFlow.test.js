@@ -33,7 +33,7 @@ function fight() {
     stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 16, CHA: 10 },
     conditions: [],
     inventory: [],
-    resources: [createResource('channel-divinity', 'Channel Divinity', 'mana', 1)],
+    resources: [createResource('channel-divinity', 'Channel Divinity', 1)],
   });
   const app = stubApp({
     state: /** @type {any} */ ({

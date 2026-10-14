@@ -24,8 +24,8 @@ function cleric(id, over = {}) {
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 16, CHA: 10 },
     resources: [
-      createResource('hp', 'Hit points', 'health', 30),
-      ...[2, 5, 6].map((l) => createResource(`slots-${l}`, `Level ${l} slots`, 'mana', 2)),
+      createResource('hp', 'Hit points', 30),
+      ...[2, 5, 6].map((l) => createResource(`slots-${l}`, `Level ${l} slots`, 2)),
     ],
     inventory: [],
     conditions: [],

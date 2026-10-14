@@ -252,8 +252,6 @@ export interface CreatureArmor {
   armorWeight: ArmorWeight;
 }
 
-export type ResourceType = 'item-count' | 'mana' | 'custom';
-
 /** The rest that refills a pool in full. A long rest refills every pool
  * except one marked 'none'. */
 export type Recharge = 'short' | 'long';
@@ -265,7 +263,6 @@ export type PoolRecharge = Recharge | 'none';
 export interface ResourcePool {
   id: string;
   name: string;
-  type: ResourceType;
   current: number;
   max: number;
   /** The rest that refills the pool. Absent means a long rest. A short rest

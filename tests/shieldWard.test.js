@@ -57,8 +57,8 @@ function wizard(id, spells, slots = 4) {
     xp: 0,
     stats: { STR: 10, DEX: 14, CON: 10, INT: 16, WIS: 10, CHA: 10 },
     resources: [
-      createResource('hp', 'Hit points', 'health', 30),
-      { ...createResource('slots-1', 'Level 1 slots', 'mana', 4), current: slots },
+      createResource('hp', 'Hit points', 30),
+      { ...createResource('slots-1', 'Level 1 slots', 4), current: slots },
     ],
     inventory: [],
     conditions: [],
@@ -282,7 +282,7 @@ test('a defender that leaves while the question is open raises nothing', async (
 
 test('Shield turns aside each Scorching Ray that misses the raised AC', async () => {
   const evoker = wizard('evoker', ['scorching-ray']);
-  evoker.resources.push(createResource('slots-2', 'Level 2 slots', 'mana', 2));
+  evoker.resources.push(createResource('slots-2', 'Level 2 slots', 2));
   const app = stubApp();
   app.state.characters = replaceById(app.state.characters, evoker);
   const { asked, ask } = answer(true);

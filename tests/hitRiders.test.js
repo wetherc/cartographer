@@ -203,7 +203,7 @@ function boltCaster() {
     class: 'wizard',
     level: 5,
     stats: { INT: 16 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: ['firebolt'], known: [], prepared: [] },

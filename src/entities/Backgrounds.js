@@ -42,8 +42,8 @@ export function withBackground(character, backgroundId) {
 
 /**
  * A character's background definition, resolved at call time. Returns null
- * for a character with no background, or one whose custom background was
- * deleted.
+ * for a character with no background, or one whose id names no catalog
+ * background.
  * @param {Character} character
  * @returns {BackgroundDef | null}
  */

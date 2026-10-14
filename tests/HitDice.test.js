@@ -63,14 +63,14 @@ test('hitDieFor reads the class hit die; classless and unknown yield null', () =
 });
 
 test('pool ids embed the die size; the legacy sizeless pool still matches', () => {
-  const pool = createResource(hitDicePoolId(8), 'Hit Dice (d8)', 'custom', 3);
+  const pool = createResource(hitDicePoolId(8), 'Hit Dice (d8)', 3);
   assert.equal(pool.id, 'hit-dice-d8');
   assert.equal(hitDieOfPool(pool), 8);
   assert.equal(isHitDicePool(pool), true);
-  const legacy = createResource(LEGACY_HIT_DICE_ID, 'Hit Dice', 'custom', 3);
+  const legacy = createResource(LEGACY_HIT_DICE_ID, 'Hit Dice', 3);
   assert.equal(isHitDicePool(legacy), true);
   assert.equal(hitDieOfPool(legacy), null);
-  assert.equal(isHitDicePool(createResource('ki', 'Ki', 'custom', 3)), false);
+  assert.equal(isHitDicePool(createResource('ki', 'Ki', 3)), false);
 });
 
 test('characterHitDice counts one die per assigned class level, merged by size', () => {
@@ -156,7 +156,7 @@ test('classMaxHP skips unknown classes and falls back to null when all are', () 
 
 test('withHitDice builds one pool per die size, ordered after HP and slots', () => {
   let c = withSpellSlots(withHP(classed([{ classId: 'wizard', level: 3 }]), 10));
-  c = addResource(c, createResource('ki', 'Ki', 'custom', 3));
+  c = addResource(c, createResource('ki', 'Ki', 3));
   c = withHitDice(c);
   assert.deepEqual(
     c.resources.map((r) => r.id),
@@ -179,10 +179,7 @@ test('withHitDice builds one pool per die size, ordered after HP and slots', () 
 test('withHitDice replaces existing pools (legacy included) instead of stacking', () => {
   const c = withHitDice(withHitDice(fighter()));
   assert.equal(getHitDicePools(c).length, 1);
-  const legacy = addResource(
-    fighter(),
-    createResource(LEGACY_HIT_DICE_ID, 'Hit Dice', 'custom', 3),
-  );
+  const legacy = addResource(fighter(), createResource(LEGACY_HIT_DICE_ID, 'Hit Dice', 3));
   assert.deepEqual(dicePools(withHitDice(legacy)), [{ id: 'hit-dice-d10', max: 1, current: 1 }]);
   assert.deepEqual(dicePools(withHitDice(createCharacter('c1', 'Nim'))), []);
 });
@@ -248,7 +245,7 @@ test('malformed level and missing stats fall back to level 1 and CON 10', () => 
 
 test('spendHitDie heals the roll plus CON and marks the die spent', () => {
   const c = spendResource(
-    addResource(withHitDice(withHP(fighter(14), 20)), createResource('ki', 'Ki', 'custom', 3)),
+    addResource(withHitDice(withHP(fighter(14), 20)), createResource('ki', 'Ki', 3)),
     'hp',
     15,
   );

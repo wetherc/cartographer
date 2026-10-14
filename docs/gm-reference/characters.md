@@ -192,7 +192,8 @@ feat that grants expertise.
 ## Creation and progression
 
 Creation picks a class, a race, and a background, and offers the skill
-choices of the class. The class list leaves out a skill that the race or the
+choices of the class. The races and the backgrounds come from the built-in
+catalogs, and the library has no control that adds one. The class list leaves out a skill that the race or the
 background already gives, so an Acolyte Cleric picks two skills other than
 Insight and Religion. A Half-Elf also picks two abilities other than CHA
 that gain +1 each, and two skills of any kind (Skill Versatility). A
@@ -274,10 +275,12 @@ An assignment does these things:
   across one or two abilities, up to 20, or a feat by name.
 
 Both choices can be undone from the same block. The feat list shows a
-built-in feat that the character does not qualify for as disabled, and it
-names the prerequisite. An example is Grappler for a STR 8 Wizard. The
-prerequisite of a feat that you wrote in the library is display text only,
-so you enforce it.
+feat that the character does not qualify for as disabled, and it names the
+prerequisite. An example is Grappler for a STR 8 Wizard. A feat that you
+write in the library checks what its **Requires ability**,
+**Requires armor**, and **Needs spellcasting** controls set. The
+**Prerequisite** text is display text only, so you enforce any other part
+of it.
 
 A class feature with choices, such as the Expertise of the Rogue, prompts
 when its level is assigned. A choice with only one possible pick applies
@@ -352,7 +355,8 @@ give, such as the charges of a wand. Click **Add pool** below the resource
 list of the sheet, and set the name, the number of uses, and **Refills on**.
 A **Long rest** pool refills on a long rest, a **Short rest** pool refills on
 either rest, and a **No rest** pool refills only when the GM restores it with
-the plus button. Each row shows its rest in brackets. The pencil button edits
+the plus button. A **Long rest** pool can also set **Regain on short rest**,
+the uses that a short rest gives back to it. Each row shows its rest in brackets. The pencil button edits
 a custom pool, and the bin button removes it. A class feature pool has no
 edit button, because the class levels set its size and its rest.
 
@@ -598,7 +602,7 @@ pane sits beside the tiles, and on a narrow one it sits under them.
 | Min STR | For body armor: the Strength score that it needs. 0 means none |
 | Stealth | For body armor: tick it to give the wearer disadvantage on Stealth |
 | AC bonus | A flat bonus on any other item that can be equipped. A shield uses this field too, and it starts at +2. A weapon shows the field only when **Magical weapon** is ticked or the weapon already has a bonus |
-| Ability buff | For example +2 STR, applied while the item is equipped |
+| Ability buff | For example +2 STR, applied while the item is equipped. The form sets one buff. An imported item with two or more buffs shows only the first, and a save from the form keeps only that one |
 | Heals when drunk | For a consumable: the heal dice, as a count, a die size, and a flat bonus. A count of 0 means the item heals nothing. A potion preset fills it |
 
 Only the GM adds an item. A player uses, gives away, and discards what the

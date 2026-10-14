@@ -33,7 +33,7 @@ function caster(prepared) {
     class: 'wizard',
     level: 9,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
-    resources: [1, 2, 3, 4].map((n) => createResource(`slots-${n}`, `Level ${n}`, 'mana', 2)),
+    resources: [1, 2, 3, 4].map((n) => createResource(`slots-${n}`, `Level ${n}`, 2)),
     inventory: [],
     conditions: [],
     spellbook: { cantrips: [], known: [], prepared },

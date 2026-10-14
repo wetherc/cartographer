@@ -28,7 +28,6 @@ test('addCustomPool adds a full pool under the first free id', () => {
   assert.deepEqual(pool(one, 'pool-1'), {
     id: 'pool-1',
     name: 'Wand',
-    type: 'custom',
     current: 3,
     max: 3,
     recharge: 'none',
@@ -59,9 +58,9 @@ test('removeCustomPool drops a custom pool and leaves a derived one', () => {
 });
 
 test('isCustomPool is false for every derived pool', () => {
-  assert.equal(isCustomPool(createResource('pool-1', 'Wand', 'custom', 1)), true);
+  assert.equal(isCustomPool(createResource('pool-1', 'Wand', 1)), true);
   for (const id of ['hp', 'slots-1', 'pact-1', 'hit-dice-d8', 'ki']) {
-    assert.equal(isCustomPool(createResource(id, id, 'custom', 1)), false, id);
+    assert.equal(isCustomPool(createResource(id, id, 1)), false, id);
   }
 });
 
@@ -84,7 +83,7 @@ test('Sorcerous Restoration regains 4 sorcery points on a short rest at sorcerer
   const points = classPoolsFor(sorcerer(20)).find((p) => p.id === 'sorcery-points');
   assert.equal(points?.shortRestRegain, 4);
   const c = spendResource(
-    { ...hero(), resources: [points ?? createResource('x', 'x', 'custom', 1)] },
+    { ...hero(), resources: [points ?? createResource('x', 'x', 1)] },
     'sorcery-points',
     20,
   );
@@ -93,7 +92,7 @@ test('Sorcerous Restoration regains 4 sorcery points on a short rest at sorcerer
 });
 
 test('rechargeLabel words each recharge', () => {
-  const base = createResource('pool-1', 'Wand', 'custom', 1);
+  const base = createResource('pool-1', 'Wand', 1);
   assert.equal(rechargeLabel(base), 'long rest');
   assert.equal(rechargeLabel({ ...base, recharge: 'short' }), 'short rest');
   assert.equal(rechargeLabel({ ...base, recharge: 'none' }), 'no rest');
@@ -101,4 +100,37 @@ test('rechargeLabel words each recharge', () => {
     rechargeLabel({ ...base, recharge: 'long', shortRestRegain: 4 }),
     'long rest, 4 on a short rest',
   );
+});
+
+test('a long-rest pool keeps a short-rest regain, capped at its size', () => {
+  const one = addCustomPool(hero(), {
+    name: 'Ki',
+    max: 4,
+    recharge: 'long',
+    shortRestRegain: 9,
+  });
+  assert.equal(pool(one, 'pool-1')?.shortRestRegain, 4);
+  const lower = editCustomPool(one, 'pool-1', {
+    name: 'Ki',
+    max: 4,
+    recharge: 'long',
+    shortRestRegain: 2.7,
+  });
+  assert.equal(pool(lower, 'pool-1')?.shortRestRegain, 2);
+  const cleared = editCustomPool(lower, 'pool-1', {
+    name: 'Ki',
+    max: 4,
+    recharge: 'long',
+    shortRestRegain: 0,
+  });
+  assert.equal('shortRestRegain' in (pool(cleared, 'pool-1') ?? {}), false);
+});
+
+test('a short-rest or no-rest pool drops the short-rest regain', () => {
+  for (const recharge of /** @type {const} */ (['short', 'none'])) {
+    const one = addCustomPool(hero(), { name: 'Wand', max: 3, recharge, shortRestRegain: 2 });
+    assert.equal('shortRestRegain' in (pool(one, 'pool-1') ?? {}), false);
+  }
+  const bare = addCustomPool(hero(), { name: 'Wand', max: 3, recharge: 'long' });
+  assert.equal('shortRestRegain' in (pool(bare, 'pool-1') ?? {}), false);
 });

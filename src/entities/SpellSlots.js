@@ -245,7 +245,7 @@ export function slotLevelOf(pool) {
 
 /** @param {number} spellLevel @param {number} max @returns {ResourcePool} */
 function slotPool(spellLevel, max) {
-  return createResource(`${SLOT_ID_PREFIX}${spellLevel}`, `Level ${spellLevel} slots`, 'mana', max);
+  return createResource(`${SLOT_ID_PREFIX}${spellLevel}`, `Level ${spellLevel} slots`, max);
 }
 
 /** @param {{ count: number, level: number }} pact @returns {ResourcePool} */
@@ -253,7 +253,6 @@ function pactPool(pact) {
   return createResource(
     `${PACT_ID_PREFIX}${pact.level}`,
     `Pact slots (level ${pact.level})`,
-    'mana',
     pact.count,
   );
 }

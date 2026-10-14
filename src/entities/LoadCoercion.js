@@ -29,12 +29,19 @@ export function recordList(value) {
 /**
  * A stored resource list. An entry needs an id that is a string that is not
  * empty, because the slot, hit dice, and class pool code calls string methods
- * on it.
+ * on it. A version-8 save also keeps a `type` on each pool that no code
+ * reads, and the list drops it.
  * @param {unknown} value
  * @returns {any[]}
  */
 export function resourceList(value) {
-  return recordList(value).filter((entry) => typeof entry.id === 'string' && entry.id !== '');
+  return recordList(value)
+    .filter((entry) => typeof entry.id === 'string' && entry.id !== '')
+    .map((entry) => {
+      if (!('type' in entry)) return entry;
+      const { type: _type, ...rest } = entry;
+      return rest;
+    });
 }
 
 /**

@@ -266,7 +266,7 @@ test('an attack spell at the boss asks first and rolls against the ally', async 
     }),
     classes: [{ classId: 'wizard', level: 5 }],
     level: 5,
-    resources: [createResource('hp', 'Hit points', 'health', 30)],
+    resources: [createResource('hp', 'Hit points', 30)],
     spellbook: { cantrips: ['fire-bolt'], known: [], prepared: [] },
   });
   app.state.characters = [...app.state.characters, evoker];
@@ -334,7 +334,7 @@ test('a change to the caster during the Redirect Attack dialog stays after the c
     }),
     classes: [{ classId: 'wizard', level: 5 }],
     level: 5,
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     spellbook: { cantrips: [], known: ['ray-of-sickness'], prepared: ['ray-of-sickness'] },
   });
   app.state.characters = [...app.state.characters, evoker];

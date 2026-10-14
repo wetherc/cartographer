@@ -15,6 +15,7 @@ import { SKILL_IDS, skillName } from '../data/skills.js';
 import { RIDER_ROLLS, DEFAULT_RIDER_DIE } from '../entities/Riders.js';
 import { normalizeFeat } from '../library/Library.js';
 import { capitalize } from '../util/text.js';
+import { featRequirementFields } from './FeatRequirementFields.js';
 
 /** @typedef {import('../types/feat.js').Feat} Feat */
 /** @typedef {import('../types/feat.js').ProficiencyChoice} ProficiencyChoice */
@@ -80,8 +81,9 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
   });
   setTip(
     prerequisiteInput,
-    'Shown in the take-feat dialog. Only a built-in feat checks its requirement.',
+    'Shown in the take-feat dialog. The Requires rows set what the dialog checks.',
   );
+  const requirement = featRequirementFields(feat?.requires);
   const repeatable = checkbox('Repeatable', feat?.repeatable ?? false);
   setTip(repeatable.label, 'A character may take this feat more than once');
   const descriptionInput = textareaField(feat?.description ?? '', {
@@ -226,9 +228,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
       name: nameInput.value,
       description: descriptionInput.value,
       prerequisite: prerequisiteInput.value,
-      // The form has no controls for the checked requirement, so an edit
-      // keeps the one the feat came with.
-      requires: feat?.requires,
+      requires: requirement.read(),
       repeatable: repeatable.input.checked,
       effects: [
         ...(asi.input.checked
@@ -278,6 +278,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
     nameLabel: 'Name',
     rows: [
       fieldRow(labeled('Prerequisite', prerequisiteInput), repeatable.label),
+      ...requirement.rows,
       labeled('Description', descriptionInput),
       fieldRow(asi.label),
       abilityRow,

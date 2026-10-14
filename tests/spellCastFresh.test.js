@@ -37,7 +37,7 @@ function mage() {
     level: 5,
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: [], known: ['detect-magic'], prepared: ['detect-magic'] },

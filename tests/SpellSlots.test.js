@@ -70,7 +70,7 @@ test('casterLevelContribution weights each caster type for the combined level', 
 
 test('withSpellSlots creates full pools per the table, ordered HP then slots then custom', () => {
   let mage = withHP(createCharacter('c1', 'Mage'), 10);
-  mage = addResource(mage, createResource('ki', 'Ki', 'custom', 3));
+  mage = addResource(mage, createResource('ki', 'Ki', 3));
   mage = { ...mage, level: 3 };
   mage = withSpellSlots(mage);
   assert.deepEqual(
@@ -114,7 +114,7 @@ test('syncSlotsToLevel leaves a non-caster untouched', () => {
   // A martial class list stays untouched even when a stray pool sits on it.
   const stray = addResource(
     classed([{ classId: 'fighter', level: 5 }]),
-    createResource('slots-1', 'Level 1 slots', 'mana', 2),
+    createResource('slots-1', 'Level 1 slots', 2),
   );
   assert.equal(syncSlotsToLevel(stray), stray);
 });

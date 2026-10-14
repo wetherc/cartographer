@@ -112,7 +112,7 @@ test('withSubclass strips a pact pool when no caster class is left', () => {
   const c = withSubclass(classed([{ classId: 'fighter', level: 3 }]), 'fighter', EK);
   const withPact = {
     ...c,
-    resources: [...c.resources, createResource('pact-1', 'Pact', 'mana', 1)],
+    resources: [...c.resources, createResource('pact-1', 'Pact', 1)],
   };
   const cleared = withSubclass(withPact, 'fighter', 'Champion');
   assert.equal(getPactPool(cleared), null);

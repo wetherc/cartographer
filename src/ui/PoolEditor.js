@@ -20,10 +20,11 @@ const RECHARGE_OPTIONS = [
 ];
 
 /**
- * Ask for a pool's name, size, and recharge. Resolve to null on cancel.
+ * Ask for a pool's name, size, recharge, and short-rest regain. Resolve to
+ * null on cancel.
  * @param {string} title
  * @param {ResourcePool} [pool]
- * @returns {Promise<{ name: string, max: number, recharge: PoolRecharge } | null>}
+ * @returns {Promise<import('../entities/CustomPools.js').PoolSpec | null>}
  */
 async function askPool(title, pool) {
   const values = await promptModal(
@@ -38,6 +39,16 @@ async function askPool(title, pool) {
         options: RECHARGE_OPTIONS,
         value: pool?.recharge ?? 'long',
       },
+      {
+        name: 'regain',
+        label: 'Regain on short rest',
+        type: 'number',
+        min: 0,
+        value: pool?.shortRestRegain ?? 0,
+        // A short-rest pool refills in full, and a 'none' pool on no rest, so
+        // only a long-rest pool regains part of its uses on a short rest.
+        enabledWhen: { field: 'recharge', test: (value) => value === 'long' },
+      },
     ],
     { submitLabel: pool ? 'Save pool' : 'Add pool' },
   );
@@ -46,6 +57,7 @@ async function askPool(title, pool) {
     name: values.name,
     max: Number(values.max),
     recharge: /** @type {PoolRecharge} */ (values.recharge),
+    shortRestRegain: Number(values.regain),
   };
 }
 

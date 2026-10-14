@@ -38,7 +38,7 @@ function caster(classId, book) {
     classes: [{ classId, level: 5 }],
     level: 5,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 16, CHA: 10 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: [], known: [], prepared: [], ...book },

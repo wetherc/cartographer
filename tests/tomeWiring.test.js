@@ -24,8 +24,8 @@ function app(extra = {}) {
           xp: 0,
           stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 16 },
           resources: [
-            createResource('hp', 'Hit points', 'health', 30),
-            createResource('pact-3', 'Pact slots', 'mana', 2),
+            createResource('hp', 'Hit points', 30),
+            createResource('pact-3', 'Pact slots', 2),
           ],
           inventory: [],
           conditions: [],

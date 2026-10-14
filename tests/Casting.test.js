@@ -45,7 +45,7 @@ function caster(over = {}) {
     level: 5,
     xp: 0,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 10, CHA: 10 },
-    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    resources: [createResource('slots-1', 'Level 1 slots', 4)],
     inventory: [],
     conditions: [],
     spellbook: { cantrips: ['firebolt'], known: [], prepared: ['burning-hands', 'cure-wounds'] },
@@ -141,7 +141,7 @@ const scorchingRay = {
 /** A caster with the 2nd-level slots Scorching Ray needs. */
 function rayCaster() {
   return caster({
-    resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+    resources: [createResource('slots-2', 'Level 2 slots', 3)],
     spellbook: {
       cantrips: [],
       known: ['scorching-ray', 'darts'],
@@ -722,7 +722,7 @@ test('upcasting a save spell adds a die per slot level above base', () => {
   // cast at slot 3 (2 above base): 3d6 base + 2d6 scaled = 5d6, all min = 5.
   const rng = seq([0, 0, 0, 0, 0, face(20, 20)]);
   const c = caster({
-    resources: [createResource('slots-3', 'Level 3 slots', 'mana', 2)],
+    resources: [createResource('slots-3', 'Level 3 slots', 2)],
   });
   const result = castSpell(c, burningHands, {
     slotLevel: 3,
@@ -770,7 +770,7 @@ test('rejects an unknown spell, a low slot level, and an empty slot pool', () =>
     ok: false,
     reason: 'bad-slot-level',
   });
-  const drained = caster({ resources: [createResource('slots-1', 'L1', 'mana', 0)] });
+  const drained = caster({ resources: [createResource('slots-1', 'L1', 0)] });
   assert.deepEqual(castSpell(drained, burningHands, { slotLevel: 1 }), {
     ok: false,
     reason: 'no-slot',
@@ -778,8 +778,8 @@ test('rejects an unknown spell, a low slot level, and an empty slot pool', () =>
 });
 
 test('a cast falls back to the pact pool when the leveled slot is drained', () => {
-  const drainedLeveled = { ...createResource('slots-1', 'L1', 'mana', 4), current: 0 };
-  const pact = createResource('pact-1', 'Pact slots (level 1)', 'mana', 2);
+  const drainedLeveled = { ...createResource('slots-1', 'L1', 4), current: 0 };
+  const pact = createResource('pact-1', 'Pact slots (level 1)', 2);
   const lock = caster({ resources: [drainedLeveled, pact] });
 
   const result = castSpell(lock, burningHands, { slotLevel: 1, rng: seq([]) });
@@ -790,7 +790,7 @@ test('a cast falls back to the pact pool when the leveled slot is drained', () =
 
   // With a leveled charge left, the leveled pool is preferred over pact.
   const both = caster({
-    resources: [createResource('slots-1', 'L1', 'mana', 4), pact],
+    resources: [createResource('slots-1', 'L1', 4), pact],
   });
   const preferred = castSpell(both, burningHands, { slotLevel: 1, rng: seq([]) });
   const after = /** @type {any} */ (preferred).caster.resources;
@@ -852,7 +852,7 @@ test('a ritual cast spends no slot and resolves at the spell’s own level', () 
 test('a ritual is castable with no slot left at all', () => {
   // The whole point of the ritual: the extra ten minutes buys a cast a drained
   // caster could not otherwise make.
-  const c = ritualCaster({ resources: [createResource('slots-1', 'Level 1 slots', 'mana', 0)] });
+  const c = ritualCaster({ resources: [createResource('slots-1', 'Level 1 slots', 0)] });
   assert.deepEqual(castSpell(c, detectMagic, { slotLevel: 1 }), { ok: false, reason: 'no-slot' });
   const result = castSpell(c, detectMagic, { slotLevel: 1, ritual: true });
   assert.equal(result.ok, true);
@@ -863,7 +863,7 @@ test('a ritual cast ignores the slot level it was handed', () => {
   // There is no slot to upcast from, so a higher level cannot buy more dice.
   const spell = { ...detectMagic, effect: burningHands.effect, scaling: burningHands.scaling };
   const c = ritualCaster({
-    resources: [createResource('slots-3', 'Level 3 slots', 'mana', 2)],
+    resources: [createResource('slots-3', 'Level 3 slots', 2)],
   });
   const result = castSpell(c, /** @type {any} */ (spell), {
     slotLevel: 3,
@@ -1180,7 +1180,7 @@ const conjureWolves = {
 /** @param {string[]} pools which slot pools the caster holds charges in */
 function summonCaster(pools = ['slots-3']) {
   return caster({
-    resources: pools.map((id) => createResource(id, `${id} slots`, 'mana', 4)),
+    resources: pools.map((id) => createResource(id, `${id} slots`, 4)),
     spellbook: { cantrips: [], known: [], prepared: ['conjure'] },
   });
 }

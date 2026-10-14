@@ -59,8 +59,8 @@ function mage() {
     xp: 0,
     stats: { STR: 10, DEX: 14, CON: 10, INT: 16, WIS: 10, CHA: 10 },
     resources: [
-      createResource('hp', 'Hit points', 'health', 30),
-      createResource('slots-1', 'Level 1 slots', 'mana', 4),
+      createResource('hp', 'Hit points', 30),
+      createResource('slots-1', 'Level 1 slots', 4),
     ],
     inventory: [],
     conditions: [],

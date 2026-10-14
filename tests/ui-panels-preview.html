@@ -40,7 +40,7 @@
     import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
 
     let hero = createCharacter('c1', 'Hero', { STR: 14, DEX: 12, CON: 13 });
-    hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+    hero = addResource(hero, createResource('mana', 'Mana', 10));
 
     mountCharacterSheet(document.getElementById('character-sheet-container'), hero, (next) => {
       hero = next;

@@ -31,7 +31,7 @@ function caster(cls, prepared) {
     level: 17,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 16, WIS: 16, CHA: 16 },
     resources: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) =>
-      createResource(`slots-${n}`, `Level ${n}`, 'mana', 2),
+      createResource(`slots-${n}`, `Level ${n}`, 2),
     ),
     inventory: [],
     conditions: [],
