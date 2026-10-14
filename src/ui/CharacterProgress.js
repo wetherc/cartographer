@@ -51,7 +51,7 @@ import { featureChoiceCount, improvementCount, levelsToAssign } from '../view/Le
  *   editBase: boolean,
  *   play: boolean,
  *   onCommit: (character: Character) => void,
- *   notify: (message: string) => void,
+ *   notify: (message: string, options?: { log?: boolean }) => void,
  * }} opts editBase gates the level, ASI, and feat choices, since they
  *   change the base character. play gates the hit-die spend. notify shows
  *   roll results and dead-end explanations as toasts.

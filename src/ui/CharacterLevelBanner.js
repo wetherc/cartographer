@@ -35,7 +35,7 @@ export function levelUpText(character) {
  *   editBase: boolean,
  *   live: () => Character,
  *   onCommit: (character: Character) => void,
- *   notify: (message: string) => void,
+ *   notify: (message: string, options?: { log?: boolean }) => void,
  *   getProgress: () => HTMLElement | null,
  *   openFull?: (() => void) | null,
  * }} opts

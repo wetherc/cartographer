@@ -252,7 +252,10 @@ export function wireParty(app, reloadView = null) {
       // This reaches collections that the sheet cannot see.
       onConcentrationEnd: (character, held) => endSpellEffects(app, character.id, held.spellId),
     },
-    (message) => app.toasts.show(message),
+    (message, options) => {
+      app.toasts.show(message);
+      if (options?.log) app.actions.logEvent('note', message);
+    },
     // A save or skill row rolls through the dice tray and lands in the log.
     // The handler outlives the render that built it, so it reads the selected
     // character when it fires rather than closing over the one on screen.

@@ -77,7 +77,7 @@ test('the fate select offers each standing foe, and each fate lands', async () =
     'a fled foe leaves the campaign',
   );
   assert.ok(app.log.includes('Gray Wolf 2 flees.'));
-  assert.ok(app.log.includes('The party is awarded 100 XP each for the fight.'));
+  assert.ok(app.log.includes('The party receives 100 XP each for the fight.'));
   assert.equal(app.state.characters[0].xp, 100);
 });
 

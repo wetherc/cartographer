@@ -136,7 +136,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
       }
       scope.commit(fresh.entity);
       scope.reselect();
-      app.actions.logEvent('note', `${character.name} is awarded ${amount} XP.`);
+      app.actions.logEvent('note', `${character.name} receives ${amount} XP.`);
       app.toasts.show(`Awarded ${amount} XP to ${character.name}.`);
     },
     onAdd: async () => {
@@ -213,7 +213,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
       state.characters = paid.characters;
       scope.reselect(); // refresh the sheet, inventory, and roster
       app.actions.markDirty();
-      app.actions.logEvent('note', `The party is awarded ${paid.xp} XP each.`);
+      app.actions.logEvent('note', `The party receives ${paid.xp} XP each.`);
       app.toasts.show(`Awarded ${paid.xp} XP to ${countNoun(paid.count, 'character')}.`);
     },
   };

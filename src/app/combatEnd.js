@@ -215,7 +215,7 @@ export function applyFightXP(app, end, values) {
   );
   app.actions.refreshSelectedCharacter();
   app.actions.markDirty();
-  app.actions.logEvent('note', `The party is awarded ${amount} XP each for the fight.`);
+  app.actions.logEvent('note', `The party receives ${amount} XP each for the fight.`);
   app.toasts.show(`Awarded ${amount} XP to ${countNoun(count, 'character')}.`);
 }
 

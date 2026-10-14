@@ -5,6 +5,7 @@ import { applyFeatureGrant, derive } from './Progression.js';
 import { withSubclass } from './Subclass.js';
 import { invocationsClaim } from './Invocations.js';
 import { arcanaClaim } from './MysticArcanum.js';
+import { HP_RESOURCE_ID } from './PoolIds.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
@@ -197,6 +198,29 @@ export function asksForSubclass(preview, classId) {
  */
 export function className(classId) {
   return getClass(classId)?.name ?? classId;
+}
+
+/**
+ * The line that announces an assigned level, for the toast and the
+ * travelogue, such as "Ser Aldric takes Fighter 5 and gains 8 maximum HP.
+ * New: Extra Attack." The HP gain is the change in the HP pool maximum, and
+ * it is left out when the maximum did not grow, for example under a
+ * hand-set maximum.
+ * @param {Character} before the character before the level
+ * @param {Character} after the character with the level and its picks
+ * @param {string} classId the class that took the level
+ * @param {string[]} gained the names of the features the level gives
+ * @param {string} [notice] a trailing sentence, such as the subclass notice
+ * @returns {string}
+ */
+export function levelUpLine(before, after, classId, gained, notice = '') {
+  const maxHP = (/** @type {Character} */ c) =>
+    c.resources.find((r) => r.id === HP_RESOURCE_ID)?.max ?? 0;
+  const hp = maxHP(after) - maxHP(before);
+  const taken = `${before.name} takes ${className(classId)} ${classLevelOf(after, classId)}`;
+  const hpText = hp > 0 ? ` and gains ${hp} maximum HP` : '';
+  const gainedText = gained.length > 0 ? ` New: ${gained.join(', ')}.` : '';
+  return `${taken}${hpText}.${gainedText}${notice ? ` ${notice}` : ''}`;
 }
 
 /**

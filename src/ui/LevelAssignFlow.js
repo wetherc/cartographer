@@ -10,6 +10,7 @@ import {
   assignOptions,
   className,
   asksForSubclass,
+  levelUpLine,
 } from '../entities/LevelAssign.js';
 import { featuresGained } from '../entities/LevelUp.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
@@ -85,7 +86,7 @@ export async function askFeatureStamp(character, grant) {
  * Ask which class takes the next level, gather the picks of that level, and
  * commit the level to the character read after the last dialog closes.
  * @param {() => Character} getCharacter
- * @param {{ onCommit: (character: Character) => void, notify: (message: string) => void }} opts
+ * @param {{ onCommit: (character: Character) => void, notify: (message: string, options?: { log?: boolean }) => void }} opts
  */
 export async function assignLevelFlow(getCharacter, opts) {
   const options = assignOptions(getCharacter());
@@ -143,10 +144,8 @@ export async function assignLevelFlow(getCharacter, opts) {
     return;
   }
   const next = warlock ? applyWarlockPicks(leveled, warlock) : leveled;
-  const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
-  const subclassText = subclass ? ` ${subclassNotice(next, classId)}` : '';
-  opts.notify(
-    `${live.name} takes ${className(classId)} ${classLevelOf(next, classId)}.${gainedText}${subclassText}`,
-  );
+  const notice = subclass ? subclassNotice(next, classId) : '';
+  const names = gained.map((f) => f.name);
   opts.onCommit(next);
+  opts.notify(levelUpLine(live, next, classId, names, notice), { log: true });
 }

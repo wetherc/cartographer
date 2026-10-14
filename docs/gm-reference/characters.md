@@ -105,6 +105,8 @@ the full sheet on its Character tab and scrolls to the Progression block.
 For a pending level, it then opens **Assign a level**. For
 an improvement or a feature choice, it moves focus to the **+2 ability** or
 **Choose** button of the Progression block.
+An assigned level shows a toast and adds a note to the travelogue, such as
+"Ser Aldric takes Fighter 5 and gains 8 maximum HP. New: Extra Attack."
 A Player tab shows the banner with no button. The party row of the character
 shows a **Level up** mark at the same time.
 

@@ -84,10 +84,11 @@ function customPools(character) {
  *   this sheet, with the spell they were holding. The sheet owns only one
  *   character, so the host must remove the effect from the creatures that
  *   spell was affecting.
- * @param {(message: string) => void} [notify]
+ * @param {(message: string, options?: { log?: boolean }) => void} [notify]
  *   This is a non-blocking surface for progression results, for example
  *   hit-die heals and level-up feature announcements. The host passes its
- *   toast stack.
+ *   toast stack. With `log` set, the host also writes the message to the
+ *   travelogue, as it does for an assigned level.
  * @param {import('./CharacterChecks.js').CheckHandler | null} [onCheck]
  *   This runs when a save or skill row is clicked, with the kind of roll and
  *   the key that names it. Without it, the two blocks report their bonuses
