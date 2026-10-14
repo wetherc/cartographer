@@ -526,8 +526,8 @@ at the right point. `legendaryLeft(participant, max)` reads what is left,
 and `spendLegendary` spends one. `buildCombatView` puts `legendaryLeft` on
 each row, which is 0 for anything but a creature.
 
-`CombatScreen.legendaryFor` gives a board card a second row under the
-reaction row, with the same `.combatant-card__reaction` styles. It uses the
+`CombatScreen.legendaryFor` gives a board card a row under its Gear and
+Reaction disclosures, with the `.combatant-card__reaction` styles. It uses the
 tests of `reactionFor`, except that it asks for a legendary action left in
 place of an unspent reaction. The row lists every weapon from `getWeapons`,
 because a legendary attack can be a ranged one. A button sends
@@ -907,8 +907,16 @@ The board shows the two sides as labelled groups of cards
 (`CombatantCard.js`). Each card shows the name, initiative, HP, AC, and
 conditions. The loadout in its compact form sits under the card in a closed
 **Gear** disclosure, because the card is a button and cannot contain another
-control. A module-level set keeps the ids of the open disclosures, so a
-disclosure stays open when a render replaces its card.
+control. The reaction buttons sit beside it in a closed **Reaction**
+disclosure, so a pack of six wolves does not repeat a row of opportunity
+attack buttons under every card. Both disclosures share one line, and an open
+one takes the full width of the card on a line below. Two module-level sets
+keep the ids of the open disclosures, so a disclosure stays open when a
+render replaces its card.
+
+Each group lays its cards out in a grid with columns at least 17rem wide, so
+a wide window shows two or more columns of cards. The screen fills the
+window up to 120rem (1920 px), and a wider monitor centers it.
 `LoadoutBlock.js` draws both forms, so a card and the active column always
 describe a combatant the same way. The host trims each card to what the viewer
 can see.

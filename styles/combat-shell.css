@@ -11,13 +11,23 @@
    ========================================================================== */
 
 /* A board card shows the name, HP, AC, and conditions. The armor, weapons,
-   and spells sit behind the Gear disclosure under the card. */
-.combatant-card__gear {
+   and spells sit behind the Gear disclosure, and the opportunity attacks and
+   reaction spells behind the Reaction disclosure. Both share one line under
+   the card. An open disclosure takes the full width on a line below, so its
+   content does not squeeze into the width of its summary. */
+.combatant-card__extras {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-3);
   margin-left: var(--space-3);
   font-size: var(--text-label);
 }
 
-.combatant-card__gear-summary {
+.combatant-card__extras > details[open] {
+  flex-basis: 100%;
+}
+
+.combatant-card__disclosure-summary {
   width: max-content;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
@@ -25,11 +35,12 @@
   cursor: pointer;
 }
 
-.combatant-card__gear-summary:hover {
+.combatant-card__disclosure-summary:hover {
   color: var(--text);
 }
 
-.combatant-card__gear[open] > .loadout {
+.combatant-card__gear[open] > .loadout,
+.combatant-card__reaction-menu[open] > .combatant-card__reaction-buttons {
   margin-top: var(--space-1);
   padding: var(--space-1) var(--space-2);
   border-left: 1px dashed var(--border-strong);

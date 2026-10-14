@@ -10,7 +10,7 @@ The combat screen runs one fight at the full width of the page.
 | --- | --- |
 | Top | The turn ribbon: one chip per combatant in initiative order, with its name and number, as in "Gray Wolf 2" |
 | Left column | The active combatant: initiative, AC, HP, conditions with the GM's add and remove controls, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
-| Center | The board: one card per combatant, with an HP bar, AC, and conditions. Click **Gear** under a card to show its short loadout. A dying, stable, or dead character shows a chip for its state |
+| Center | The board: one card per combatant, with an HP bar, AC, and conditions. Click **Gear** under a card to show its short loadout, and **Reaction** to show its reaction buttons. On a wide window each side shows its cards in two or more columns. A dying, stable, or dead character shows a chip for its state |
 | Right column | The **Log** and **Map** tabs, with the dice tray docked below them. **Log** shows the combat log. **Map** shows a read-only map of nine by nine tiles around the party, with the fog of the Play map and a marker on the tile of each hostile creature that still stands. Markers show only near the party, as on the Play map |
 
 | Ribbon or card mark | Meaning |
@@ -351,16 +351,18 @@ the ability modifier (see [Fighting styles](characters.md#fighting-styles)). The
 ## Reactions and opportunity attacks
 
 A reaction happens between the turns of its owner, so its controls are on
-the board card, not in the action bar. A card shows a Reaction row when all
-of these conditions are true:
+the board card, not in the action bar. A card shows a **Reaction**
+disclosure beside **Gear** when all of these conditions are true:
 
 - The card is not the current turn.
 - You can act for that combatant.
 - The combatant can still act.
 - Its reaction is unspent.
 
-The row has one button per melee weapon, as in **Opportunity attack: Rapier**. It also
-has one button per spell that casts as a reaction, as in **Cast Shield**.
+Click **Reaction** to open it. It has one button per melee weapon, as in
+**Opportunity attack: Rapier**. It also has one button per spell that casts
+as a reaction, as in **Cast Shield**. It stays open across turns until you
+close it.
 
 Apart from a hit on a Shield caster or an attack on a creature with
 Redirect Attack (see below), the app does not watch for a trigger. It

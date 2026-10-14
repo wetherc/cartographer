@@ -64,8 +64,9 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  *
  * `reaction` adds the reaction controls under the card. The card is one button
  * when it picks targets, so the controls cannot go inside it: a button holds no
- * button. They go in a row beside it, and the pair returns wrapped in one slot
- * element, which the board lays out as it laid out the card alone.
+ * button. The Gear and Reaction disclosures share one line under the card, and
+ * the group returns wrapped in one slot element, which the board lays out as
+ * it laid out the card alone.
  * @param {CombatantRow} row
  * @param {{
  *   selected?: boolean,
@@ -147,19 +148,46 @@ export function combatantCard(row, selection = {}) {
   }
 
   const gear = selection.loadout ? gearDisclosure(row, selection.loadout) : null;
-  const reaction = selection.reaction ? reactionRow(row, selection.reaction) : null;
+  const reaction = selection.reaction ? reactionDisclosure(row, selection.reaction) : null;
   const legendary = selection.legendary ? legendaryRow(row, selection.legendary) : null;
   if (!gear && !reaction && !legendary) return card;
-  return el('div', 'combatant-slot', card, gear, reaction, legendary);
+  const extras = gear || reaction ? el('div', 'combatant-card__extras', gear, reaction) : null;
+  return el('div', 'combatant-slot', card, extras, legendary);
 }
 
 /**
- * The ids of the combatants whose gear disclosure is open. The board rebuilds
- * its cards on every change, so this set restores an open disclosure after a
- * rebuild. Without it every hit or turn would close the gear the GM reads.
+ * The ids of the combatants whose gear disclosure is open, and those whose
+ * reaction disclosure is open. The board rebuilds its cards on every change,
+ * so these sets restore an open disclosure after a rebuild. Without them every
+ * hit or turn would close the disclosure the GM reads.
  * @type {Set<string>}
  */
 const openGear = new Set();
+/** @type {Set<string>} */
+const openReaction = new Set();
+
+/**
+ * A closed disclosure under a card, which remembers its open state by id in
+ * `openIds`.
+ * @param {string} id
+ * @param {Set<string>} openIds
+ * @param {string} label the visible summary text
+ * @param {string} ariaLabel
+ * @param {HTMLElement} content
+ * @param {string} className
+ * @returns {HTMLDetailsElement}
+ */
+function cardDisclosure(id, openIds, label, ariaLabel, content, className) {
+  const summary = el('summary', 'combatant-card__disclosure-summary', label);
+  summary.setAttribute('aria-label', ariaLabel);
+  const details = el('details', `combatant-card__disclosure ${className}`, summary, content);
+  details.open = openIds.has(id);
+  details.addEventListener('toggle', () => {
+    if (details.open) openIds.add(id);
+    else openIds.delete(id);
+  });
+  return details;
+}
 
 /**
  * The combatant's armor, weapons, spells, and slots behind a closed
@@ -173,21 +201,16 @@ const openGear = new Set();
 function gearDisclosure(row, loadout) {
   const block = loadoutBlock(loadout);
   if (!block) return null;
-  const summary = el('summary', 'combatant-card__gear-summary', 'Gear');
-  summary.setAttribute('aria-label', `Gear of ${row.name ?? 'Unknown combatant'}`);
-  const details = el('details', 'combatant-card__gear', summary, block);
-  details.open = openGear.has(row.id);
-  details.addEventListener('toggle', () => {
-    if (details.open) openGear.add(row.id);
-    else openGear.delete(row.id);
-  });
-  return details;
+  const name = row.name ?? 'Unknown combatant';
+  return cardDisclosure(row.id, openGear, 'Gear', `Gear of ${name}`, block, 'combatant-card__gear');
 }
 
 /**
- * The reaction controls: one button per melee weapon for an opportunity attack,
- * and one per reaction spell. Returns null when the combatant holds neither,
- * so an unarmed non-caster grows no empty row.
+ * The reaction controls behind a closed Reaction disclosure: one button per
+ * melee weapon for an opportunity attack, and one per reaction spell. A board
+ * of six wolves would otherwise repeat a row of buttons under every card.
+ * Returns null when the combatant holds neither, so an unarmed non-caster
+ * grows no empty control.
  *
  * Nothing here says the reaction is triggered. The GM saw the trigger at the
  * table. The row only offers the swing and the cast, and each one spends the
@@ -196,7 +219,7 @@ function gearDisclosure(row, loadout) {
  * @param {ReactionControl} reaction
  * @returns {HTMLElement | null}
  */
-function reactionRow(row, reaction) {
+function reactionDisclosure(row, reaction) {
   const name = row.name ?? 'Unknown combatant';
   const buttons = [
     ...reaction.weapons.map((weapon) =>
@@ -215,11 +238,13 @@ function reactionRow(row, reaction) {
     ),
   ];
   if (buttons.length === 0) return null;
-  return el(
-    'div',
-    'combatant-card__reaction',
-    sectionLabel('Reaction', { className: 'combatant-card__reaction-label' }),
+  return cardDisclosure(
+    row.id,
+    openReaction,
+    'Reaction',
+    `Reaction of ${name}`,
     el('div', 'combatant-card__reaction-buttons u-row u-wrap u-g1', ...buttons),
+    'combatant-card__reaction-menu',
   );
 }
 

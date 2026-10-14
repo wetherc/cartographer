@@ -27,17 +27,18 @@ body.mode-combat .app-buildrail {
 /* The screen: the turn ribbon across the top, the three columns under it. The
    round and the whole order read first, before the column being worked in.
 
-   The layout is capped and centered rather than filling the display. Three
-   columns spread across an ultrawide monitor put the active combatant and the
-   log a screen apart, and every line of text in them ends up on a line of its
-   own; the cap keeps the fight in one field of view. */
+   The layout fills the window up to 120rem (1920 px), and the board lays its
+   cards out in as many columns as fit, so a wide window shows more cards at
+   once. On an ultrawide monitor the cap centers the screen, because three
+   columns spread across it put the active combatant and the log a screen
+   apart. */
 .combat-screen__layout {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--space-4);
   width: 100%;
-  max-width: 88rem;
+  max-width: 120rem;
   margin: 0 auto;
   min-width: 0;
 }
@@ -170,9 +171,12 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
+/* A grid of at least 17rem per card, so a wide group shows two or more
+   columns of cards. Each card keeps its own height. */
 .combat-board__cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+  align-items: start;
   gap: var(--space-2);
 }
 

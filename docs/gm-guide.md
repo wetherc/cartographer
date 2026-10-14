@@ -564,7 +564,7 @@ a control that applies it to the rolls.
 | Movement | Tell the players who stands where. The speed badge on the sheet shows the walking speed of a character. Move the party token when the group changes tiles. The app does not count movement. |
 | Long range | If a shot is past the normal range of the weapon, set **Range** in the attack dialog to the long option. The roll has disadvantage. |
 | Cover | If something is between the attacker and the target, set **Target cover** in the attack dialog. Half cover adds 2 to the AC of the target, and three-quarters cover adds 5. If the target has total cover, do not roll. |
-| Reach and opportunity attacks | Decide who is in reach. When a creature leaves the reach of an enemy, click a weapon in the **Reaction** row under the card of that enemy. |
+| Reach and opportunity attacks | Decide who is in reach. When a creature leaves the reach of an enemy, open **Reaction** under the card of that enemy and click a weapon. |
 | Area spells | The cast dialog lists the combatants that the spell can reach, up to its target count. Decide who is in the area, then pick those combatants. |
 | Anything else | Open **Situational modifiers** in the roll dialog. A bonus die, a penalty die, or a flat bonus covers a ruling that no other control names. |
 
