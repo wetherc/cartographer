@@ -205,4 +205,225 @@ export const UTILITY_SPELLS = [
       'An elemental of challenge rating 5 or lower appears and obeys your commands. It turns hostile if your concentration breaks. The challenge rating rises by 1 for each slot level above 5th.',
     effect: { kind: 'utility' },
   },
+  {
+    id: 'comprehend-languages',
+    name: 'Comprehend Languages',
+    level: 1,
+    school: 'divination',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a pinch of soot and salt', consumed: false },
+    duration: { kind: 'hours', amount: 1 },
+    concentration: false,
+    ritual: true,
+    description:
+      'You understand the literal meaning of any spoken language that you hear, and of ' +
+      'written text that you touch, at about one minute per page. It does not decode ' +
+      'secret messages or read a glyph that is not part of a written language.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'identify',
+    name: 'Identify',
+    level: 1,
+    school: 'divination',
+    classes: ['bard', 'wizard'],
+    castingTime: { kind: 'minutes', amount: 1 },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: {
+      text: 'a pearl worth at least 100 gp and an owl feather',
+      costGP: 100,
+      consumed: false,
+    },
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: true,
+    description:
+      'You learn the properties of a magic item that you touch, how to use them, whether ' +
+      'it needs attunement, and how many charges it has. Touching a creature names the ' +
+      'spells that affect it.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'sanctuary',
+    name: 'Sanctuary',
+    level: 1,
+    school: 'abjuration',
+    classes: ['cleric'],
+    castingTime: { kind: 'bonus' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a small silver mirror', consumed: false },
+    duration: { kind: 'minutes', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'A creature that targets the warded creature with an attack or a harmful spell first ' +
+      'makes a WIS save. On a failure, it picks a new target or loses the attack or spell. ' +
+      'An area effect such as an explosion still reaches the warded creature. The spell ' +
+      'ends if the warded creature attacks, or casts a spell that affects an enemy.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'darkness',
+    name: 'Darkness',
+    level: 2,
+    school: 'evocation',
+    classes: ['sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V', 'M'],
+    materials: { text: 'bat fur and a drop of pitch or piece of coal', consumed: false },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Magical darkness fills a 15-foot-radius sphere. Darkvision cannot see through it, and ' +
+      'nonmagical light cannot light it. Cast on an object, the darkness moves with it. ' +
+      'Where it overlaps the light of a spell of 2nd level or lower, that spell ends.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'knock',
+    name: 'Knock',
+    level: 2,
+    school: 'transmutation',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'One lock, bar, or seal on an object that you can see opens. An Arcane Lock is ' +
+      'suppressed for 10 minutes instead. A loud knock sounds that is audible 300 feet away.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'pass-without-trace',
+    name: 'Pass without Trace',
+    level: 2,
+    school: 'abjuration',
+    classes: ['druid', 'ranger'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S', 'M'],
+    materials: {
+      text: 'ashes from a burned leaf of mistletoe and a sprig of spruce',
+      consumed: false,
+    },
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'You and each creature of your choice within 30 feet of you get +10 to DEX ' +
+      '(Stealth) checks, and leave no tracks that a nonmagical means can follow.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'see-invisibility',
+    name: 'See Invisibility',
+    level: 2,
+    school: 'divination',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S', 'M'],
+    materials: {
+      text: 'a pinch of talc and a small sprinkling of powdered silver',
+      consumed: false,
+    },
+    duration: { kind: 'hours', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'You see invisible creatures and objects as if they were visible, and you can see ' +
+      'into the Ethereal Plane.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'silence',
+    name: 'Silence',
+    level: 2,
+    school: 'illusion',
+    classes: ['bard', 'cleric', 'ranger'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: true,
+    description:
+      'No sound passes in or out of a 20-foot-radius sphere. A creature fully inside it is ' +
+      'deafened and immune to thunder damage, and it cannot cast a spell with a verbal ' +
+      'component.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'suggestion',
+    name: 'Suggestion',
+    level: 2,
+    school: 'enchantment',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'M'],
+    materials: {
+      text: "a snake's tongue and either a bit of honeycomb or a drop of sweet oil",
+      consumed: false,
+    },
+    duration: { kind: 'hours', amount: 8, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A creature that can hear and understand you makes a WIS save. On a failure, it ' +
+      'follows a reasonable course of action that you suggest in a sentence or two. A ' +
+      'creature that cannot be charmed is immune. The spell ends when the creature ' +
+      'finishes the task, or when you or your companions damage it.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'dispel-magic',
+    name: 'Dispel Magic',
+    level: 3,
+    school: 'abjuration',
+    classes: ['bard', 'cleric', 'druid', 'paladin', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'Each spell of 3rd level or lower on one creature, object, or magical effect ends. ' +
+      'For each spell of 4th level or higher, you make a check with your spellcasting ' +
+      'ability against DC 10 + its level, and a success ends it. A higher slot ends spells ' +
+      'up to that level with no check. The GM removes the chips of the ended spells.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'wall-of-force',
+    name: 'Wall of Force',
+    level: 5,
+    school: 'evocation',
+    classes: ['wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a pinch of powder made by crushing a clear gemstone', consumed: false },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'An invisible wall appears: a dome or sphere of up to 10-foot radius, or up to ten ' +
+      '10-foot square panels. Nothing physical passes through it, and it extends into the ' +
+      'Ethereal Plane. A creature in its space is pushed to a side of your choice. No ' +
+      'damage harms the wall, and Dispel Magic does not end it, but Disintegrate destroys ' +
+      'it at once.',
+    effect: { kind: 'utility' },
+  },
 ];

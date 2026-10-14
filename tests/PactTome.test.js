@@ -132,7 +132,7 @@ test('tomeOptions offers every cantrip, or every leveled ritual up to a level', 
     tomeOptions(DEFAULT_SPELLS, 'ritual', 1)
       .map((s) => s.id)
       .sort(),
-    ['detect-magic', 'speak-with-animals'],
+    ['comprehend-languages', 'detect-magic', 'identify', 'speak-with-animals'],
   );
 });
 

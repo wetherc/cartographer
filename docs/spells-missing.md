@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 111. Three built-in spells come from
+lists 319 spells, and the app ships 131. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -25,11 +25,11 @@ Player's Handbook. The ranger has Hunter's Mark.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Spare the Dying, Guidance, Mage Hand, Prestidigitation, Thaumaturgy, Druidcraft, Mending, Message, Minor Illusion, Dancing Lights, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Charm Person, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
-| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
-| 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
-| 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
-| 5th | Cone of Cold, Greater Restoration, Raise Dead, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Charm Person, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals, Sanctuary, Identify, Comprehend Languages, Feather Fall, Longstrider |
+| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate, Enlarge/Reduce, Darkness, Knock, Pass without Trace, See Invisibility, Silence, Suggestion, Misty Step, Spider Climb |
+| 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead, Remove Curse, Dispel Magic, Fly, Water Breathing |
+| 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph, Dimension Door |
+| 5th | Cone of Cold, Greater Restoration, Raise Dead, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental, Wall of Force |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm, Arcane Sword |
 | 8th | Power Word Stun, Sunburst |
@@ -306,7 +306,7 @@ that the GM removes by hand. Outside a fight the chip lasts one round.
 
 ### Spells described in prose
 
-Twenty-two built-in spells have the `utility` effect kind. Their rules
+Forty built-in spells have the `utility` effect kind. Their rules
 exist only as text in the description of each spell, and the GM applies
 them. A cast of one shows "Apply its effect at the table." and logs the
 description. Light, Counterspell, and eight cantrips are in the list because a GM
@@ -314,11 +314,19 @@ notices when a spell this common is missing. The cantrips sit in
 `src/data/spells/cantrips.js`: Mage Hand, Prestidigitation, Thaumaturgy,
 Druidcraft, Mending, Message, Minor Illusion, and Dancing Lights.
 
-The other twelve are in `src/data/spells/utility.js`: Detect Magic,
-Disguise Self, Jump, Silent Image, Speak with Animals, Alter Self,
-Levitate, Speak with Dead, Arcane Eye, Compulsion, Polymorph, and Conjure
-Elemental. The eldritch invocations of a
-warlock cast most of them.
+Twenty-three are in `src/data/spells/utility.js`. The eldritch invocations
+of a warlock cast twelve of them: Detect Magic, Disguise Self, Jump, Silent
+Image, Speak with Animals, Alter Self, Levitate, Speak with Dead, Arcane
+Eye, Compulsion, Polymorph, and Conjure Elemental. The other eleven are
+common picks at the table: Comprehend Languages, Identify, Sanctuary,
+Darkness, Knock, Pass without Trace, See Invisibility, Silence, Suggestion,
+Dispel Magic, and Wall of Force. Dispel Magic ends no chip, so the GM
+removes the chips of the spells that it ends.
+
+The last seven are in `src/data/spells/travel.js`, because each one moves
+a creature and no rule in the app moves a token by feet: Feather Fall,
+Longstrider, Misty Step, Spider Climb, Fly, Water Breathing, and Dimension
+Door.
 
 ### Partial rules
 
@@ -371,6 +379,11 @@ that it can. The description of each entry states the difference:
 - Confusion writes a Confused chip with the same retry. The GM rolls the
   d10 that picks what the creature does, and grows the sphere at a higher
   slot.
+- Enlarge/Reduce writes an Enlarged chip, which gives advantage on STR
+  checks and STR saves and adds 1d4 to each weapon hit. The GM applies the
+  reduced form, the change of size, and the CON save of an unwilling
+  target.
+- Remove Curse ends a Bestow Curse chip. The GM ends any other curse.
 - Bestow Curse writes a Bestow Curse chip on a failed save. The GM applies
   the curse that the caster picks, and tracks the longer duration of a
   higher slot.
@@ -416,15 +429,17 @@ rule maintains a zone on the map after the cast.
 
 ### Buffs outside d20 rolls
 
-Examples: Enlarge/Reduce.
+Examples: Enhance Ability and Magic Weapon.
 
 A rider on a d20 roll works. A chip can add or subtract dice and a flat
 amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
 Guidance, and Resistance do. A chip can also change AC, as Shield and
 Barkskin do, and hit points, as Aid, False Life, and Heroism do. A chip can
 give an extra action, as Haste does, and slant attack rolls, as Faerie Fire
-and Blur do. The size of a creature has no rule, so
-a chip can't change it.
+and Blur do. A chip can't ask the caster to pick an ability, as Enhance Ability does,
+and it can't change the attack and damage of one weapon, as Magic Weapon
+does. The size of a creature has no rule either, so Enlarge/Reduce ships
+with its STR advantage and its 1d4 and leaves the size to the GM.
 
 ### Summon choice and control
 
@@ -444,8 +459,7 @@ The app does not have these parts:
 
 ### Exploration and social spells
 
-Examples: Identify, Suggestion, Divination, and
-teleportation.
+Examples: Augury, Divination, Sending, and Teleport.
 
 These spells have rules that exist only as text, so they work as `utility`
 entries. The built-in list leaves them out only to stay small. A GM can add
@@ -463,6 +477,27 @@ of Ancient Secrets, and the Mystic Arcanum. It does not model the pact
 weapon or the familiar of a boon.
 Pact magic is modeled, so a warlock casts from its own pact pool and not
 from the standard slot table.
+
+## SRD spells not built in
+
+The app leaves out 191 of the 319 SRD 5.1 spells. The SRD uses generic
+names for the spells that name a wizard in the Player's Handbook,
+so Tenser's Floating Disk is Floating Disk here, and Leomund's Tiny Hut is
+Tiny Hut. A test in `tests/spellsMissingDoc.test.js` checks that this table
+and the built-in list together name every SRD spell once.
+
+| Level | Count | Spells |
+| ----- | ----- | ------ |
+| Cantrip | 2 | Shillelagh, True Strike |
+| 1st | 17 | Alarm, Animal Friendship, Command, Create or Destroy Water, Detect Evil and Good, Detect Poison and Disease, Entangle, Expeditious Retreat, Find Familiar, Floating Disk, Fog Cloud, Goodberry, Grease, Hideous Laughter, Illusory Script, Purify Food and Drink, Unseen Servant |
+| 2nd | 30 | Animal Messenger, Arcane Lock, Arcanist's Magic Aura, Augury, Calm Emotions, Continual Flame, Darkvision, Detect Thoughts, Enhance Ability, Enthrall, Find Steed, Find Traps, Flame Blade, Flaming Sphere, Gentle Repose, Gust of Wind, Heat Metal, Locate Animals or Plants, Locate Object, Magic Mouth, Magic Weapon, Mirror Image, Moonbeam, Protection from Poison, Ray of Enfeeblement, Rope Trick, Spike Growth, Warding Bond, Web, Zone of Truth |
+| 3rd | 24 | Animate Dead, Beacon of Hope, Blink, Clairvoyance, Create Food and Water, Daylight, Feign Death, Gaseous Form, Glyph of Warding, Magic Circle, Major Image, Meld into Stone, Nondetection, Phantom Steed, Plant Growth, Sending, Sleet Storm, Speak with Plants, Spirit Guardians, Stinking Cloud, Tiny Hut, Tongues, Water Walk, Wind Wall |
+| 4th | 21 | Banishment, Black Tentacles, Conjure Minor Elementals, Conjure Woodland Beings, Control Water, Death Ward, Divination, Dominate Beast, Fabricate, Faithful Hound, Fire Shield, Freedom of Movement, Giant Insect, Guardian of Faith, Hallucinatory Terrain, Locate Creature, Private Sanctum, Resilient Sphere, Secret Chest, Stone Shape, Wall of Fire |
+| 5th | 29 | Animate Objects, Antilife Shell, Arcane Hand, Awaken, Cloudkill, Commune, Commune with Nature, Contact Other Plane, Contagion, Creation, Dispel Evil and Good, Dominate Person, Dream, Geas, Hallow, Insect Plague, Legend Lore, Mislead, Modify Memory, Passwall, Planar Binding, Reincarnate, Scrying, Seeming, Telekinesis, Telepathic Bond, Teleportation Circle, Tree Stride, Wall of Stone |
+| 6th | 25 | Blade Barrier, Conjure Fey, Contingency, Create Undead, Eyebite, Find the Path, Flesh to Stone, Forbiddance, Globe of Invulnerability, Guards and Wards, Harm, Heroes' Feast, Instant Summons, Irresistible Dance, Magic Jar, Mass Suggestion, Move Earth, Planar Ally, Programmed Illusion, Transport via Plants, True Seeing, Wall of Ice, Wall of Thorns, Wind Walk, Word of Recall |
+| 7th | 17 | Conjure Celestial, Delayed Blast Fireball, Divine Word, Etherealness, Forcecage, Magnificent Mansion, Mirage Arcane, Plane Shift, Prismatic Spray, Project Image, Regenerate, Resurrection, Reverse Gravity, Sequester, Simulacrum, Symbol, Teleport |
+| 8th | 14 | Animal Shapes, Antimagic Field, Antipathy/Sympathy, Clone, Control Weather, Demiplane, Dominate Monster, Earthquake, Feeblemind, Glibness, Holy Aura, Incendiary Cloud, Maze, Mind Blank |
+| 9th | 12 | Astral Projection, Foresight, Gate, Imprisonment, Mass Heal, Prismatic Wall, Shapechange, Storm of Vengeance, Time Stop, True Polymorph, True Resurrection, Wish |
 
 ## Adding a spell by hand
 

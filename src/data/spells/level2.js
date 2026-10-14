@@ -282,4 +282,30 @@ export const LEVEL_2 = [
     targetCount: 3,
     effect: { kind: 'buff', mods: { maxHP: 5 }, modsPerStep: { maxHP: 5 } },
   },
+  {
+    id: 'enlarge-reduce',
+    name: 'Enlarge/Reduce',
+    level: 2,
+    school: 'transmutation',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a pinch of powdered iron', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A creature grows one size larger. It has advantage on STR checks and STR saves, and ' +
+      'its weapon hits deal 1d4 more damage. An unwilling target makes a CON save. The ' +
+      'Enlarged chip applies all of this. To reduce the creature instead, it shrinks one ' +
+      'size, has disadvantage on STR checks and saves, and its weapon hits deal 1d4 less ' +
+      'damage. The GM applies the reduced form and the save of an unwilling target.',
+    effect: {
+      kind: 'buff',
+      condition: 'Enlarged',
+      mods: { saveAdvantage: ['STR'], checkAdvantage: ['STR'] },
+      hit: { count: 1, sides: 4, weaponOnly: true },
+    },
+  },
 ];

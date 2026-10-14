@@ -7,8 +7,8 @@
  * between this set and the full SRD closes by hand-authoring or JSON
  * import with no code change. SRD spells not yet included are tracked in
  * docs/spells-missing.md. The spells themselves live in the files under
- * `spells/`, one file per level band, plus `spells/utility.js`
- * for the utility spells that the eldritch invocations of a warlock cast.
+ * `spells/`, one file per level band, plus `spells/utility.js` and
+ * `spells/travel.js` for spells whose rules live only in the description.
  *
  * @typedef {import('../types/spell.js').Spell} Spell
  */
@@ -20,6 +20,7 @@ import { LEVEL_2 } from './spells/level2.js';
 import { LEVEL_3 } from './spells/level3.js';
 import { LEVEL_4_TO_5 } from './spells/level4to5.js';
 import { LEVEL_6_TO_9 } from './spells/level6to9.js';
+import { TRAVEL_SPELLS } from './spells/travel.js';
 import { UTILITY_SPELLS } from './spells/utility.js';
 
 /** The eight schools of magic, in the order the authoring form lists them.
@@ -54,4 +55,5 @@ export const DEFAULT_SPELLS = deepFreeze([
   ...LEVEL_4_TO_5,
   ...LEVEL_6_TO_9,
   ...UTILITY_SPELLS,
+  ...TRAVEL_SPELLS,
 ]);

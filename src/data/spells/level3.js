@@ -351,4 +351,22 @@ export const LEVEL_3 = [
       mods: { ac: -2 },
     },
   },
+  {
+    id: 'remove-curse',
+    name: 'Remove Curse',
+    level: 3,
+    school: 'abjuration',
+    classes: ['cleric', 'paladin', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'Every curse on the creature or object you touch ends. A cursed magic item stays ' +
+      'cursed, but the owner can remove and discard it. The app ends a Bestow Curse chip, ' +
+      'and the GM ends any other curse.',
+    effect: { kind: 'heal', healing: [], removes: ['Bestow Curse'] },
+  },
 ];

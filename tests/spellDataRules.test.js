@@ -107,3 +107,27 @@ test('Slow, Confusion, and Bestow Curse write a chip on a failed WIS save', () =
   assert.equal(curse.effect.condition, 'Bestow Curse');
   assert.ok(byId('greater-restoration').effect.removesOneOf.includes('Bestow Curse'));
 });
+
+test('Enlarge/Reduce writes the enlarged form, and Remove Curse ends Bestow Curse', () => {
+  assert.deepEqual(byId('enlarge-reduce').effect, {
+    kind: 'buff',
+    condition: 'Enlarged',
+    mods: { saveAdvantage: ['STR'], checkAdvantage: ['STR'] },
+    hit: { count: 1, sides: 4, weaponOnly: true },
+  });
+  assert.deepEqual(byId('remove-curse').effect.removes, ['Bestow Curse']);
+});
+
+test('the movement and table-side spells resolve as utility entries', () => {
+  for (const id of [
+    'misty-step',
+    'fly',
+    'dimension-door',
+    'sanctuary',
+    'dispel-magic',
+    'wall-of-force',
+  ])
+    assert.equal(byId(id).effect.kind, 'utility', id);
+  assert.equal(byId('misty-step').castingTime.kind, 'bonus');
+  assert.equal(byId('feather-fall').castingTime.kind, 'reaction');
+});
