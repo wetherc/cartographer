@@ -411,6 +411,9 @@ clauses of these spells need more:
 - Slow also takes away an action. The combat screen tracks the action, the
   bonus action, and the reaction of each turn. A chip can add an action, as
   Haste does, but no chip takes one away.
+- A slowed creature that casts a spell with a casting time of 1 action has
+  a 50% chance that the spell fails. No cast rolls this chance, so the GM
+  rolls a d100 or a d2.
 - Banishment removes the creature from the map.
 - Dominate Person gives control of one creature to another.
 
@@ -490,8 +493,8 @@ and the built-in list together name every SRD spell once.
 | ----- | ----- | ------ |
 | Cantrip | 2 | Shillelagh, True Strike |
 | 1st | 17 | Alarm, Animal Friendship, Command, Create or Destroy Water, Detect Evil and Good, Detect Poison and Disease, Entangle, Expeditious Retreat, Find Familiar, Floating Disk, Fog Cloud, Goodberry, Grease, Hideous Laughter, Illusory Script, Purify Food and Drink, Unseen Servant |
-| 2nd | 30 | Animal Messenger, Arcane Lock, Arcanist's Magic Aura, Augury, Calm Emotions, Continual Flame, Darkvision, Detect Thoughts, Enhance Ability, Enthrall, Find Steed, Find Traps, Flame Blade, Flaming Sphere, Gentle Repose, Gust of Wind, Heat Metal, Locate Animals or Plants, Locate Object, Magic Mouth, Magic Weapon, Mirror Image, Moonbeam, Protection from Poison, Ray of Enfeeblement, Rope Trick, Spike Growth, Warding Bond, Web, Zone of Truth |
-| 3rd | 24 | Animate Dead, Beacon of Hope, Blink, Clairvoyance, Create Food and Water, Daylight, Feign Death, Gaseous Form, Glyph of Warding, Magic Circle, Major Image, Meld into Stone, Nondetection, Phantom Steed, Plant Growth, Sending, Sleet Storm, Speak with Plants, Spirit Guardians, Stinking Cloud, Tiny Hut, Tongues, Water Walk, Wind Wall |
+| 2nd | 31 | Animal Messenger, Arcane Lock, Arcanist's Magic Aura, Augury, Branding Smite, Calm Emotions, Continual Flame, Darkvision, Detect Thoughts, Enhance Ability, Enthrall, Find Steed, Find Traps, Flame Blade, Flaming Sphere, Gentle Repose, Gust of Wind, Heat Metal, Locate Animals or Plants, Locate Object, Magic Mouth, Magic Weapon, Mirror Image, Moonbeam, Protection from Poison, Ray of Enfeeblement, Rope Trick, Spike Growth, Warding Bond, Web, Zone of Truth |
+| 3rd | 23 | Animate Dead, Beacon of Hope, Blink, Clairvoyance, Create Food and Water, Daylight, Gaseous Form, Glyph of Warding, Magic Circle, Major Image, Meld into Stone, Nondetection, Phantom Steed, Plant Growth, Sending, Sleet Storm, Speak with Plants, Spirit Guardians, Stinking Cloud, Tiny Hut, Tongues, Water Walk, Wind Wall |
 | 4th | 21 | Banishment, Black Tentacles, Conjure Minor Elementals, Conjure Woodland Beings, Control Water, Death Ward, Divination, Dominate Beast, Fabricate, Faithful Hound, Fire Shield, Freedom of Movement, Giant Insect, Guardian of Faith, Hallucinatory Terrain, Locate Creature, Private Sanctum, Resilient Sphere, Secret Chest, Stone Shape, Wall of Fire |
 | 5th | 29 | Animate Objects, Antilife Shell, Arcane Hand, Awaken, Cloudkill, Commune, Commune with Nature, Contact Other Plane, Contagion, Creation, Dispel Evil and Good, Dominate Person, Dream, Geas, Hallow, Insect Plague, Legend Lore, Mislead, Modify Memory, Passwall, Planar Binding, Reincarnate, Scrying, Seeming, Telekinesis, Telepathic Bond, Teleportation Circle, Tree Stride, Wall of Stone |
 | 6th | 25 | Blade Barrier, Conjure Fey, Contingency, Create Undead, Eyebite, Find the Path, Flesh to Stone, Forbiddance, Globe of Invulnerability, Guards and Wards, Harm, Heroes' Feast, Instant Summons, Irresistible Dance, Magic Jar, Mass Suggestion, Move Earth, Planar Ally, Programmed Illusion, Transport via Plants, True Seeing, Wall of Ice, Wall of Thorns, Wind Walk, Word of Recall |

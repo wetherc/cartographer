@@ -337,7 +337,8 @@ export const LEVEL_3 = [
     description:
       'Up to six creatures in a 40-foot cube make a WIS save. On a failure, a creature has ' +
       'half speed, -2 to AC and DEX saves, and no reactions. On its turn it takes an action ' +
-      'or a bonus action, not both, and makes one attack at most. It repeats the save at the ' +
+      'or a bonus action, not both, and makes one attack at most. A spell it casts with a ' +
+      'casting time of 1 action has a 50% chance to fail. It repeats the save at the ' +
       'end of each of its turns. The Slowed chip applies the -2 to AC, and the GM applies ' +
       'the rest.',
     targetCount: 6,
