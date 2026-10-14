@@ -2,12 +2,19 @@ import { findRegionGroups } from './RegionGroups.js';
 import { MapRenderer } from './MapRenderer.js';
 import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
-import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
-import { exitBandDepth } from './ExitBands.js';
-import { COORD_SCALE, coordLabelRoom, fitForLabels } from './CoordLabels.js';
-import { labelSize } from './CanvasText.js';
-import { revealedExtent } from './FitArea.js';
-import { FollowScheduler, followOffset } from './MapFollow.js';
+import {
+  applyFollow,
+  centerOn,
+  fitKey,
+  fitView,
+  refitIfChanged,
+  resizeView,
+  tileOnCanvas,
+  tileWellInView,
+  viewSnapshot,
+  zoomAboutCentre,
+} from './MapCanvasView.js';
+import { FollowScheduler } from './MapFollow.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -22,7 +29,8 @@ import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
  * Tile.revealed.
  *
  * This class owns the view state (node, pan and zoom, markers, selection)
- * and the draw loop. Input goes through MapCanvasPointer for pointer,
+ * and the draw loop. MapCanvasView frames the view and builds the snapshot
+ * that the renderer draws. Input goes through MapCanvasPointer for pointer,
  * touch, and wheel events, and through MapCanvasKeyboard for cursor keys
  * and focus. Both controllers change that state back through the host
  * reference.
@@ -31,7 +39,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void, onExitClick?: (exit: import('../types/map.js').MapExit) => void, onExitArmed?: (exit: import('../types/map.js').MapExit | null) => void, onCursorMove?: (tileId: string) => void, onCursorStroke?: (tileId: string, before: Tile | null) => void }} [options]
+   * @param {import('../types/map.js').MapCanvasOptions} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -42,9 +50,7 @@ export class MapCanvas {
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
-    /** Detection range for encounter, NPC, and POI markers, in grid cells from
-     * the party or a character token. This is conventionally twice the fog
-     * reveal radius. */
+    // See MapCanvasOptions for what each option and callback does.
     this.markerRange = options.markerRange ?? 4;
     this.onCellClick = options.onCellClick;
     this.onCellContextMenu = options.onCellContextMenu;
@@ -53,20 +59,9 @@ export class MapCanvas {
     this.getNodeName = options.getNodeName;
     this.onViewChange = options.onViewChange;
     this.onCellHover = options.onCellHover;
-    /** Fires when a way out of the current node is used. This happens on a
-     * click on a border arrow, or on a cursor key pressed twice into the
-     * border it leads off. */
     this.onExitClick = options.onExitClick;
-    /** Fires when a cursor key arms an edge exit (with the exit), and fires
-     * again with null when the arming lapses. This lets the wiring narrate
-     * the second press. */
     this.onExitArmed = options.onExitArmed;
-    /** Fires after a cursor key lands the keyboard cursor on a cell, with the
-     * cell's tile id, so the wiring can narrate what the cursor stands on. */
     this.onCursorMove = options.onCursorMove;
-    /** Fires after Enter or Space authors a stroke on the cursor cell in
-     * Build mode, with the cell's tile id and its tile before the stroke, so
-     * the wiring can narrate what changed. */
     this.onCursorStroke = options.onCursorStroke;
 
     /** @type {MapNode | null} */
@@ -141,9 +136,8 @@ export class MapCanvas {
     /** @type {number | null} pending requestAnimationFrame id for a coalesced redraw */
     this._rafId = null;
 
-    // The map is the app's primary content. It was previously mouse and wheel
-    // only. This makes it a focusable widget, so it is keyboard-operable and
-    // announced by screen readers. MapCanvasKeyboard handles pan, zoom, and cursor.
+    // The map is the app's primary content. A focusable widget makes it
+    // keyboard-operable and announced by screen readers. MapCanvasKeyboard handles pan, zoom, and cursor.
     canvas.tabIndex = 0;
     canvas.setAttribute('role', 'application');
     canvas.setAttribute(
@@ -152,7 +146,7 @@ export class MapCanvas {
     );
 
     this._pointer = new MapCanvasPointer(this);
-    this._follow = new FollowScheduler(canvas, () => this._applyFollow());
+    this._follow = new FollowScheduler(canvas, () => applyFollow(this));
     this._keyboard = new MapCanvasKeyboard(this);
     this._pointer.attach();
     this._keyboard.attach();
@@ -191,68 +185,22 @@ export class MapCanvas {
   }
 
   /**
-   * Re-frame the current node's full extent in the view (zoom-to-extents).
-   * A fit on its own keeps tiles at least `READABLE_TILE_PX` wide, so a large
-   * map shows in part. `whole` drops that floor and shows the whole map, for
-   * the Fit button the GM presses to see it all. Later refits keep the choice
-   * until the node changes.
+   * Re-frame the current node's full extent in the view. `whole` shows the
+   * whole map and drops the readable-tile floor (see `fitView`).
    * @param {{ whole?: boolean }} [options]
    */
   fit(options) {
-    const { node, canvas } = this;
-    if (!node) return;
-    this._userView = false;
-    if (options) this._fitWhole = Boolean(options.whole);
-    // In Play mode a fit frames the revealed tiles plus a margin, so the
-    // explored part fills the canvas instead of a corner of the fog.
-    const area = (!this.revealAll && revealedExtent(node)) || {
-      x: 0,
-      y: 0,
-      width: node.width,
-      height: node.height,
-    };
-    const ts = this.tileSize;
-    const focus = this._focusPoint();
-    const ratio = globalThis.devicePixelRatio || 1;
-    /** @param {number} fontSize */
-    const fitAt = (fontSize) =>
-      fitToExtent(area.width * ts, area.height * ts, canvas.width, canvas.height, {
-        minScale: this.minZoom,
-        maxScale: this.maxZoom,
-        sides: this._fitSides(fontSize),
-        // Build mode always frames the whole map, because the GM edits all
-        // of it. The readable floor would cut off the right and bottom of a
-        // large region.
-        readableScale: this._fitWhole || this.revealAll ? 0 : readableScale(ts),
-        focus: focus && { x: focus.x - area.x * ts, y: focus.y - area.y * ts },
-      });
-    const fitted = fitForLabels(
-      fitAt,
-      (scale) => labelSize(ts * scale, COORD_SCALE, ratio),
-      COORD_SCALE.max * ratio,
-    );
-    this.scale = fitted.scale;
-    this.offsetX = fitted.offsetX - area.x * ts * fitted.scale;
-    this.offsetY = fitted.offsetY - area.y * ts * fitted.scale;
-    this.render();
+    fitView(this, options);
   }
 
   /**
    * Pan the view so a tile sits at the canvas centre, and keep the current
    * zoom. This is how "show me this encounter" focuses the map without
-   * changing the user's scale. This function does nothing on an id that is
-   * not a grid coordinate.
+   * changing the user's scale.
    * @param {string} tileId
    */
   centerOnTile(tileId) {
-    const coords = parseCoords(tileId);
-    if (!coords) return;
-    const worldX = (coords.x + 0.5) * this.tileSize;
-    const worldY = (coords.y + 0.5) * this.tileSize;
-    this._userView = true;
-    this.offsetX = this.canvas.width / 2 - worldX * this.scale;
-    this.offsetY = this.canvas.height / 2 - worldY * this.scale;
-    this.render();
+    centerOn(this, tileId);
   }
 
   /**
@@ -271,47 +219,10 @@ export class MapCanvas {
     if (this._userView) return;
     // With no focus, a fit starts a large map at its top-left corner, past
     // the coordinate labels and the mini-map.
-    if (!tileId || !this._tileOnCanvas(tileId)) {
+    if (!tileId || !tileOnCanvas(this, tileId)) {
       this._follow.cancel();
       this.fit();
     } else this._follow.request();
-  }
-
-  /** Pan to keep the focus tile inside the follow deadzone. */
-  _applyFollow() {
-    const { node, focusTileId } = this;
-    if (this._userView || !node || !focusTileId) return;
-    const next = followOffset(
-      {
-        offsetX: this.offsetX,
-        offsetY: this.offsetY,
-        scale: this.scale,
-        tileSize: this.tileSize,
-        canvasWidth: this.canvas.width,
-        canvasHeight: this.canvas.height,
-        width: node.width,
-        height: node.height,
-      },
-      focusTileId,
-      this.occluders,
-    );
-    if (next.offsetX === this.offsetX && next.offsetY === this.offsetY) return;
-    this.offsetX = next.offsetX;
-    this.offsetY = next.offsetY;
-    this.render();
-  }
-
-  /**
-   * Whether any part of a tile draws on the canvas.
-   * @param {string} tileId
-   */
-  _tileOnCanvas(tileId) {
-    const coords = parseCoords(tileId);
-    if (!coords) return true;
-    const size = this.tileSize * this.scale;
-    const x = this.offsetX + coords.x * size;
-    const y = this.offsetY + coords.y * size;
-    return x + size > 0 && y + size > 0 && x < this.canvas.width && y < this.canvas.height;
   }
 
   /**
@@ -320,33 +231,7 @@ export class MapCanvas {
    * @param {string} tileId
    */
   bringTileIntoView(tileId) {
-    if (!this._tileWellInView(tileId)) this.centerOnTile(tileId);
-  }
-
-  /** The focus tile's centre in world pixels at scale 1, or null. */
-  _focusPoint() {
-    const coords = this.focusTileId ? parseCoords(this.focusTileId) : null;
-    if (!coords) return null;
-    return { x: (coords.x + 0.5) * this.tileSize, y: (coords.y + 0.5) * this.tileSize };
-  }
-
-  /**
-   * Whether a tile draws inside the canvas with at least one tile of room
-   * on every side.
-   * @param {string} tileId
-   */
-  _tileWellInView(tileId) {
-    const coords = parseCoords(tileId);
-    if (!coords) return true;
-    const size = this.tileSize * this.scale;
-    const x = this.offsetX + coords.x * size;
-    const y = this.offsetY + coords.y * size;
-    return (
-      x >= size &&
-      y >= size &&
-      x + size * 2 <= this.canvas.width &&
-      y + size * 2 <= this.canvas.height
-    );
+    if (!tileWellInView(this, tileId)) this.centerOnTile(tileId);
   }
 
   /**
@@ -355,42 +240,17 @@ export class MapCanvas {
    * @param {number} factor
    */
   zoomBy(factor) {
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
-    const worldX = (cx - this.offsetX) / this.scale;
-    const worldY = (cy - this.offsetY) / this.scale;
-    this._userView = true;
-    this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
-    this.offsetX = cx - worldX * this.scale;
-    this.offsetY = cy - worldY * this.scale;
-    this.render();
+    zoomAboutCentre(this, factor);
   }
 
   /**
-   * Resize the canvas buffer. For example, call this when the layout column
-   * changes width. While the view is still the fitted default, this
-   * re-frames the node. After the user pans or zooms, this instead keeps
-   * their scale and anchors the world point at the canvas centre. So an
-   * unrelated layout reflow, such as a panel expanding or a scrollbar
-   * appearing, does not reset the user's view.
+   * Resize the canvas buffer when the layout column changes size. A view
+   * the user panned or zoomed keeps its scale (see `resizeView`).
    * @param {number} width
    * @param {number} height
    */
   resize(width, height) {
-    if (this.canvas.width === width && this.canvas.height === height) return;
-    if (!this._userView) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-      this.fit();
-      return;
-    }
-    const worldX = (this.canvas.width / 2 - this.offsetX) / this.scale;
-    const worldY = (this.canvas.height / 2 - this.offsetY) / this.scale;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.offsetX = width / 2 - worldX * this.scale;
-    this.offsetY = height / 2 - worldY * this.scale;
-    this.render();
+    resizeView(this, width, height);
   }
 
   /**
@@ -542,13 +402,13 @@ export class MapCanvas {
    * @param {import('../types/map.js').MapExit[]} [all]
    */
   setExits(exits, all = exits) {
-    const before = this._fitKey();
+    const before = fitKey(this);
     this.exits = exits;
     this.exitSides = all.flatMap((e) => (e.kind === 'edge' ? [e.side] : []));
     // The armed side can no longer be a way out; requiring a fresh first press
     // is cheaper than checking, and rearming costs the user one keystroke.
     this.disarmExit();
-    this._refitIfChanged(before);
+    refitIfChanged(this, before);
   }
 
   /**
@@ -557,55 +417,9 @@ export class MapCanvas {
    * @param {import('./ExitBands.js').Rect[]} rects
    */
   setOccluders(rects) {
-    const before = this._fitKey();
+    const before = fitKey(this);
     this.occluders = rects;
-    this._refitIfChanged(before);
-  }
-
-  /**
-   * The padding a fit keeps on each side of the map. The top and left fit
-   * the coordinate labels at `fontSize`, which hang off those two edges. The
-   * default is the label font cap. The bottom and right have no
-   * labels, so a small margin there lets the fit zoom closer. Each side with
-   * an exit band, or under the mini-map or the zoom toolbar, keeps room for
-   * them too.
-   * @param {number} [fontSize] the label font size, in buffer px
-   */
-  _fitSides(fontSize = COORD_SCALE.max * (globalThis.devicePixelRatio || 1)) {
-    const ratio = globalThis.devicePixelRatio || 1;
-    const room = coordLabelRoom(fontSize, ratio);
-    return fitSides({
-      lead: room.lead,
-      trail: 16 * ratio,
-      exitSides: this.exitSides,
-      bandDepth: exitBandDepth(ratio),
-      occluders: this.occluders,
-      canvasWidth: this.canvas.width,
-      inset: 8 * ratio,
-      labelDepth: room.labelDepth,
-    });
-  }
-
-  /**
-   * The fit padding as a string, to tell whether a change of exits or
-   * occluders moves it. A key on the padding, and not on the raw rects,
-   * stops a loop: a refit changes the zoom readout, the readout resizes the
-   * toolbar, and the toolbar's new width would refit again.
-   */
-  _fitKey() {
-    const s = this._fitSides();
-    return [s.top, s.right, s.bottom, s.left].map(Math.round).join();
-  }
-
-  /**
-   * Refit a fitted view when its padding inputs changed, and redraw
-   * otherwise. The exits and the mini-map arrive after setNode fits, so a
-   * fitted view keeps room for them. A view the user panned or zoomed stays.
-   * @param {string} before the fit key before the change
-   */
-  _refitIfChanged(before) {
-    if (!this._userView && this._fitKey() !== before) this.fit();
-    else this.render();
+    refitIfChanged(this, before);
   }
 
   /**
@@ -654,42 +468,6 @@ export class MapCanvas {
   }
 
   /**
-   * Assemble the current interaction state into a view snapshot, and hand it
-   * to the renderer. Pan, zoom, resize, and every state setter route through
-   * here. So this is also the one place from which the zoom readout, and any
-   * other view-dependent chrome, must read state.
-   * @returns {import('./MapRenderer.js').MapView}
-   */
-  _view() {
-    return {
-      canvasWidth: this.canvas.width,
-      canvasHeight: this.canvas.height,
-      node: this.node,
-      regionGroups: this.regionGroups,
-      offsetX: this.offsetX,
-      offsetY: this.offsetY,
-      scale: this.scale,
-      revealAll: this.revealAll,
-      fogDim: this.fogDim,
-      markerRange: this.markerRange,
-      partyTileId: this.partyTileId,
-      partyInNode: this.partyInNode,
-      encounterTileIds: this.encounterTileIds,
-      npcTileIds: this.npcTileIds,
-      handoutTileIds: this.handoutTileIds,
-      characterTokens: this.characterTokens,
-      exits: this.exits,
-      occluders: this.occluders,
-      armedExitSide: this.armedExitSide,
-      selectedTileId: this.selectedTileId,
-      highlightRegionId: this.highlightRegionId,
-      cursorCellId: this.cursorCellId,
-      focused: this._focused,
-      pixelRatio: globalThis.devicePixelRatio || 1,
-    };
-  }
-
-  /**
    * Request a redraw, coalesced through a single requestAnimationFrame. A
    * burst of pointermove or wheel events, or a run of state setters such as
    * the party-marker sync touching four fields, yields one draw for each
@@ -701,7 +479,7 @@ export class MapCanvas {
     this._rafId = requestAnimationFrame(() => {
       this._rafId = null;
       this.onViewChange?.();
-      this.renderer.render(this._view());
+      this.renderer.render(viewSnapshot(this));
     });
   }
 

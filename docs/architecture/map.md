@@ -282,6 +282,8 @@ The canvas code is split so that each file owns one concern:
     owns the <canvas> and the view state: node, pan/zoom,
     markers, selection
     |
+    +-- MapCanvasView ....... fit, center, follow, zoom, resize, and
+    |                         the view snapshot handed to the renderer
     +-- MapRenderer ......... terrain / fog / grid / region passes
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- TerrainLayer ..... terrain pixels kept across a pan
@@ -298,8 +300,10 @@ The canvas code is split so that each file owns one concern:
                               +/- zoom, focus outline
 ```
 
-`MapCanvas` is the host. The renderer and decoration modules read the view
-state and draw. The two input controllers (pointer and keyboard) change the
+`MapCanvas` is the host. `MapCanvasView` exports functions that take the
+host, frame the view, and build the snapshot that the renderer draws each
+frame. The renderer and decoration modules read that snapshot and draw. The
+two input controllers (pointer and keyboard) change the
 view state through the host reference.
 
 ### Canvas colors and labels
@@ -1689,7 +1693,8 @@ contains the digit strips, and a strip tested against itself would move.
 zoom toolbar with `clientRectToBuffer`. It does this from a `ResizeObserver`
 on each of them and on each canvas resize.
 
-A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
+A fitted view keeps room for this chrome. `fitPadding` (`MapCanvasView.js`)
+passes the exit sides and the occluders to `fitSides` (`MapGeometry.js`), which adds
 the height of a band to a north or south side that has an exit, and pushes
 the top side below the zoom toolbar, with room for the column label plate
 there (1.5 times the label font). The label room at the top and left edges

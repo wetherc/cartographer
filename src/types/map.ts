@@ -155,3 +155,42 @@ export interface TownDock {
   quay: string;
   pier: string[];
 }
+
+/** Options of the MapCanvas constructor. */
+export interface MapCanvasOptions {
+  tileSize?: number;
+  minZoom?: number;
+  maxZoom?: number;
+  /** Detection range for encounter, NPC, and POI markers, in grid cells from
+   * the party or a character token. This is conventionally twice the fog
+   * reveal radius. */
+  markerRange?: number;
+  onCellClick?: (x: number, y: number, tile: Tile | null) => void;
+  onCellContextMenu?: (
+    x: number,
+    y: number,
+    tile: Tile | null,
+    clientX: number,
+    clientY: number,
+  ) => void;
+  onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void;
+  onStrokeEnd?: () => void;
+  getNodeName?: (nodeId: string) => string | undefined;
+  onViewChange?: () => void;
+  onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void;
+  /** Fires when a way out of the current node is used. This happens on a
+   * click on a border arrow, or on a cursor key pressed twice into the
+   * border it leads off. */
+  onExitClick?: (exit: MapExit) => void;
+  /** Fires when a cursor key arms an edge exit (with the exit), and fires
+   * again with null when the arming lapses. This lets the wiring narrate
+   * the second press. */
+  onExitArmed?: (exit: MapExit | null) => void;
+  /** Fires after a cursor key lands the keyboard cursor on a cell, with the
+   * cell's tile id, so the wiring can narrate what the cursor stands on. */
+  onCursorMove?: (tileId: string) => void;
+  /** Fires after Enter or Space authors a stroke on the cursor cell in
+   * Build mode, with the cell's tile id and its tile before the stroke, so
+   * the wiring can narrate what changed. */
+  onCursorStroke?: (tileId: string, before: Tile | null) => void;
+}
