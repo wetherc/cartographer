@@ -1466,7 +1466,9 @@ panel follows these rules so that the page stays still:
   tokens that build the crumb and not from a pixel constant.
 - **Reserve the scrollbar.** `html` sets `scrollbar-gutter: stable`, so the
   columns do not all narrow at the moment the panels fill and the page
-  grows past one screen.
+  grows past one screen. The fixed-screen shells of Play, Build, Combat, and
+  Library set `scrollbar-gutter: auto` on `html`, because their page does
+  not scroll and a reserved gutter shows as an empty strip at the right edge.
 
 ## Accessibility
 

@@ -8,6 +8,12 @@
    ========================================================================== */
 
 @media (min-width: 68.0625rem) {
+  /* The page never scrolls here, so the gutter that base.css reserves for the
+     page scrollbar would only leave an empty strip at the right edge. */
+  html:has(body.mode-play) {
+    scrollbar-gutter: auto;
+  }
+
   body.mode-play {
     display: flex;
     flex-direction: column;
