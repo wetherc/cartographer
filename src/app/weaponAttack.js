@@ -213,6 +213,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
       ...(setup.mode ? { mode: setup.mode } : {}),
     },
     ac,
+    { attack: { critOn } },
   );
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;

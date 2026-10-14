@@ -116,3 +116,17 @@ test('a caster that left the campaign casts nothing and spends nothing', () => {
   assert.equal(app.dirty, 0);
   assert.deepEqual(app.toasted, ['Mage is no longer in the campaign.']);
 });
+
+test('a cast clears the dice tray result, and a refused cast leaves it', () => {
+  const caster = mage();
+  const app = stubApp({ characters: [caster] });
+  let cleared = 0;
+  app.actions.clearDiceResult = () => {
+    cleared += 1;
+  };
+  resolveCast(app, planFor(app, caster), submit(), { writeBack: () => {} });
+  assert.equal(cleared, 1, 'the tray no longer shows an earlier roll as the cast');
+  app.state.characters = [];
+  resolveCast(app, planFor(app, caster), submit(), { writeBack: () => {} });
+  assert.equal(cleared, 1);
+});

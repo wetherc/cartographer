@@ -39,6 +39,7 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * @returns {{
  *   getSelection: () => import('../types/dice.js').DiceSelection,
  *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null, options?: import('../types/dice.js').TrayRollOptions) => import('../types/dice.js').TrayRoll,
+ *   clearResult: () => void,
  * }}
  */
 export function mountDiceTray(container, opts = {}) {
@@ -171,22 +172,31 @@ export function mountDiceTray(container, opts = {}) {
   );
 
   /**
-   * Roll the loaded selection and show the result against `target`.
+   * Roll the loaded selection and show the result against `target`. An
+   * attack roll reads "hit" or "miss" (see `resultSummary`).
    * @param {number | null} target
+   * @param {{ critOn?: number } | null} [attack]
    */
-  function performRoll(target) {
+  function performRoll(target, attack = null) {
     const result = roll(selection);
+    const summary = resultSummary(result, target, attack);
     let text = formatResult(result);
     if (target !== null) {
-      text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
+      const word = attack
+        ? summary.passed
+          ? 'hit'
+          : 'miss'
+        : summary.passed
+          ? 'success'
+          : 'failure';
+      text += ` vs target ${target}: ${word}`;
     }
-    const summary = resultSummary(result, target);
     const verdict =
       summary.verdict === null
         ? null
         : el(
             'span',
-            `dice-tray__verdict${result.total >= (target ?? 0) ? '' : ' dice-tray__verdict--fail'}`,
+            `dice-tray__verdict${summary.passed ? '' : ' dice-tray__verdict--fail'}`,
             summary.verdict,
           );
     resultEl.replaceChildren(
@@ -215,7 +225,14 @@ export function mountDiceTray(container, opts = {}) {
 
   return {
     getSelection: () => selection,
-    rollSelection: (next, target = null, { keep = false } = {}) => {
+    // A roll made outside the tray, such as a spell cast, clears the result
+    // line, so the tray does not show an earlier roll as if it were the new
+    // one.
+    clearResult: () => {
+      resultEl.replaceChildren();
+      resultEl.hidden = true;
+    },
+    rollSelection: (next, target = null, { keep = false, attack = null } = {}) => {
       // The roll borrows the tray. The dice and the modifier the GM set up
       // come back after the roll, so the GM's next Roll is the GM's own dice.
       // With `keep`, the target field is the target of this roll and the tray
@@ -233,7 +250,7 @@ export function mountDiceTray(container, opts = {}) {
       // roll cannot leave the toggle showing a mode the GM never picked.
       try {
         const used = rollTarget(target, targetInput.value, keep);
-        return { ...performRoll(used), target: used };
+        return { ...performRoll(used, attack), target: used };
       } finally {
         selection.mode = standingMode;
         for (const die of DIE_TYPES) selection.counts[die] = saved.counts[die] ?? 0;

@@ -31,6 +31,9 @@ export type RandomFn = () => number;
 export interface TrayRollOptions {
   /** Roll without expanding the tray, against the target the GM typed. */
   keep?: boolean;
+  /** Judge the roll as an attack: "hit" or "miss", where a kept d20 at or
+   *  above `critOn` (20 by default) always hits and a natural 1 misses. */
+  attack?: { critOn?: number } | null;
 }
 
 /** A roll made in the dice tray. `target` is the number the roll was judged

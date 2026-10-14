@@ -34,4 +34,6 @@ export function wireDiceTray(app) {
   // against the defender's AC). The roll then shows where every other roll shows.
   app.actions.rollDice = (selection, target, options) =>
     diceTray.rollSelection(selection, target, options);
+  // A spell cast rolls outside the tray, so it clears the tray's last result.
+  app.actions.clearDiceResult = () => diceTray.clearResult();
 }

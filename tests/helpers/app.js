@@ -81,6 +81,7 @@ export const ACTION_NAMES = [
   'setMode',
   'mergeQueuedPatches',
   'rollDice',
+  'clearDiceResult',
 ];
 
 /** Every panel a wiring module can refresh, in AppViews order. */

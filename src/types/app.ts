@@ -241,6 +241,10 @@ export interface AppActions {
     target?: number | null,
     options?: TrayRollOptions,
   ): { result: DiceResult; text: string; target?: number | null };
+  // diceWiring: hide the tray's result line. A spell cast rolls its own dice
+  // outside the tray and calls this, so the tray does not show an earlier
+  // roll as the result of the cast.
+  clearDiceResult(): void;
 }
 
 /** The `AppState` lists whose panels are built by `app/entityList.js`. A new

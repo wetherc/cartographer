@@ -254,6 +254,10 @@ An attack or a death save from the app opens the tray and shows its roll
 there. The dice counts and the modifier keep what you set, so your next
 **Roll** is your own roll and not a repeat of the attack. An attack judges
 against the AC of its target for that roll only, and the DC field
-keeps the value that you typed. A save or a skill from the character sheet
+keeps the value that you typed. The line of an attack reads "hit" or
+"miss", as in "vs 13: miss", and a natural 20 always hits. A spell cast
+rolls its own dice outside the tray and clears the tray result, so the
+tray never shows an earlier roll as the roll of the spell. Read the result
+of a cast in the combat log. A save or a skill from the character sheet
 rolls in the tray without opening it. A roll that names its own
 mode uses that mode for one roll only, and it leaves the d20 mode as it was.

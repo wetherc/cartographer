@@ -316,6 +316,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       );
       return;
     }
+    // The cast rolled its own dice, so the tray's last result belongs to an
+    // earlier roll.
+    app.actions.clearDiceResult();
     if (result.truncated > 0) {
       app.toasts.show(
         `${spell.name} reaches ${result.targets.length} at level ${result.slotLevel}; ` +
