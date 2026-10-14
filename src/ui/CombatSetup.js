@@ -129,11 +129,18 @@ export function combatSetupModal(roster, callbacks = {}) {
           formatModifier(participant.modifier ?? 0),
         );
         setTip(modifier, 'DEX modifier, added to the initiative roll');
-        const input = numberField(participant.initiative, {
+        // The field starts blank, with 10 plus the modifier as a grey
+        // placeholder, so an unrolled row does not read as a rolled result.
+        const input = numberField('', {
+          placeholder: String(participant.initiative),
           className: 'initiative-panel__init',
           ariaLabel: `Initiative for ${view.name}`,
         });
-        input.addEventListener('input', () => settled.add(participant.id));
+        // A field the GM clears counts as unsettled again, so Start rolls it.
+        input.addEventListener('input', () => {
+          if (input.value === '') settled.delete(participant.id);
+          else settled.add(participant.id);
+        });
         inputs.set(participant.id, input);
         return el(
           'div',
@@ -255,9 +262,9 @@ export function combatSetupModal(roster, callbacks = {}) {
       if (returnValue === 'parley') callbacks.onParley?.();
       if (returnValue !== 'start') return null;
       for (const line of stealth?.lines() ?? []) callbacks.onStealth?.(line);
-      // A row the GM neither rolled nor typed still shows the placeholder of
-      // 10 plus the modifier. Start rolls those rows, and logs them the same
-      // way a press of Roll initiative does.
+      // A row the GM neither rolled nor typed still shows only the
+      // placeholder of 10 plus the modifier. Start rolls those rows, and logs
+      // them the same way a press of Roll initiative does.
       if (callbacks.rollInitiative) {
         const rolled = rollUnsettled(active(), settled, callbacks.rollInitiative);
         for (const { participant, value } of rolled) {
@@ -276,7 +283,10 @@ export function combatSetupModal(roster, callbacks = {}) {
       }
       return active().map((p) => {
         const { surprised: _, ...rest } = p;
-        const initiative = Number(inputs.get(p.id)?.value) || 0;
+        // With no roll callback, a blank field falls back to the placeholder
+        // value.
+        const typed = inputs.get(p.id)?.value ?? '';
+        const initiative = typed === '' ? p.initiative : Number(typed) || 0;
         return surprised.get(p.id)?.checked
           ? { ...rest, initiative, surprised: true }
           : { ...rest, initiative };

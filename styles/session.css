@@ -311,6 +311,12 @@ body.role-player .npc-scope {
   text-align: center;
 }
 
+/* The default of 10 plus the modifier shows in italics, so a row that is not
+   rolled yet reads apart from a rolled value. */
+.initiative-panel__init::placeholder {
+  font-style: italic;
+}
+
 /* Each combatant's DEX modifier, shown between name and initiative value. */
 .initiative-panel__modifier {
   font-family: var(--font-mono);

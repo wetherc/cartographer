@@ -141,7 +141,7 @@ running fight. The log and the stored name keep the plain name.
 
 | Control | What it does |
 | --- | --- |
-| Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
+| Initiative value | Starts blank, with 10 plus the DEX modifier as a grey placeholder. Type a value to fix it. Start combat rolls each row that is still blank |
 | Roll initiative | Rolls for every row at once |
 | Who sneaks | Picks who sneaks for the Stealth contest: **No one**, **The party**, **The foes**, or **Both sides**. See [Stealth contest](#stealth-contest) |
 | Roll Stealth | Rolls a Dexterity (Stealth) check for each row of each sneaking side. It shows only when a side sneaks |
