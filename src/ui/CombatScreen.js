@@ -1,5 +1,5 @@
 import { el } from './dom.js';
-import { fightOutcome } from '../combat/CombatView.js';
+import { fightNotice } from '../combat/FightNotice.js';
 import { focusKey, refocusTarget } from '../combat/FocusRestore.js';
 import { viewTurnKey } from '../view/CombatSelection.js';
 import { combatantCard } from './CombatantCard.js';
@@ -235,8 +235,9 @@ export function mountCombatScreen(container, callbacks) {
     const opened = !showing;
     showing = true;
     const gm = callbacks.isGM();
-    const outcome = fightOutcome(view);
-    setNotice(outcome, gm);
+    const result = fightNotice(view, gm);
+    const outcome = result?.outcome ?? null;
+    setNotice(result);
     ribbon.render(view, gm, outcome !== null);
     column.render(view, gm);
     const party = view.rows.filter((row) => row.side === 'party');
@@ -313,29 +314,23 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * The banner over the board once one side is down. It states the outcome
+   * The banner under the ribbon once one side is down. It states the outcome
    * and, for the GM, reminds them that the fight stays open until they close
    * it.
-   * @param {'victory' | 'defeat' | null} outcome
-   * @param {boolean} gm
+   * @param {ReturnType<typeof fightNotice>} result
    */
-  function setNotice(outcome, gm) {
-    notice.classList.toggle('combat-screen__notice--victory', outcome === 'victory');
-    notice.classList.toggle('combat-screen__notice--defeat', outcome === 'defeat');
-    if (!outcome) {
+  function setNotice(result) {
+    notice.classList.toggle('combat-screen__notice--victory', result?.outcome === 'victory');
+    notice.classList.toggle('combat-screen__notice--defeat', result?.outcome === 'defeat');
+    if (!result) {
       notice.textContent = '';
       notice.hidden = true;
       return;
     }
-    const result =
-      outcome === 'victory'
-        ? { line: 'The party is victorious.', gmTail: 'End combat when the party is done here.' }
-        : { line: 'The party is defeated.', gmTail: 'End combat when you are ready.' };
-    const text = gm ? `${result.line} ${result.gmTail}` : result.line;
     // Show the region before the text lands. A status region hidden at the
     // moment of change is not read aloud.
     notice.hidden = false;
-    if (notice.textContent !== text) notice.textContent = text;
+    if (notice.textContent !== result.text) notice.textContent = result.text;
   }
 
   /**

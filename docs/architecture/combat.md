@@ -1144,10 +1144,12 @@ last creature in it, but a kill does not.
 
 ### The outcome banner
 
-Once `fightOutcome` settles, the screen shows a banner at the bottom center
-of the window. It floats with `position: fixed`, so the ribbon and the
-columns do not move when it appears. The
-banner states that the party is victorious or defeated. It tells the GM that
+Once `fightOutcome` settles, the screen shows a banner under the ribbon.
+It sits in the flow, so it covers no card or control, and the columns move
+down by its height. `fightNotice` in `combat/FightNotice.js` writes its
+text. The banner states that the party is victorious or defeated. A victory
+with a party member still dying reads "All foes are down. Wren Tallowby is
+dying." instead, because that member can still die. It tells the GM that
 combat stays open until the GM ends it. At that point, End combat takes the
 primary emphasis from the turn-end button. Turns still advance, so the party
 can use a round to heal before the GM ends the fight.
@@ -1157,6 +1159,11 @@ node on every render, because a new node would announce the outcome again on
 every HP edit. The app also unhides the node before it writes the text,
 because a screen reader does not read a status region that is hidden when the
 text changes.
+
+In combat, a plain confirmation toast takes no clicks (`pointer-events:
+none`), because the toast stack sits over the dice tray at the bottom right.
+A click then reaches the tray button under the toast. An error toast or a
+toast with an action button still takes clicks.
 
 ## Refreshing the screen
 

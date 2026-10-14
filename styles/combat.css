@@ -53,18 +53,9 @@ body.mode-combat .app-buildrail {
 /* The banner once one side is down. The fight stays up until the GM ends it,
    so the banner says why nothing attacks any more. The border takes the
    outcome's color, and the wording gives it for anyone who cannot see the
-   difference. The banner floats at the bottom center of the window and takes
-   no layout space, so the ribbon and the three columns stay where they are
-   when the last foe drops. */
+   difference. The banner sits in the flow under the ribbon, so it covers no
+   card or control. */
 .combat-screen__notice {
-  position: fixed;
-  left: 50%;
-  bottom: var(--space-4);
-  z-index: 15; /* under the toast stack, which can share the bottom edge */
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: calc(100vw - 2 * var(--space-4));
-  box-shadow: var(--shadow-3);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -683,4 +674,12 @@ body.mode-combat .app-buildrail {
 
 .combat-screen__initiative {
   width: 5rem;
+}
+
+/* A confirmation toast sits over the dice tray at the bottom right. In combat
+   the GM clicks the tray often, so a plain toast lets clicks through to the
+   control under it and fades on its own. An error or action toast keeps its
+   clicks for its button. */
+body.mode-combat .toast:not(.toast--error, .toast--action) {
+  pointer-events: none;
 }
