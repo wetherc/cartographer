@@ -172,7 +172,7 @@ character's save or check, and on a spell target save through the `lucky`
 flag of `CastTarget`. A weapon attack and a death save roll in the dice tray,
 so `app/luckyRoll.js` rolls the tray selection again when a Lucky roller
 shows a natural 1 on the kept d20. `raceSaveSlant` returns advantage for Brave, Fey
-Ancestry, Dwarven Resilience, and Gnome Cunning, and `spellCastResolve`
+Ancestry, Dwarven Resilience, and Gnome Cunning, and `spellRollTargets`
 folds it into each spell target's save mode with the context from
 `spellRaceSave`, which treats a creature action as a save that is not
 magic. `repeatSaves` takes a `slantOf` callback and a `lucky` flag, so the

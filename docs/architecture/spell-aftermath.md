@@ -225,7 +225,7 @@ pool, and for a limit with no repeated save. For such a spell `castPlan`
 reads no save bonus, and the dialog shows no DC field. Power Word Stun keeps
 its DC, because its target retries the save on later turns.
 
-`spellCastResolve.js` reads the HP of each target from the roster when the
+`spellRollTargets.js` reads the HP of each target from the roster when the
 GM submits the cast. A pool also reads the chips there, because it passes
 over an Unconscious target and a target that already has the condition.
 A target with no HP to read (a character with no HP pool, or a creature
@@ -352,7 +352,7 @@ These sites read the table:
 - `combat/WeaponSwing.js` builds one query from both combatants and takes the
   reach from the weapon's kind (`Weapons.weaponKind`). It also asks `autoCrits`
   about the defender, so any hit on a paralyzed target is a critical hit.
-- `app/spellCastResolve.js` combines the mode from the chips with the GM's
+- `app/spellRollTargets.js` combines the mode from the chips with the GM's
   choice in the dialog through `combineModes`, so neither replaces the other.
   A save spell marks a target that fails with no roll with `autoFailSave`, and
   an attack spell treats a touch range as melee reach. The caster view has no

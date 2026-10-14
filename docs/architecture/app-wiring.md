@@ -763,7 +763,7 @@ through `CreatureTemplate.spawnCopies`, and it spreads them with the pure
 #### Attacks and casts
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
-bar starts. Casting a spell is the same job, split across five modules:
+bar starts. Casting a spell is the same job, split across these modules:
 
 | Module | Owns |
 | --- | --- |
@@ -771,7 +771,9 @@ bar starts. Casting a spell is the same job, split across five modules:
 | `castPlan.js` | The cast plan: the caster view, the targets with their save bonuses, the spendable slots, the save DC, the component and armor checks, and the dialog fields. It does not import the resolver, so the reaction pauses can build a plan without an import cycle |
 | `spellTargets.js` | Which creatures a spell can reach |
 | `spellCastFields.js` | The dialog fields |
-| `spellCastResolve.js` | Rolling the cast, and the chip that lets the caster repeat it on a later turn |
+| `spellCastResolve.js` | Rolling the cast: the checks that refuse it, the cost to the turn, the roll, and the write-back of the spent slot, material, and concentration |
+| `spellRollTargets.js` | The live fields that each target needs for the roll: the save mode and bonus, the HP, the creature type, and the attack mode |
+| `spellFollowUps.js` | The chip that lets the caster repeat a spell on a later turn, and the push note of Repelling Blast |
 | `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the chip or save that a hit brings, the pool roll and the kill of a spell that reads HP, the hit points that a draining hit gives back, the damage a chip leaves for later turns, summons, and the log lines |
 
 `CastPlan` in `src/types/cast.ts` passes between them.

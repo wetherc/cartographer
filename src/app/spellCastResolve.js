@@ -1,26 +1,21 @@
-import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { castSpell } from '../entities/Casting.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { pickedRollMode } from './rollModeField.js';
-import { autoCrits, combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellAbilityModifier, spellAttackBonus } from '../entities/Classes.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
-import { durationInRounds, formatCastingTime } from '../entities/SpellTiming.js';
+import { formatCastingTime } from '../entities/SpellTiming.js';
 import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { applyOutcomes } from './spellOutcomes.js';
 import { attackerType } from '../entities/ChipSlants.js';
 import { spendOnceChips } from './riderSpend.js';
-import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
-import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
+import { dropRepeat, heldRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
+import { markInvocationUsed } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
-import { findCombatant, hpOf, targetConditions } from './combatants.js';
-import { hasFeature } from '../entities/Features.js';
-import { castTypeFields } from '../entities/CreatureType.js';
-import { sourceSlant } from '../entities/SourceSlant.js';
-import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
+import { findCombatant, targetConditions } from './combatants.js';
+import { endSpellEffects } from './combatantWrites.js';
 import { chosenTargets, missingTarget } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
@@ -29,7 +24,8 @@ import { wardSpellDamage } from './damageWardPrompt.js';
 import { resistSpellSaves } from './legendaryResistancePrompt.js';
 import { actionIdOf, spendAction } from '../entities/CreatureActions.js';
 import { healingBonus } from '../entities/HealingBonus.js';
-import { isLucky, raceSaveSlant, spellRaceSave } from '../entities/RaceTraits.js';
+import { rollingTargets } from './spellRollTargets.js';
+import { notePush, openRepeat } from './spellFollowUps.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -201,89 +197,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     // combatant. A Bless on the caster rides its spell attack rolls, and a
     // Blinded on it slants them.
     const casterConditions = live.conditions ?? [];
-    let castTargets = chosen;
-    // An attack's dialog mode applies to the attack roll, so a save that its hit
-    // brings rolls with only the target's own slant.
-    const savePick = resolved.effect.kind === 'save' ? picked : null;
-    if (saveAbility) {
-      const raceSave = spellRaceSave(resolved, saveAbility);
-      castTargets = chosen.map((t) => {
-        // A target's untrained armor slants its STR or DEX save. The slant
-        // folds in with the target's chips, so an advantage chip cancels it.
-        const found = findCombatant(app, t.id);
-        const character = found?.kind === 'character' ? found.entity : null;
-        const outcome = saveOutcome(
-          t.conditions,
-          saveAbility,
-          [t.armorPenalty ? 'disadvantage' : null, raceSaveSlant(character, raceSave)],
-          found ? exhaustionLevel(found.entity) : 0,
-        );
-        const evasion = character !== null && hasFeature(character, 'Evasion');
-        return {
-          ...t,
-          ...(evasion ? { evasion: true } : {}),
-          ...(isLucky(character) ? { lucky: true } : {}),
-          // Every live target carries a derived bonus. A target the roster lost
-          // while the dialog sat open carries none and saves on the flat die.
-          saveBonus: t.saveBonus ?? 0,
-          saveMode: savePick ?? outcome.mode ?? 'normal',
-          ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
-        };
-      });
-    }
-    // A spell with an HP limit or an HP pool reads each target's HP as it is
-    // now. A pool also passes over a target by its chips (an Unconscious one),
-    // so it reads those as they are now too.
-    const effect = resolved.effect;
-    if (effect.kind === 'save' && (effect.hpLimit !== undefined || effect.hpPool)) {
-      castTargets = castTargets.map((t) => {
-        const found = findCombatant(app, t.id);
-        const hp = found ? hpOf(found.kind, found.entity) : null;
-        return {
-          ...t,
-          ...(hp ? { hp: hp.current } : {}),
-          ...(found && effect.hpPool ? { conditions: found.entity.conditions } : {}),
-        };
-      });
-    }
-    // The type rules of a spell read each target's creature type and condition
-    // immunities, as the roster keeps them now.
-    if ((effect.kind === 'save' || effect.kind === 'heal') && effect.typeRules) {
-      castTargets = castTargets.map((t) => {
-        return { ...t, ...castTypeFieldsOf(app, t.id) };
-      });
-    }
-    if (resolved.effect.kind === 'attack') {
-      // A melee spell attack says so. Otherwise a touch spell reaches as far as
-      // a melee weapon does, which is the split Prone needs, and every other
-      // range is a ranged attack.
-      const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
-      castTargets = castTargets.map((t) => ({
-        ...t,
-        // A hit can leave a chip on targets of one type only (Chill Touch on
-        // undead), so each target states its type.
-        ...castTypeFieldsOf(app, t.id),
-        attackMode:
-          picked ??
-          combineModes([
-            rollMode({
-              roller: casterConditions,
-              target: t.conditions,
-              kind: 'attack',
-              melee,
-              rollerType: attackerType(live),
-              tired: exhaustionLevel(live),
-            }),
-            // A chip that the target's own spell left on the caster (Chill
-            // Touch on an undead caster) slants the roll.
-            sourceSlant(casterConditions, t.id),
-          ]) ??
-          'normal',
-        // A helpless target turns a melee spell hit into a critical one, the
-        // same rule a weapon swing follows.
-        autoCrit: autoCrits(t.conditions, { melee }),
-      }));
-    }
+    const castTargets = rollingTargets(app, chosen, { spell, resolved, saveAbility, picked, live });
 
     const result = castSpell(caster, resolved, {
       slotLevel,
@@ -468,65 +382,4 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     chosen = next;
     return rest();
   });
-}
-
-/**
- * Give the caster the chip that lets it repeat a spell on a later turn, when
- * the spell has a repeat and the first cast opened one. A repeat that stays
- * on the creatures it hit records their ids and opens only on a hit.
- * @param {AppContext} app
- * @param {Spell} spell
- * @param {{ slotLevel: number, outcomes: CastOutcome[], targets: { id?: string }[] }} result
- * @param {string} casterId
- */
-function openRepeat(app, spell, result, casterId) {
-  if (!spell.repeat) return;
-  const hits =
-    spell.effect.kind === 'attack'
-      ? /** @type {AttackOutcome[]} */ (result.outcomes)
-          .filter((o) => o.hit)
-          .map((o) => o.target.id)
-      : result.targets.map((t) => t.id);
-  const hitIds = /** @type {string[]} */ (hits.filter(Boolean));
-  if (!opensRepeat(spell, hitIds)) return;
-  applyConditionToTarget(app, casterId, spell.name, durationInRounds(spell.duration), {
-    spellId: spell.id,
-    spellName: spell.name,
-    casterId,
-    repeat: { slotLevel: result.slotLevel, ...(spell.repeat.damage ? { targetIds: hitIds } : {}) },
-  });
-}
-
-/**
- * Log how far each creature that an Eldritch Blast hit can be pushed, for a
- * warlock with Repelling Blast. Each beam that hits pushes once. The GM moves
- * the token, because the board does not move a token by feet.
- * @param {AppContext} app
- * @param {Spell} spell
- * @param {any} caster the live caster
- * @param {{ outcomes: CastOutcome[] }} result
- */
-function notePush(app, spell, caster, result) {
-  if (spell.id !== 'eldritch-blast') return;
-  const push = blastPush(caster);
-  if (!push) return;
-  for (const o of /** @type {AttackOutcome[]} */ (result.outcomes)) {
-    const hits = o.shots ? o.hits : o.hit ? 1 : 0;
-    if (hits === 0) continue;
-    app.actions.logEvent(
-      'combat',
-      `${o.target.name} can be pushed up to ${hits * push.feet} feet (${push.name}).`,
-    );
-  }
-}
-
-/**
- * The creature type and condition immunities of a roster entry, for the type
- * rules of a spell. An id the roster lost gives none.
- * @param {AppContext} app
- * @param {string | undefined} id
- */
-function castTypeFieldsOf(app, id) {
-  const found = findCombatant(app, id ?? '');
-  return found ? castTypeFields(found.kind, found.entity) : {};
 }

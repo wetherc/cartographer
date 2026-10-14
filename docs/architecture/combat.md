@@ -822,7 +822,7 @@ count of swings left is the best case.
 ### Creature-type rules and caster slants
 
 A save or heal spell can carry `effect.typeRules` (see `src/types/spell.ts`).
-`app/spellCastResolve.js` stamps each target with `creatureType` and
+`app/spellRollTargets.js` stamps each target with `creatureType` and
 `conditionImmunities` from the roster, and `entities/SpellTypeRules.js`
 applies the lists in `Casting.js`. A skipped target reports `unaffectedBy`
 and spends none of an HP pool, so Sleep passes over undead without losing
@@ -834,7 +834,7 @@ target alone, and a `maxDamage` type reads the damage dice at their top face.
 A chip with the `disadvantageVsSource` mod slants the attacks of its holder
 against the caster named in `source.casterId`. `entities/SourceSlant.js`
 reads it, and both `combat/WeaponSwing.js` and the spell attack in
-`spellCastResolve.js` fold it into the roll mode. Chill Touch writes this chip
+`spellRollTargets.js` fold it into the roll mode. Chill Touch writes this chip
 on an undead target through the typed chip of its `onHit` block, and the
 spell form authors that chip in `ui/SpellFormTypedChip.js`.
 
