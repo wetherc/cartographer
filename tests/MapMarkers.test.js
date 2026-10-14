@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { markerAnchors, partyDot, withinMarkerRange } from '../src/map/MapMarkers.js';
+import { MapMarkers, markerAnchors, partyDot, withinMarkerRange } from '../src/map/MapMarkers.js';
 
 test('partyDot moves to a small corner dot on a tile with art or a badge to keep clear', () => {
   const center = { x: 0.5, y: 0.5, r: 0.22 };
@@ -54,4 +54,40 @@ test('withinMarkerRange takes the closest of several anchors, and rejects a bad 
   assert.equal(withinMarkerRange(anchors, 1, '4,4'), false, 'between the two, out of reach');
   assert.equal(withinMarkerRange(anchors, 99, 'nonsense'), false);
   assert.equal(withinMarkerRange([], 99, '0,0'), false, 'no anchors, nothing detected');
+});
+
+/** A renderer stub whose context counts the arcs drawn. */
+function arcHost() {
+  const host = { tileSize: 32, arcs: 0, ctx: /** @type {any} */ ({}) };
+  host.ctx = new Proxy(
+    {},
+    {
+      get: (_t, key) => (key === 'arc' ? () => host.arcs++ : () => {}),
+      set: () => true,
+    },
+  );
+  return host;
+}
+
+/** @param {object[]} tiles */
+const partyView = (tiles) =>
+  /** @type {any} */ ({
+    partyTileId: '0,0',
+    node: { id: 'n', width: 2, height: 2, tiles },
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+  });
+
+test('renderPartyMarker skips a map with no painted tile', () => {
+  const host = arcHost();
+  new MapMarkers(/** @type {any} */ (host)).renderPartyMarker(partyView([]));
+  assert.equal(host.arcs, 0);
+});
+
+test('renderPartyMarker draws the dot on a painted map', () => {
+  const host = arcHost();
+  const tiles = [{ id: '1,1', x: 1, y: 1, imageRef: 'grass' }];
+  new MapMarkers(/** @type {any} */ (host)).renderPartyMarker(partyView(tiles));
+  assert.equal(host.arcs, 1);
 });

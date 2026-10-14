@@ -1162,6 +1162,8 @@ stands on the tile that links down toward the party (see `ancestorMarkerTile`
 below). `MapCanvas.setPartyTile` then gets `inNode` false, and
 `markerAnchors` leaves that tile out, so markers near it stay hidden. A
 split-off character who stands on that map still anchors markers.
+`MapMarkers.renderPartyMarker` draws no party dot on a map with no painted
+tile, so a new blank campaign shows an empty canvas.
 
 The handout badge has no range. `MapMarkers.renderHandoutMarkers` draws a
 parchment note on each tile in `MapView.handoutTileIds`, and

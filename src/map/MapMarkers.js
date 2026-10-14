@@ -322,15 +322,16 @@ export class MapMarkers {
 
   /** Gold dot for the party's tile. This is skipped when a character token
    * stands on that tile, because the token already shows presence, and the
-   * dot underneath adds clutter. This still draws for an empty roster,
-   * or a party tile whose members all wandered off, to keep the anchor
-   * visible.
+   * dot underneath adds clutter. It is also skipped on a map with no painted
+   * tile, such as a new blank campaign, where a lone dot on the empty canvas
+   * reads as a stray mark. This still draws for an empty roster, or a party
+   * tile whose members all wandered off, to keep the anchor visible.
    * @param {MapView} view */
   renderPartyMarker(view) {
-    if (!view.partyTileId) return;
+    if (!view.partyTileId || !view.node?.tiles.length) return;
     if (view.characterTokens?.some((t) => t.tileId === view.partyTileId)) return;
     const coords = parseCoords(view.partyTileId);
-    if (!coords || !view.node) return;
+    if (!coords) return;
     const { ctx, tileSize } = this.host;
     const size = tileSize * view.scale;
     const sx = coords.x * size + view.offsetX;
