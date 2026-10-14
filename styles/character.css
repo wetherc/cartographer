@@ -126,10 +126,6 @@
    measure. The query measures the card, not the viewport, so the same sheet
    mounted in a narrow rail stays stacked on a wide screen. */
 @container character-sheet (min-width: 50rem) {
-  .slot-line--empty {
-    display: flex;
-  }
-
   /* Both columns take a share of whatever the card gives them, so neither leaves
      a strip of empty card beside it, and the body as a whole stops at the two
      measures so they cannot grow past what reads well. The left share is the
@@ -137,16 +133,22 @@
      field rows, whose label and input pull apart if the row runs long. */
   .character-sheet__body {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
     max-width: var(--sheet-measure-body);
   }
 
-  /* Row one is the two headline blocks: name over HP bar on the left, the
-     level/AC/XP banner over the slot pips on the right, so the bar and the pips
-     land on the same line. Row two is the section column under each. */
+  /* The two headline blocks lead the columns: name over HP bar on the left,
+     the level/AC/XP banner over the slot pips on the right, so the bar and
+     the pips read across from each other. The name and HP block is usually
+     taller than the banner, so it spans rows 1 and 2, and the right section
+     column starts in row 2, right under the banner. The section columns end
+     in the flexible row 3. An item that spans a flexible row does not size
+     the auto rows above it, so row 2 takes only the height the HP block
+     needs, and a long right column does not push the left one down. */
   /* Each piece fills the grid track it sits in; the track widths above are the
      cap, so the single-column measures are dropped here. */
   .character-sheet__head {
-    grid-area: 1 / 1;
+    grid-area: 1 / 1 / 3 / 2;
     max-width: none;
   }
 
@@ -156,12 +158,12 @@
   }
 
   .character-sheet__col--main {
-    grid-area: 2 / 1;
+    grid-area: 3 / 1;
     max-width: none;
   }
 
   .character-sheet__col--side {
-    grid-area: 2 / 2;
+    grid-area: 2 / 2 / 4 / 3;
     max-width: none;
   }
 

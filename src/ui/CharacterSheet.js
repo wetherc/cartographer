@@ -268,7 +268,7 @@ export function mountCharacterSheet(
 
     // The pips ride under the banner, which puts them across from the HP bar.
     const pips = buildSlotPips(character, perms, { live, commit });
-    headSide.appendChild(pips.element);
+    if (pips.element) headSide.appendChild(pips.element);
     if (pips.write) writers.push(pips.write);
 
     // Level, derived AC, and XP progress share one banner line, the first line

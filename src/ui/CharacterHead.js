@@ -124,24 +124,17 @@ export function buildHpLine(character, perms, { live, commit, hpStep, hpAmount }
 }
 
 /**
- * The spell-slot and pact-slot pips. A non-caster gets an empty spacer with
- * no writer: in the two-column sheet it keeps the space the pips would take,
- * so the sheet below the header does not rise when the GM selects a
- * non-caster after a caster. The stacked sheet hides the spacer
- * (widgets.css).
+ * The spell-slot and pact-slot pips. A non-caster gets no element and no
+ * writer, so the progression section sits right under the level line.
  * @param {Character} character
  * @param {SheetPermissions} perms
  * @param {HeadContext} ctx
- * @returns {{ element: HTMLElement, write: (() => void) | null }}
+ * @returns {{ element: HTMLElement | null, write: (() => void) | null }}
  */
 export function buildSlotPips(character, perms, { live, commit }) {
   const pact = getPactPool(character);
   const slots = [...getSlotPools(character), ...(pact ? [pact] : [])];
-  if (slots.length === 0) {
-    const spacer = el('span', 'slot-line slot-line--empty');
-    spacer.setAttribute('aria-hidden', 'true');
-    return { element: spacer, write: null };
-  }
+  if (slots.length === 0) return { element: null, write: null };
   const line = buildSlotLine(
     slots,
     perms.play
